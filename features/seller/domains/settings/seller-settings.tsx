@@ -15,11 +15,75 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { card, Modal, Preference, SettingsForm } from "./pieces";
+import { IMPERSONATION_COMMANDS } from "@/features/admin/impersonation/policy";
+import {
+  isImpersonationSessionActive,
+  readImpersonationSession,
+} from "@/features/admin/impersonation/session";
+import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import {
+  readVersionedStorage,
+  writeVersionedStorage,
+} from "@/shared/storage/versioned-storage";
+import { z } from "zod";
 
 type Bank = { bank: string; number: string; holder: string; verified: boolean };
+
+const sellerProfileStorageKey = "fersaku-seller-profile-settings";
+const sellerProfileSchema = z.object({
+  displayName: z.string(),
+  email: z.string().email(),
+  locale: z.string(),
+  timezone: z.string(),
+});
+
+type SellerProfile = z.infer<typeof sellerProfileSchema>;
+
+const initialSellerProfile: SellerProfile = {
+  displayName: "Asep Kurnia",
+  email: "asep@ai.tools",
+  locale: "Bahasa Indonesia",
+  timezone: "Asia/Jakarta (GMT+7)",
+};
+
+function SellerProfileForm({
+  profile,
+  onChange,
+}: {
+  profile: SellerProfile;
+  onChange: (patch: Partial<SellerProfile>) => void;
+}) {
+  const fields = [
+    ["Nama publik", "displayName", profile.displayName, false],
+    ["Email", "email", profile.email, true],
+    ["Bahasa", "locale", profile.locale, false],
+    ["Zona waktu", "timezone", profile.timezone, false],
+  ] as const;
+  return (
+    <div>
+      <h2 className="text-sm font-extrabold">Profil pribadi</h2>
+      <p className="mt-1 text-[10px] text-[#718078]">
+        Informasi akun, preferensi bahasa, dan identitas publik.
+      </p>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        {fields.map(([label, field, value, readOnly]) => (
+          <label key={field} className="grid gap-2 text-[9px] font-bold">
+            {label}
+            <input
+              value={value}
+              readOnly={readOnly}
+              onChange={(event) => onChange({ [field]: event.target.value })}
+              className="hairline h-11 rounded-xl border bg-white px-3 text-xs font-normal outline-none"
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function SellerSettingsPro() {
   const [tab, setTab] = useState("Profil");
@@ -39,6 +103,20 @@ export function SellerSettingsPro() {
   const [mfa, setMfa] = useState(true);
   const [token, setToken] = useState("");
   const [saved, setSaved] = useState(false);
+  const [profile, setProfile] = useState(initialSellerProfile);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setProfile(
+        readVersionedStorage({
+          key: sellerProfileStorageKey,
+          version: 1,
+          schema: sellerProfileSchema,
+          fallback: () => initialSellerProfile,
+        }),
+      );
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const tabs = [
     ["Profil", Pencil],
     ["Bisnis", Banknote],
@@ -61,6 +139,47 @@ export function SellerSettingsPro() {
     setBankModal(false);
     setEditing(null);
   };
+  const saveProfile = () => {
+    const session = readImpersonationSession();
+    if (
+      session &&
+      (!isImpersonationSessionActive(session) ||
+        session.scope !== "support-write")
+    ) {
+      return false;
+    }
+    const persistedProfile = session
+      ? {
+          ...readVersionedStorage({
+            key: sellerProfileStorageKey,
+            version: 1,
+            schema: sellerProfileSchema,
+            fallback: () => initialSellerProfile,
+          }),
+          displayName: profile.displayName,
+          locale: profile.locale,
+          timezone: profile.timezone,
+        }
+      : profile;
+    const persisted = writeVersionedStorage({
+      key: sellerProfileStorageKey,
+      version: 1,
+      data: persistedProfile,
+    });
+    if (!persisted) return false;
+    setProfile(persistedProfile);
+    if (session) {
+      appendMockAuditEvent({
+        actor: session.actor,
+        action: IMPERSONATION_COMMANDS.profileSupportUpdate,
+        target: session.targetId,
+        ip: "mock-admin-session",
+        result: "Success",
+        context: session.reason,
+      });
+    }
+    return true;
+  };
   return (
     <div className="grid gap-5 xl:grid-cols-[220px_1fr]">
       <nav className={`${card} h-fit p-2`}>
@@ -80,15 +199,12 @@ export function SellerSettingsPro() {
       </nav>
       <section className={`${card} p-5 sm:p-7`}>
         {tab === "Profil" && (
-          <SettingsForm
-            title="Profil pribadi"
-            description="Informasi akun, preferensi bahasa, dan identitas publik."
-            fields={[
-              "Nama depan|Asep",
-              "Nama belakang|Kurnia",
-              "Email|asep@ai.tools",
-              "Zona waktu|Asia/Jakarta (GMT+7)",
-            ]}
+          <SellerProfileForm
+            profile={profile}
+            onChange={(patch) => {
+              setSaved(false);
+              setProfile((current) => ({ ...current, ...patch }));
+            }}
           />
         )}
         {tab === "Bisnis" && (
@@ -172,7 +288,8 @@ export function SellerSettingsPro() {
             <div className="mt-5 flex gap-3 rounded-2xl border border-[#efd39a] bg-[#fff8e9] p-4 text-[9px] leading-5 text-[#806f4f]">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               Setiap perubahan rekening membuat withdrawal lock selama 24 jam,
-              mencabut approval payout aktif, dan mencatat security audit event.
+              mencabut approval payout aktif, dan mencatat immutable audit
+              event.
             </div>
           </>
         )}
@@ -232,9 +349,18 @@ export function SellerSettingsPro() {
         )}
         <button
           onClick={() => {
+            if (tab === "Profil" && !saveProfile()) return;
             setSaved(true);
             setTimeout(() => setSaved(false), 1700);
           }}
+          data-impersonation-command={
+            tab === "Profil"
+              ? IMPERSONATION_COMMANDS.profileSupportUpdate
+              : undefined
+          }
+          data-impersonation-fields={
+            tab === "Profil" ? "displayName,locale,timezone" : undefined
+          }
           className="mt-7 flex h-11 items-center gap-2 rounded-xl bg-[#173f2c] px-5 text-[10px] font-extrabold text-white"
         >
           {saved ? <Check className="size-4" /> : <Save className="size-4" />}
@@ -246,7 +372,7 @@ export function SellerSettingsPro() {
           title={
             editing === null ? "Tambah rekening payout" : "Edit rekening payout"
           }
-          description="Kami melakukan mock verification nama pemilik sebelum rekening dapat dipakai."
+          description="Kami melakukan mock bank-account lookup sebelum rekening payout dapat dipakai."
           onClose={() => {
             setBankModal(false);
             setEditing(null);
@@ -291,8 +417,8 @@ export function SellerSettingsPro() {
             </label>
             <div className="rounded-xl bg-[#eef3e9] p-3 text-[9px] leading-5 text-[#65736b]">
               <CheckCircle2 className="mr-2 inline size-4 text-[#2e714f]" />
-              Mock bank account lookup tersedia dan nama akan dicocokkan dengan
-              KYC.
+              Nama akan dicocokkan dengan profil identitas payout merchant;
+              status KYC QRIS API tidak diperlukan untuk withdrawal storefront.
             </div>
             <button className="h-12 rounded-xl bg-[#173f2c] text-[10px] font-extrabold text-white">
               Verify & save account

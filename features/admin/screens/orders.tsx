@@ -10,16 +10,21 @@ import {
   AdminStatus,
   ControlDialog,
   Info,
+  TransactionSourceBadge,
 } from "@/features/admin/ui";
 
 import Link from "next/link";
-import { Check, MoreHorizontal, RefreshCcw, RotateCcw } from "lucide-react";
+import { Check, MoreHorizontal, RefreshCcw } from "lucide-react";
 
 import { useState } from "react";
 
 import { rupiah } from "@/lib/utils";
 
-import { useAdminOrder, useAdminOrders } from "@/features/admin/data";
+import {
+  useAdminActionMutation,
+  useAdminOrder,
+  useAdminOrders,
+} from "@/features/admin/data";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 
@@ -35,7 +40,7 @@ function Orders() {
         <Metric label="Orders today" value="1,842" note="+14.2% vs yesterday" />
         <Metric label="Paid volume" value="Rp84,2jt" note="96.84% success" />
         <Metric label="Pending" value="38" note="Rp5,8jt exposure" />
-        <Metric label="Refunded" value="Rp1,24jt" note="0.42% refund rate" />
+        <Metric label="Fulfilled" value="1.791" note="97.2% delivered" />
       </div>
       <section className={`${adminPanel} mt-4 overflow-hidden`}>
         <TableToolbar placeholder="Search order ID, customer, merchant, product..." />
@@ -48,9 +53,10 @@ function Orders() {
                 "Customer",
                 "Product",
                 "Payment",
+                "Source",
                 "Status",
                 "Gross",
-                "Platform fee",
+                "Total fee",
                 "Created",
                 "",
               ]}
@@ -71,10 +77,13 @@ function Orders() {
                   <td>{o.product}</td>
                   <td>{o.payment}</td>
                   <td>
+                    <TransactionSourceBadge source={o.source} />
+                  </td>
+                  <td>
                     <AdminStatus status={o.status} />
                   </td>
                   <td className="font-extrabold">{rupiah(o.gross)}</td>
-                  <td>{rupiah(o.fee)}</td>
+                  <td>{rupiah(o.totalFeeCharged)}</td>
                   <td>{o.created}</td>
                   <td>
                     <MoreHorizontal className="size-4" />
@@ -91,8 +100,13 @@ function Orders() {
 }
 function OrderDetail({ id }: { id: string }) {
   const { data: order } = useAdminOrder(id);
+  const actionMutation = useAdminActionMutation();
   const [action, setAction] = useState<string | null>(null);
   if (!order) return null;
+  const processingFee = order.totalFeeCharged > 0 ? 700 : 0;
+  const platformFee = order.totalFeeCharged - processingFee;
+  const sellerNet =
+    order.totalFeeCharged > 0 ? order.gross - order.totalFeeCharged : 0;
   return (
     <>
       <div className="mb-4 flex gap-2">
@@ -102,15 +116,12 @@ function OrderDetail({ id }: { id: string }) {
         >
           <RefreshCcw className="size-4" /> Resend delivery
         </AdminButton>
-        <AdminButton secondary onClick={() => setAction("Mark order as paid")}>
-          <Check className="size-4" /> Mark paid
-        </AdminButton>
-        <button
-          onClick={() => setAction("Issue full refund")}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#f0c6c2] bg-[#fff5f4] px-4 text-[10px] font-extrabold text-[#c95049]"
+        <AdminButton
+          secondary
+          onClick={() => setAction("Verify payment with Xendit")}
         >
-          <RotateCcw className="size-4" /> Refund order
-        </button>
+          <Check className="size-4" /> Verify payment
+        </AdminButton>
       </div>
       <div className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
         <section className={`${adminPanel} p-6`}>
@@ -123,17 +134,20 @@ function OrderDetail({ id }: { id: string }) {
               <p className="mt-1 text-[10px] text-[#7f899d]">
                 {order.store} • {order.created}
               </p>
+              <div className="mt-3">
+                <TransactionSourceBadge source={order.source} />
+              </div>
             </div>
             <AdminStatus status={order.status} />
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-4">
             <Metric label="Gross" value={rupiah(order.gross)} />
-            <Metric label="Platform fee" value={rupiah(order.fee)} />
+            <Metric label="Platform fee (3%)" value={rupiah(platformFee)} />
+            <Metric label="Seller net" value={rupiah(sellerNet)} />
             <Metric
-              label="Seller net"
-              value={rupiah(order.gross - order.fee - 700)}
+              label="Payment processing fee"
+              value={rupiah(processingFee)}
             />
-            <Metric label="Payment fee" value="Rp700" />
           </div>
           <div className="mt-7 grid gap-6 border-t border-[#e6e9ef] pt-6 sm:grid-cols-2">
             <Info
@@ -150,8 +164,8 @@ function OrderDetail({ id }: { id: string }) {
               rows={[
                 ["Method", "QRIS"],
                 ["Intent", "qris_2Yc91p"],
-                ["Provider", "Duitku"],
-                ["Provider reference", "DKT-9821041"],
+                ["Provider", "Xendit"],
+                ["Provider reference", "XND-9821041"],
               ]}
             />
           </div>
@@ -164,7 +178,7 @@ function OrderDetail({ id }: { id: string }) {
           <div className="p-5">
             {[
               ["Order created", "14:32:08", "Customer submitted checkout"],
-              ["QRIS generated", "14:32:09", "Duitku returned payment image"],
+              ["QRIS generated", "14:32:09", "Xendit returned payment image"],
               ["Payment callback verified", "14:33:21", "Signature matched"],
               ["Order marked paid", "14:33:22", "Idempotency key accepted"],
               ["Delivery fulfilled", "14:33:23", "Download token generated"],
@@ -193,7 +207,23 @@ function OrderDetail({ id }: { id: string }) {
         </section>
       </div>
       {action && (
-        <ControlDialog title={action} onClose={() => setAction(null)} />
+        <ControlDialog
+          title={action}
+          target={order.id}
+          auditHandledExternally
+          onClose={() => setAction(null)}
+          onConfirm={async (reason) => {
+            const command = action.startsWith("Verify")
+              ? "payment.provider.verify"
+              : "order.delivery.resend";
+            await actionMutation.mutateAsync({
+              action: command,
+              resourceId: order.id,
+              reason,
+              idempotencyKey: `${command}-${order.id}-${Date.now()}`,
+            });
+          }}
+        />
       )}
     </>
   );

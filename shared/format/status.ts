@@ -15,6 +15,7 @@ const POSITIVE_STATUSES = new Set([
 
 const PENDING_STATUSES = new Set([
   "Pending",
+  "Pending KYC",
   "Processing",
   "Invited",
   "On hold",

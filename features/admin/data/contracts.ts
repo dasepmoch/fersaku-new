@@ -8,7 +8,17 @@ export type AdminMerchant = {
   risk: string;
   status: string;
   joined: string;
+  /** Whether production QRIS API credentials are currently usable. */
+  apiAccess: string;
 };
+
+/** The surface that created a successful payment. */
+export type AdminPaymentSource = "STOREFRONT" | "QRIS_API";
+
+/** A payout can consume funds earned from one or both payment surfaces. */
+export type AdminWithdrawalSource = AdminPaymentSource | "MIXED";
+
+export type AdminTransactionSource = AdminWithdrawalSource;
 
 export type AdminOrder = {
   id: string;
@@ -16,10 +26,12 @@ export type AdminOrder = {
   customer: string;
   product: string;
   gross: number;
-  fee: number;
+  /** Fee posted only after a successful payment; zero while unpaid or failed. */
+  totalFeeCharged: number;
   status: string;
   payment: string;
   created: string;
+  source: "STOREFRONT";
 };
 
 export type AdminPaymentIntent = {
@@ -31,6 +43,7 @@ export type AdminPaymentIntent = {
   status: string;
   latency: string;
   created: string;
+  source: AdminPaymentSource;
 };
 
 export type AdminWithdrawal = {
@@ -41,18 +54,14 @@ export type AdminWithdrawal = {
   bank: string;
   account: string;
   risk: string;
-  status: string;
+  status:
+    "Pending" | "Processing" | "On hold" | "Completed" | "Failed" | "Rejected";
   requested: string;
-};
-
-export type AdminRiskCase = {
-  id: string;
-  subject: string;
-  merchant: string;
-  score: number;
-  severity: string;
-  owner: string;
-  age: string;
+  source: AdminWithdrawalSource;
+  /** Xendit quote/actual fee snapshot; never guessed by the UI. */
+  providerProcessingFee: number | null;
+  providerFeeStatus: "VERIFIED" | "POSTED" | "UNAVAILABLE";
+  providerFeeReference?: string;
 };
 
 export type AdminAuditEvent = {
@@ -63,12 +72,16 @@ export type AdminAuditEvent = {
   ip: string;
   result: string;
   time: string;
+  context?: string;
+  previousHash?: string;
+  integrityHash?: string;
 };
 
 export type AdminRole = {
   id: string;
   name: string;
   description: string;
+  permissions?: string[];
   members: number;
   system: boolean;
   color: string;
@@ -144,8 +157,15 @@ export type AdminStockProduct = {
 
 export type AdminStockItem = {
   id: string;
-  values: Record<string, string>;
+  /** Field names only. Secret and personal values never travel in list APIs. */
+  schemaPreview: string;
   status: "Available" | "Reserved" | "Sold" | "Invalid";
   orderId?: string;
   createdAt: string;
+};
+
+export type AdminStockItemSecret = {
+  itemId: string;
+  values: Record<string, string>;
+  expiresAt: string;
 };

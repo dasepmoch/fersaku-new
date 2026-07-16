@@ -75,9 +75,11 @@ export function SelectButton({ label }: { label: string }) {
 export function TableToolbar({
   placeholder,
   inline = false,
+  children,
 }: {
   placeholder: string;
   inline?: boolean;
+  children?: ReactNode;
 }) {
   return (
     <div
@@ -90,6 +92,7 @@ export function TableToolbar({
       <SearchInput placeholder={placeholder} />
       {!inline && (
         <div className="flex gap-2 sm:ml-auto">
+          {children}
           <SelectButton label="All statuses" />
           <button className="flex h-10 items-center gap-2 rounded-xl border border-[#dce1e9] bg-white px-3 text-[9px] font-bold">
             <Filter className="size-3.5" /> More filters

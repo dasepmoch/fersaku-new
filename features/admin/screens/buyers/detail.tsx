@@ -19,53 +19,57 @@ import {
   useAdminBuyerSessions,
 } from "@/features/admin/data";
 
+type BuyerSupportAction =
+  | { kind: "magic-link"; title: string }
+  | { kind: "email-change"; title: string }
+  | { kind: "revoke-sessions"; title: string; sessionId?: string };
+
 export function BuyerIdentityDetail({ id }: { id: string }) {
   const { data: buyer } = useAdminBuyer(id);
   const { data: purchases } = useAdminBuyerPurchases(id);
   const { data: sessionData } = useAdminBuyerSessions(id);
   const actionMutation = useAdminActionMutation();
-  const [action, setAction] = useState<string | null>(null);
+  const [action, setAction] = useState<BuyerSupportAction | null>(null);
+  const [lastCommand, setLastCommand] = useState<
+    "magic-link" | "email-change" | null
+  >(null);
   const [sessions, setSessions] = useState<AdminBuyerSession[]>(
     sessionData ?? [],
   );
   if (!buyer) return null;
-  const revokeSession = (sessionId?: string) => {
-    actionMutation.mutate(
-      {
-        action: "buyer.sessions.revoke",
-        resourceId: id,
-        sessionId,
-        reason: sessionId
-          ? `Revoke buyer session ${sessionId}`
-          : "Revoke all buyer sessions",
-      },
-      {
-        onSuccess: () =>
-          setSessions((current) =>
-            sessionId
-              ? current.filter((session) => session.id !== sessionId)
-              : [],
-          ),
-      },
-    );
-  };
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2">
         <AdminButton
           secondary
-          onClick={() => setAction("Send buyer magic link")}
+          onClick={() =>
+            setAction({ kind: "magic-link", title: "Send buyer magic link" })
+          }
         >
-          <KeyRound className="size-4" /> Send magic link
+          <KeyRound className="size-4" />
+          {lastCommand === "magic-link" ? "Link queued" : "Send magic link"}
         </AdminButton>
         <AdminButton
           secondary
-          onClick={() => setAction("Change verified buyer email")}
+          onClick={() =>
+            setAction({
+              kind: "email-change",
+              title: "Start verified buyer email change",
+            })
+          }
         >
-          <UserCog className="size-4" /> Change email
+          <UserCog className="size-4" />
+          {lastCommand === "email-change"
+            ? "Workflow started"
+            : "Start email change"}
         </AdminButton>
         <button
-          onClick={() => revokeSession()}
+          onClick={() =>
+            setAction({
+              kind: "revoke-sessions",
+              title: "Revoke all buyer sessions",
+            })
+          }
           className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#efc8c4] bg-[#fff5f4] px-4 text-[9px] font-extrabold text-[#c6534c]"
         >
           <Ban className="size-4" /> Revoke all sessions
@@ -99,7 +103,7 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
             <Metric
               label="Lifetime spend"
               value={`Rp${buyer.spent.toLocaleString("id-ID")}`}
-              note="No refunds"
+              note="Across all purchases"
             />
             <Metric
               label="Active sessions"
@@ -159,7 +163,13 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
                   </div>
                   {!s.current && (
                     <button
-                      onClick={() => revokeSession(s.id)}
+                      onClick={() =>
+                        setAction({
+                          kind: "revoke-sessions",
+                          title: `Revoke buyer session ${s.id}`,
+                          sessionId: s.id,
+                        })
+                      }
                       className="ml-auto text-[8px] font-bold text-[#c6534c]"
                     >
                       Revoke
@@ -176,7 +186,39 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
         </section>
       </div>
       {action && (
-        <ControlDialog title={action} onClose={() => setAction(null)} />
+        <ControlDialog
+          title={action.title}
+          target={id}
+          auditHandledExternally
+          onClose={() => setAction(null)}
+          onConfirm={async (reason) => {
+            const command =
+              action.kind === "magic-link"
+                ? "buyer.magic_link.send"
+                : action.kind === "email-change"
+                  ? "buyer.email_change.start"
+                  : "buyer.sessions.revoke";
+            await actionMutation.mutateAsync({
+              action: command,
+              resourceId: id,
+              sessionId:
+                action.kind === "revoke-sessions"
+                  ? action.sessionId
+                  : undefined,
+              reason,
+              idempotencyKey: `${command}-${id}-${Date.now()}`,
+            });
+            if (action.kind === "revoke-sessions") {
+              setSessions((current) =>
+                action.sessionId
+                  ? current.filter((session) => session.id !== action.sessionId)
+                  : [],
+              );
+            } else {
+              setLastCommand(action.kind);
+            }
+          }}
+        />
       )}
     </>
   );

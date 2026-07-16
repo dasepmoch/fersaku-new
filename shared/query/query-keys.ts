@@ -49,8 +49,6 @@ export const queryKeys = {
       ["admin", "payments", filters] as const,
     kyc: (filters: Record<string, unknown> = {}) =>
       ["admin", "kyc", filters] as const,
-    risk: (filters: Record<string, unknown> = {}) =>
-      ["admin", "risk", filters] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>
       ["admin", "webhooks", filters] as const,
     roles: () => ["admin", "roles"] as const,
@@ -67,14 +65,9 @@ export const queryKeys = {
       ["admin", "fulfillment", filters] as const,
     reviews: (filters: Record<string, unknown> = {}) =>
       ["admin", "reviews", filters] as const,
-    security: () => ["admin", "security"] as const,
     system: () => ["admin", "system"] as const,
     auditLogs: (filters: Record<string, unknown> = {}) =>
       ["admin", "audit-logs", filters] as const,
-    reconciliation: (filters: Record<string, unknown> = {}) =>
-      ["admin", "reconciliation", filters] as const,
-    disputes: (filters: Record<string, unknown> = {}) =>
-      ["admin", "disputes", filters] as const,
   },
   buyer: {
     purchases: () => ["buyer", "purchases"] as const,

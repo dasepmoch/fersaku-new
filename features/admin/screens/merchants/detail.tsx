@@ -12,20 +12,23 @@ import Link from "next/link";
 import {
   ArrowDownRight,
   Ban,
+  Code2,
   Eye,
   FileClock,
   KeyRound,
   Plus,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { rupiah } from "@/lib/utils";
 import {
   useAdminAuditEvents,
+  useAdminActionMutation,
   useAdminMerchant,
   useAdminOrders,
 } from "@/features/admin/data";
 import { MerchantFeeConfigurator } from "@/features/admin/commerce/merchant-fees";
 import { ImpersonationDialog } from "./impersonation-dialog";
+import { MerchantAccessDialog } from "./access-dialog";
 import { Info, RiskBadge } from "./pieces";
 
 export function MerchantDetail({ id }: { id: string }) {
@@ -34,6 +37,20 @@ export function MerchantDetail({ id }: { id: string }) {
   const { data: auditEvents } = useAdminAuditEvents();
   const merchant = data;
   const [action, setAction] = useState<string | null>(null);
+  const [accessAction, setAccessAction] = useState<"merchant" | "api" | null>(
+    null,
+  );
+  const [merchantStatus, setMerchantStatus] = useState(merchant?.status ?? "");
+  const [apiAccess, setApiAccess] = useState(merchant?.apiAccess ?? "");
+  const [keysRotated, setKeysRotated] = useState(false);
+  const actionMutation = useAdminActionMutation();
+  const initializedMerchantId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!merchant || initializedMerchantId.current === merchant.id) return;
+    initializedMerchantId.current = merchant.id;
+    setMerchantStatus(merchant.status);
+    setApiAccess(merchant.apiAccess);
+  }, [merchant]);
   if (!merchant) return null;
   return (
     <>
@@ -46,23 +63,28 @@ export function MerchantDetail({ id }: { id: string }) {
         </AdminButton>
         <AdminButton
           secondary
-          onClick={() => setAction("Reset merchant API keys")}
+          onClick={() => setAction("Rotate merchant API credentials")}
         >
-          <KeyRound className="size-4" /> Rotate keys
+          <KeyRound className="size-4" />
+          {keysRotated ? "Keys rotated" : "Rotate keys"}
         </AdminButton>
         <button
-          onClick={() =>
-            setAction(
-              merchant.status === "Suspended"
-                ? "Restore merchant"
-                : "Suspend merchant",
-            )
-          }
+          onClick={() => setAccessAction("merchant")}
           className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#f2c4c0] bg-[#fff5f4] px-4 text-[10px] font-extrabold text-[#c74f48]"
         >
           <Ban className="size-4" />{" "}
-          {merchant.status === "Suspended" ? "Restore" : "Suspend merchant"}
+          {merchantStatus === "Suspended" ? "Restore" : "Suspend merchant"}
         </button>
+        <AdminButton
+          secondary
+          disabled={
+            apiAccess === "Pending KYC" || apiAccess === "Not requested"
+          }
+          onClick={() => setAccessAction("api")}
+        >
+          <Code2 className="size-4" />
+          {apiAccess === "Suspended" ? "Restore API" : "Suspend API"}
+        </AdminButton>
       </div>
       <div className="grid gap-4 xl:grid-cols-[1.1fr_.9fr]">
         <section className={`${adminPanel} p-6`}>
@@ -75,7 +97,7 @@ export function MerchantDetail({ id }: { id: string }) {
                 <h2 className="text-xl font-black tracking-[-.03em]">
                   {merchant.name}
                 </h2>
-                <AdminStatus status={merchant.status} />
+                <AdminStatus status={merchantStatus} />
               </div>
               <p className="mt-1 text-[10px] text-[#778297]">
                 {merchant.id} • Joined {merchant.joined}
@@ -99,7 +121,7 @@ export function MerchantDetail({ id }: { id: string }) {
             <Metric
               label="Platform revenue"
               value={rupiah(3184000)}
-              note="3% + fees"
+              note="3% + Rp700 per success"
             />
           </div>
           <div className="mt-7 grid gap-5 border-t border-[#e5e8ef] pt-6 sm:grid-cols-2">
@@ -117,6 +139,7 @@ export function MerchantDetail({ id }: { id: string }) {
               rows={[
                 ["Storefront", "Published"],
                 ["Payments", "Enabled"],
+                ["Live QRIS API", apiAccess],
                 ["Withdrawals", "Enabled"],
                 ["Settlement", "T+1 day"],
               ]}
@@ -181,11 +204,13 @@ export function MerchantDetail({ id }: { id: string }) {
         <section className={`${adminPanel} overflow-hidden`}>
           <PanelHead
             title="Balance controls"
-            desc="Manual balance action requires reason and audit"
+            desc="Balance is ledger-backed and provider-event driven"
           />
           <div className="grid grid-cols-2 gap-3 p-5">
             <button
-              onClick={() => setAction("Add balance adjustment")}
+              type="button"
+              disabled
+              title="Arbitrary balance credits are disabled"
               className="rounded-xl border border-[#dce1eb] p-4 text-left hover:bg-[#f8f9fb]"
             >
               <Plus className="size-4 text-[#2f9d60]" />
@@ -195,7 +220,9 @@ export function MerchantDetail({ id }: { id: string }) {
               </span>
             </button>
             <button
-              onClick={() => setAction("Create balance debit")}
+              type="button"
+              disabled
+              title="Arbitrary balance debits are disabled"
               className="rounded-xl border border-[#dce1eb] p-4 text-left hover:bg-[#f8f9fb]"
             >
               <ArrowDownRight className="size-4 text-[#df5d55]" />
@@ -207,6 +234,49 @@ export function MerchantDetail({ id }: { id: string }) {
           </div>
         </section>
       </div>
+      {accessAction && (
+        <MerchantAccessDialog
+          merchant={merchant.name}
+          target={accessAction}
+          currentStatus={accessAction === "api" ? apiAccess : merchantStatus}
+          nextStatus={
+            (accessAction === "api" ? apiAccess : merchantStatus) ===
+            "Suspended"
+              ? accessAction === "api"
+                ? "Enabled"
+                : "Active"
+              : "Suspended"
+          }
+          onClose={() => setAccessAction(null)}
+          onConfirm={(reason) => {
+            const current = accessAction === "api" ? apiAccess : merchantStatus;
+            const nextStatus =
+              current === "Suspended"
+                ? accessAction === "api"
+                  ? "Enabled"
+                  : "Active"
+                : "Suspended";
+            actionMutation.mutate(
+              {
+                action:
+                  accessAction === "api"
+                    ? "merchant.api_access.update"
+                    : "merchant.status.update",
+                resourceId: merchant.id,
+                status: nextStatus,
+                reason,
+              },
+              {
+                onSuccess: () => {
+                  if (accessAction === "api") setApiAccess(nextStatus);
+                  else setMerchantStatus(nextStatus);
+                  setAccessAction(null);
+                },
+              },
+            );
+          }}
+        />
+      )}
       {action === "Impersonate merchant" ? (
         <ImpersonationDialog
           merchant={merchant.name}
@@ -214,7 +284,23 @@ export function MerchantDetail({ id }: { id: string }) {
           onClose={() => setAction(null)}
         />
       ) : action ? (
-        <ControlDialog title={action} onClose={() => setAction(null)} />
+        <ControlDialog
+          title={action}
+          target={merchant.id}
+          requiresRecentMfa
+          auditHandledExternally
+          onClose={() => setAction(null)}
+          onConfirm={async (reason) => {
+            await actionMutation.mutateAsync({
+              action: "merchant.api_credentials.rotate",
+              resourceId: merchant.id,
+              reason,
+              idempotencyKey: `merchant-key-rotation-${merchant.id}-${Date.now()}`,
+              recentMfaProof: "mock-recent-mfa",
+            });
+            setKeysRotated(true);
+          }}
+        />
       ) : null}
     </>
   );

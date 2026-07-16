@@ -1,6 +1,6 @@
 "use client";
 
-import { adminPanel } from "@/features/admin/ui";
+import { adminPanel, ControlDialog } from "@/features/admin/ui";
 
 import { useState } from "react";
 import {
@@ -30,6 +30,10 @@ import {
 import { AnnouncementPreview } from "./preview";
 
 import { type Campaign, campaignSeed } from "./data";
+import { writeVersionedStorage } from "@/shared/storage/versioned-storage";
+
+type CampaignControl =
+  { kind: "publish" } | { kind: "toggle"; campaign: Campaign };
 
 export function CampaignsAnnouncements() {
   const [campaigns, setCampaigns] = useState(campaignSeed);
@@ -44,13 +48,16 @@ export function CampaignsAnnouncements() {
   const [audience, setAudience] = useState("Semua Seller");
   const [channels, setChannels] = useState(["Email", "In-App Banner"]);
   const [kind, setKind] = useState("warning");
-  const [title, setTitle] = useState("Duitku sedang maintenance singkat");
+  const [title, setTitle] = useState("Xendit sedang maintenance singkat");
   const [message, setMessage] = useState(
-    "Pembayaran QRIS mungkin mengalami keterlambatan selama pemeliharaan. Transaksi yang sudah dibayar tetap aman dan akan direkonsiliasi otomatis.",
+    "Pembayaran QRIS mungkin mengalami keterlambatan selama pemeliharaan. Transaksi yang sudah dibayar tetap aman dan status akan diperbarui otomatis setelah callback Xendit terverifikasi.",
   );
   const [ctaLabel, setCtaLabel] = useState("Lihat status sistem");
   const [ctaUrl, setCtaUrl] = useState("/status");
   const [mandatory, setMandatory] = useState(false);
+  const [recentMfaConfirmed, setRecentMfaConfirmed] = useState(false);
+  const [control, setControl] = useState<CampaignControl | null>(null);
+  const requiresRecentMfa = kind === "critical" || kind === "compliance";
 
   const toggleChannel = (channel: string) => {
     setChannels((items) =>
@@ -71,11 +78,11 @@ export function CampaignsAnnouncements() {
       openRate: "-",
       created: "Baru saja",
     };
-    setCampaigns((items) => [next, ...items]);
     if (channels.includes("In-App Banner")) {
-      localStorage.setItem(
-        "fersaku-admin-announcement",
-        JSON.stringify({
+      const persisted = writeVersionedStorage({
+        key: "fersaku-admin-announcement",
+        version: 1,
+        data: {
           title,
           message,
           ctaLabel,
@@ -83,11 +90,40 @@ export function CampaignsAnnouncements() {
           kind,
           mandatory,
           createdAt: new Date().toISOString(),
-        }),
-      );
+        },
+      });
+      if (!persisted) throw new Error("Unable to persist announcement");
       window.dispatchEvent(new Event("fersaku-announcement-updated"));
     }
+    setCampaigns((items) => [next, ...items]);
     setPublished(true);
+  };
+
+  const confirmControl = () => {
+    if (!control) return;
+    if (control.kind === "publish") {
+      if (requiresRecentMfa && !recentMfaConfirmed) {
+        throw new Error("Recent MFA confirmation is required");
+      }
+      publish();
+      return;
+    }
+    setCampaigns((items) =>
+      items.map((item) =>
+        item.id === control.campaign.id
+          ? {
+              ...item,
+              status: item.status === "Paused" ? "Live" : "Paused",
+            }
+          : item,
+      ),
+    );
+  };
+
+  const closeControl = () => {
+    const reopenComposer = control?.kind === "publish";
+    setControl(null);
+    if (reopenComposer) setComposer(true);
   };
 
   return (
@@ -144,6 +180,7 @@ export function CampaignsAnnouncements() {
               onClick={() => {
                 setComposer(true);
                 setPublished(false);
+                setRecentMfaConfirmed(false);
               }}
               className="flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[8px] font-extrabold text-[#11182a] sm:ml-auto"
             >
@@ -398,6 +435,22 @@ export function CampaignsAnnouncements() {
                       dismissed until the seller confirms it.
                     </span>
                   </label>
+                  {requiresRecentMfa && (
+                    <label className="mt-3 flex gap-3 rounded-xl border border-[#efd39a] bg-[#fff8e9] p-4 text-[8px] leading-4 text-[#806f4f]">
+                      <input
+                        type="checkbox"
+                        checked={recentMfaConfirmed}
+                        onChange={(event) =>
+                          setRecentMfaConfirmed(event.target.checked)
+                        }
+                        className="mt-0.5"
+                      />
+                      <span>
+                        Mock recent-MFA check completed for this critical or
+                        compliance publication.
+                      </span>
+                    </label>
+                  )}
                   <div className="mt-6 flex flex-col gap-2 sm:flex-row">
                     <button
                       onClick={() => {
@@ -417,9 +470,13 @@ export function CampaignsAnnouncements() {
                       disabled={
                         !title.trim() ||
                         !message.trim() ||
-                        channels.length === 0
+                        channels.length === 0 ||
+                        (requiresRecentMfa && !recentMfaConfirmed)
                       }
-                      onClick={publish}
+                      onClick={() => {
+                        setComposer(false);
+                        setControl({ kind: "publish" });
+                      }}
                       className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#11182a] px-5 text-[8px] font-extrabold text-white disabled:bg-[#aeb5c2] sm:ml-auto"
                     >
                       <Megaphone className="size-3.5" /> Publish campaign now
@@ -496,16 +553,7 @@ export function CampaignsAnnouncements() {
           </div>
           <button
             onClick={() => {
-              setCampaigns((items) =>
-                items.map((item) =>
-                  item.id === selectedCampaign.id
-                    ? {
-                        ...item,
-                        status: item.status === "Paused" ? "Live" : "Paused",
-                      }
-                    : item,
-                ),
-              );
+              setControl({ kind: "toggle", campaign: selectedCampaign });
               setSelectedCampaign(null);
             }}
             className="mt-5 h-10 w-full rounded-xl bg-[#11182a] text-[8px] font-extrabold text-white"
@@ -515,6 +563,26 @@ export function CampaignsAnnouncements() {
               : "Pause campaign & audit"}
           </button>
         </OpsModal>
+      )}
+      {control && (
+        <ControlDialog
+          title={
+            control.kind === "publish"
+              ? `Publish ${kind} campaign`
+              : control.campaign.status === "Paused"
+                ? "Resume campaign"
+                : "Pause campaign"
+          }
+          target={
+            control.kind === "publish" ? "new-campaign" : control.campaign.id
+          }
+          danger={
+            (control.kind === "publish" && requiresRecentMfa) ||
+            (control.kind === "toggle" && control.campaign.status !== "Paused")
+          }
+          onClose={closeControl}
+          onConfirm={confirmControl}
+        />
       )}
     </>
   );

@@ -5,12 +5,10 @@ import { adminPanel, PanelHead } from "@/features/admin/ui";
 import Link from "next/link";
 import {
   Activity,
-  AlertOctagon,
   Banknote,
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
-  ShieldAlert,
   Store,
   TrendingUp,
   Webhook,
@@ -43,12 +41,12 @@ function CommandCenter() {
     ],
     ["Payment success", "96,84%", "+0.42%", CheckCircle2, "#e8f8ef", "#26965a"],
     [
-      "Risk exposure",
-      "Rp6,3jt",
-      "4 open cases",
-      ShieldAlert,
-      "#fff1ee",
-      "#e46058",
+      "Pending withdrawals",
+      "12",
+      "3 need review",
+      Banknote,
+      "#fff6e4",
+      "#d68a23",
     ],
   ];
   return (
@@ -138,8 +136,7 @@ function CommandCenter() {
           </div>
           <div className="p-5">
             {[
-              ["Duitku QRIS", "Operational", "142ms"],
-              ["Xendit Disbursement", "Operational", "218ms"],
+              ["Xendit Payments", "Operational", "142ms"],
               ["PostgreSQL", "Operational", "12ms"],
               ["Redis & queues", "Degraded", "386ms"],
               ["R2 storage", "Operational", "86ms"],
@@ -167,7 +164,7 @@ function CommandCenter() {
             desc="Items requiring administrator attention"
             action={
               <Link
-                href="/admin/risk"
+                href="/admin/withdrawals"
                 className="text-[9px] font-extrabold text-[#5b7cfa]"
               >
                 View all
@@ -177,18 +174,18 @@ function CommandCenter() {
           <div>
             {[
               [
-                AlertOctagon,
-                "Critical risk case",
-                "Crypto Signals Pro",
-                "12 min",
-                "critical",
-              ],
-              [
                 Banknote,
                 "Withdrawal review",
                 "Rp25.000.000 • Kelas Growth ID",
                 "32 min",
                 "warning",
+              ],
+              [
+                CheckCircle2,
+                "QRIS API KYC review",
+                "5 merchants awaiting verification",
+                "41 min",
+                "normal",
               ],
               [
                 Webhook,

@@ -12,9 +12,13 @@ import {
 
 import { ChevronRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useAdminInventory } from "@/features/admin/data";
+import {
+  revealInventoryItem,
+  useAdminInventory,
+  type AdminStockItemSecret,
+} from "@/features/admin/data";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 
@@ -22,10 +26,23 @@ import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
 function GlobalInventory() {
   const { data } = useAdminInventory();
-  const [revealed, setRevealed] = useState(false);
-  const [action, setAction] = useState<string | null>(null);
+  const [revealedSecret, setRevealedSecret] =
+    useState<AdminStockItemSecret | null>(null);
+  const [revealTargetId, setRevealTargetId] = useState<string | null>(null);
   const productsPage = useClientPagination(data?.products ?? []);
   const itemsPage = useClientPagination(data?.items ?? []);
+  const revealTarget = (data?.items ?? []).find(
+    (item) => item.id === revealTargetId,
+  );
+  useEffect(() => {
+    if (!revealedSecret) return;
+    const remaining = Math.max(
+      0,
+      new Date(revealedSecret.expiresAt).getTime() - Date.now(),
+    );
+    const timeout = window.setTimeout(() => setRevealedSecret(null), remaining);
+    return () => window.clearTimeout(timeout);
+  }, [revealedSecret]);
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
@@ -49,15 +66,12 @@ function GlobalInventory() {
           desc="Global visibility without exposing secrets by default"
           action={
             <button
-              onClick={() => setRevealed(!revealed)}
+              type="button"
+              disabled
+              title="Select Reveal on one stock item; bulk secret reveal is prohibited"
               className="flex items-center gap-2 rounded-lg border border-[#dce1e9] px-3 py-2 text-[8px] font-bold"
             >
-              {revealed ? (
-                <EyeOff className="size-3" />
-              ) : (
-                <Eye className="size-3" />
-              )}
-              {revealed ? "Hide privileged values" : "Privileged reveal"}
+              <Eye className="size-3" /> Privileged reveal
             </button>
           }
         />
@@ -101,7 +115,11 @@ function GlobalInventory() {
                     />
                   </td>
                   <td>
-                    <button onClick={() => setAction(`Inspect ${p.title}`)}>
+                    <button
+                      type="button"
+                      disabled
+                      title="Use the seller-scoped inventory detail for product inspection"
+                    >
                       <ChevronRight className="size-4" />
                     </button>
                   </td>
@@ -137,9 +155,9 @@ function GlobalInventory() {
                 >
                   <td className="px-5 py-4 font-mono font-bold">{item.id}</td>
                   <td className="font-mono">
-                    {revealed
-                      ? `${item.values.username}|${item.values.password}|${item.values.team_link}`
-                      : `${item.values.username}|••••••••|••••••••`}
+                    {revealedSecret?.itemId === item.id
+                      ? Object.values(revealedSecret.values).join("|")
+                      : item.schemaPreview}
                   </td>
                   <td>
                     <AdminStatus status={item.status} />
@@ -147,18 +165,32 @@ function GlobalInventory() {
                   <td className="font-mono">{item.orderId || "—"}</td>
                   <td>{item.createdAt}</td>
                   <td>
-                    <button
-                      onClick={() =>
-                        setAction(
-                          item.status === "Invalid"
-                            ? "Delete invalid stock item"
-                            : "Invalidate stock item",
-                        )
-                      }
-                      className="text-[8px] font-bold text-[#c6534c]"
-                    >
-                      {item.status === "Invalid" ? "Delete" : "Invalidate"}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          revealedSecret?.itemId === item.id
+                            ? setRevealedSecret(null)
+                            : setRevealTargetId(item.id)
+                        }
+                        className="inline-flex items-center gap-1 text-[8px] font-bold text-[#536fdf]"
+                      >
+                        {revealedSecret?.itemId === item.id ? (
+                          <EyeOff className="size-3" />
+                        ) : (
+                          <Eye className="size-3" />
+                        )}
+                        {revealedSecret?.itemId === item.id ? "Hide" : "Reveal"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled
+                        title="This command remains disabled until the typed inventory mutation API is connected"
+                        className="text-[8px] font-bold text-[#c6534c]"
+                      >
+                        {item.status === "Invalid" ? "Delete" : "Invalidate"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -182,11 +214,21 @@ function GlobalInventory() {
           </div>
         </div>
       </div>
-      {action && (
+      {revealTarget && (
         <ControlDialog
-          title={action}
-          onClose={() => setAction(null)}
-          danger={action.includes("Delete") || action.includes("Invalidate")}
+          title={`Reveal stock item ${revealTarget.id}`}
+          target={revealTarget.id}
+          requiresRecentMfa
+          auditHandledExternally
+          onConfirm={async (reason) => {
+            const secret = await revealInventoryItem({
+              itemId: revealTarget.id,
+              reason,
+              recentMfaProof: "mock-recent-mfa",
+            });
+            setRevealedSecret(secret);
+          }}
+          onClose={() => setRevealTargetId(null)}
         />
       )}
     </>

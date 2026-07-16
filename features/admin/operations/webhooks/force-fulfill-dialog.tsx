@@ -1,26 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Upload, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { WebhookRow } from "./data";
+import { Check, ShieldCheck, Zap } from "lucide-react";
+import { rupiah } from "@/lib/utils";
+import type { ProviderCallbackRow } from "./data";
 import { Field, Modal } from "./pieces";
+import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
 
 export function ForceFulfillDialog({
   row,
   onClose,
   onComplete,
 }: {
-  row: WebhookRow;
+  row: ProviderCallbackRow;
   onClose: () => void;
   onComplete: () => void;
 }) {
-  const [reference, setReference] = useState("DKT-QRP-99281");
   const [reason, setReason] = useState("");
-  const [evidence, setEvidence] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [recentMfaVerified, setRecentMfaVerified] = useState(false);
+  const evidence = row.fulfillmentEvidence;
+  const evidenceBound = Boolean(
+    evidence &&
+    evidence.status === "VERIFIED" &&
+    evidence.providerReference === row.providerReference &&
+    evidence.merchantOrderId === row.order &&
+    evidence.amount === row.amount,
+  );
   const ready =
-    reference.trim() && reason.trim().length >= 12 && evidence && confirmed;
+    reason.trim().length >= 12 &&
+    evidenceBound &&
+    confirmed &&
+    recentMfaVerified;
   return (
     <Modal
       title="Manual Force-Fulfill"
@@ -30,43 +41,45 @@ export function ForceFulfillDialog({
       danger
     >
       <div className="rounded-2xl border border-[#f1c7c1] bg-[#fff0ee] p-4 text-[8px] leading-4 text-[#92443d]">
-        This action marks <b>{row.order}</b> paid, queues digital fulfillment,
-        notifies the buyer, and writes an immutable manual-override event.
+        This action replays digital fulfillment for provider-verified paid order{" "}
+        <b>{row.order}</b>, notifies the buyer, and writes an immutable
+        manual-override event. It never changes payment or ledger state.
       </div>
       <div className="mt-5 grid gap-4">
         <Field label="Verified provider reference">
           <input
-            value={reference}
-            onChange={(event) => setReference(event.target.value)}
+            value={row.providerReference}
+            readOnly
             className="h-11 rounded-xl border border-[#dce1e9] px-3 text-[9px] outline-none"
           />
         </Field>
-        <Field label="Settlement / mutation evidence">
-          <button
-            onClick={() => setEvidence(true)}
-            className={cn(
-              "flex h-11 items-center justify-center gap-2 rounded-xl border border-dashed text-[8px] font-extrabold",
-              evidence
-                ? "border-[#8cc8a5] bg-[#eff9f2] text-[#277a4b]"
-                : "border-[#cfd5df]",
-            )}
-          >
-            {evidence ? (
-              <Check className="size-4" />
-            ) : (
-              <Upload className="size-4" />
-            )}
-            {evidence
-              ? "mutation_DKT_99281.pdf attached"
-              : "Attach evidence file (mock)"}
-          </button>
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Verified callback amount">
+            <input
+              value={rupiah(row.amount)}
+              readOnly
+              className="h-11 rounded-xl border border-[#dce1e9] px-3 text-[9px] outline-none"
+            />
+          </Field>
+          <Field label="Bound settlement evidence">
+            <div className="flex min-h-11 items-center gap-2 rounded-xl border border-[#8cc8a5] bg-[#eff9f2] px-3 text-[8px] font-extrabold text-[#277a4b]">
+              {evidenceBound ? (
+                <Check className="size-4" />
+              ) : (
+                <ShieldCheck className="size-4" />
+              )}
+              {evidenceBound && evidence
+                ? evidence.fileName
+                : "No verified bound evidence"}
+            </div>
+          </Field>
+        </div>
         <Field label="Required operational reason">
           <textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
-            placeholder="Explain reconciliation checks and why manual fulfillment is safe..."
+            placeholder="Explain callback checks and why manual fulfillment is safe..."
             className="resize-none rounded-xl border border-[#dce1e9] p-3 text-[9px] outline-none"
           />
         </Field>
@@ -83,6 +96,18 @@ export function ForceFulfillDialog({
             undone.
           </span>
         </label>
+        <label className="flex gap-3 rounded-xl bg-[#eef2ff] p-4 text-[8px] leading-4 text-[#53678d]">
+          <input
+            type="checkbox"
+            checked={recentMfaVerified}
+            onChange={(event) => setRecentMfaVerified(event.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Recent MFA re-authentication is verified for this manual fulfillment
+            override (mock).
+          </span>
+        </label>
       </div>
       <div className="mt-6 flex gap-2">
         <button
@@ -93,10 +118,28 @@ export function ForceFulfillDialog({
         </button>
         <button
           disabled={!ready}
-          onClick={onComplete}
+          onClick={() => {
+            if (!ready || !evidence) return;
+            appendMockAuditEvent({
+              actor: "admin@fersaku.id",
+              action: "fulfillment.force_replay",
+              target: row.order,
+              ip: "mock-admin-session",
+              result: "Success",
+              context: JSON.stringify({
+                callbackId: row.id,
+                providerReference: row.providerReference,
+                amount: row.amount,
+                evidenceId: evidence.id,
+                evidenceSha256: evidence.sha256,
+                reason: reason.trim(),
+              }),
+            });
+            onComplete();
+          }}
           className="h-10 flex-1 rounded-xl bg-[#d95750] text-[8px] font-extrabold text-white disabled:bg-[#b9bfca]"
         >
-          Force paid & fulfill
+          Queue verified fulfillment
         </button>
       </div>
     </Modal>

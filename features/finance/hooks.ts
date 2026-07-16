@@ -3,12 +3,16 @@
 import { isLiveApi } from "@/shared/data/mode";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
+import { useAppMutation } from "@/shared/query/create-mutation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
+  createSellerWithdrawal,
   getSellerFinanceSummary,
   getSellerRevenue,
   getSellerWithdrawalLock,
   listSellerLedger,
   listSellerWithdrawals,
+  requestSellerWithdrawalQuote,
 } from "./api";
 import {
   demoFinanceSummary,
@@ -17,6 +21,10 @@ import {
   demoWithdrawalLock,
 } from "./demo-data";
 import { demoSellerRevenue } from "./mock";
+import type {
+  CreateSellerWithdrawalInput,
+  RequestSellerWithdrawalQuoteInput,
+} from "./contracts";
 
 export function useSellerFinanceSummary(storeId: string) {
   return useAppQuery({
@@ -55,5 +63,30 @@ export function useSellerWithdrawalLock(storeId: string) {
     queryKey: queryKeys.seller.withdrawalLock(storeId),
     queryFn: (signal) => getSellerWithdrawalLock(storeId, signal),
     placeholderData: isLiveApi() ? undefined : demoWithdrawalLock,
+  });
+}
+
+export function useSellerWithdrawalQuoteMutation() {
+  return useAppMutation({
+    mutationKey: ["seller", "withdrawal-quote"],
+    mutationFn: (input: RequestSellerWithdrawalQuoteInput, signal) =>
+      requestSellerWithdrawalQuote(input, signal),
+  });
+}
+
+export function useCreateSellerWithdrawalMutation() {
+  const queryClient = useQueryClient();
+  return useAppMutation({
+    mutationKey: ["seller", "withdrawal-create"],
+    mutationFn: (input: CreateSellerWithdrawalInput, signal) =>
+      createSellerWithdrawal(input, signal),
+    onSuccess: (withdrawal) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.seller.withdrawals(withdrawal.storeId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.seller.finance(withdrawal.storeId),
+      });
+    },
   });
 }

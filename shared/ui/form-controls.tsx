@@ -23,11 +23,15 @@ export function FieldInput({
   placeholder,
   prefix,
   value,
+  onChange,
+  inputMode,
 }: {
   label: string;
   placeholder?: string;
   prefix?: string;
   value?: string;
+  onChange?: (value: string) => void;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
   return (
     <label className="grid gap-2 text-xs font-bold">
@@ -39,7 +43,10 @@ export function FieldInput({
           </span>
         )}
         <input
-          defaultValue={value}
+          value={onChange ? (value ?? "") : undefined}
+          defaultValue={onChange ? undefined : value}
+          onChange={(event) => onChange?.(event.target.value)}
+          inputMode={inputMode}
           placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent px-4 text-sm font-normal outline-none"
         />

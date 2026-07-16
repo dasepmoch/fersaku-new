@@ -1,21 +1,14 @@
 "use client";
 
-import {
-  adminPanel,
-  Metric,
-  PanelHead,
-  ControlDialog,
-} from "@/features/admin/ui";
+import { adminPanel, Metric, PanelHead } from "@/features/admin/ui";
 
 import Link from "next/link";
 import { AlertTriangle, KeyRound, MoreHorizontal, Users } from "lucide-react";
-import { useState } from "react";
 import { useAdminRoles } from "@/features/admin/data";
 
 function RolesPage() {
   const { data } = useAdminRoles();
   const adminRoles = data ?? [];
-  const [cloneRole, setCloneRole] = useState<string | null>(null);
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -72,7 +65,9 @@ function RolesPage() {
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setCloneRole(role.name)}
+                    type="button"
+                    disabled
+                    title="Role cloning is available after the backend role service is connected"
                     className="text-[8px] font-extrabold text-[#66738c]"
                   >
                     Clone
@@ -104,12 +99,6 @@ function RolesPage() {
           </div>
         </div>
       </section>
-      {cloneRole && (
-        <ControlDialog
-          title={`Clone ${cloneRole}`}
-          onClose={() => setCloneRole(null)}
-        />
-      )}
     </>
   );
 }

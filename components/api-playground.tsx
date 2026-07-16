@@ -12,13 +12,11 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const presets: Record<string, string> = {
-  "POST /v1/qris/payments":
-    '{\n  "amount": 99000,\n  "currency": "IDR",\n  "description": "AI Prompt Pack",\n  "customer": {\n    "name": "Budi",\n    "email": "budi@example.com"\n  }\n}',
-  "POST /v1/checkout-sessions":
-    '{\n  "product_id": "prod_01",\n  "success_url": "https://example.com/success",\n  "customer": { "email": "budi@example.com" }\n}',
-  "GET /v1/orders/ord_mock_01": "{}",
-  "POST /v1/webhooks/test":
-    '{\n  "endpoint_id": "wh_01",\n  "event": "order.paid"\n}',
+  "POST /v1/gateway/payment-intents":
+    '{\n  "merchantReference": "invoice-2026-0001",\n  "amount": 99000,\n  "currency": "IDR",\n  "description": "Invoice #0001",\n  "expiresInMinutes": 15,\n  "metadata": { "customerId": "cust_opaque" }\n}',
+  "GET /v1/gateway/payment-intents/qris_mock_2Yc91p": "{}",
+  "POST /v1/gateway/payment-intents/qris_mock_2Yc91p/cancel": "{}",
+  "GET /v1/gateway/events/evt_mock_01": "{}",
 };
 
 export function ApiPlayground() {
@@ -50,12 +48,12 @@ export function ApiPlayground() {
               duration: 128,
               body: JSON.stringify(
                 {
-                  id: endpoint.includes("qris")
-                    ? "qris_mock_2Yc91p"
-                    : "mock_01",
-                  status: endpoint.includes("orders") ? "paid" : "pending",
-                  livemode: false,
-                  created_at: new Date().toISOString(),
+                  paymentIntentId: "qris_mock_2Yc91p",
+                  status: endpoint.endsWith("/cancel")
+                    ? "CANCELLED"
+                    : "PENDING",
+                  paymentMode: "SANDBOX",
+                  createdAt: new Date().toISOString(),
                 },
                 null,
                 2,
@@ -150,8 +148,8 @@ export function ApiPlayground() {
             <pre className="min-h-[340px] overflow-auto p-5 text-[9px] leading-5 text-[#c9f7d9]">
               <code>
                 {tab === "cURL"
-                  ? `curl -X ${endpoint.split(" ")[0]} https://api.fersaku.id${endpoint.split(" ")[1]} \\\n  -H "Authorization: Bearer sk_test_xxx" \\\n  -H "Content-Type: application/json" \\\n  -d '${body.replace(/\n/g, "")}'`
-                  : `const response = await fetch("https://api.fersaku.id${endpoint.split(" ")[1]}", {\n  method: "${endpoint.split(" ")[0]}",\n  headers: { Authorization: "Bearer sk_test_xxx" },\n  body: JSON.stringify(${body})\n});`}
+                  ? `curl -X ${endpoint.split(" ")[0]} https://api.fersaku.id${endpoint.split(" ")[1]} \\\n  -H "Authorization: Bearer sk_test_xxx" \\\n  -H "Idempotency-Key: invoice-2026-0001" \\\n  -H "Content-Type: application/json" \\\n  -d '${body.replace(/\n/g, "")}'`
+                  : `const response = await fetch("https://api.fersaku.id${endpoint.split(" ")[1]}", {\n  method: "${endpoint.split(" ")[0]}",\n  headers: {\n    Authorization: "Bearer sk_test_xxx",\n    "Idempotency-Key": "invoice-2026-0001"\n  },\n  body: JSON.stringify(${body})\n});`}
               </code>
             </pre>
           )}

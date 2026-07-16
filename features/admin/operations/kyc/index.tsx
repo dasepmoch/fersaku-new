@@ -1,12 +1,13 @@
 "use client";
 
-import { adminPanel } from "@/features/admin/ui";
+import { adminPanel, ControlDialog } from "@/features/admin/ui";
 
 import { useState } from "react";
 import {
   AlertTriangle,
   Check,
   Code2,
+  Clock3,
   FileCheck2,
   KeyRound,
   RefreshCcw,
@@ -14,7 +15,15 @@ import {
   UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiKycSeed } from "./data";
+import {
+  apiKycSeed,
+  canTransitionKyc,
+  kycAgeLabel,
+  kycTransitionRequiresVendor,
+  matchesKycAgeFilter,
+  type KycAgeFilter,
+  type KycStatus,
+} from "./data";
 import { ApiKycDialog } from "./dialog";
 import { AdminMetric, RiskDot } from "./pieces";
 
@@ -22,25 +31,46 @@ export function KycVerificationCenter() {
   const [applicants, setApplicants] = useState(apiKycSeed);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [ageFilter, setAgeFilter] = useState<KycAgeFilter>("all");
   const [vendor, setVendor] = useState("Provider belum dipilih");
+  const [vendorDraft, setVendorDraft] = useState("Provider belum dipilih");
   const [vendorSaved, setVendorSaved] = useState(false);
+  const [adapterDialogOpen, setAdapterDialogOpen] = useState(false);
   const selected = applicants.find((item) => item.id === selectedId);
   const columns = [
     "Submitted",
     "Vendor check",
     "Needs clarification",
     "Approved",
+    "Rejected",
   ];
-  const visible = applicants.filter((item) =>
-    `${item.store} ${item.owner} ${item.id} ${item.application}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
+  const visible = applicants.filter(
+    (item) =>
+      `${item.store} ${item.owner} ${item.id} ${item.application}`
+        .toLowerCase()
+        .includes(query.toLowerCase()) && matchesKycAgeFilter(item, ageFilter),
   );
-  const move = (status: string) => {
+  const move = (status: KycStatus, rejectionReason?: string) => {
     if (!selected) return;
+    if (!canTransitionKyc(selected.status, status)) return;
+    if (
+      kycTransitionRequiresVendor(status) &&
+      vendor === "Provider belum dipilih"
+    ) {
+      return;
+    }
     setApplicants((items) =>
       items.map((item) =>
-        item.id === selected.id ? { ...item, status } : item,
+        item.id === selected.id
+          ? {
+              ...item,
+              status,
+              rejectionReason:
+                status === "Rejected" || status === "Needs clarification"
+                  ? rejectionReason
+                  : undefined,
+            }
+          : item,
       ),
     );
     setSelectedId(null);
@@ -122,9 +152,22 @@ export function KycVerificationCenter() {
               />
             </label>
             <select
-              value={vendor}
+              aria-label="Queue age filter"
+              value={ageFilter}
+              onChange={(event) =>
+                setAgeFilter(event.target.value as KycAgeFilter)
+              }
+              className="h-10 rounded-xl border border-[#dfe3ec] px-3 text-[8px] font-bold"
+            >
+              <option value="all">All queue age</option>
+              <option value="30m">Older than 30m</option>
+              <option value="2h">Older than 2h</option>
+            </select>
+            <select
+              aria-label="KYC verification adapter"
+              value={vendorDraft}
               onChange={(event) => {
-                setVendor(event.target.value);
+                setVendorDraft(event.target.value);
                 setVendorSaved(false);
               }}
               className="h-10 rounded-xl border border-[#dfe3ec] px-3 text-[8px] font-bold"
@@ -135,10 +178,12 @@ export function KycVerificationCenter() {
               <option>Manual review mock</option>
             </select>
             <button
-              onClick={() => {
-                setVendorSaved(true);
-                setTimeout(() => setVendorSaved(false), 1600);
-              }}
+              type="button"
+              disabled={
+                vendorDraft === "Provider belum dipilih" ||
+                vendorDraft === vendor
+              }
+              onClick={() => setAdapterDialogOpen(true)}
               className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#11182a] px-4 text-[8px] font-extrabold text-white"
             >
               {vendorSaved ? (
@@ -151,7 +196,7 @@ export function KycVerificationCenter() {
           </div>
         </div>
 
-        <div className="grid gap-4 overflow-x-auto bg-[#f5f6f9] p-4 xl:grid-cols-4">
+        <div className="grid gap-4 overflow-x-auto bg-[#f5f6f9] p-4 xl:grid-cols-5">
           {columns.map((column) => (
             <div key={column} className="min-w-[270px]">
               <div className="mb-3 flex items-center">
@@ -160,9 +205,11 @@ export function KycVerificationCenter() {
                     "size-2 rounded-full",
                     column === "Approved"
                       ? "bg-[#2da467]"
-                      : column === "Needs clarification"
-                        ? "bg-[#e99730]"
-                        : "bg-[#5b7cfa]",
+                      : column === "Rejected"
+                        ? "bg-[#d85b53]"
+                        : column === "Needs clarification"
+                          ? "bg-[#e99730]"
+                          : "bg-[#5b7cfa]",
                   )}
                 />
                 <b className="ml-2 text-[9px]">{column}</b>
@@ -213,10 +260,19 @@ export function KycVerificationCenter() {
                           </span>
                         ))}
                       </div>
+                      {applicant.rejectionReason && (
+                        <div className="mt-3 rounded-xl bg-[#fff8e8] p-3 text-[7px] leading-4 text-[#806f4f]">
+                          <b className="block text-[#9b6a1f]">Review reason</b>
+                          <span>{applicant.rejectionReason}</span>
+                        </div>
+                      )}
                       <div className="mt-4 flex items-center border-t border-[#edf0f4] pt-3 text-[7px] text-[#7c879d]">
-                        <KeyRound className="mr-1.5 size-3" />{" "}
+                        <KeyRound className="mr-1.5 size-3" />
                         {applicant.environment} key request
-                        <span className="ml-auto">{applicant.submitted}</span>
+                        <span className="ml-auto inline-flex items-center gap-1 text-[#9b6a1f]">
+                          <Clock3 className="size-3" />
+                          {kycAgeLabel(applicant.ageMinutes)}
+                        </span>
                       </div>
                     </button>
                   ))}
@@ -232,6 +288,17 @@ export function KycVerificationCenter() {
           vendor={vendor}
           onClose={() => setSelectedId(null)}
           onMove={move}
+        />
+      )}
+      {adapterDialogOpen && (
+        <ControlDialog
+          title="Save KYC verification adapter"
+          target="kyc-verification-adapter"
+          onConfirm={() => {
+            setVendor(vendorDraft);
+            setVendorSaved(true);
+          }}
+          onClose={() => setAdapterDialogOpen(false)}
         />
       )}
     </>

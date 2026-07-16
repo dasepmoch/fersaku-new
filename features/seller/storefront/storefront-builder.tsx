@@ -34,6 +34,12 @@ import { TemplatePanel } from "./panels/template-panel";
 import { StorePreview } from "./preview/store-preview";
 import { usePublishStorefrontMutation } from "./mutations";
 import type { BuilderConfig, BuilderTab } from "./types";
+import { IMPERSONATION_COMMANDS } from "@/features/admin/impersonation/policy";
+import {
+  isImpersonationSessionActive,
+  readImpersonationSession,
+} from "@/features/admin/impersonation/session";
+import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
 
 const tabs: Array<{ label: BuilderTab; icon: typeof Palette }> = [
   { label: "Templates", icon: Sparkles },
@@ -101,6 +107,61 @@ export function StorefrontBuilder() {
     () => config.sections.filter((item) => item.visible),
     [config.sections],
   );
+  const publishStorefront = async () => {
+    const impersonationSession = readImpersonationSession();
+    if (
+      impersonationSession &&
+      (!isImpersonationSessionActive(impersonationSession) ||
+        impersonationSession.scope !== "support-write")
+    ) {
+      setSaved(false);
+      return;
+    }
+    const supportSession =
+      impersonationSession?.scope === "support-write"
+        ? impersonationSession
+        : null;
+    const publishConfig = supportSession
+      ? {
+          ...draft.config,
+          name: config.name,
+          bio: config.bio,
+        }
+      : config;
+    const publishLogoStyle = supportSession ? draft.logoStyle : logoStyle;
+    setSaved(false);
+    try {
+      await publishMutation.mutateAsync({
+        storeId: "store_demo_asep",
+        config: publishConfig,
+        logoStyle: publishLogoStyle,
+        reason: supportSession?.reason ?? "seller_storefront_publish",
+        idempotencyKey: `storefront_${publishConfig.name}_${Date.now()}`,
+      });
+      if (!writeStorefrontDraft(publishConfig, publishLogoStyle)) {
+        throw new Error("Unable to persist storefront draft");
+      }
+      if (supportSession) {
+        appendMockAuditEvent({
+          actor: supportSession.actor,
+          action: IMPERSONATION_COMMANDS.storePresentationSupportUpdate,
+          target: supportSession.targetId,
+          ip: "mock-admin-session",
+          result: "Success",
+          context: supportSession.reason,
+        });
+        setConfig(publishConfig);
+        setLogoStyle(publishLogoStyle);
+        setHistory([]);
+        setFuture([]);
+      }
+      setSaved(true);
+      const timer = setTimeout(() => setSaved(false), 1800);
+      timers.current.push(timer);
+    } catch {
+      setSaved(false);
+    }
+  };
 
   return (
     <div className="-mt-2">
@@ -120,6 +181,8 @@ export function StorefrontBuilder() {
           {tabs.map(({ label, icon: Icon }) => (
             <button
               key={label}
+              type="button"
+              data-impersonation-safe="true"
               onClick={() => setTab(label)}
               className={cn(
                 "flex h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-[9px] font-extrabold",
@@ -158,21 +221,12 @@ export function StorefrontBuilder() {
           </Link>
           <button
             type="button"
-            onClick={() => {
-              writeStorefrontDraft(config, logoStyle);
-              void publishMutation
-                .mutateAsync({
-                  storeId: "store_demo_asep",
-                  config,
-                  logoStyle,
-                  reason: "seller_storefront_publish",
-                  idempotencyKey: `storefront_${config.name}`,
-                })
-                .catch(() => setSaved(false));
-              setSaved(true);
-              const timer = setTimeout(() => setSaved(false), 1800);
-              timers.current.push(timer);
-            }}
+            disabled={publishMutation.isPending}
+            data-impersonation-command={
+              IMPERSONATION_COMMANDS.storePresentationSupportUpdate
+            }
+            data-impersonation-fields="name,description"
+            onClick={() => void publishStorefront()}
             className="flex h-10 items-center gap-2 rounded-xl bg-[#173f2c] px-4 text-[9px] font-extrabold text-white"
           >
             {saved ? <Check className="size-4" /> : <Save className="size-4" />}

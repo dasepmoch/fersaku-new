@@ -4,6 +4,19 @@ import { isLiveApi } from "@/shared/data/mode";
 import type { AdminWithdrawal } from "./contracts";
 import { mockWithdrawals } from "./mock";
 
+export type WithdrawalReviewTarget = "Processing" | "On hold" | "Rejected";
+
+export function canReviewWithdrawal(
+  current: AdminWithdrawal["status"],
+  target: WithdrawalReviewTarget,
+) {
+  if (current === "Pending") return true;
+  if (current === "On hold") {
+    return target === "Processing" || target === "Rejected";
+  }
+  return false;
+}
+
 export function demoWithdrawals(): AdminWithdrawal[] {
   return mockWithdrawals();
 }

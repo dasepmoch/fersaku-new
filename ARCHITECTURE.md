@@ -15,8 +15,8 @@ features/           Business-domain screens, contracts, api modules, hooks
     data/           Merchants, buyers, orders, withdrawals, payments api + hooks
     ui/             Shared admin chrome (AdminStatus, Metric, tables) — no visual variance
     screens/        Route-facing console surfaces (list/detail split where large)
-    operations/     KYC, risk, webhooks, emergency tools
-    commerce/       Campaigns, disputes, fees, reconciliation
+    operations/     QRIS API KYC, webhooks, emergency tools
+    commerce/       Campaigns and global fee-policy visibility
   buyer/
     data/           Purchases, profile, sessions api + hooks
     screens/        Buyer account surfaces
@@ -73,4 +73,4 @@ Admin route metadata declares the minimum permission required by each surface. T
 
 ## Quality Gates
 
-Run `npm run verify` before merging. Critical browser flows run through Playwright with desktop and mobile projects; `npm run test:e2e:a11y` scans representative surfaces with axe, and `npm run test:e2e:visual` protects approved desktop/mobile screenshots. Production CI installs Playwright Chromium and runs the full E2E suite after the build. Backend contracts and ownership invariants are recorded in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).
+Run `npm run verify` before merging. Critical browser flows run through Playwright with desktop and mobile projects; `npm run test:e2e:a11y` scans representative surfaces with axe, and `npm run test:e2e:visual` protects approved desktop/mobile screenshots. Production CI installs Playwright Chromium and runs the full E2E suite after the build. Backend contracts and ownership invariants are recorded in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md); the implementation-ready production backlog is in [`docs/BACKEND_PRODUCTION_TASKS.md`](docs/BACKEND_PRODUCTION_TASKS.md).

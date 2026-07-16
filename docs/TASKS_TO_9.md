@@ -1,17 +1,17 @@
 # Backlog Engineering Menuju 9/10
 
-Dokumen ini adalah implementation backlog, bukan perubahan aplikasi. Seluruh task dirancang untuk mempertahankan UI Fersaku yang sekarang sambil memperbaiki architecture, scalability, modularity, reliability, dan developer experience.
+Dokumen ini adalah roadmap implementasi yang sudah dieksekusi untuk scope frontend mock-first. Seluruh task dirancang untuk mempertahankan UI Fersaku yang sekarang sambil memperbaiki architecture, scalability, modularity, reliability, dan developer experience.
 
 Audit sumber: `docs/CODEBASE_AUDIT_2026-07-16.md`
 Baseline score: **6,5/10**
 Target score: **9,0/10**
 
-Eksekusi snapshot ini sudah selesai untuk scope frontend mock-first. Lihat [implementation status](IMPLEMENTATION_STATUS_2026-07-16.md) untuk checklist bukti, command gate, dan accepted debt. Checkbox di bawah dipertahankan sebagai backlog operasional lanjutan saat backend Go mulai diintegrasikan.
+Eksekusi snapshot ini sudah selesai untuk scope frontend mock-first. Checkbox task level di bawah menandai hasil implementasi lokal; acceptance criteria tetap menjadi regression checklist saat adapter Go diaktifkan. Lihat [implementation status](IMPLEMENTATION_STATUS_2026-07-16.md) untuk bukti command gate dan accepted debt. Pekerjaan backend produksi terpisah dan tetap belum dikerjakan; seluruh task-nya berada di [backend production tasks](BACKEND_PRODUCTION_TASKS.md).
 
 ## Aturan eksekusi yang tidak boleh dilanggar
 
 1. **Mock-first tetap menjadi default** sampai backend Go siap.
-2. **Tidak ada intentional visual change.** Layout, spacing, warna, typography, responsive behavior, copy, dan interaction result yang terlihat harus tetap sama kecuali ada bug yang disetujui terpisah.
+2. **Tidak ada intentional design change.** Layout, spacing, warna, typography, responsive behavior, dan pola interaction harus tetap sama. Koreksi copy/isi yang secara eksplisit diminta untuk menyelaraskan scope bisnis bukan redesign dan tetap harus dilindungi visual regression.
 3. **Ambil visual baseline sebelum structural refactor.** Setiap PR refactor harus membuktikan screenshot diff kosong atau menjelaskan variance yang memang nondeterministic.
 4. **Tidak membangun business authority di frontend.** Payment, ledger, fulfillment, KYC, provider secret, auth, dan authorization final tetap milik backend.
 5. **Tidak membuat abstraction berlebihan.** Pertahankan plain async functions; tidak perlu repository classes atau dependency-injection framework.
@@ -62,7 +62,7 @@ T9-301 -> T9-302 -> T9-303 -> T9-304
 
 ## Phase 0 — Stabilkan baseline dan quality gates
 
-### [ ] T9-001 — Buat checkpoint bersih untuk refactor saat ini
+### [x] T9-001 — Buat checkpoint bersih untuk refactor saat ini
 
 Priority: P0
 Effort: S
@@ -86,7 +86,7 @@ Acceptance criteria:
 - Working tree setelah checkpoint hanya berisi pekerjaan task aktif yang disengaja.
 - Tidak ada intentional UI change.
 
-### [ ] T9-002 — Kunci route dan visual characterization baseline
+### [x] T9-002 — Kunci route dan visual characterization baseline
 
 Priority: P0
 Effort: L
@@ -102,7 +102,7 @@ Scope:
   - checkout detail dan QRIS state;
   - buyer purchase library/detail/security;
   - seller overview/products/orders/inventory/storefront/settings;
-  - admin overview/merchant detail/withdrawal detail/risk/reconciliation/providers.
+  - admin overview/merchant detail/withdrawal detail/KYC/payments/providers.
 - Tambahkan interaction characterization untuk checkout, storefront undo/redo, pagination, modal confirmation, theme, notification, dan profile menu.
 - Stabilkan animation, clock, fixture, dan local storage pada test setup. Jangan mengubah animation production.
 - Pisahkan smoke suite dari screenshot suite agar diagnosis cepat.
@@ -116,7 +116,7 @@ Acceptance criteria:
 - Console error allowlist kosong atau sangat eksplisit.
 - Baseline tidak mengubah CSS/markup production untuk sekadar membuat test hijau.
 
-### [ ] T9-003 — Tambahkan CI dan toolchain reproducibility
+### [x] T9-003 — Tambahkan CI dan toolchain reproducibility
 
 Priority: P0
 Effort: M
@@ -140,7 +140,7 @@ Acceptance criteria:
 - E2E artifact tersedia saat gagal.
 - Branch protection/required checks didokumentasikan bila repo host mendukungnya.
 
-### [ ] T9-004 — Perbaiki unit-test dan coverage infrastructure
+### [x] T9-004 — Perbaiki unit-test dan coverage infrastructure
 
 Priority: P0
 Effort: M
@@ -165,7 +165,7 @@ Acceptance criteria:
 
 ## Phase 1 — Selesaikan modular data architecture
 
-### [ ] T9-101 — Definisikan dan enforce dependency boundaries
+### [x] T9-101 — Definisikan dan enforce dependency boundaries
 
 Priority: P1
 Effort: M
@@ -192,7 +192,7 @@ Acceptance criteria:
 - Allowed cross-feature dependencies tertulis, sedikit, dan melalui public API.
 - Tidak ada visual diff.
 
-### [ ] T9-102 — Tetapkan blueprint feature data slice
+### [x] T9-102 — Tetapkan blueprint feature data slice
 
 Priority: P1
 Effort: M
@@ -222,7 +222,7 @@ Acceptance criteria:
 - Blueprint singkat ditambahkan ke `ARCHITECTURE.md` sebagai current convention.
 - Screenshot reference slice identik dengan baseline.
 
-### [ ] T9-103 — Bangun deterministic mock runtime
+### [x] T9-103 — Bangun deterministic mock runtime
 
 Priority: P1
 Effort: L
@@ -249,7 +249,7 @@ Acceptance criteria:
 - Test tidak berbagi mutation state.
 - Default scenario menghasilkan UI yang sama dengan baseline.
 
-### [ ] T9-104 — Migrasikan seller reads ke data boundary
+### [x] T9-104 — Migrasikan seller reads ke data boundary
 
 Priority: P1
 Effort: XL, pecah per domain
@@ -284,7 +284,7 @@ Acceptance criteria:
 - Invalid ID menghasilkan not-found policy, bukan entity lain.
 - Mock default dan API mode memakai signature yang sama.
 
-### [ ] T9-105 — Migrasikan buyer, public storefront, dan checkout reads
+### [x] T9-105 — Migrasikan buyer, public storefront, dan checkout reads
 
 Priority: P1
 Effort: L
@@ -307,7 +307,7 @@ Acceptance criteria:
 - Public dynamic routes memiliki not-found dan metadata policy yang konsisten.
 - Checkout characterization dan buyer E2E tetap lulus tanpa screenshot diff.
 
-### [ ] T9-106 — Migrasikan admin reads ke data boundary
+### [x] T9-106 — Migrasikan admin reads ke data boundary
 
 Priority: P1
 Effort: XL, pecah per bounded context
@@ -318,9 +318,9 @@ Scope per PR:
 
 1. merchants, buyers, orders, payments, withdrawals;
 2. inventory, fulfillment, reviews;
-3. KYC, risk, webhooks, emergency controls;
-4. campaigns, disputes, reconciliation, merchant fees;
-5. providers, security, audit logs, system, roles/users/profile.
+3. QRIS API KYC, webhooks, emergency controls;
+4. campaigns and merchant fees;
+5. providers, audit logs, system, roles/users/profile.
 
 Untuk setiap context:
 
@@ -338,7 +338,7 @@ Acceptance criteria:
 - Admin visual/E2E baseline lulus.
 - Tidak ada claim bahwa mock permission adalah security authoritative.
 
-### [ ] T9-107 — Tambahkan source-neutral mutation layer
+### [x] T9-107 — Tambahkan source-neutral mutation layer
 
 Priority: P1
 Effort: XL, pecah per risk/domain
@@ -366,7 +366,7 @@ Acceptance criteria:
 - Success/error/duplicate-submit/abort test tersedia.
 - Visual dan interaction baseline tetap lulus.
 
-### [ ] T9-108 — Runtime contracts, environment, dan HTTP hardening
+### [x] T9-108 — Runtime contracts, environment, dan HTTP hardening
 
 Priority: P1
 Effort: L
@@ -394,7 +394,7 @@ Acceptance criteria:
 - Semua behavior di atas diuji.
 - Architecture API rules sesuai implementasi aktual.
 
-### [ ] T9-109 — Bersihkan module surface, dead code, dan client boundary
+### [x] T9-109 — Bersihkan module surface, dead code, dan client boundary
 
 Priority: P1
 Effort: L
@@ -423,7 +423,7 @@ Acceptance criteria:
 
 ## Phase 2 — Regression, accessibility, dan performance
 
-### [ ] T9-201 — Tambahkan component dan integration test yang bernilai
+### [x] T9-201 — Tambahkan component dan integration test yang bernilai
 
 Priority: P1
 Effort: L
@@ -453,7 +453,7 @@ Acceptance criteria:
 - Tidak ada snapshot JSX besar yang sulit direview.
 - Suite tetap cepat dan deterministic.
 
-### [ ] T9-202 — Lengkapi critical-flow E2E
+### [x] T9-202 — Lengkapi critical-flow E2E
 
 Priority: P1
 Effort: L
@@ -468,7 +468,7 @@ Scope:
   - seller onboarding -> product -> inventory -> order -> withdrawal;
   - storefront edit -> save -> refresh -> undo/redo;
   - admin merchant inspect -> impersonation confirmation;
-  - admin withdrawal/dispute/reconciliation privileged confirmation;
+  - admin withdrawal/KYC/provider privileged confirmation;
   - theme persistence dan mobile navigation.
 - Jalankan default scenario dan beberapa error/unauthorized/empty scenario.
 - Gunakan stable selectors berbasis role/label; `data-testid` hanya ketika semantic selector tidak cukup.
@@ -480,7 +480,7 @@ Acceptance criteria:
 - Trace tersedia untuk kegagalan.
 - Tidak ada dependency pada internet/provider nyata.
 
-### [ ] T9-203 — Tambahkan accessibility guardrail tanpa redesign
+### [x] T9-203 — Tambahkan accessibility guardrail tanpa redesign
 
 Priority: P1
 Effort: M
@@ -501,7 +501,7 @@ Acceptance criteria:
 - Error/success async diumumkan ke assistive technology.
 - Screenshot baseline tetap identik kecuali antialiasing/environment noise.
 
-### [ ] T9-204 — Tetapkan performance dan bundle budgets
+### [x] T9-204 — Tetapkan performance dan bundle budgets
 
 Priority: P2
 Effort: M
@@ -525,7 +525,7 @@ Acceptance criteria:
 
 ## Phase 3 — Production seams dan operational maturity
 
-### [ ] T9-301 — Frontend security seams dan dependency policy
+### [x] T9-301 — Frontend security seams dan dependency policy
 
 Priority: P1 sebelum launch
 Effort: L
@@ -551,7 +551,7 @@ Acceptance criteria:
 - Tidak ada high/critical production vulnerability.
 - Moderate vulnerability memiliki keputusan, owner, dan target review.
 
-### [ ] T9-302 — Tambahkan observability adapters
+### [x] T9-302 — Tambahkan observability adapters
 
 Priority: P2
 Effort: M
@@ -573,7 +573,7 @@ Acceptance criteria:
 - Tidak ada third-party call pada default mock mode.
 - Analytics tidak dipakai untuk keputusan finansial.
 
-### [ ] T9-303 — Selaraskan dokumentasi, ADR, dan backend handoff
+### [x] T9-303 — Selaraskan dokumentasi, ADR, dan backend handoff
 
 Priority: P2
 Effort: M
@@ -596,7 +596,7 @@ Acceptance criteria:
 - Developer baru dapat install, run, test, dan memilih scenario mock dari docs saja.
 - Backend handoff membedakan hard invariant dari UI preference.
 
-### [ ] T9-304 — Final 9/10 audit dan release gate
+### [x] T9-304 — Final 9/10 audit dan release gate
 
 Priority: P1 untuk menutup roadmap
 Effort: M

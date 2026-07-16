@@ -10,7 +10,7 @@ const changes = [
     items: [
       "Dedicated platform operations console",
       "Custom staff roles and permission matrix",
-      "Withdrawal review and risk investigation flows",
+      "Withdrawal review and QRIS API KYC flows",
       "Global light and dark appearance modes",
     ],
   },

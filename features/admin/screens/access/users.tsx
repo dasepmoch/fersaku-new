@@ -9,19 +9,41 @@ import {
   AdminStatus,
 } from "@/features/admin/ui";
 
-import { MoreHorizontal, ShieldCheck, Users } from "lucide-react";
+import { Eye, MoreHorizontal, ShieldCheck, Users } from "lucide-react";
+import { useState } from "react";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
+import { ImpersonationDialog } from "@/features/admin/screens/merchants/impersonation-dialog";
 
 function UsersPage() {
   const admins = [
     ["Dinda Kusuma", "dinda@fersaku.id", "Super admin", "Active", "Now"],
-    ["Raka Mahendra", "raka@fersaku.id", "Risk analyst", "Active", "8m ago"],
+    [
+      "Raka Mahendra",
+      "raka@fersaku.id",
+      "Merchant support",
+      "Active",
+      "8m ago",
+    ],
     ["Salsa Putri", "salsa@fersaku.id", "Finance ops", "Active", "42m ago"],
     ["Kevin Tan", "kevin@fersaku.id", "Support", "Invited", "Never"],
     ["Niko Aditya", "niko@fersaku.id", "Support", "Active", "1h ago"],
-    ["Fara Anindya", "fara@fersaku.id", "Risk analyst", "Active", "2h ago"],
+    ["Fara Anindya", "fara@fersaku.id", "Merchant support", "Active", "2h ago"],
   ];
+  const sellerUsers = [
+    ["usr_01H8A2", "Asep Kurnia", "asep@ai.tools", "Asep AI Tools", "Active"],
+    ["usr_01H8K1", "Sinta Dewi", "sinta@uipack.id", "UI Pack House", "Active"],
+    [
+      "usr_01H8L8",
+      "Raka Firmansyah",
+      "raka@automation.club",
+      "Automation Club",
+      "Restricted",
+    ],
+  ] as const;
+  const [impersonationTarget, setImpersonationTarget] = useState<
+    (typeof sellerUsers)[number] | null
+  >(null);
   const { pageRows, pagination } = useClientPagination(admins);
   return (
     <>
@@ -102,16 +124,56 @@ function UsersPage() {
           desc="Search users to reset sessions, verify email, or lock access"
         />
         <TableToolbar placeholder="Search seller name, email, user ID..." />
-        <div className="p-8 text-center">
-          <Users className="mx-auto size-8 text-[#a1a9b8]" />
-          <h3 className="mt-3 text-xs font-black">
-            Search 1,947 seller accounts
-          </h3>
-          <p className="mt-1 text-[9px] text-[#8993a6]">
-            Full user details appear after searching.
-          </p>
+        <div className="divide-y divide-[#e8eaf0]">
+          {sellerUsers.map(([id, name, email, store, status]) => (
+            <div
+              key={id}
+              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf1ff] text-[9px] font-black text-[#536fdf]">
+                {name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")}
+              </span>
+              <div className="min-w-0">
+                <b className="block text-[10px]">{name}</b>
+                <span className="block truncate text-[8px] text-[#8993a6]">
+                  {email} • {store} • {id}
+                </span>
+              </div>
+              <AdminStatus status={status} />
+              <button
+                type="button"
+                onClick={() =>
+                  setImpersonationTarget(
+                    sellerUsers.find((user) => user[0] === id) ?? null,
+                  )
+                }
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold sm:ml-auto"
+              >
+                <Eye className="size-3.5" /> Open as user
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 border-t border-[#e8eaf0] p-5 text-[8px] text-[#8993a6]">
+          <Users className="size-4 text-[#a1a9b8]" />
+          <span>
+            Showing a mock lookup result. Production impersonation requires a
+            server-issued, time-limited session and immutable audit event.
+          </span>
         </div>
       </section>
+      {impersonationTarget && (
+        <ImpersonationDialog
+          merchant={impersonationTarget[1]}
+          merchantId={impersonationTarget[0]}
+          targetEmail={impersonationTarget[2]}
+          targetType="user"
+          onClose={() => setImpersonationTarget(null)}
+        />
+      )}
     </>
   );
 }

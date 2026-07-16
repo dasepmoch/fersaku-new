@@ -12,7 +12,6 @@ import {
   ChevronDown,
   CreditCard,
   FileClock,
-  Gavel,
   Gauge,
   KeyRound,
   Menu,
@@ -20,10 +19,7 @@ import {
   PackageCheck,
   RadioTower,
   Search,
-  Scale,
   Settings2,
-  ShieldAlert,
-  ShieldCheck,
   Star,
   Store,
   Users,
@@ -46,15 +42,11 @@ const nav = [
   ["Campaigns", "/admin/campaigns", Megaphone],
   ["All orders", "/admin/orders", Boxes],
   ["Payments", "/admin/payments", CreditCard],
-  ["Reconciliation", "/admin/reconciliation", Scale],
   ["Withdrawals", "/admin/withdrawals", Banknote],
   ["Global inventory", "/admin/inventory", Boxes],
   ["Fulfillment control", "/admin/fulfillment", PackageCheck],
   ["Review moderation", "/admin/reviews", Star],
-  ["Disputes & refunds", "/admin/disputes", Gavel],
   ["QRIS API KYC", "/admin/kyc", BadgeCheck],
-  ["Risk operations", "/admin/risk", ShieldAlert],
-  ["Security audit", "/admin/security", ShieldCheck],
   ["Webhook monitor", "/admin/webhooks", Webhook],
   ["Audit trail", "/admin/audit-logs", FileClock],
   ["Providers", "/admin/providers", RadioTower],
@@ -145,11 +137,6 @@ export function AdminShell({
                 >
                   <Icon className="size-4" />
                   {label}
-                  {label === "Risk operations" && (
-                    <span className="ml-auto rounded-full bg-[#ef665d] px-1.5 py-0.5 text-[8px] text-white">
-                      4
-                    </span>
-                  )}
                 </Link>
               </div>
             );
@@ -254,7 +241,7 @@ export function AdminLogin() {
           <div className="mt-10 grid grid-cols-3 gap-3">
             {[
               [Activity, "Live telemetry"],
-              [ShieldAlert, "Risk controls"],
+              [BadgeCheck, "KYC controls"],
               [FileClock, "Immutable audit"],
             ].map(([Icon, label]) => (
               <div

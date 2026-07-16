@@ -19,7 +19,7 @@ export type ProviderItem = {
   status: string;
   latency: string;
   uptime: string;
-  routing: string;
+  role: string;
   color: string;
 };
 
@@ -28,11 +28,13 @@ export function GenericProvider({
   test,
   testing,
   tested,
+  lastChecked = "just now",
 }: {
   provider: ProviderItem;
   test: () => void;
   testing: boolean;
   tested: boolean;
+  lastChecked?: string;
 }) {
   const Icon = provider.icon;
   return (
@@ -66,7 +68,7 @@ export function GenericProvider({
         {[
           ["Latency", provider.latency],
           ["30D uptime", provider.uptime],
-          ["Routing", provider.routing],
+          ["Role", provider.role],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl bg-[#f4f6f9] p-4">
             <span className="text-[7px] font-bold text-[#8b95a8] uppercase">
@@ -76,9 +78,17 @@ export function GenericProvider({
           </div>
         ))}
       </div>
+      <p className="mt-3 text-[7px] text-[#8b95a8]">
+        Last health check: {lastChecked} • Provider secrets stay server-side
+      </p>
       <div className="mt-5 flex gap-2">
-        <button className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-[#dce1e9] text-[8px] font-bold">
-          <Settings2 className="size-3.5" /> Configure
+        <button
+          type="button"
+          disabled
+          title="Provider configuration is deployment-managed"
+          className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-[#dce1e9] text-[8px] font-bold"
+        >
+          <Settings2 className="size-3.5" /> Deployment managed
         </button>
         <button
           onClick={test}

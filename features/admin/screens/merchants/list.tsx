@@ -42,6 +42,7 @@ export function Merchants() {
                 "30D volume",
                 "Orders",
                 "Risk",
+                "API access",
                 "Status",
                 "Joined",
                 "",
@@ -79,6 +80,9 @@ export function Merchants() {
                   <td>{m.orders}</td>
                   <td>
                     <RiskBadge risk={m.risk} />
+                  </td>
+                  <td>
+                    <AdminStatus status={m.apiAccess} />
                   </td>
                   <td>
                     <AdminStatus status={m.status} />

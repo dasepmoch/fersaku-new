@@ -68,7 +68,6 @@ describe("queryKeys", () => {
     ]);
     expect(queryKeys.admin.payments()).toEqual(["admin", "payments", {}]);
     expect(queryKeys.admin.kyc()).toEqual(["admin", "kyc", {}]);
-    expect(queryKeys.admin.risk()).toEqual(["admin", "risk", {}]);
     expect(queryKeys.admin.webhooks()).toEqual(["admin", "webhooks", {}]);
     expect(queryKeys.admin.roles()).toEqual(["admin", "roles"]);
     expect(queryKeys.admin.users()).toEqual(["admin", "users", {}]);
@@ -77,7 +76,6 @@ describe("queryKeys", () => {
     expect(queryKeys.admin.inventory()).toEqual(["admin", "inventory", {}]);
     expect(queryKeys.admin.fulfillment()).toEqual(["admin", "fulfillment", {}]);
     expect(queryKeys.admin.reviews()).toEqual(["admin", "reviews", {}]);
-    expect(queryKeys.admin.security()).toEqual(["admin", "security"]);
     expect(queryKeys.admin.system()).toEqual(["admin", "system"]);
     expect(queryKeys.admin.auditLogs()).toEqual(["admin", "audit-logs", {}]);
   });

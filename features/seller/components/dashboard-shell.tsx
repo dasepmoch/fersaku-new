@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Boxes,
@@ -26,7 +26,7 @@ import {
   Webhook,
   X,
 } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Logo } from "@/components/brand";
 import { MockInteractionBoundary } from "@/components/mock-interaction-boundary";
 import { ThemeToggle } from "@/components/theme-provider";
@@ -34,6 +34,14 @@ import { cn } from "@/lib/utils";
 import { NotificationCenter, ProfileMenu } from "@/shared/ui/account-controls";
 import { readVersionedStorage } from "@/shared/storage/versioned-storage";
 import { z } from "zod";
+import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import {
+  clearImpersonationSession,
+  isImpersonationSessionActive,
+  readImpersonationSession,
+  type ImpersonationSession,
+} from "@/features/admin/impersonation/session";
+import { ImpersonationPolicyBoundary } from "@/features/admin/impersonation/policy-boundary";
 
 const nav = [
   ["Overview", "/dashboard", LayoutDashboard],
@@ -73,6 +81,12 @@ const announcementSchema = z
 
 const announcementStorageKey = "fersaku-admin-announcement";
 
+function impersonationReturnPath(session: ImpersonationSession) {
+  return session.targetType === "user"
+    ? "/admin/users"
+    : `/admin/merchants/${session.targetId}`;
+}
+
 function readAnnouncement(): SellerAnnouncement | null {
   if (typeof window === "undefined") return null;
   const storage = window.localStorage;
@@ -110,11 +124,143 @@ export function DashboardShell({
   action?: React.ReactNode;
 }) {
   const path = usePathname();
-  const impersonating = useSyncExternalStore(
-    () => () => undefined,
-    () => new URLSearchParams(window.location.search).has("impersonate"),
-    () => false,
+  const router = useRouter();
+  const impersonationQuery = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("popstate", onChange);
+      window.addEventListener("fersaku-impersonation-updated", onChange);
+      return () => {
+        window.removeEventListener("popstate", onChange);
+        window.removeEventListener("fersaku-impersonation-updated", onChange);
+      };
+    },
+    () => window.location.search,
+    () => "",
   );
+  const impersonationParams = new URLSearchParams(impersonationQuery);
+  const impersonationTargetId = impersonationParams.get("impersonate");
+  const impersonationSessionId = impersonationParams.get("session");
+  const impersonationSessionSnapshot = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("storage", onChange);
+      window.addEventListener("fersaku-impersonation-updated", onChange);
+      return () => {
+        window.removeEventListener("storage", onChange);
+        window.removeEventListener("fersaku-impersonation-updated", onChange);
+      };
+    },
+    () => {
+      const stored = readImpersonationSession();
+      if (!stored) return "";
+      const hasUrlBinding = Boolean(
+        impersonationSessionId || impersonationTargetId,
+      );
+      const matchesUrlBinding =
+        stored.sessionId === impersonationSessionId &&
+        stored.targetId === impersonationTargetId;
+      return !hasUrlBinding || matchesUrlBinding ? JSON.stringify(stored) : "";
+    },
+    () => "",
+  );
+  const impersonationSession = useMemo<ImpersonationSession | null>(() => {
+    if (!impersonationSessionSnapshot) return null;
+    try {
+      return JSON.parse(impersonationSessionSnapshot) as ImpersonationSession;
+    } catch {
+      return null;
+    }
+  }, [impersonationSessionSnapshot]);
+  const activeImpersonationSession =
+    impersonationSession && isImpersonationSessionActive(impersonationSession)
+      ? impersonationSession
+      : null;
+  useEffect(() => {
+    const stored = readImpersonationSession();
+    const runtimeParams = new URLSearchParams(window.location.search);
+    const runtimeSessionId = runtimeParams.get("session");
+    const runtimeTargetId = runtimeParams.get("impersonate");
+    const hasAnyBinding = Boolean(runtimeSessionId || runtimeTargetId);
+    if (!stored && !hasAnyBinding) return;
+
+    const bindingIsValid = Boolean(
+      stored &&
+      runtimeSessionId &&
+      runtimeTargetId &&
+      stored.sessionId === runtimeSessionId &&
+      stored.targetId === runtimeTargetId &&
+      isImpersonationSessionActive(stored),
+    );
+    if (bindingIsValid) return;
+
+    if (stored && !isImpersonationSessionActive(stored)) {
+      appendMockAuditEvent({
+        actor: stored.actor,
+        action: "impersonation.expired",
+        target: stored.targetId,
+        ip: "mock-admin-session",
+        result: "Success",
+      });
+    } else {
+      appendMockAuditEvent({
+        actor: stored?.actor ?? "admin@fersaku.id",
+        action: "impersonation.binding.blocked",
+        target: stored?.targetId ?? runtimeTargetId ?? "unknown",
+        ip: "mock-admin-session",
+        result: "Blocked",
+        context: "Missing, malformed, expired, or mismatched URL binding",
+      });
+    }
+    const destination = stored
+      ? impersonationReturnPath(stored)
+      : "/admin/users";
+    clearImpersonationSession();
+    window.dispatchEvent(new Event("fersaku-impersonation-updated"));
+    router.replace(destination);
+  }, [impersonationSessionId, impersonationTargetId, router]);
+  useEffect(() => {
+    if (!activeImpersonationSession) return;
+    const expireSession = () => {
+      const stored = readImpersonationSession();
+      if (
+        !stored ||
+        stored.sessionId !== activeImpersonationSession.sessionId
+      ) {
+        return;
+      }
+      appendMockAuditEvent({
+        actor: activeImpersonationSession.actor,
+        action: "impersonation.expired",
+        target: activeImpersonationSession.targetId,
+        ip: "mock-admin-session",
+        result: "Success",
+      });
+      clearImpersonationSession();
+      window.dispatchEvent(new Event("fersaku-impersonation-updated"));
+      router.replace(impersonationReturnPath(activeImpersonationSession));
+    };
+    const remaining =
+      new Date(activeImpersonationSession.expiresAt).getTime() - Date.now();
+    const timer = window.setTimeout(expireSession, remaining);
+    return () => window.clearTimeout(timer);
+  }, [activeImpersonationSession, router]);
+  const impersonating = Boolean(activeImpersonationSession);
+  const impersonationSearch = activeImpersonationSession
+    ? `?impersonate=${encodeURIComponent(activeImpersonationSession.targetId)}&session=${encodeURIComponent(activeImpersonationSession.sessionId)}`
+    : "";
+  const endImpersonation = () => {
+    if (!impersonationSession) return;
+    appendMockAuditEvent({
+      actor: impersonationSession.actor,
+      action: "impersonation.ended",
+      target: impersonationSession.targetId,
+      ip: "mock-admin-session",
+      result: "Success",
+    });
+    const destination = impersonationReturnPath(impersonationSession);
+    clearImpersonationSession();
+    window.dispatchEvent(new Event("fersaku-impersonation-updated"));
+    router.replace(destination);
+  };
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [announcement, setAnnouncement] = useState<SellerAnnouncement | null>(
@@ -208,7 +354,8 @@ export function DashboardShell({
                   <div className="my-3 border-t border-white/8" />
                 )}
                 <Link
-                  href={href}
+                  href={`${href}${impersonationSearch}`}
+                  onClick={() => setOpen(false)}
                   title={collapsed ? label : undefined}
                   className={cn(
                     "mb-1 flex h-10 items-center rounded-xl text-xs font-semibold transition",
@@ -253,16 +400,32 @@ export function DashboardShell({
           collapsed ? "lg:pl-[76px]" : "lg:pl-[244px]",
         )}
       >
-        {impersonating && (
-          <div className="sticky top-0 z-[60] flex min-h-10 items-center bg-[#fff0bf] px-4 py-2 text-[9px] font-extrabold text-[#6e5518] sm:px-6 lg:px-8">
-            <Eye className="mr-2 size-3.5" /> ADMIN IMPERSONATION • Asep AI
-            Tools • Read-only session • All actions are audited
-            <Link
-              href="/admin/merchants/str_01H8A2"
+        {impersonating && activeImpersonationSession && (
+          <div className="sticky top-0 z-[60] flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 bg-[#fff0bf] px-4 py-2 text-[9px] font-extrabold text-[#6e5518] sm:px-6 lg:px-8">
+            <Eye className="size-3.5 shrink-0" />
+            <span>
+              ADMIN IMPERSONATION • {activeImpersonationSession.targetName} •{" "}
+              {activeImpersonationSession.scope === "read-only"
+                ? "Read-only session"
+                : "Support-write session"}
+            </span>
+            <span className="font-normal text-[#8d742d]">
+              Expires{" "}
+              {new Date(
+                activeImpersonationSession.expiresAt,
+              ).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              • Audit {activeImpersonationSession.sessionId.slice(0, 8)}
+            </span>
+            <button
+              type="button"
+              onClick={endImpersonation}
               className="ml-auto rounded-lg bg-[#6e5518] px-3 py-1.5 text-white"
             >
               End session
-            </Link>
+            </button>
           </div>
         )}
         {announcement && (
@@ -353,24 +516,26 @@ export function DashboardShell({
             <ProfileMenu surface="seller" />
           </div>
         </header>
-        <MockInteractionBoundary>
-          <main className="px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
-            <div className="mx-auto max-w-[1320px]">
-              <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div>
-                  <h1 className="text-2xl font-extrabold tracking-[-.035em] sm:text-3xl">
-                    {title}
-                  </h1>
-                  <p className="mt-1 text-xs leading-5 text-[#718078] sm:text-sm">
-                    {description}
-                  </p>
+        <ImpersonationPolicyBoundary session={activeImpersonationSession}>
+          <MockInteractionBoundary>
+            <main className="px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+              <div className="mx-auto max-w-[1320px]">
+                <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                  <div>
+                    <h1 className="text-2xl font-extrabold tracking-[-.035em] sm:text-3xl">
+                      {title}
+                    </h1>
+                    <p className="mt-1 text-xs leading-5 text-[#718078] sm:text-sm">
+                      {description}
+                    </p>
+                  </div>
+                  {action}
                 </div>
-                {action}
+                {children}
               </div>
-              {children}
-            </div>
-          </main>
-        </MockInteractionBoundary>
+            </main>
+          </MockInteractionBoundary>
+        </ImpersonationPolicyBoundary>
       </div>
     </div>
   );

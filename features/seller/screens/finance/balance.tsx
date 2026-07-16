@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -15,13 +16,13 @@ import { formatLedgerDate } from "@/shared/format/date";
 import { formatSignedRupiah, rupiah } from "@/shared/format/money";
 import { SectionHead } from "@/shared/ui/section-head";
 import { surfaceCard } from "@/shared/ui/styles";
+import { FinanceSourceBadge } from "@/shared/finance/source-badge";
 
 const ledgerIcon: Record<string, LucideIcon> = {
   SALE: ArrowDownLeft,
   WITHDRAWAL: Banknote,
   PLATFORM_FEE: ArrowDownLeft,
   PROVIDER_FEE: ArrowDownLeft,
-  REFUND: ArrowDownLeft,
   ADJUSTMENT: ArrowDownLeft,
 };
 
@@ -42,11 +43,6 @@ export function Balance() {
       value: `- ${rupiah(summary.monthProviderFeeAmount)}`,
       muted: true,
     },
-    {
-      label: "Refund",
-      value: `- ${rupiah(summary.monthRefundAmount)}`,
-      muted: true,
-    },
   ];
 
   return (
@@ -61,9 +57,22 @@ export function Balance() {
             <p className="mt-3 text-4xl font-extrabold tracking-[-.05em] sm:text-5xl">
               {rupiah(summary.availableAmount)}
             </p>
-            <button className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#d7ff64] px-4 py-3 text-xs font-extrabold text-[#173f2c]">
+            <div className="mt-3 flex flex-wrap gap-2 text-[8px]">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1.5">
+                <FinanceSourceBadge source="STOREFRONT" />
+                {rupiah(summary.sources.STOREFRONT.availableAmount)}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1.5">
+                <FinanceSourceBadge source="QRIS_API" />
+                {rupiah(summary.sources.QRIS_API.availableAmount)}
+              </span>
+            </div>
+            <Link
+              href="/dashboard/withdrawals/new"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#d7ff64] px-4 py-3 text-xs font-extrabold text-[#173f2c]"
+            >
               Tarik saldo <ArrowUpRight className="size-4" />
-            </button>
+            </Link>
           </div>
           <div className="border-white/10 sm:border-l sm:pl-7">
             <p className="text-[10px] text-white/45">Saldo tertunda</p>
@@ -100,7 +109,12 @@ export function Balance() {
                     <Icon className="size-4" />
                   </span>
                   <div>
-                    <p className="text-xs font-extrabold">{item.description}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-xs font-extrabold">
+                        {item.description}
+                      </p>
+                      <FinanceSourceBadge source={item.source} />
+                    </div>
                     <p className="mt-1 text-[9px] text-[#87918b]">
                       {formatLedgerDate(item.occurredAt)}
                     </p>

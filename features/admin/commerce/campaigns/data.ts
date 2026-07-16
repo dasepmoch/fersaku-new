@@ -12,7 +12,7 @@ export type Campaign = {
 export const campaignSeed: Campaign[] = [
   {
     id: "CMP-240712",
-    title: "Duitku maintenance terjadwal",
+    title: "Xendit maintenance terjadwal",
     audience: "Semua Seller",
     channels: ["In-App", "Email"],
     status: "Live",

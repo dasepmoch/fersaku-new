@@ -25,11 +25,13 @@ export function AdminInput({
   value,
   prefix,
   suffix,
+  readOnly = false,
 }: {
   label: string;
   value: string;
   prefix?: string;
   suffix?: string;
+  readOnly?: boolean;
 }) {
   return (
     <label className="grid gap-2 text-[9px] font-extrabold">
@@ -42,6 +44,7 @@ export function AdminInput({
         )}
         <input
           defaultValue={value}
+          readOnly={readOnly}
           className="min-w-0 flex-1 px-3 text-[10px] outline-none"
         />
         {suffix && (
@@ -58,14 +61,19 @@ export function Toggle({
   value,
   onChange,
   danger = false,
+  disabled = false,
 }: {
   value: boolean;
   onChange: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
+      type="button"
       onClick={onChange}
+      disabled={disabled}
+      aria-pressed={value}
       className={`relative h-6 w-11 shrink-0 rounded-full transition ${value ? (danger ? "bg-[#d95850]" : "bg-[#5b7cfa]") : "bg-[#cfd4df]"}`}
     >
       <span

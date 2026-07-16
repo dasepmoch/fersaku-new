@@ -161,7 +161,7 @@ function SellerOrderDetail({ id }: { id: string }) {
             rows={[
               ["Metode", "QRIS"],
               ["Payment intent", "qris_2Yc91p"],
-              ["Provider", "Mock / Duitku"],
+              ["Provider", "Xendit"],
               ["Status", o.status],
             ]}
           />

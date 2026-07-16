@@ -63,7 +63,7 @@ export default function StatusPage() {
               ],
               [
                 "28 Jun 2026",
-                "Duitku sandbox latency increase",
+                "Xendit sandbox latency increase",
                 "Resolved in 11 minutes",
               ],
               [

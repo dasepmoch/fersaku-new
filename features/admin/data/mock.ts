@@ -34,6 +34,7 @@ import type {
   AdminPaymentIntent,
   AdminRole,
   AdminStockItem,
+  AdminStockItemSecret,
   AdminStockProduct,
   AdminWithdrawal,
   AdminReview,
@@ -101,10 +102,22 @@ export function mockStockProducts(): AdminStockProduct[] {
 }
 
 export function mockStockItems(): AdminStockItem[] {
-  return stockItems.map((item) => ({
+  return stockItems.map(({ values, ...item }) => ({
     ...item,
-    values: { ...item.values },
+    schemaPreview: Object.keys(values).join(" | "),
   })) as AdminStockItem[];
+}
+
+export function mockStockItemSecret(
+  itemId: string,
+): AdminStockItemSecret | null {
+  const item = stockItems.find((candidate) => candidate.id === itemId);
+  if (!item) return null;
+  return {
+    itemId,
+    values: { ...item.values },
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  };
 }
 
 export function mockInventorySchema(): AdminInventoryField[] {

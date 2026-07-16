@@ -21,24 +21,23 @@ function ReviewModeration() {
   const { data } = useAdminReviews();
   const actionMutation = useAdminActionMutation();
   const [items, setItems] = useState<AdminReview[]>(data ?? []);
-  const [action, setAction] = useState<string | null>(null);
-  const update = (id: string, status: string) =>
-    actionMutation.mutate(
-      {
-        action: "review.moderate",
-        resourceId: id,
-        status,
-        reason: `Moderate review ${id} from admin review console`,
-      },
-      {
-        onSuccess: () =>
-          setItems((current) =>
-            current.map((item) =>
-              item.id === id ? { ...item, status } : item,
-            ),
-          ),
-      },
+  const [action, setAction] = useState<{
+    title: string;
+    reviewId: string;
+    status: string;
+    danger?: boolean;
+  } | null>(null);
+  const update = async (id: string, status: string, reason: string) => {
+    await actionMutation.mutateAsync({
+      action: "review.moderate",
+      resourceId: id,
+      status,
+      reason,
+    });
+    setItems((current) =>
+      current.map((item) => (item.id === id ? { ...item, status } : item)),
     );
+  };
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
@@ -141,19 +140,38 @@ function ReviewModeration() {
                   </div>
                   <div className="mt-5 grid gap-2">
                     <button
-                      onClick={() => update(review.id, "Published")}
+                      onClick={() =>
+                        setAction({
+                          title: `Approve and publish ${review.id}`,
+                          reviewId: review.id,
+                          status: "Published",
+                        })
+                      }
                       className="h-9 rounded-lg bg-[#1d8b50] text-[8px] font-extrabold text-white"
                     >
                       Approve & publish
                     </button>
                     <button
-                      onClick={() => setAction(`Request edit for ${review.id}`)}
+                      onClick={() =>
+                        setAction({
+                          title: `Request edit for ${review.id}`,
+                          reviewId: review.id,
+                          status: "Needs edit",
+                        })
+                      }
                       className="h-9 rounded-lg border border-[#dce1e9] text-[8px] font-bold"
                     >
                       Request buyer edit
                     </button>
                     <button
-                      onClick={() => update(review.id, "Removed")}
+                      onClick={() =>
+                        setAction({
+                          title: `Remove review ${review.id}`,
+                          reviewId: review.id,
+                          status: "Removed",
+                          danger: true,
+                        })
+                      }
                       className="h-9 rounded-lg border border-[#efc8c4] bg-[#fff5f4] text-[8px] font-bold text-[#c6534c]"
                     >
                       Remove review
@@ -166,7 +184,14 @@ function ReviewModeration() {
         </div>
       </section>
       {action && (
-        <ControlDialog title={action} onClose={() => setAction(null)} />
+        <ControlDialog
+          title={action.title}
+          target={action.reviewId}
+          danger={action.danger}
+          auditHandledExternally
+          onConfirm={(reason) => update(action.reviewId, action.status, reason)}
+          onClose={() => setAction(null)}
+        />
       )}
     </>
   );

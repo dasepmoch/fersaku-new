@@ -59,10 +59,10 @@ export const notificationData: Record<
     },
     {
       id: "a2",
-      title: "Risk case critical",
-      body: "Crypto Signals Pro mendapat score 91",
+      title: "QRIS API KYC review",
+      body: "Merchant baru menunggu verifikasi",
       time: "12 menit",
-      href: "/admin/risk",
+      href: "/admin/kyc",
       icon: ShieldCheck,
     },
     {

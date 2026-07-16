@@ -16,11 +16,15 @@ describe("finance api (mock mode)", () => {
     expect(summary.currency).toBe("IDR");
   });
 
-  it("returns ledger + withdrawal lock", async () => {
+  it("returns ledger + current withdrawal lock state", async () => {
     const ledger = await listSellerLedger(DEMO_STORE_ID);
     const lock = await getSellerWithdrawalLock(DEMO_STORE_ID);
     expect(ledger.items.length).toBeGreaterThanOrEqual(4);
-    expect(lock.reasonCode).toBe("BANK_ACCOUNT_CHANGED");
+    expect(lock).toMatchObject({
+      locked: false,
+      reasonCode: null,
+      unlockedAt: null,
+    });
   });
 });
 

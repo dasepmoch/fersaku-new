@@ -403,7 +403,7 @@ export default async function Home() {
             {[
               [
                 "Apakah ada biaya bulanan?",
-                "Starter gratis digunakan. Biaya platform hanya dipotong saat kamu berhasil menjual.",
+                "Tidak ada. Semua fitur storefront dan QRIS API gratis digunakan. Biaya transaksi hanya 3% + Rp700 saat pembayaran berhasil.",
               ],
               [
                 "Produk apa saja yang bisa dijual?",
@@ -415,11 +415,11 @@ export default async function Home() {
               ],
               [
                 "Kapan saldo bisa ditarik?",
-                "Setelah masa settlement selesai, saldo tersedia dapat diajukan ke rekening bank lokal.",
+                "Setelah masa settlement selesai, saldo storefront dan QRIS API masuk ke satu saldo. Minimum penarikan Rp50.000 dengan biaya 3% + biaya proses.",
               ],
               [
                 "Apakah tersedia API?",
-                "Ya. Developer dapat membuat QRIS payment, checkout session, membaca order, dan menerima webhook.",
+                "Ya. QRIS API Fersaku adalah payment gateway independen untuk membuat dan mengecek pembayaran QRIS serta menerima webhook. Ini bukan API produk, katalog, atau upload file; live API aktif setelah KYC.",
               ],
             ].map(([q, a]) => (
               <details
@@ -444,11 +444,11 @@ export default async function Home() {
                 Harga sederhana
               </p>
               <h3 className="font-display mt-2 text-4xl">
-                Gratis untuk mulai. Pro saat bertumbuh.
+                Semua fitur gratis. Bayar hanya saat berhasil.
               </h3>
               <p className="mt-2 text-xs text-[#6c7971]">
-                Starter 3% + biaya pembayaran. Pro mulai Rp99.000/bulan dengan
-                fee lebih rendah.
+                Storefront dan QRIS API memakai biaya yang sama: 3% + Rp700 per
+                transaksi berhasil. Tanpa paket bulanan.
               </p>
             </div>
             <Link

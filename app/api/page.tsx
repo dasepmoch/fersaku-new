@@ -3,23 +3,27 @@ import { ArrowRight, Code2, Radio, ShieldCheck, Webhook } from "lucide-react";
 import { MarketingHero, MarketingShell } from "@/components/marketing-shell";
 
 const apiCode = `const response = await fetch(
-  "https://api.fersaku.id/v1/qris/payments",
+  "https://api.fersaku.id/v1/gateway/payment-intents",
   {
     method: "POST",
-    headers: { Authorization: "Bearer sk_test_..." },
+    headers: {
+      Authorization: "Bearer sk_test_...",
+      "Idempotency-Key": "invoice-2026-0001"
+    },
     body: JSON.stringify({
+      merchantReference: "invoice-2026-0001",
       amount: 99000,
-      description: "AI Prompt Pack",
-      customer: { email: "budi@example.com" }
+      currency: "IDR",
+      description: "Invoice #0001"
     })
   }
 );
 
 // 201 Created
 {
-  "id": "qris_2Yc91p",
-  "status": "pending",
-  "expires_in": 900
+  "paymentIntentId": "qris_2Yc91p",
+  "status": "PENDING",
+  "paymentMode": "SANDBOX"
 }`;
 
 const benefits = [
@@ -40,7 +44,7 @@ export default function ApiPage() {
             <em className="text-[#315d47]">Indonesia.</em>
           </>
         }
-        description="Buat QRIS checkout, pantau order, dan kirim produk digital secara otomatis dengan API yang terasa familiar."
+        description="Buat dan pantau pembayaran QRIS independen dari website atau aplikasi kamu. API ini khusus payment gateway—bukan API produk, katalog, atau upload file."
       />
       <section className="px-5 pb-28 lg:px-8">
         <div className="mx-auto grid max-w-[1180px] gap-6 lg:grid-cols-[.8fr_1.2fr]">
@@ -74,7 +78,7 @@ export default function ApiPage() {
                 <span className="size-2 rounded-full bg-[#bdf8d0]" />
               </div>
               <span className="text-[10px] font-bold text-white/35">
-                POST /v1/qris/payments
+                POST /v1/gateway/payment-intents
               </span>
             </div>
             <pre className="overflow-x-auto p-6 text-[11px] leading-6 text-white/70 sm:p-8 sm:text-xs">

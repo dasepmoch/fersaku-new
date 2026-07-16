@@ -3,9 +3,10 @@ import type { ApiEnvelope } from "@/shared/api/contracts";
 import { isLiveApi } from "@/shared/data/mode";
 import type { AdminAuditEvent } from "./contracts";
 import { mockAuditEvents, mockPlatformVolume } from "./mock";
+import { combineMockAuditChains, readMockAuditEvents } from "./mock-audit";
 
 export function demoAuditEvents(): AdminAuditEvent[] {
-  return mockAuditEvents();
+  return combineMockAuditChains(readMockAuditEvents(), mockAuditEvents());
 }
 
 export function demoPlatformVolume(): number[] {

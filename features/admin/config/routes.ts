@@ -8,7 +8,7 @@ const adminPageMeta: Record<string, AdminPageMeta> = {
   overview: {
     title: "Command center",
     description:
-      "Live platform health, financial movement, risk signals, and operational queues.",
+      "Live platform health, QRIS payment volume, withdrawals, KYC, and operational queues.",
     permission: "admin.dashboard.read",
   },
   merchants: {
@@ -50,20 +50,14 @@ const adminPageMeta: Record<string, AdminPageMeta> = {
   orders: {
     title: "Global orders",
     description:
-      "Inspect every order, fulfillment, fee, refund, and customer transaction.",
+      "Inspect every order, fulfillment, fee, and customer transaction.",
     permission: "orders.read",
   },
   payments: {
     title: "Payment operations",
     description:
-      "Monitor QRIS intents, provider responses, callbacks, latency, and reconciliation.",
+      "Monitor QRIS intents, Xendit responses, callbacks, latency, and payment status.",
     permission: "payments.read",
-  },
-  reconciliation: {
-    title: "Payment reconciliation",
-    description:
-      "Match provider settlements against orders, seller balances, fees, payouts, and the append-only ledger.",
-    permission: "reconciliation.read",
   },
   withdrawals: {
     title: "Withdrawal control",
@@ -89,34 +83,16 @@ const adminPageMeta: Record<string, AdminPageMeta> = {
       "Moderate verified reviews, seller replies, abuse reports, and rating integrity.",
     permission: "reviews.read",
   },
-  disputes: {
-    title: "Disputes & refunds",
-    description:
-      "Review buyer evidence, hold disputed seller funds, mediate cases, and issue audited refunds.",
-    permission: "disputes.read",
-  },
   kyc: {
     title: "QRIS API KYC center",
     description:
       "Verify only merchants requesting production QRIS API access; ordinary storefront sellers remain exempt.",
     permission: "kyc.read",
   },
-  risk: {
-    title: "Risk operations",
-    description:
-      "Investigate anomalous behavior, merchant risk, velocity rules, and account restrictions.",
-    permission: "risk.read",
-  },
-  security: {
-    title: "Security audit center",
-    description:
-      "Continuously audit administrator access, secrets, sessions, policies, and suspicious security signals.",
-    permission: "security.read",
-  },
   webhooks: {
     title: "Webhook monitor",
     description:
-      "Observe Duitku, Xendit, and seller webhook delivery across the platform.",
+      "Observe Xendit payment callbacks and seller webhook delivery across the platform.",
     permission: "webhooks.read",
   },
   "audit-logs": {
@@ -128,13 +104,13 @@ const adminPageMeta: Record<string, AdminPageMeta> = {
   providers: {
     title: "Provider infrastructure",
     description:
-      "Control payment, disbursement, storage, queue, and email provider routing.",
+      "Monitor Xendit, storage, queue, and email provider health with lightweight emergency controls.",
     permission: "providers.read",
   },
   system: {
     title: "Platform settings",
     description:
-      "Configure fees, settlement, feature flags, limits, maintenance, and administrator policy.",
+      "Review fixed launch fees and manage settlement, feature flags, limits, maintenance, and administrator policy.",
     permission: "system.read",
   },
 };

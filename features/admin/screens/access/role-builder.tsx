@@ -16,46 +16,72 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { useState } from "react";
-import { useAdminPermissionGroups, useAdminRoles } from "@/features/admin/data";
+import { useEffect, useState } from "react";
+import {
+  saveMockAdminRole,
+  useAdminPermissionGroups,
+  useAdminRoles,
+} from "@/features/admin/data";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/query/query-keys";
 
 function RoleBuilder({ id }: { id: string }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: roles } = useAdminRoles();
   const { data: groups } = useAdminPermissionGroups();
   const adminRoles = roles ?? [];
   const permissionGroups = groups ?? [];
   const isNew = id === "new";
   const role = adminRoles.find((item) => item.id === id);
-  const defaults = new Set(
-    isNew
-      ? ["merchants.read", "risk.read"]
-      : role?.id === "role_finance"
-        ? [
-            "merchants.read",
-            "orders.refund",
-            "payments.reconcile",
-            "balance.adjust",
-            "withdrawals.review",
-            "withdrawals.approve",
-            "audit.export",
-          ]
-        : permissionGroups.flatMap((group) =>
-            group.permissions.map((permission) => permission[0]),
-          ),
+  const allPermissions = permissionGroups.flatMap((group) =>
+    group.permissions.map((permission) => permission[0]),
   );
-  const [selected, setSelected] = useState<Set<string>>(defaults);
+  const defaultPermissions = isNew
+    ? ["merchants.read", "payments.read"]
+    : (role?.permissions ?? (role?.system ? allPermissions : []));
+  const defaultPermissionsSignature = defaultPermissions.join("|");
+  const defaultName = isNew ? "Custom operations role" : (role?.name ?? "");
+  const defaultDescription = isNew
+    ? "Describe what this staff role is responsible for."
+    : (role?.description ?? "");
+  const isProtected = Boolean(role?.system);
+  const [name, setName] = useState(defaultName);
+  const [description, setDescription] = useState(defaultDescription);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState(false);
-  const [assigning, setAssigning] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [persistedRoleId, setPersistedRoleId] = useState<string | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const permissions = defaultPermissionsSignature
+        ? defaultPermissionsSignature.split("|")
+        : [];
+      setName(defaultName);
+      setDescription(defaultDescription);
+      setSelected(new Set(permissions));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [defaultDescription, defaultName, defaultPermissionsSignature]);
   if (!isNew && !role) return null;
-  const roleForView = role ?? adminRoles[1];
-  const togglePermission = (permission: string) =>
+  const roleForView =
+    role ??
+    adminRoles.find((candidate) => candidate.id === persistedRoleId) ??
+    adminRoles[1];
+  const togglePermission = (permission: string) => {
+    if (isProtected) return;
+    setSaved(false);
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(permission)) next.delete(permission);
       else next.add(permission);
       return next;
     });
-  const toggleGroup = (permissions: string[]) =>
+  };
+  const toggleGroup = (permissions: string[]) => {
+    if (isProtected) return;
+    setSaved(false);
     setSelected((current) => {
       const next = new Set(current);
       const all = permissions.every((permission) => next.has(permission));
@@ -64,6 +90,26 @@ function RoleBuilder({ id }: { id: string }) {
       );
       return next;
     });
+  };
+  const persistRole = () => {
+    if (isProtected) throw new Error("Protected roles are read-only");
+    const normalizedName = name.trim();
+    const normalizedDescription = description.trim();
+    if (normalizedName.length < 3 || normalizedDescription.length < 12) {
+      throw new Error("Role name or description is incomplete");
+    }
+    const persisted = saveMockAdminRole({
+      id: isNew ? (persistedRoleId ?? undefined) : role?.id,
+      name: normalizedName,
+      description: normalizedDescription,
+      permissions: [...selected],
+    });
+    queryClient.setQueryData(queryKeys.admin.roles(), persisted.roles);
+    setPersistedRoleId(persisted.role.id);
+    setName(normalizedName);
+    setDescription(normalizedDescription);
+    setSaved(true);
+  };
   return (
     <>
       <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
@@ -74,15 +120,21 @@ function RoleBuilder({ id }: { id: string }) {
             </span>
             <div className="flex-1">
               <input
-                defaultValue={isNew ? "Custom operations role" : role?.name}
+                value={name}
+                readOnly={isProtected}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setSaved(false);
+                }}
                 className="w-full border-0 bg-transparent text-xl font-black tracking-[-.03em] outline-none"
               />
               <textarea
-                defaultValue={
-                  isNew
-                    ? "Describe what this staff role is responsible for."
-                    : role?.description
-                }
+                value={description}
+                readOnly={isProtected}
+                onChange={(event) => {
+                  setDescription(event.target.value);
+                  setSaved(false);
+                }}
                 rows={2}
                 className="mt-2 w-full resize-none border-0 bg-transparent text-[9px] leading-4 text-[#7d879b] outline-none"
               />
@@ -98,8 +150,18 @@ function RoleBuilder({ id }: { id: string }) {
                 </p>
               </div>
               <button
-                onClick={() => setSelected(new Set())}
-                className="text-[8px] font-extrabold text-[#c6544d]"
+                type="button"
+                disabled={isProtected}
+                title={
+                  isProtected
+                    ? "Protected system roles are read-only"
+                    : undefined
+                }
+                onClick={() => {
+                  setSelected(new Set());
+                  setSaved(false);
+                }}
+                className="text-[8px] font-extrabold text-[#c6544d] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Clear all
               </button>
@@ -129,16 +191,21 @@ function RoleBuilder({ id }: { id: string }) {
                           /{keys.length} granted
                         </span>
                       </div>
-                      <Toggle value={all} onChange={() => toggleGroup(keys)} />
+                      <Toggle
+                        value={all}
+                        disabled={isProtected}
+                        onChange={() => toggleGroup(keys)}
+                      />
                     </div>
                     <div>
                       {group.permissions.map(([permission, description]) => (
                         <label
                           key={permission}
-                          className="flex cursor-pointer items-center gap-3 border-t border-[#e8eaf0] px-4 py-3.5"
+                          className={`flex items-center gap-3 border-t border-[#e8eaf0] px-4 py-3.5 ${isProtected ? "cursor-default" : "cursor-pointer"}`}
                         >
                           <input
                             type="checkbox"
+                            disabled={isProtected}
                             checked={selected.has(permission)}
                             onChange={() => togglePermission(permission)}
                             className="size-4 accent-[#5b7cfa]"
@@ -160,8 +227,16 @@ function RoleBuilder({ id }: { id: string }) {
             </div>
           </div>
           <div className="mt-7 flex justify-end gap-2 border-t border-[#e5e8ef] pt-6">
-            <AdminButton secondary>Cancel</AdminButton>
-            <AdminButton onClick={() => setSaved(true)}>
+            <AdminButton secondary onClick={() => router.push("/admin/roles")}>
+              Cancel
+            </AdminButton>
+            <AdminButton
+              disabled={isProtected}
+              title={
+                isProtected ? "Protected system roles are read-only" : undefined
+              }
+              onClick={() => setSaveOpen(true)}
+            >
               <Check className="size-4" />
               {saved ? "Role saved & audited" : "Save role permissions"}
             </AdminButton>
@@ -172,7 +247,9 @@ function RoleBuilder({ id }: { id: string }) {
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black">Assigned staff</h3>
               <button
-                onClick={() => setAssigning(true)}
+                type="button"
+                disabled
+                title="Staff assignment is available after the backend role service is connected"
                 className="text-[8px] font-extrabold text-[#4f6fe1]"
               >
                 + Assign staff
@@ -196,7 +273,12 @@ function RoleBuilder({ id }: { id: string }) {
                         {member[1]}
                       </span>
                     </div>
-                    <button className="ml-auto text-[#a0a8b7]">
+                    <button
+                      type="button"
+                      disabled
+                      title="Staff removal is available after the backend role service is connected"
+                      className="ml-auto text-[#a0a8b7]"
+                    >
                       <X className="size-3" />
                     </button>
                   </div>
@@ -224,16 +306,24 @@ function RoleBuilder({ id }: { id: string }) {
             </div>
           </section>
           {!isNew && role && !role.system && (
-            <button className="h-10 rounded-xl border border-[#efc8c4] bg-[#fff5f4] text-[8px] font-extrabold text-[#c6534c]">
+            <button
+              type="button"
+              disabled
+              title="Role deletion is available after the backend role service is connected"
+              className="h-10 rounded-xl border border-[#efc8c4] bg-[#fff5f4] text-[8px] font-extrabold text-[#c6534c]"
+            >
               Delete custom role
             </button>
           )}
         </aside>
       </div>
-      {assigning && (
+      {saveOpen && !isProtected && (
         <ControlDialog
-          title="Assign staff to role"
-          onClose={() => setAssigning(false)}
+          title="Save role permissions"
+          target={role?.id ?? persistedRoleId ?? "new-role"}
+          requiresRecentMfa
+          onConfirm={persistRole}
+          onClose={() => setSaveOpen(false)}
         />
       )}
     </>

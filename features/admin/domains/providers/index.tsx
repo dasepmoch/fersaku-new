@@ -1,54 +1,30 @@
 "use client";
 
 import {
-  Banknote,
-  BrainCircuit,
   ChevronRight,
   CreditCard,
   Database,
   Network,
+  RefreshCw,
   ShieldCheck,
   Terminal,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { EmergencySwitchboard } from "@/features/admin/operations/emergency";
-import { AiProvider } from "./ai-provider";
 import { GenericProvider, type ProviderItem } from "./generic-provider";
 
 const baseProviders: ProviderItem[] = [
   {
-    id: "duitku",
+    id: "xendit",
     icon: CreditCard,
-    name: "Duitku QRIS",
-    type: "Payment acceptance",
+    name: "Xendit Payments",
+    type: "QRIS acceptance & disbursement",
     status: "Live",
     latency: "142ms",
     uptime: "99.99%",
-    routing: "Primary",
+    role: "Payment rail",
     color: "#5b7cfa",
-  },
-  {
-    id: "xendit",
-    icon: Banknote,
-    name: "Xendit Disbursement",
-    type: "Seller payouts",
-    status: "Live",
-    latency: "218ms",
-    uptime: "99.96%",
-    routing: "Primary",
-    color: "#28a566",
-  },
-  {
-    id: "ai",
-    icon: BrainCircuit,
-    name: "Fersaku Admin AI",
-    type: "Internal operations intelligence",
-    status: "Live",
-    latency: "692ms",
-    uptime: "99.91%",
-    routing: "Multi-model",
-    color: "#f05a7e",
   },
   {
     id: "r2",
@@ -58,18 +34,18 @@ const baseProviders: ProviderItem[] = [
     status: "Live",
     latency: "86ms",
     uptime: "100%",
-    routing: "Primary",
+    role: "Object storage",
     color: "#e59633",
   },
   {
     id: "redis",
     icon: Network,
-    name: "Redis / BullMQ",
+    name: "Redis / Asynq",
     type: "Queues & background jobs",
     status: "Degraded",
     latency: "386ms",
     uptime: "99.82%",
-    routing: "Primary",
+    role: "Queue runtime",
     color: "#ef6351",
   },
   {
@@ -80,15 +56,17 @@ const baseProviders: ProviderItem[] = [
     status: "Live",
     latency: "121ms",
     uptime: "99.97%",
-    routing: "Primary",
+    role: "Email delivery",
     color: "#8b6ee8",
   },
 ];
 
 export function ProviderInfrastructure() {
-  const [selected, setSelected] = useState("duitku");
+  const [selected, setSelected] = useState("xendit");
   const [testing, setTesting] = useState<string | null>(null);
   const [tested, setTested] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastChecked, setLastChecked] = useState("just now");
   const provider =
     baseProviders.find((item) => item.id === selected) || baseProviders[0];
   const test = (id: string) => {
@@ -99,6 +77,13 @@ export function ProviderInfrastructure() {
       setTested(id);
       setTimeout(() => setTested(null), 1800);
     }, 900);
+  };
+  const refreshStatus = () => {
+    setRefreshing(true);
+    window.setTimeout(() => {
+      setRefreshing(false);
+      setLastChecked("just now");
+    }, 700);
   };
   return (
     <>
@@ -115,9 +100,19 @@ export function ProviderInfrastructure() {
                   Provider vault healthy
                 </h3>
                 <p className="mt-1 text-[8px] text-[#688374]">
-                  6 providers • secrets encrypted • rotation monitored
+                  4 providers • Xendit primary • health checked {lastChecked}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={refreshStatus}
+                className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#cfe8da] bg-white px-3 text-[8px] font-extrabold text-[#277a4b]"
+              >
+                <RefreshCw
+                  className={cn("size-3.5", refreshing && "animate-spin")}
+                />
+                {refreshing ? "Checking" : "Refresh health"}
+              </button>
             </div>
           </div>
           <div className="mt-4 grid gap-2">
@@ -168,20 +163,13 @@ export function ProviderInfrastructure() {
           </div>
         </div>
         <div className="min-w-0">
-          {provider.id === "ai" ? (
-            <AiProvider
-              test={() => test("ai")}
-              testing={testing === "ai"}
-              tested={tested === "ai"}
-            />
-          ) : (
-            <GenericProvider
-              provider={provider}
-              test={() => test(provider.id)}
-              testing={testing === provider.id}
-              tested={tested === provider.id}
-            />
-          )}
+          <GenericProvider
+            provider={provider}
+            test={() => test(provider.id)}
+            testing={testing === provider.id}
+            tested={tested === provider.id}
+            lastChecked={lastChecked}
+          />
         </div>
       </div>
     </>

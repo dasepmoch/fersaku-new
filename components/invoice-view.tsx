@@ -139,7 +139,7 @@ export function InvoiceView({ orderId }: { orderId: string }) {
                 terverifikasi
               </p>
               <p className="mt-2 text-[9px] leading-5 text-[#65736b]">
-                Dibayar via QRIS - Referensi provider DKT-QR-88A21 - 12 Jul
+                Dibayar via QRIS - Referensi provider XND-QR-88A21 - 12 Jul
                 2026, 14:42 WIB. Scan QR untuk memeriksa keaslian, status,
                 nilai, dan tanda tangan dokumen ini langsung di Fersaku.
               </p>

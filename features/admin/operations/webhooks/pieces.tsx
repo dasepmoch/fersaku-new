@@ -49,6 +49,7 @@ export function AdminMetric({
 export function StatusPill({ value }: { value: string }) {
   const positive = [
     "200",
+    "202",
     "PAID",
     "COMPLETED",
     "Completed",
@@ -59,6 +60,7 @@ export function StatusPill({ value }: { value: string }) {
   const warning = [
     "Pending",
     "Timeout",
+    "Retrying",
     "Manual",
     "Investigating",
     "Monitoring",
@@ -112,7 +114,12 @@ export function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-[190] grid place-items-center overflow-y-auto bg-[#080d1b]/72 p-4 backdrop-blur-sm">
-      <section className="my-6 w-full max-w-2xl rounded-[26px] bg-white p-6 text-[#131827] shadow-2xl">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="webhook-operation-modal-title"
+        className="my-6 w-full max-w-2xl rounded-[26px] bg-white p-6 text-[#131827] shadow-2xl"
+      >
         <div className="flex items-start">
           <span
             className={cn(
@@ -128,9 +135,16 @@ export function Modal({
             <p className="text-[7px] font-extrabold tracking-[.18em] text-[#7c879d] uppercase">
               {eyebrow}
             </p>
-            <h2 className="mt-1 text-lg font-black">{title}</h2>
+            <h2
+              id="webhook-operation-modal-title"
+              className="mt-1 text-lg font-black"
+            >
+              {title}
+            </h2>
           </div>
           <button
+            type="button"
+            aria-label="Close modal"
             onClick={onClose}
             className="ml-auto grid size-9 place-items-center rounded-xl border border-[#dce1e9]"
           >

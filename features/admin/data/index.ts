@@ -6,12 +6,13 @@ export type {
   AdminInventoryField,
   AdminPermissionGroup,
   AdminMerchant,
+  AdminTransactionSource,
   AdminOrder,
   AdminPaymentIntent,
   AdminReview,
-  AdminRiskCase,
   AdminRole,
   AdminStockItem,
+  AdminStockItemSecret,
   AdminStockProduct,
   AdminWithdrawal,
 } from "./contracts";
@@ -20,6 +21,10 @@ export { demoMerchants, getMerchant, listMerchants } from "./merchants";
 export { demoBuyers, getBuyer, listBuyers } from "./buyers";
 export { demoAdminOrders, getAdminOrder, listAdminOrders } from "./orders";
 export { demoWithdrawals, getWithdrawal, listWithdrawals } from "./withdrawals";
+export {
+  canReviewWithdrawal,
+  type WithdrawalReviewTarget,
+} from "./withdrawals";
 export { demoPayments, listPayments } from "./payments";
 export {
   demoAuditEvents,
@@ -32,8 +37,14 @@ export {
   demoPermissionGroups,
   listAdminRoles,
   listPermissionGroups,
+  readMockAdminRoles,
+  saveMockAdminRole,
 } from "./access";
 export { demoInventory, getInventory } from "./inventory";
+export {
+  revealInventoryItem,
+  type RevealInventoryItemInput,
+} from "./inventory";
 export { demoAdminReviews, listAdminReviews } from "./reviews";
 export {
   executeAdminAction,

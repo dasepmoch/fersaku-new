@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, LockKeyhole, Plus } from "lucide-react";
+import { ArrowUpRight, Eye, Plus } from "lucide-react";
 
 export function DashboardAction({ segments }: { segments: string[] }) {
   const s = segments[0] || "overview";
@@ -36,13 +36,9 @@ export function DashboardAction({ segments }: { segments: string[] }) {
     );
   if (s === "withdrawals" && !segments[1])
     return (
-      <button
-        disabled
-        title="Penarikan terkunci hingga 13 Jul 2026, 14:42 WIB"
-        className="inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[#e6c56a] px-4 text-xs font-extrabold text-[#5e4918] opacity-90"
-      >
-        <LockKeyhole className="size-4" /> Terkunci 18j 24m
-      </button>
+      <ActionLink href="/dashboard/withdrawals/new">
+        <ArrowUpRight className="size-4" /> Tarik saldo
+      </ActionLink>
     );
   if (s === "inventory" && !segments[1])
     return (

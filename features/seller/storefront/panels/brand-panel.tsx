@@ -71,7 +71,7 @@ export function BrandPanel({
           onChange={(tagline) => update({ tagline })}
         />
         <ControlArea
-          label="Bio"
+          label="Store description"
           value={config.bio}
           onChange={(bio) => update({ bio })}
         />

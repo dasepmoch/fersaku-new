@@ -1,6 +1,6 @@
 # Fersaku Frontend
 
-Premium frontend prototype for an Indonesian digital-product commerce platform. The project is frontend-only: checkout, payment, analytics, products, orders, withdrawals, API keys, and webhooks use realistic mock data.
+High-fidelity frontend prototype for an Indonesian digital-product commerce platform. The project is frontend-only: checkout, payment, analytics, products, orders, withdrawals, API keys, and webhooks use realistic mock data.
 
 The planned production backend is a separate Golang service using `net/http` + `chi`, PostgreSQL through `pgx`/`sqlc`, Redis + Asynq, `golang-migrate`, and S3-compatible Cloudflare R2. Next.js remains the frontend and does not own payment, ledger, fulfillment, KYC, or provider-secret business logic.
 
@@ -62,8 +62,8 @@ Open `http://localhost:3000`.
 
 - `/admin/login` - dedicated administrator login
 - `/admin` - global command center and platform health
-- `/admin/merchants` - all merchants and platform risk state
-- `/admin/merchants/str_01H8A2` - full merchant control and impersonation actions
+- `/admin/merchants` - all merchants with independent store and QRIS API access state
+- `/admin/merchants/str_01H8A2` - merchant detail, independent access controls, and bounded impersonation actions
 - `/admin/buyers`, `/admin/buyers/byr_91K2` - buyer identity, purchase ownership, and session controls
 - `/admin/users` - seller accounts and role-based administrator access
 - `/admin/profile` - administrator profile, MFA, sessions, and notification preferences
@@ -73,24 +73,20 @@ Open `http://localhost:3000`.
 - `/admin/campaigns` - emergency broadcasts, newsletters, compliance notices, audience targeting, and email/in-app previews
 - `/admin/orders` - global orders
 - `/admin/orders/FRS-240712-1842` - payment, fee, customer, and fulfillment timeline
-- `/admin/payments` - QRIS intent, callback, latency, and reconciliation monitoring
-- `/admin/reconciliation` - provider settlement versus internal payment, balance, payout, and double-entry ledger discrepancy operations
+- `/admin/payments` - Xendit QRIS intent, callback, latency, and payment-status monitoring
 - `/admin/withdrawals` - global seller payout queue
 - `/admin/withdrawals/WD-120724-0092` - approve, hold, or reject review flow
 - `/admin/inventory` - global stock and privileged secret-access controls
 - `/admin/fulfillment` - delivery retry, inspection, and revocation
 - `/admin/reviews` - review moderation and integrity signals
-- `/admin/disputes` - evidence review, disputed-fund holds, replacement decisions, and audited full/partial refund operations
 - `/admin/kyc` - KYC pipeline only for merchants requesting production QRIS API access; normal storefront sellers remain exempt
-- `/admin/risk` - explainable smart fraud alerts, first-hour velocity, bank mismatch, device clusters, holds, and investigation controls
-- `/admin/security` - security posture, event investigation, sessions, secret access, and policy controls
-- `/admin/webhooks` - Duitku, Xendit, and seller webhook reconciliation with evidence-gated manual Force-Fulfill
+- `/admin/webhooks` - Xendit payment callbacks and seller webhook delivery with evidence-gated manual Force-Fulfill
 - `/admin/audit-logs` - searchable/filterable immutable trail with inspector and export feedback
-- `/admin/providers` - provider health, emergency circuit breakers including seller registration/QRIS/withdrawals, maintenance banner, and backup routing
-- Admin providers include the admin-only Fersaku AI Gateway with model routing, safety/privacy policy, generation audit, credentials, and guarded operations playground; no seller AI surface is currently exposed
+- `/admin/providers` - provider health, emergency circuit breakers for seller registration/QRIS/withdrawals, and maintenance controls without provider failover routing
+- Admin providers are limited to practical infrastructure health and emergency controls for Xendit, storage, queues, and transactional email
 - `/admin/system` - fees, settlement, feature flags, and emergency controls
 
-All privileged admin actions use confirmation dialogs, mandatory reason fields, and mocked audit completion states. Merchant detail includes an effective-dated custom platform-fee override that preserves historical order snapshots. Merchant impersonation defaults to read-only, previews allowed/blocked capabilities, and requires extra confirmation for full privileged access.
+All privileged admin actions use confirmation dialogs, mandatory reason fields, and mocked append-only audit completion states. Platform fees follow the single global policy: successful transaction fee `3% + Rp700`, withdrawal fee `3% + provider processing cost`, and minimum withdrawal `Rp50.000`. Merchant and QRIS API access can be suspended independently. Merchant/user impersonation is time-bounded, reason-gated, defaults to read-only, and does not expose a full privileged scope.
 
 Admin in-app campaigns persist in the mock browser and render as priority-aware seller-dashboard banners. Optional notices can be dismissed, while mandatory compliance notices require explicit acknowledgement.
 
@@ -102,7 +98,7 @@ Seller, buyer, and administrator shells include working notification centers and
 
 Every data table uses shared React client pagination (`useClientPagination` + `TablePagination`): row count, page size, page numbers, previous/next, and responsive controls. Production APIs should replace this with cursor contracts in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).
 
-Backend data contracts and security invariants for onboarding, storefront revisions, bank verification, MFA, flexible pricing, upsells, invoices, buyer authentication, structured inventory, product versions, fulfillment, RBAC, and impersonation are documented in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).
+Backend data contracts and security invariants are documented in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md). The executable production backlog for the Go modular monolith, Docker, PostgreSQL, Redis, Cloudflare R2, Xendit, security, observability, testing, deployment, and runbooks is in [`docs/BACKEND_PRODUCTION_TASKS.md`](docs/BACKEND_PRODUCTION_TASKS.md).
 
 Traffic attribution follows a hybrid architecture: Fersaku's Go backend owns UTM/referrer-to-paid-order attribution, while PostHog, Plausible, or GA4 may be connected later as optional analytics sinks rather than the financial source of truth.
 

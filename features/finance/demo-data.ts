@@ -19,8 +19,11 @@ export function demoFinanceSummary(
     monthGrossAmount: 24_860_000,
     monthPlatformFeeAmount: 745_800,
     monthProviderFeeAmount: 218_400,
-    monthRefundAmount: 158_000,
-    monthNetAmount: 23_737_800,
+    monthNetAmount: 23_895_800,
+    sources: {
+      STOREFRONT: { availableAmount: 12_000_000, pendingAmount: 1_000_000 },
+      QRIS_API: { availableAmount: 6_240_500, pendingAmount: 2_420_000 },
+    },
     currency: "IDR",
     asOf: "2026-07-12T14:42:00+07:00",
   };
@@ -38,6 +41,7 @@ export function demoSellerLedger(
         description: "Penjualan AI Prompt Pack",
         amount: 76_630,
         direction: "CREDIT",
+        source: "QRIS_API",
         occurredAt: "2026-07-12T14:32:00+07:00",
         orderId: "FRS-240712-1848",
       },
@@ -48,6 +52,7 @@ export function demoSellerLedger(
         description: "Penjualan n8n Automation",
         amount: 144_830,
         direction: "CREDIT",
+        source: "STOREFRONT",
         occurredAt: "2026-07-12T14:24:00+07:00",
         orderId: "FRS-240712-1842",
       },
@@ -58,6 +63,7 @@ export function demoSellerLedger(
         description: "Penarikan ke BCA • 4821",
         amount: 5_000_000,
         direction: "DEBIT",
+        source: "MIXED",
         occurredAt: "2026-07-11T09:10:00+07:00",
         withdrawalId: "WD-120724",
       },
@@ -68,6 +74,7 @@ export function demoSellerLedger(
         description: "Penjualan Figma Landing Kit",
         amount: 182_630,
         direction: "CREDIT",
+        source: "STOREFRONT",
         occurredAt: "2026-07-10T18:02:00+07:00",
         orderId: "FRS-240712-1821",
       },
@@ -89,6 +96,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "12 Jul 2026",
+      source: "MIXED",
     },
     {
       id: "WD-080724",
@@ -97,6 +105,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "8 Jul 2026",
+      source: "STOREFRONT",
     },
     {
       id: "WD-020724",
@@ -105,6 +114,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Processing",
       requestedAt: "2 Jul 2026",
+      source: "QRIS_API",
     },
     {
       id: "WD-280624",
@@ -113,6 +123,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "28 Jun 2026",
+      source: "STOREFRONT",
     },
     {
       id: "WD-210624",
@@ -121,6 +132,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "21 Jun 2026",
+      source: "MIXED",
     },
     {
       id: "WD-140624",
@@ -129,6 +141,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Failed",
       requestedAt: "14 Jun 2026",
+      source: "QRIS_API",
     },
     {
       id: "WD-070624",
@@ -137,6 +150,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "7 Jun 2026",
+      source: "STOREFRONT",
     },
     {
       id: "WD-310524",
@@ -145,6 +159,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "31 May 2026",
+      source: "QRIS_API",
     },
     {
       id: "WD-240524",
@@ -153,6 +168,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Processing",
       requestedAt: "24 May 2026",
+      source: "MIXED",
     },
     {
       id: "WD-170524",
@@ -161,6 +177,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "17 May 2026",
+      source: "STOREFRONT",
     },
     {
       id: "WD-100524",
@@ -169,6 +186,7 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "10 May 2026",
+      source: "QRIS_API",
     },
     {
       id: "WD-030524",
@@ -177,13 +195,14 @@ export function demoSellerWithdrawals(
       bankLabel: "BCA • 4821",
       status: "Completed",
       requestedAt: "3 May 2026",
+      source: "STOREFRONT",
     },
   ];
 }
 
 export const demoWithdrawalLock: SellerWithdrawalLock = {
-  locked: true,
-  reasonCode: "BANK_ACCOUNT_CHANGED",
-  unlockedAt: "2026-07-13T14:42:00+07:00",
-  remainingLabel: "18j 24m",
+  locked: false,
+  reasonCode: null,
+  unlockedAt: null,
+  remainingLabel: null,
 };

@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const FIXED_API_KEY = "sk_live_frs_8Mzv2Kp91xL0Qe7H4nR2";
-const FIXED_WEBHOOK_SECRET = "whsec_frs_9Kp2Lm4Qx7Vz1Ab3Cd5Ef";
+const FIXED_API_KEY = "sk_live_mock_not_a_real_secret";
+const FIXED_WEBHOOK_SECRET = "whsec_mock_not_a_real_secret";
 
 function ApiKeys() {
   return (
@@ -25,11 +25,11 @@ function ApiKeys() {
         </span>
         <div className="mt-3 sm:mt-0 sm:ml-4">
           <h3 className="text-sm font-extrabold">
-            Satu API key & webhook secret per akun
+            Satu credential QRIS API aktif per akun
           </h3>
           <p className="mt-1 text-xs text-[#627157]">
-            Credential disediakan Fersaku secara otomatis. Tidak bisa dibuat
-            atau diganti sendiri.
+            Sandbox disediakan Fersaku. Setelah KYC API disetujui, credential
+            dirotasi menjadi live dan tidak bisa dibuat atau diganti sendiri.
           </p>
         </div>
         <Link
@@ -49,7 +49,8 @@ function ApiKeys() {
             <div>
               <h2 className="text-sm font-extrabold">API key</h2>
               <p className="mt-1 text-[10px] text-[#7d8982]">
-                Secret key untuk autentikasi request QRIS API.
+                Secret key live untuk autentikasi payment gateway QRIS. Status
+                KYC API: disetujui.
               </p>
             </div>
           </div>

@@ -5,13 +5,19 @@ import type { ApiEnvelope } from "@/shared/api/contracts";
 import { isLiveApi } from "@/shared/data/mode";
 import { useAppMutation } from "@/shared/query/create-mutation";
 import { useQueryClient } from "@tanstack/react-query";
+import { appendMockAuditEvent } from "./mock-audit";
 
 export type AdminActionInput = {
   action:
     | "buyer.sessions.revoke"
+    | "buyer.magic_link.send"
+    | "buyer.email_change.start"
     | "review.moderate"
     | "merchant.status.update"
-    | "order.status.update"
+    | "merchant.api_access.update"
+    | "merchant.api_credentials.rotate"
+    | "order.delivery.resend"
+    | "payment.provider.verify"
     | "withdrawal.review";
   resourceId: string;
   status?: string;
@@ -34,6 +40,14 @@ export async function executeAdminAction(
   signal?: AbortSignal,
 ): Promise<AdminActionResult> {
   if (!isLiveApi()) {
+    appendMockAuditEvent({
+      actor: "admin@fersaku.id",
+      action: input.action,
+      target: input.resourceId,
+      ip: "mock-admin-session",
+      result: "Success",
+      context: input.reason,
+    });
     return {
       accepted: true,
       action: input.action,

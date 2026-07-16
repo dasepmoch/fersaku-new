@@ -10,24 +10,22 @@ import {
 
 import { AlertTriangle, Check } from "lucide-react";
 import { useState } from "react";
+import { FeePolicyPreview } from "@/features/admin/commerce/fee-policy-preview";
 
 function SystemSettings() {
   const [active, setActive] = useState("Commercial rules");
-  const [published, setPublished] = useState(false);
-  const [maintenance, setMaintenance] = useState(false);
-  const [flags, setFlags] = useState<Record<string, boolean>>({
+  const flags: Record<string, boolean> = {
     customDomains: true,
-    proPlan: false,
-    publicApi: true,
-    autoPayout: false,
-  });
-  const [security, setSecurity] = useState<Record<string, boolean>>({
+    sandboxApi: true,
+    liveQrisApi: true,
+    sellerWebhooks: true,
+  };
+  const security: Record<string, boolean> = {
     mfa: true,
     reasons: true,
     rotate: true,
     supportImpersonation: true,
-    fullImpersonation: false,
-  });
+  };
   return (
     <div className="grid gap-4 xl:grid-cols-[220px_1fr]">
       <nav className={`${adminPanel} h-fit p-2`}>
@@ -55,15 +53,25 @@ function SystemSettings() {
             desc="Applied to newly created paid orders."
           >
             <div className="grid gap-4 sm:grid-cols-3">
-              <AdminInput label="Platform fee" value="3" suffix="%" />
-              <AdminInput label="Fixed platform fee" value="0" prefix="Rp" />
-              <AdminInput label="Payment fee" value="700" prefix="Rp" />
+              <AdminInput label="Platform fee" value="3" suffix="%" readOnly />
+              <AdminInput
+                label="Payment processing fee"
+                value="700"
+                prefix="Rp"
+                readOnly
+              />
+              <AdminInput
+                label="Transaction sources"
+                value="Storefront + QRIS API"
+                readOnly
+              />
             </div>
             <div className="mt-4 rounded-xl border border-[#ead7ad] bg-[#fff9eb] p-4 text-[9px] leading-4 text-[#7a673c]">
-              <AlertTriangle className="mr-2 inline size-3.5" /> Fee changes
-              affect new orders only and create a permanent configuration audit
-              event.
+              <AlertTriangle className="mr-2 inline size-3.5" /> Launch fee is
+              fixed at 3% + Rp700 for both sources. A future change requires a
+              product-approved versioned release, not an operator override.
             </div>
+            <FeePolicyPreview className="mt-4" />
           </SettingsGroup>
         </div>
         <div className={active === "Settlement" ? "" : "hidden"}>
@@ -72,19 +80,37 @@ function SystemSettings() {
             desc="Controls when seller funds become withdrawable."
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <AdminInput label="Settlement delay" value="1" suffix="day" />
+              <AdminInput
+                label="Withdrawal platform fee"
+                value="3"
+                suffix="%"
+                readOnly
+              />
+              <AdminInput
+                label="Settlement delay"
+                value="1"
+                suffix="day"
+                readOnly
+              />
               <AdminInput
                 label="Minimum withdrawal"
                 value="50000"
                 prefix="Rp"
+                readOnly
               />
+            </div>
+            <div className="mt-4 rounded-xl border border-[#dfe3eb] bg-[#f8f9fb] p-4 text-[9px] leading-4 text-[#6f7a90]">
+              <b className="text-[#22283a]">Withdrawal processing</b> is charged
+              by Xendit at disbursement time. The final provider fee is fetched
+              server-side and added to the 3% platform fee; the browser never
+              writes the ledger amount.
             </div>
           </SettingsGroup>
         </div>
         <div className={active === "Feature flags" ? "" : "hidden"}>
           <SettingsGroup
             title="Feature flags"
-            desc="Progressively release platform capabilities."
+            desc="Release-managed capability snapshot; runtime override is disabled."
           >
             <div className="grid gap-3 sm:grid-cols-2">
               {[
@@ -94,19 +120,19 @@ function SystemSettings() {
                   "Enable domain verification and SSL provisioning",
                 ],
                 [
-                  "proPlan",
-                  "Pro subscription",
-                  "Expose paid plan upgrade to sellers",
+                  "sandboxApi",
+                  "QRIS API sandbox",
+                  "Allow isolated payment testing without production funds",
                 ],
                 [
-                  "publicApi",
-                  "Developer API",
-                  "Allow live API keys and QRIS endpoints",
+                  "liveQrisApi",
+                  "Live QRIS API",
+                  "Allow KYC-approved live QRIS payment credentials",
                 ],
                 [
-                  "autoPayout",
-                  "Automatic payouts",
-                  "Skip manual review for eligible merchants",
+                  "sellerWebhooks",
+                  "Seller webhooks",
+                  "Deliver signed payment events to merchant endpoints",
                 ],
               ].map(([key, title, desc]) => (
                 <div
@@ -121,7 +147,8 @@ function SystemSettings() {
                   </div>
                   <Toggle
                     value={flags[key]}
-                    onChange={() => setFlags({ ...flags, [key]: !flags[key] })}
+                    onChange={() => undefined}
+                    disabled
                   />
                 </div>
               ))}
@@ -138,23 +165,37 @@ function SystemSettings() {
                 label="Maximum product price"
                 value="50000000"
                 prefix="Rp"
+                readOnly
               />
               <AdminInput
                 label="Maximum upload size"
                 value="2048"
                 suffix="MB"
+                readOnly
               />
-              <AdminInput label="API requests per minute" value="120" />
-              <AdminInput label="Webhook retry attempts" value="8" />
-              <AdminInput label="Inventory import rows" value="10000" />
-              <AdminInput label="Active API keys per store" value="10" />
+              <AdminInput
+                label="API requests per minute"
+                value="120"
+                readOnly
+              />
+              <AdminInput label="Webhook retry attempts" value="8" readOnly />
+              <AdminInput
+                label="Inventory import rows"
+                value="10000"
+                readOnly
+              />
+              <AdminInput
+                label="Active API keys per account"
+                value="1"
+                readOnly
+              />
             </div>
           </SettingsGroup>
         )}
         {active === "Security policy" && (
           <SettingsGroup
             title="Administrator security"
-            desc="Organization-wide access and session requirements."
+            desc="Release-managed access and session policy snapshot."
           >
             <div className="grid gap-3">
               {[
@@ -162,7 +203,6 @@ function SystemSettings() {
                 ["reasons", "Require reason for privileged actions"],
                 ["rotate", "Rotate sessions after permission escalation"],
                 ["supportImpersonation", "Allow support-write impersonation"],
-                ["fullImpersonation", "Allow full impersonation"],
               ].map(([key, label]) => (
                 <div
                   key={key}
@@ -176,9 +216,8 @@ function SystemSettings() {
                   </div>
                   <Toggle
                     value={security[key]}
-                    onChange={() =>
-                      setSecurity({ ...security, [key]: !security[key] })
-                    }
+                    onChange={() => undefined}
+                    disabled
                   />
                 </div>
               ))}
@@ -188,7 +227,7 @@ function SystemSettings() {
         <div className={active === "Maintenance" ? "" : "hidden"}>
           <SettingsGroup
             title="Emergency controls"
-            desc="Global controls require super administrator permission."
+            desc="Use the guarded provider switchboard for runtime controls."
           >
             <div className="flex items-center justify-between rounded-xl border border-[#efc9c5] bg-[#fff6f5] p-4">
               <div>
@@ -201,22 +240,28 @@ function SystemSettings() {
                 </p>
               </div>
               <Toggle
-                value={maintenance}
-                onChange={() => setMaintenance(!maintenance)}
+                value={false}
+                onChange={() => undefined}
                 danger
+                disabled
               />
             </div>
           </SettingsGroup>
         </div>
         <div className="flex justify-end gap-2">
-          <AdminButton secondary onClick={() => setPublished(false)}>
+          <AdminButton
+            secondary
+            disabled
+            title="Configuration is managed through a versioned release"
+          >
             Discard changes
           </AdminButton>
-          <AdminButton onClick={() => setPublished(true)}>
-            <Check className="size-4" />{" "}
-            {published
-              ? "Configuration published & audited"
-              : "Publish configuration"}
+          <AdminButton
+            aria-label="Publish current configuration"
+            disabled
+            title="Configuration is managed through a versioned release"
+          >
+            <Check className="size-4" /> Publish configuration
           </AdminButton>
         </div>
       </section>

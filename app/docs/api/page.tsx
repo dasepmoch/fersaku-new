@@ -7,16 +7,17 @@ const sections = [
   "Mulai cepat",
   "Autentikasi",
   "QRIS payments",
-  "Checkout sessions",
-  "Orders",
+  "Payment status",
+  "Idempotency",
   "Webhooks",
   "Errors",
 ];
 const fields = [
   ["amount", "integer", "required", "Amount in IDR, without decimals."],
   ["description", "string", "required", "Shown in dashboard and webhooks."],
-  ["customer", "object", "required", "Customer name and email."],
-  ["expires_in_minutes", "integer", "optional", "Between 5 and 60 minutes."],
+  ["merchantReference", "string", "required", "Your unique invoice reference."],
+  ["customer", "object", "optional", "Opaque customer metadata."],
+  ["expiresInMinutes", "integer", "optional", "Between 5 and 60 minutes."],
   ["metadata", "object", "optional", "Your own reference data."],
 ];
 
@@ -62,16 +63,16 @@ export default function DocsPage() {
               Create a QRIS payment
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-[#647169]">
-              Creates a payment intent and returns dynamic QRIS data. Explore
-              the request safely in the live frontend playground before
-              integrating a backend.
+              Creates an independent QRIS payment intent and returns dynamic
+              QRIS data. This gateway does not create products, inventory, or
+              storefront orders for you.
             </p>
             <div className="hairline mt-8 flex gap-3 border-b pb-8">
               <span className="rounded-lg bg-[#bdf8d0] px-3 py-2 text-[11px] font-extrabold text-[#194b34]">
                 POST
               </span>
               <code className="rounded-lg bg-[#eef0eb] px-3 py-2 text-[11px]">
-                /v1/qris/payments
+                /v1/gateway/payment-intents
               </code>
             </div>
             <ApiPlayground />
@@ -80,7 +81,8 @@ export default function DocsPage() {
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
               Pass your secret API key in the Authorization header. Use test
-              keys while developing.
+              keys while developing; production/live keys activate only after
+              QRIS API KYC approval.
             </p>
             <CodeBlock code="Authorization: Bearer sk_test_your_key" />
             <h2 id="qris-payments" className="mt-10 text-xl font-extrabold">
@@ -104,7 +106,7 @@ export default function DocsPage() {
             <h2 className="mt-10 text-xl font-extrabold">Example response</h2>
             <CodeBlock
               code={
-                '{\n  "id": "qris_2Yc91p",\n  "status": "pending",\n  "amount": 99000,\n  "currency": "IDR",\n  "qr_image_url": "https://...",\n  "expires_at": "2026-07-12T12:30:00.000Z"\n}'
+                '{\n  "paymentIntentId": "qris_2Yc91p",\n  "status": "PENDING",\n  "amount": 99000,\n  "currency": "IDR",\n  "paymentMode": "SANDBOX",\n  "qrImageUrl": "https://...",\n  "expiresAt": "2026-07-12T12:30:00.000Z"\n}'
               }
             />
           </div>
