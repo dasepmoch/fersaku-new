@@ -4,7 +4,8 @@ export type CardStyle = "soft" | "outline" | "poster" | "compact";
 export type Texture = "noise" | "grid" | "dots" | "clean";
 export type Radius = "round" | "soft" | "sharp";
 export type FontStyle = "editorial" | "modern" | "friendly" | "mono";
-export type BuilderTab = "Templates" | "Brand" | "Layout" | "Sections" | "Links & SEO";
+export type BuilderTab =
+  "Templates" | "Brand" | "Layout" | "Sections" | "Links & SEO";
 
 export type BuilderConfig = {
   template: string;

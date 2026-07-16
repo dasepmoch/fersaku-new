@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function MockInteractionBoundary({
   children,
@@ -12,6 +12,13 @@ export function MockInteractionBoundary({
 }) {
   const [message, setMessage] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const button = (event.target as HTMLElement).closest("button");
@@ -38,6 +45,8 @@ export function MockInteractionBoundary({
       {children}
       {message && (
         <div
+          role="status"
+          aria-live="polite"
           className={`fixed bottom-5 left-1/2 z-[150] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-4 py-3 text-[10px] font-extrabold shadow-2xl backdrop-blur-xl ${tone === "admin" ? "border-[#2f3d62] bg-[#11182a]/95 text-white" : "border-[#173f2c]/15 bg-[#173f2c]/95 text-white"}`}
         >
           <CheckCircle2
@@ -45,9 +54,11 @@ export function MockInteractionBoundary({
           />
           <span className="max-w-[280px] truncate">{message}</span>
           <button
+            type="button"
             data-feedback="off"
             onClick={() => setMessage("")}
             className="ml-2 text-white/50"
+            aria-label="Tutup notifikasi"
           >
             <X className="size-3.5" />
           </button>

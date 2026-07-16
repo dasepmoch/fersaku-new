@@ -4,6 +4,9 @@ import "@fontsource/instrument-serif/400.css";
 import "./globals.css";
 import { ThemeDock, ThemeProvider } from "@/components/theme-provider";
 import { AppQueryProvider } from "@/shared/query/query-provider";
+import { assertSafePublicEnvironment } from "@/shared/config/env";
+
+assertSafePublicEnvironment();
 
 export const metadata: Metadata = {
   title: "Fersaku — Sell digital products beautifully",

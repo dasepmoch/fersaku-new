@@ -1,4 +1,4 @@
-import { AdminSecurityCenter } from "@/components/admin-security-center";
+import { AdminSecurityCenter } from "@/features/admin/domains/admin-security-center";
 
 export default function AdminSecurityPage() {
   return <AdminSecurityCenter />;

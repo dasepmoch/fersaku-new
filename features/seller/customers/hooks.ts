@@ -1,0 +1,26 @@
+"use client";
+
+import { isLiveApi } from "@/shared/data/mode";
+import { queryKeys } from "@/shared/query/query-keys";
+import { useAppQuery } from "@/shared/query/create-query";
+import { getSellerCustomer, listSellerCustomers } from "./api";
+import { demoCustomers } from "./mock";
+
+export function useSellerCustomers(storeId: string) {
+  return useAppQuery({
+    queryKey: queryKeys.seller.customers(storeId),
+    queryFn: (signal) => listSellerCustomers(storeId, signal),
+    placeholderData: isLiveApi() ? undefined : demoCustomers(),
+  });
+}
+
+export function useSellerCustomer(storeId: string, customerId: string) {
+  return useAppQuery({
+    queryKey: queryKeys.seller.customers(storeId).concat(customerId),
+    queryFn: (signal) => getSellerCustomer(storeId, customerId, signal),
+    enabled: Boolean(customerId),
+    placeholderData: isLiveApi()
+      ? undefined
+      : demoCustomers().find((c) => c.id === customerId) || null,
+  });
+}

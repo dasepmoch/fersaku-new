@@ -1,17 +1,8 @@
-import { orders } from "@/lib/mock-data";
 import { apiRequest } from "@/shared/api/http-client";
 import type { ApiEnvelope, CursorPage } from "@/shared/api/contracts";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
 import { isLiveApi } from "@/shared/data/mode";
 import type { SellerOrder } from "./contracts";
-
-function demoOrders(): SellerOrder[] {
-  return orders.map((order) => ({
-    ...order,
-    storeId: DEMO_STORE_ID,
-    status: order.status as SellerOrder["status"],
-  }));
-}
+import { demoOrders } from "./mock";
 
 export async function listSellerOrders(
   storeId: string,
@@ -49,5 +40,3 @@ export async function getSellerOrder(
   );
   return response.data;
 }
-
-export { demoOrders };

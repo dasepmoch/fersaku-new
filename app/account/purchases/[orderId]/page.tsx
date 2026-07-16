@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
-import { BuyerShell } from "@/components/buyer-shell";
-import { PurchaseDetail } from "@/components/buyer-pages";
-import { buyerPurchases } from "@/lib/buyer-mock-data";
+import { BuyerShell } from "@/features/buyer/components/buyer-shell";
+import { PurchaseDetail } from "@/features/buyer/screens/buyer-pages";
+import { getBuyerPurchase } from "@/features/buyer/data";
 export default async function PurchasePage({
   params,
 }: {
   params: Promise<{ orderId: string }>;
 }) {
   const { orderId } = await params;
-  const purchase = buyerPurchases.find((p) => p.orderId === orderId);
+  const purchase = await getBuyerPurchase(orderId);
   if (!purchase) notFound();
   return (
     <BuyerShell

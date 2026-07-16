@@ -1,29 +1,33 @@
 "use client";
 
 import {
-  Check,
-  CheckCircle2,
-  FileDown,
-  Filter,
-  MoreHorizontal,
-  Search,
-} from "lucide-react";
+  sellerCard,
+  SearchBox,
+  FilterButton,
+  MiniStat,
+} from "@/features/seller/ui";
+
+import { Check, CheckCircle2, FileDown, MoreHorizontal } from "lucide-react";
+
 import { useState } from "react";
+
 import { useSellerOrder, useSellerOrders } from "@/features/orders/hooks";
-import { orders as fallbackOrders } from "@/lib/mock-data";
+
 import { rupiah } from "@/lib/utils";
+
 import { DEMO_STORE_ID } from "@/shared/config/demo";
-import { MiniStat } from "@/shared/ui/mini-stat";
+
 import { SectionHead } from "@/shared/ui/section-head";
+
 import { StatusBadge } from "@/shared/ui/status-badge";
-import { surfaceCard } from "@/shared/ui/styles";
+
 import { TablePagination } from "@/shared/ui/table-pagination";
+
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
-const card = surfaceCard;
 function Orders() {
   return (
-    <section className={`${card} overflow-hidden`}>
+    <section className={`${sellerCard} overflow-hidden`}>
       <div className="hairline flex flex-col gap-3 border-b p-4 sm:flex-row">
         <SearchBox placeholder="Cari pesanan, nama, atau email..." />
         <div className="flex gap-2 sm:ml-auto">
@@ -49,7 +53,7 @@ function Orders() {
 }
 function OrderTable({ compact = false }: { compact?: boolean }) {
   const { data } = useSellerOrders(DEMO_STORE_ID);
-  const orders = data?.items ?? fallbackOrders;
+  const orders = data?.items ?? [];
   const source = compact ? orders.slice(0, 4) : orders;
   const { pageRows, pagination } = useClientPagination(source);
   return (
@@ -112,11 +116,12 @@ function OrderTable({ compact = false }: { compact?: boolean }) {
 }
 function SellerOrderDetail({ id }: { id: string }) {
   const { data: order } = useSellerOrder(DEMO_STORE_ID, id);
-  const o = order || fallbackOrders[0];
   const [resent, setResent] = useState(false);
+  if (!order) return null;
+  const o = order;
   return (
     <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
-      <section className={`${card} p-5 sm:p-7`}>
+      <section className={`${sellerCard} p-5 sm:p-7`}>
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[10px] font-bold text-[#477057]">#{o.id}</p>
@@ -180,7 +185,7 @@ function SellerOrderDetail({ id }: { id: string }) {
           </button>
         </div>
       </section>
-      <section className={`${card} overflow-hidden`}>
+      <section className={`${sellerCard} overflow-hidden`}>
         <SectionHead
           title="Timeline pesanan"
           desc="Semua perubahan pada order"
@@ -226,24 +231,6 @@ function InfoList({ title, rows }: { title: string; rows: string[][] }) {
         ))}
       </div>
     </div>
-  );
-}
-function SearchBox({ placeholder }: { placeholder: string }) {
-  return (
-    <div className="hairline flex h-10 w-full max-w-sm items-center gap-2 rounded-xl border bg-white px-3 text-[10px] text-[#829087]">
-      <Search className="size-3.5" />
-      <input
-        placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent outline-none"
-      />
-    </div>
-  );
-}
-function FilterButton() {
-  return (
-    <button className="hairline flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-[10px] font-bold">
-      <Filter className="size-3.5" /> Filter
-    </button>
   );
 }
 export {

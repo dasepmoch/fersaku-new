@@ -96,14 +96,13 @@ Admin in-app campaigns persist in the mock browser and render as priority-aware 
 
 Super Administrators can create custom staff roles, grant granular permissions, assign staff members, require MFA, and audit permission changes. Common non-critical controls provide visible mock-operation feedback, so buttons do not fail silently.
 
-
 KYC is not required to create or operate a store. Hosted storefront, Fersaku checkout, products, inventory, balances, and seller withdrawals remain fully accessible. KYC applies only before a production/live QRIS API credential is activated; sandbox API credentials remain available without KYC.
 
 Seller, buyer, and administrator shells include working notification centers and profile menus. Seller and admin settings use interactive tabs, toggles, session controls, and visible saved states. Product pages include verified ratings, distribution, buyer review submission, seller replies, and admin moderation. Checkout supports pay-what-you-want, tips, order bumps, and an animated GoPay/OVO/DANA/ShopeePay QRIS simulator. API docs include an editable frontend-only request playground.
 
-Every data table uses shared React client pagination (`useClientPagination` + `TablePagination`): row count, page size, page numbers, previous/next, and responsive controls. Production APIs should replace this with cursor contracts in `../docs/BACKEND_HANDOFF.md`.
+Every data table uses shared React client pagination (`useClientPagination` + `TablePagination`): row count, page size, page numbers, previous/next, and responsive controls. Production APIs should replace this with cursor contracts in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).
 
-Backend data contracts and security invariants for onboarding, storefront revisions, bank verification, MFA, flexible pricing, upsells, invoices, buyer authentication, structured inventory, product versions, fulfillment, RBAC, and impersonation are documented in `../docs/BACKEND_HANDOFF.md`.
+Backend data contracts and security invariants for onboarding, storefront revisions, bank verification, MFA, flexible pricing, upsells, invoices, buyer authentication, structured inventory, product versions, fulfillment, RBAC, and impersonation are documented in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).
 
 Traffic attribution follows a hybrid architecture: Fersaku's Go backend owns UTM/referrer-to-paid-order attribution, while PostHog, Plausible, or GA4 may be connected later as optional analytics sinks rather than the financial source of truth.
 
@@ -115,3 +114,5 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome npm run test:e2e
 ```
 
 `NEXT_TEST_WASM=1` is included in the dev/build scripts for compatibility with the local execution environment.
+
+The default prototype is deterministic mock mode. Copy `.env.example` to `.env.local` to select an explicit scenario or connect a compatible API; live deployments must use `NEXT_PUBLIC_DATA_SOURCE=api`, `NEXT_PUBLIC_APP_STAGE=live`, and an absolute `NEXT_PUBLIC_API_URL`.

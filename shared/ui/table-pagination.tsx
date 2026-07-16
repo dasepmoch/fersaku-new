@@ -53,9 +53,7 @@ export function TablePagination({
           {candidates.map((value, index) => {
             const nodes = [];
             if (index > 0 && value - candidates[index - 1] > 1) {
-              nodes.push(
-                <span key={`ellipsis-${value}`}>...</span>,
-              );
+              nodes.push(<span key={`ellipsis-${value}`}>...</span>);
             }
             nodes.push(
               <button

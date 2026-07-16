@@ -12,10 +12,10 @@ import {
 import { ProductArt } from "@/components/product-art";
 import { RevenueChart } from "@/components/revenue-chart";
 import { RotatingQuote } from "@/components/rotating-quote";
-import { TrafficAnalytics } from "@/components/traffic-analytics";
+import { TrafficAnalytics } from "@/features/seller/components/traffic-analytics";
 import { useSellerProducts } from "@/features/catalog/hooks";
 import { useSellerOrders } from "@/features/orders/hooks";
-import { orders as fallbackOrders, products as fallbackProducts } from "@/lib/mock-data";
+import { useSellerRevenue } from "@/features/finance/hooks";
 import { compactRupiah, rupiah } from "@/lib/utils";
 import { DEMO_STORE_ID } from "@/shared/config/demo";
 import { SectionHead } from "@/shared/ui/section-head";
@@ -64,9 +64,10 @@ const metrics: Metric[] = [
 ];
 
 function Overview() {
-  const { data: products = fallbackProducts } = useSellerProducts(DEMO_STORE_ID);
+  const { data: products = [] } = useSellerProducts(DEMO_STORE_ID);
   const { data: orderPage } = useSellerOrders(DEMO_STORE_ID);
-  const orders = orderPage?.items ?? fallbackOrders;
+  const { data: revenue = [] } = useSellerRevenue(DEMO_STORE_ID);
+  const orders = orderPage?.items ?? [];
 
   return (
     <>
@@ -87,7 +88,9 @@ function Overview() {
               {label}
             </p>
             <div className="mt-1 flex items-end justify-between">
-              <p className="text-2xl font-extrabold tracking-[-.04em]">{value}</p>
+              <p className="text-2xl font-extrabold tracking-[-.04em]">
+                {value}
+              </p>
               <span className="rounded-full bg-[#e8f4e7] px-2 py-1 text-[9px] font-extrabold text-[#2e714f]">
                 {note}
               </span>
@@ -102,13 +105,16 @@ function Overview() {
               <h2 className="text-sm font-extrabold">Pendapatan</h2>
               <p className="mt-1 text-[10px] text-[#7b8780]">7 hari terakhir</p>
             </div>
-            <select className="hairline rounded-lg border bg-white px-3 py-2 text-[10px] font-bold">
+            <select
+              aria-label="Rentang pendapatan"
+              className="hairline rounded-lg border bg-white px-3 py-2 text-[10px] font-bold"
+            >
               <option>7 hari</option>
               <option>30 hari</option>
             </select>
           </div>
           <div className="mt-3">
-            <RevenueChart />
+            <RevenueChart data={revenue} />
           </div>
         </section>
         <section className={`${surfaceCard} overflow-hidden`}>
@@ -187,7 +193,12 @@ function OrderTable({
   const { pageRows, pagination } = useClientPagination(source);
   return (
     <>
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        role="region"
+        tabIndex={0}
+        aria-label="Daftar pesanan"
+      >
         <table className="w-full min-w-[760px] text-left">
           <thead>
             <tr className="bg-[#f3f4ef] text-[9px] font-extrabold tracking-wider text-[#7f8a83] uppercase">

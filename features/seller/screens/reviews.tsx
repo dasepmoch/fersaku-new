@@ -1,14 +1,26 @@
 "use client";
 
-import { CheckCircle2, Filter, Search, Star } from "lucide-react";
+import {
+  sellerCard,
+  SearchBox,
+  FilterButton,
+  MiniStat,
+} from "@/features/seller/ui";
+import { CheckCircle2, Star } from "lucide-react";
 import { useState } from "react";
-import { ratingSummary, reviews } from "@/lib/reviews-mock-data";
+import { demoRatingSummary, demoReviews } from "@/features/seller/reviews/api";
+import {
+  useSellerRatingSummary,
+  useSellerReviews,
+} from "@/features/seller/reviews/hooks";
+import { DEMO_STORE_ID } from "@/shared/config/demo";
 
-const card = "rounded-[22px] border hairline bg-[#fbfaf7] shadow-card";
 function SellerReviews() {
-  const [items, setItems] = useState(
-    reviews.filter((review) => review.seller === "Asep AI Tools"),
-  );
+  // Keep query layer wired; local state owns reply/report mutations for mock UX.
+  useSellerReviews(DEMO_STORE_ID);
+  const { data: summary = demoRatingSummary() } =
+    useSellerRatingSummary(DEMO_STORE_ID);
+  const [items, setItems] = useState(() => demoReviews());
   const [replying, setReplying] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const saveReply = (id: string) => {
@@ -25,8 +37,8 @@ function SellerReviews() {
       <div className="grid gap-3 sm:grid-cols-4">
         <MiniStat
           label="Rating rata-rata"
-          value={String(ratingSummary.average)}
-          note={`${ratingSummary.total} ulasan`}
+          value={String(summary.average)}
+          note={`${summary.total} ulasan`}
         />
         <MiniStat label="5 bintang" value="82,8%" note="154 pembeli" />
         <MiniStat
@@ -40,7 +52,7 @@ function SellerReviews() {
           note="Tidak ada ulasan tamu"
         />
       </div>
-      <section className={`${card} mt-4 overflow-hidden`}>
+      <section className={`${sellerCard} mt-4 overflow-hidden`}>
         <div className="hairline flex flex-col gap-3 border-b p-4 sm:flex-row">
           <SearchBox placeholder="Cari ulasan atau pembeli..." />
           <div className="flex gap-2 sm:ml-auto">
@@ -79,14 +91,14 @@ function SellerReviews() {
                     <div
                       className="h-full rounded-full bg-[#d7ff64]"
                       style={{
-                        width: `${(ratingSummary.distribution[score as keyof typeof ratingSummary.distribution] / ratingSummary.total) * 100}%`,
+                        width: `${(summary.distribution[score as keyof typeof summary.distribution] / summary.total) * 100}%`,
                       }}
                     />
                   </div>
                   <span className="text-white/45">
                     {
-                      ratingSummary.distribution[
-                        score as keyof typeof ratingSummary.distribution
+                      summary.distribution[
+                        score as keyof typeof summary.distribution
                       ]
                     }
                   </span>
@@ -186,43 +198,6 @@ function SellerReviews() {
         </div>
       </section>
     </>
-  );
-}
-function SearchBox({ placeholder }: { placeholder: string }) {
-  return (
-    <div className="hairline flex h-10 w-full max-w-sm items-center gap-2 rounded-xl border bg-white px-3 text-[10px] text-[#829087]">
-      <Search className="size-3.5" />
-      <input
-        placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent outline-none"
-      />
-    </div>
-  );
-}
-function FilterButton() {
-  return (
-    <button className="hairline flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-[10px] font-bold">
-      <Filter className="size-3.5" /> Filter
-    </button>
-  );
-}
-function MiniStat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-  return (
-    <div className={`${card} p-5`}>
-      <p className="text-[9px] font-extrabold tracking-wider text-[#7d8982] uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-extrabold tracking-tight">{value}</p>
-      <p className="mt-1 text-[9px] text-[#7d8982]">{note}</p>
-    </div>
   );
 }
 

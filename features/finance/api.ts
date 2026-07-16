@@ -6,6 +6,7 @@ import type {
   SellerLedgerItem,
   SellerWithdrawal,
   SellerWithdrawalLock,
+  SellerRevenuePoint,
 } from "./contracts";
 import {
   demoFinanceSummary,
@@ -13,6 +14,19 @@ import {
   demoSellerWithdrawals,
   demoWithdrawalLock,
 } from "./demo-data";
+import { demoSellerRevenue } from "./mock";
+
+export async function getSellerRevenue(
+  storeId: string,
+  signal?: AbortSignal,
+): Promise<SellerRevenuePoint[]> {
+  if (!isLiveApi()) return demoSellerRevenue();
+  const response = await apiRequest<ApiEnvelope<SellerRevenuePoint[]>>(
+    `/v1/stores/${storeId}/finance/revenue`,
+    { signal },
+  );
+  return response.data;
+}
 
 export async function getSellerFinanceSummary(
   storeId: string,

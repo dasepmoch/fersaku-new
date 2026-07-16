@@ -13,7 +13,7 @@ import {
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import { getStorefront } from "@/lib/storefront-mock-data";
+import { getPublicStorefront } from "@/features/catalog/api";
 import { cn, rupiah } from "@/lib/utils";
 
 export default async function StorePage({
@@ -22,7 +22,7 @@ export default async function StorePage({
   params: Promise<{ storeSlug: string }>;
 }) {
   const { storeSlug } = await params;
-  const store = getStorefront(storeSlug);
+  const store = await getPublicStorefront(storeSlug);
   if (!store) notFound();
   const editorial = store.layout === "editorial";
   const radius =

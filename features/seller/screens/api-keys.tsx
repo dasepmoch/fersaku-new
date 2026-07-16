@@ -1,5 +1,7 @@
 "use client";
 
+import { sellerCard } from "@/features/seller/ui";
+
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -10,8 +12,6 @@ import {
   Webhook,
 } from "lucide-react";
 import { useState } from "react";
-
-const card = "rounded-[22px] border hairline bg-[#fbfaf7] shadow-card";
 
 const FIXED_API_KEY = "sk_live_frs_8Mzv2Kp91xL0Qe7H4nR2";
 const FIXED_WEBHOOK_SECRET = "whsec_frs_9Kp2Lm4Qx7Vz1Ab3Cd5Ef";
@@ -40,7 +40,7 @@ function ApiKeys() {
         </Link>
       </div>
 
-      <section className={`${card} mt-4 overflow-hidden`}>
+      <section className={`${sellerCard} mt-4 overflow-hidden`}>
         <div className="p-5">
           <div className="flex items-start gap-3">
             <span className="grid size-10 place-items-center rounded-xl bg-[#e8f0e4] text-[#315d47]">

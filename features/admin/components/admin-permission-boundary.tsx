@@ -1,8 +1,10 @@
 "use client";
 
 import { ShieldX } from "lucide-react";
+import { createMockSession, hasPermission } from "@/shared/auth/contracts";
 
-const mockPermissions = new Set(["*"]);
+// Prototype-only view policy. Backend authorization remains authoritative.
+const mockAdminSession = createMockSession("admin");
 
 export function AdminPermissionBoundary({
   permission,
@@ -11,7 +13,7 @@ export function AdminPermissionBoundary({
   permission: string;
   children: React.ReactNode;
 }) {
-  const allowed = mockPermissions.has("*") || mockPermissions.has(permission);
+  const allowed = hasPermission(mockAdminSession, permission);
   if (allowed) return children;
 
   return (

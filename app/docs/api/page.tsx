@@ -15,12 +15,7 @@ const sections = [
 const fields = [
   ["amount", "integer", "required", "Amount in IDR, without decimals."],
   ["description", "string", "required", "Shown in dashboard and webhooks."],
-  [
-    "customer",
-    "object",
-    "required",
-    "Customer name and email.",
-  ],
+  ["customer", "object", "required", "Customer name and email."],
   ["expires_in_minutes", "integer", "optional", "Between 5 and 60 minutes."],
   ["metadata", "object", "optional", "Your own reference data."],
 ];

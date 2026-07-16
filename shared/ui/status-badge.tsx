@@ -1,12 +1,13 @@
+import {
+  isSellerPendingStatus,
+  isSellerPositiveStatus,
+} from "@/shared/format/status";
 import { statusTone } from "./styles";
 
-const positive = new Set(["Paid", "Active", "Completed", "Delivered"]);
-const pending = new Set(["Pending", "Processing"]);
-
 export function StatusBadge({ status }: { status: string }) {
-  const tone = positive.has(status)
+  const tone = isSellerPositiveStatus(status)
     ? statusTone.positive
-    : pending.has(status)
+    : isSellerPendingStatus(status)
       ? statusTone.pending
       : statusTone.negative;
 

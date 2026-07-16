@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminButton } from "@/features/admin/ui";
+
 import Link from "next/link";
 import {
   Check,
@@ -11,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { adminRoles } from "@/lib/admin-mock-data";
+import { useAdminRoles } from "@/features/admin/data";
 
 export function AdminAction({ section }: { section: string }) {
   const [staffOpen, setStaffOpen] = useState(false);
@@ -62,25 +64,9 @@ export function AdminAction({ section }: { section: string }) {
     </div>
   );
 }
-function AdminButton({
-  children,
-  secondary = false,
-  onClick,
-}: {
-  children: React.ReactNode;
-  secondary?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-[10px] font-extrabold transition ${secondary ? "border border-[#d8dde8] bg-white text-[#3c465d] hover:bg-[#f8f9fb]" : "bg-[#11182a] text-white hover:-translate-y-0.5 hover:bg-[#202b48]"}`}
-    >
-      {children}
-    </button>
-  );
-}
 function StaffInviteDialog({ onClose }: { onClose: () => void }) {
+  const { data: roles } = useAdminRoles();
+  const adminRoles = roles ?? [];
   const [sent, setSent] = useState(false);
   return (
     <div className="fixed inset-0 z-[160] grid place-items-center bg-[#080d1b]/65 p-4 backdrop-blur-sm">

@@ -1,5 +1,7 @@
 "use client";
 
+import { adminPanel, PanelHead } from "@/features/admin/ui";
+
 import Link from "next/link";
 import {
   Activity,
@@ -13,12 +15,15 @@ import {
   TrendingUp,
   Webhook,
 } from "lucide-react";
-import { auditEvents, platformVolume } from "@/lib/admin-mock-data";
+import {
+  useAdminAuditEvents,
+  useAdminPlatformVolume,
+} from "@/features/admin/data";
 import { RotatingQuote } from "@/components/rotating-quote";
 
-const panel =
-  "rounded-[20px] border border-[#dfe3ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,.03),0_10px_34px_rgba(16,24,40,.045)]";
 function CommandCenter() {
+  const { data: platformVolume } = useAdminPlatformVolume();
+  const { data: auditEvents } = useAdminAuditEvents();
   const metrics = [
     [
       "Gross volume",
@@ -51,7 +56,7 @@ function CommandCenter() {
       <RotatingQuote surface="admin" compact className="mb-4" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(([label, value, note, Icon, bg, color]) => (
-          <div key={label as string} className={`${panel} p-5`}>
+          <div key={label as string} className={`${adminPanel} p-5`}>
             <div className="flex items-start justify-between">
               <span
                 className="grid size-10 place-items-center rounded-xl"
@@ -79,7 +84,7 @@ function CommandCenter() {
         ))}
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.45fr_.75fr]">
-        <section className={`${panel} p-5 sm:p-6`}>
+        <section className={`${adminPanel} p-5 sm:p-6`}>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xs font-black">Platform payment volume</h2>
@@ -99,7 +104,7 @@ function CommandCenter() {
             </div>
           </div>
           <div className="mt-8 flex h-52 items-end gap-1.5">
-            {platformVolume.map((h, i) => (
+            {(platformVolume ?? []).map((h, i) => (
               <div
                 key={i}
                 className="group relative flex-1 rounded-t-sm bg-[#5b7cfa] transition hover:bg-[#375eea]"
@@ -119,7 +124,7 @@ function CommandCenter() {
             <span>Now</span>
           </div>
         </section>
-        <section className={`${panel} overflow-hidden`}>
+        <section className={`${adminPanel} overflow-hidden`}>
           <div className="border-b border-[#e3e6ed] p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -156,7 +161,7 @@ function CommandCenter() {
         </section>
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_.9fr]">
-        <section className={`${panel} overflow-hidden`}>
+        <section className={`${adminPanel} overflow-hidden`}>
           <PanelHead
             title="Action queue"
             desc="Items requiring administrator attention"
@@ -225,13 +230,13 @@ function CommandCenter() {
             ))}
           </div>
         </section>
-        <section className={`${panel} overflow-hidden`}>
+        <section className={`${adminPanel} overflow-hidden`}>
           <PanelHead
             title="Live audit stream"
             desc="Sensitive platform activity"
           />
           <div>
-            {auditEvents.slice(0, 4).map((e) => (
+            {(auditEvents ?? []).slice(0, 4).map((e) => (
               <div
                 key={e.id}
                 className="flex gap-3 border-t border-[#e7e9ef] px-5 py-3.5"
@@ -254,25 +259,6 @@ function CommandCenter() {
         </section>
       </div>
     </>
-  );
-}
-function PanelHead({
-  title,
-  desc,
-  action,
-}: {
-  title: string;
-  desc: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between p-5">
-      <div>
-        <h2 className="text-xs font-black">{title}</h2>
-        <p className="mt-1 text-[9px] text-[#8590a4]">{desc}</p>
-      </div>
-      {action}
-    </div>
   );
 }
 

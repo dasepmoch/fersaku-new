@@ -1,11 +1,11 @@
 "use client";
 
+import { adminPanel } from "@/features/admin/ui";
+
 import { useState, type ReactNode } from "react";
 import { CheckCircle2, Percent, Save, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const panel =
-  "rounded-[20px] border border-[#dfe3ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,.03),0_10px_34px_rgba(16,24,40,.045)]";
 export function MerchantFeeConfigurator({
   merchantName,
 }: {
@@ -19,7 +19,7 @@ export function MerchantFeeConfigurator({
   const [saved, setSaved] = useState(false);
   return (
     <>
-      <section className={`${panel} mt-4 overflow-hidden`}>
+      <section className={`${adminPanel} mt-4 overflow-hidden`}>
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
           <span className="grid size-11 place-items-center rounded-xl bg-[#edf1ff] text-[#536fdf]">
             <Percent className="size-5" />

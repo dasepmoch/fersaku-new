@@ -10,9 +10,11 @@ import {
   RefreshCcw,
   X,
 } from "lucide-react";
+import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import { products } from "@/lib/mock-data";
+import { listSellerProducts } from "@/features/catalog/api";
+import { DEMO_STORE_ID } from "@/shared/config/demo";
 
 const states = {
   success: {
@@ -44,7 +46,8 @@ export default async function OrderStatePage({
   const key = (status in states ? status : "pending") as keyof typeof states;
   const current = states[key];
   const Icon = current.icon;
-  const product = products[0];
+  const product = (await listSellerProducts(DEMO_STORE_ID))[0];
+  if (!product) notFound();
   return (
     <main className="min-h-screen bg-[#f3f2ec]">
       <header className="mx-auto flex h-20 max-w-[1000px] items-center justify-center px-5">

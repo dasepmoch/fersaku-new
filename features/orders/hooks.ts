@@ -3,7 +3,8 @@
 import { isLiveApi } from "@/shared/data/mode";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
-import { demoOrders, getSellerOrder, listSellerOrders } from "./api";
+import { getSellerOrder, listSellerOrders } from "./api";
+import { demoOrders } from "./mock";
 
 export function useSellerOrders(storeId: string) {
   return useAppQuery({
@@ -27,6 +28,6 @@ export function useSellerOrder(storeId: string, orderId: string) {
     enabled: Boolean(orderId),
     placeholderData: isLiveApi()
       ? undefined
-      : demoOrders().find((order) => order.id === orderId) || demoOrders()[0],
+      : demoOrders().find((order) => order.id === orderId) || null,
   });
 }

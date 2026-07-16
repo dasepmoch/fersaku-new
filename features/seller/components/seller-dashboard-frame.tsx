@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { DashboardAction } from "@/features/seller/screens/actions";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { DashboardShell } from "./dashboard-shell";
 import {
   getSellerPageMeta,
   getSellerSegments,

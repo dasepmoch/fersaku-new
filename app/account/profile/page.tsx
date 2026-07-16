@@ -1,5 +1,5 @@
-import { BuyerShell } from "@/components/buyer-shell";
-import { BuyerProfile } from "@/components/buyer-pages";
+import { BuyerShell } from "@/features/buyer/components/buyer-shell";
+import { BuyerProfile } from "@/features/buyer/screens/buyer-pages";
 export default function BuyerProfilePage() {
   return (
     <BuyerShell

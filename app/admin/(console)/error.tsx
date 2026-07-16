@@ -1,13 +1,22 @@
 "use client";
 
 import { AlertOctagon, RefreshCcw } from "lucide-react";
+import { useEffect } from "react";
+import { reportError } from "@/shared/observability/reporter";
 
 export default function AdminConsoleError({
+  error,
   reset,
 }: {
-  error: Error;
+  error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    reportError(error, {
+      source: "admin-console-error-boundary",
+      digest: error.digest,
+    });
+  }, [error]);
   return (
     <section className="rounded-[24px] border border-[#efc6bc] bg-[#fff2ef] p-8 text-[#743d38]">
       <AlertOctagon className="size-7" />

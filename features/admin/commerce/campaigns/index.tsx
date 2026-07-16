@@ -1,0 +1,1 @@
+export { CampaignsAnnouncements } from "./announcements";

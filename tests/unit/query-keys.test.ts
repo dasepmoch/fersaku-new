@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest";
+import { queryKeys } from "@/shared/query/query-keys";
+import { DEMO_STORE_ID } from "@/shared/config/demo";
+
+describe("queryKeys", () => {
+  it("builds seller domain keys", () => {
+    expect(queryKeys.seller.finance(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "finance",
+    ]);
+    expect(queryKeys.seller.customers(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "customers",
+    ]);
+    expect(queryKeys.seller.reviews(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "reviews",
+    ]);
+    expect(queryKeys.seller.storefront(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "storefront",
+    ]);
+    expect(queryKeys.seller.apiKeys(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "api-keys",
+    ]);
+    expect(queryKeys.seller.webhooks(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "webhooks",
+    ]);
+    expect(queryKeys.seller.coupons(DEMO_STORE_ID)).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "coupons",
+    ]);
+  });
+
+  it("builds admin domain keys", () => {
+    expect(queryKeys.admin.merchants()).toEqual(["admin", "merchants", {}]);
+    expect(queryKeys.admin.merchant("str_01")).toEqual([
+      "admin",
+      "merchants",
+      "str_01",
+    ]);
+    expect(queryKeys.admin.buyers()).toEqual(["admin", "buyers", {}]);
+    expect(queryKeys.admin.buyer("byr_01")).toEqual([
+      "admin",
+      "buyers",
+      "byr_01",
+    ]);
+    expect(queryKeys.admin.orders()).toEqual(["admin", "orders", {}]);
+    expect(queryKeys.admin.order("FRS-1")).toEqual([
+      "admin",
+      "orders",
+      "FRS-1",
+    ]);
+    expect(queryKeys.admin.withdrawals()).toEqual(["admin", "withdrawals", {}]);
+    expect(queryKeys.admin.withdrawal("WD-1")).toEqual([
+      "admin",
+      "withdrawals",
+      "WD-1",
+    ]);
+    expect(queryKeys.admin.payments()).toEqual(["admin", "payments", {}]);
+    expect(queryKeys.admin.kyc()).toEqual(["admin", "kyc", {}]);
+    expect(queryKeys.admin.risk()).toEqual(["admin", "risk", {}]);
+    expect(queryKeys.admin.webhooks()).toEqual(["admin", "webhooks", {}]);
+    expect(queryKeys.admin.roles()).toEqual(["admin", "roles"]);
+    expect(queryKeys.admin.users()).toEqual(["admin", "users", {}]);
+    expect(queryKeys.admin.campaigns()).toEqual(["admin", "campaigns", {}]);
+    expect(queryKeys.admin.providers()).toEqual(["admin", "providers"]);
+    expect(queryKeys.admin.inventory()).toEqual(["admin", "inventory", {}]);
+    expect(queryKeys.admin.fulfillment()).toEqual(["admin", "fulfillment", {}]);
+    expect(queryKeys.admin.reviews()).toEqual(["admin", "reviews", {}]);
+    expect(queryKeys.admin.security()).toEqual(["admin", "security"]);
+    expect(queryKeys.admin.system()).toEqual(["admin", "system"]);
+    expect(queryKeys.admin.auditLogs()).toEqual(["admin", "audit-logs", {}]);
+  });
+
+  it("builds buyer domain keys", () => {
+    expect(queryKeys.buyer.purchases()).toEqual(["buyer", "purchases"]);
+    expect(queryKeys.buyer.purchase("FRS-1")).toEqual([
+      "buyer",
+      "purchases",
+      "FRS-1",
+    ]);
+    expect(queryKeys.buyer.profile()).toEqual(["buyer", "profile"]);
+    expect(queryKeys.buyer.sessions()).toEqual(["buyer", "sessions"]);
+  });
+});

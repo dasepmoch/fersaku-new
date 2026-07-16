@@ -1,6 +1,10 @@
 export const queryKeys = {
   seller: {
     finance: (storeId: string) => ["seller", storeId, "finance"] as const,
+    revenue: (storeId: string) => ["seller", storeId, "revenue"] as const,
+    inventory: (storeId: string) => ["seller", storeId, "inventory"] as const,
+    inventoryProduct: (storeId: string, productId: string) =>
+      ["seller", storeId, "inventory", productId] as const,
     ledger: (storeId: string) => ["seller", storeId, "ledger"] as const,
     withdrawals: (storeId: string) =>
       ["seller", storeId, "withdrawals"] as const,
@@ -13,13 +17,69 @@ export const queryKeys = {
     products: (storeId: string) => ["seller", storeId, "products"] as const,
     product: (storeId: string, productId: string) =>
       ["seller", storeId, "products", productId] as const,
+    customers: (storeId: string) => ["seller", storeId, "customers"] as const,
+    coupons: (storeId: string) => ["seller", storeId, "coupons"] as const,
+    reviews: (storeId: string) => ["seller", storeId, "reviews"] as const,
+    reviewsSummary: (storeId: string) =>
+      ["seller", storeId, "reviews", "summary"] as const,
+    webhooks: (storeId: string) => ["seller", storeId, "webhooks"] as const,
+    apiKeys: (storeId: string) => ["seller", storeId, "api-keys"] as const,
+    storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
   },
   admin: {
-    merchants: (filters: Record<string, unknown>) =>
+    merchants: (filters: Record<string, unknown> = {}) =>
       ["admin", "merchants", filters] as const,
-    reconciliation: (filters: Record<string, unknown>) =>
+    merchant: (merchantId: string) =>
+      ["admin", "merchants", merchantId] as const,
+    buyers: (filters: Record<string, unknown> = {}) =>
+      ["admin", "buyers", filters] as const,
+    buyer: (buyerId: string) => ["admin", "buyers", buyerId] as const,
+    buyerPurchases: (buyerId: string) =>
+      ["admin", "buyers", buyerId, "purchases"] as const,
+    buyerSessions: (buyerId: string) =>
+      ["admin", "buyers", buyerId, "sessions"] as const,
+    orders: (filters: Record<string, unknown> = {}) =>
+      ["admin", "orders", filters] as const,
+    order: (orderId: string) => ["admin", "orders", orderId] as const,
+    withdrawals: (filters: Record<string, unknown> = {}) =>
+      ["admin", "withdrawals", filters] as const,
+    withdrawal: (withdrawalId: string) =>
+      ["admin", "withdrawals", withdrawalId] as const,
+    payments: (filters: Record<string, unknown> = {}) =>
+      ["admin", "payments", filters] as const,
+    kyc: (filters: Record<string, unknown> = {}) =>
+      ["admin", "kyc", filters] as const,
+    risk: (filters: Record<string, unknown> = {}) =>
+      ["admin", "risk", filters] as const,
+    webhooks: (filters: Record<string, unknown> = {}) =>
+      ["admin", "webhooks", filters] as const,
+    roles: () => ["admin", "roles"] as const,
+    users: (filters: Record<string, unknown> = {}) =>
+      ["admin", "users", filters] as const,
+    campaigns: (filters: Record<string, unknown> = {}) =>
+      ["admin", "campaigns", filters] as const,
+    providers: () => ["admin", "providers"] as const,
+    platformVolume: () => ["admin", "platform-volume"] as const,
+    permissionGroups: () => ["admin", "permission-groups"] as const,
+    inventory: (filters: Record<string, unknown> = {}) =>
+      ["admin", "inventory", filters] as const,
+    fulfillment: (filters: Record<string, unknown> = {}) =>
+      ["admin", "fulfillment", filters] as const,
+    reviews: (filters: Record<string, unknown> = {}) =>
+      ["admin", "reviews", filters] as const,
+    security: () => ["admin", "security"] as const,
+    system: () => ["admin", "system"] as const,
+    auditLogs: (filters: Record<string, unknown> = {}) =>
+      ["admin", "audit-logs", filters] as const,
+    reconciliation: (filters: Record<string, unknown> = {}) =>
       ["admin", "reconciliation", filters] as const,
-    disputes: (filters: Record<string, unknown>) =>
+    disputes: (filters: Record<string, unknown> = {}) =>
       ["admin", "disputes", filters] as const,
+  },
+  buyer: {
+    purchases: () => ["buyer", "purchases"] as const,
+    purchase: (orderId: string) => ["buyer", "purchases", orderId] as const,
+    profile: () => ["buyer", "profile"] as const,
+    sessions: () => ["buyer", "sessions"] as const,
   },
 };

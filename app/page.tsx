@@ -20,7 +20,7 @@ import { PublicNav } from "@/components/public-nav";
 import { Footer } from "@/components/footer";
 import { ProductArt } from "@/components/product-art";
 import { RotatingQuote } from "@/components/rotating-quote";
-import { products } from "@/lib/mock-data";
+import { listFeaturedProducts } from "@/features/catalog/api";
 
 const features = [
   [
@@ -61,7 +61,11 @@ const features = [
   ],
 ];
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const products = await listFeaturedProducts(6);
+
   return (
     <main className="landing-page overflow-hidden">
       <section className="noise relative min-h-screen bg-[#f8f7f2]">

@@ -1,21 +1,17 @@
 "use client";
 
-import {
-  Download,
-  Eye,
-  FileClock,
-  Filter,
-  Search,
-  X,
-} from "lucide-react";
+import { adminPanel } from "@/features/admin/ui";
+
+import { Download, Eye, FileClock, Filter, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { auditEvents } from "@/lib/admin-mock-data";
+import {
+  type AdminAuditEvent,
+  useAdminAuditEvents,
+} from "@/features/admin/data";
 import { cn } from "@/lib/utils";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
-const panel =
-  "rounded-[20px] border border-[#dfe3ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,.03),0_10px_34px_rgba(16,24,40,.045)]";
 const categoryOf = (actor: string) =>
   actor === "system"
     ? "System"
@@ -24,13 +20,13 @@ const categoryOf = (actor: string) =>
       : "Seller";
 
 export function AdminAuditExplorer() {
+  const { data } = useAdminAuditEvents();
+  const auditEvents = useMemo(() => data ?? [], [data]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All actors");
   const [action, setAction] = useState("All actions");
   const [result, setResult] = useState("All results");
-  const [selected, setSelected] = useState<(typeof auditEvents)[number] | null>(
-    null,
-  );
+  const [selected, setSelected] = useState<AdminAuditEvent | null>(null);
   const [exported, setExported] = useState(false);
   const actions = [...new Set(auditEvents.map((e) => e.action))];
   const rows = useMemo(
@@ -44,12 +40,12 @@ export function AdminAuditExplorer() {
           (result === "All results" || event.result === result)
         );
       }),
-    [query, category, action, result],
+    [auditEvents, query, category, action, result],
   );
   const { pageRows, pagination } = useClientPagination(rows);
   return (
     <>
-      <section className={`${panel} overflow-hidden`}>
+      <section className={`${adminPanel} overflow-hidden`}>
         <div className="border-b border-[#e5e8ef] p-4">
           <div className="grid gap-3 xl:grid-cols-[1fr_repeat(4,auto)]">
             <label className="flex h-10 min-w-0 items-center gap-2 rounded-xl border border-[#dfe3eb] bg-white px-3">

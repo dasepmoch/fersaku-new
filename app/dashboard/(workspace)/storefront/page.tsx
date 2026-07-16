@@ -1,4 +1,4 @@
-import { StorefrontBuilder } from "@/components/storefront-builder";
+import { StorefrontBuilder } from "@/features/seller/storefront";
 
 export default function SellerStorefrontPage() {
   return <StorefrontBuilder />;

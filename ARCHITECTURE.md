@@ -10,13 +10,24 @@ features/           Business-domain screens, contracts, api modules, hooks
   catalog/          Product contracts, api module, query hooks
   orders/           Order contracts, api module, query hooks
   finance/          Balance, ledger, withdrawal contracts + api + hooks
-  seller/           Seller screens, storefront studio, route metadata
-  admin/            Admin screens, operations, commerce tools, route metadata
-  buyer/            Buyer account surfaces
+  seller/           Seller screens, storefront studio, customers/reviews data, route metadata
+  admin/
+    data/           Merchants, buyers, orders, withdrawals, payments api + hooks
+    ui/             Shared admin chrome (AdminStatus, Metric, tables) — no visual variance
+    screens/        Route-facing console surfaces (list/detail split where large)
+    operations/     KYC, risk, webhooks, emergency tools
+    commerce/       Campaigns, disputes, fees, reconciliation
+  buyer/
+    data/           Purchases, profile, sessions api + hooks
+    screens/        Buyer account surfaces
   commerce/         Checkout and buyer-commerce experiences
 shared/             Framework-wide API, query, UI primitives, formatters
+  format/status.ts  Pure status classification used by AdminStatus
 components/         Cross-surface visual shells; domain modules re-export from features/
 lib/                Deterministic fixtures and compatibility utilities
+shared/mock/         Deterministic latency/scenario runtime used only by mock adapters
+shared/storage/     Versioned, schema-validated browser storage adapters
+shared/observability/ Safe no-op reporter with recursive redaction
 tests/unit/         Pure contracts, route policy, api modules, calculations
 tests/e2e/          Browser-level critical commerce and administration flows
 ```
@@ -28,14 +39,18 @@ Seller and administrator pages use explicit file-based routes. Catch-all route s
 ```txt
 App Router page
   -> domain screen
-  -> TanStack Query hook (features/*/hooks)
-  -> feature API module (features/*/api.ts)
+  -> TanStack Query hook (features/*/hooks or features/*/data/hooks)
+  -> feature API module (features/*/api.ts or features/*/data/*.ts)
        -> mock fixtures by default
        -> shared HTTP client when NEXT_PUBLIC_DATA_SOURCE=api
   -> OpenAPI-compatible Go platform endpoint
 ```
 
-No repository interfaces. Each domain exposes plain async functions in `api.ts`. Screens never embed URLs. Mock mode may supply `placeholderData` so first paint stays stable.
+No repository interfaces. Each domain exposes plain async functions in `api.ts` (or split modules under `data/`). Screens never embed URLs. Mock mode may supply `placeholderData` so first paint stays stable.
+
+Mock/API selection is centralized in the feature API module. Screens import hooks and domain contracts only; a mock adapter may bridge legacy fixtures while migration is in progress, but fixture imports are forbidden in presentation. `shared/mock/runtime` provides deterministic scenario, clock, ID, latency, and abort helpers without becoming a production business engine.
+
+Admin list screens (merchants, buyers, orders, withdrawals, payments), buyer purchases, and seller customers/reviews read through hooks with the same mock fallback so UI appearance is unchanged until live API is enabled.
 
 ## Server and Client Components
 
@@ -58,4 +73,4 @@ Admin route metadata declares the minimum permission required by each surface. T
 
 ## Quality Gates
 
-Run `npm run verify` before merging. Critical browser flows run through Playwright with desktop and mobile projects. Production CI should additionally install Playwright Chromium and run `npm run test:e2e` after the build.
+Run `npm run verify` before merging. Critical browser flows run through Playwright with desktop and mobile projects; `npm run test:e2e:a11y` scans representative surfaces with axe, and `npm run test:e2e:visual` protects approved desktop/mobile screenshots. Production CI installs Playwright Chromium and runs the full E2E suite after the build. Backend contracts and ownership invariants are recorded in [`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md).

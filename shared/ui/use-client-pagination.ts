@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { paginate } from "./pagination";
 
 export type ClientPagination = {
   page: number;
@@ -22,16 +23,11 @@ export function useClientPagination<T>(
 ) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
-  const total = items.length;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize) || 1);
-  const safePage = Math.min(page, pageCount);
-  const start = total === 0 ? 0 : (safePage - 1) * pageSize;
-  const end = Math.min(start + pageSize, total);
-
-  const pageRows = useMemo(
-    () => items.slice(start, end),
-    [items, start, end],
+  const pageResult = useMemo(
+    () => paginate(items, page, pageSize),
+    [items, page, pageSize],
   );
+  const { page: safePage, pageCount, start, end, total, pageRows } = pageResult;
 
   const setPageSize = (size: number) => {
     setPageSizeState(size);

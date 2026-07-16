@@ -7,15 +7,19 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
-import { revenueData } from "@/lib/mock-data";
-import { compactRupiah } from "@/lib/utils";
+import type { SellerRevenuePoint } from "@/features/finance/contracts";
+import { compactRupiah } from "@/shared/format/money";
 
-export function RevenueChart() {
+export function RevenueChart({
+  data,
+}: {
+  data: readonly SellerRevenuePoint[];
+}) {
   return (
     <div className="h-[245px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={revenueData}
+          data={data}
           margin={{ top: 10, right: 4, left: 4, bottom: 0 }}
         >
           <defs>

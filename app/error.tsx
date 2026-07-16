@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { AlertTriangle, Home, RefreshCcw } from "lucide-react";
+import { useEffect } from "react";
+import { reportError } from "@/shared/observability/reporter";
 
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    reportError(error, { source: "app-error-boundary", digest: error.digest });
+  }, [error]);
+
   return (
     <main className="grid min-h-screen place-items-center bg-[#f8f7f2] p-6 text-[#17231d]">
       <section className="hairline shadow-float w-full max-w-lg rounded-[28px] border bg-white p-8 text-center">

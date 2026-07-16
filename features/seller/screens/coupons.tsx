@@ -1,12 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, Gift, MoreHorizontal } from "lucide-react";
+import {
+  sellerCard,
+  Status,
+  MiniStat,
+  FormGroup,
+  Input,
+  Select,
+} from "@/features/seller/ui";
+
+import { Gift, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { TablePagination } from "@/shared/ui/table-pagination";
+import { SectionHead } from "@/shared/ui/section-head";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
-const card = "rounded-[22px] border hairline bg-[#fbfaf7] shadow-card";
 function Coupons() {
   const coupons = [
     ["LAUNCH20", "20%", "128 / 250", "20 Jul 2026", "Active"],
@@ -34,7 +42,7 @@ function Coupons() {
         />
         <MiniStat label="Total diskon" value="Rp4,2jt" note="bulan ini" />
       </div>
-      <section className={`${card} mt-4 overflow-hidden`}>
+      <section className={`${sellerCard} mt-4 overflow-hidden`}>
         <SectionHead title="Semua kupon" desc="Kode promo untuk tokomu" />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[650px] text-left">
@@ -79,7 +87,7 @@ function CouponForm() {
   const [type, setType] = useState("percentage");
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
-      <section className={`${card} p-5 sm:p-7`}>
+      <section className={`${sellerCard} p-5 sm:p-7`}>
         <FormGroup
           label="Kode kupon"
           desc="Kode yang dimasukkan pembeli saat checkout."
@@ -131,7 +139,7 @@ function CouponForm() {
         </FormGroup>
       </section>
       <aside>
-        <div className={`${card} sticky top-28 p-5`}>
+        <div className={`${sellerCard} sticky top-28 p-5`}>
           <Gift className="size-5 text-[#315d47]" />
           <h3 className="mt-5 text-sm font-extrabold">Preview kupon</h3>
           <div className="mt-4 rounded-2xl border border-dashed border-[#173f2c]/25 bg-[#eff3e9] p-5 text-center">
@@ -148,124 +156,4 @@ function CouponForm() {
     </div>
   );
 }
-function Status({ status }: { status: string }) {
-  const positive = ["Paid", "Active", "Completed", "Delivered"].includes(
-    status,
-  );
-  const pending = ["Pending", "Processing"].includes(status);
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[9px] font-extrabold ${positive ? "bg-[#e5f5e6] text-[#2e714f]" : pending ? "bg-[#fff4ce] text-[#8a6c22]" : "bg-[#ffebe3] text-[#a7573e]"}`}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {status}
-    </span>
-  );
-}
-function MiniStat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-  return (
-    <div className={`${card} p-5`}>
-      <p className="text-[9px] font-extrabold tracking-wider text-[#7d8982] uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-extrabold tracking-tight">{value}</p>
-      <p className="mt-1 text-[9px] text-[#7d8982]">{note}</p>
-    </div>
-  );
-}
-function SectionHead({
-  title,
-  desc,
-  link,
-}: {
-  title: string;
-  desc: string;
-  link?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between p-5">
-      <div>
-        <h2 className="text-sm font-extrabold">{title}</h2>
-        <p className="mt-1 text-[10px] text-[#7d8982]">{desc}</p>
-      </div>
-      {link && (
-        <Link
-          href="/dashboard/orders"
-          className="text-[10px] font-extrabold text-[#356549]"
-        >
-          {link} <ArrowRight className="ml-1 inline size-3" />
-        </Link>
-      )}
-    </div>
-  );
-}
-function FormGroup({
-  label,
-  desc,
-  children,
-}: {
-  label: string;
-  desc: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="hairline border-b pb-7 last:border-0">
-      <div className="mb-5">
-        <h2 className="text-sm font-extrabold">{label}</h2>
-        <p className="mt-1 text-[10px] text-[#7b8780]">{desc}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
-function Input({
-  label,
-  placeholder,
-  prefix,
-  value,
-}: {
-  label: string;
-  placeholder?: string;
-  prefix?: string;
-  value?: string;
-}) {
-  return (
-    <label className="grid gap-2 text-xs font-bold">
-      {label}
-      <div className="hairline flex h-12 overflow-hidden rounded-xl border bg-white">
-        {prefix && (
-          <span className="hairline flex items-center border-r bg-[#f3f4ef] px-3 text-[10px] font-semibold text-[#77837b]">
-            {prefix}
-          </span>
-        )}
-        <input
-          defaultValue={value}
-          placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent px-4 text-sm font-normal outline-none"
-        />
-      </div>
-    </label>
-  );
-}
-function Select({ label, options }: { label: string; options: string[] }) {
-  return (
-    <label className="grid gap-2 text-xs font-bold">
-      {label}
-      <select className="hairline h-12 rounded-xl border bg-white px-4 text-sm font-normal outline-none">
-        {options.map((x) => (
-          <option key={x}>{x}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export { Coupons as SellerCouponsScreen, CouponForm as SellerCouponFormScreen };

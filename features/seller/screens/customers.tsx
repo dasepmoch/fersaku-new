@@ -1,15 +1,26 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, ChevronRight, MoreHorizontal, Search } from "lucide-react";
-import { orders } from "@/lib/mock-data";
+import { sellerCard, SearchBox, Status, MiniStat } from "@/features/seller/ui";
+
+import { ChevronRight, MoreHorizontal } from "lucide-react";
+
 import { rupiah } from "@/lib/utils";
+
+import {
+  useSellerCustomer,
+  useSellerCustomers,
+} from "@/features/seller/customers/hooks";
+
+import { DEMO_STORE_ID } from "@/shared/config/demo";
+
 import { TablePagination } from "@/shared/ui/table-pagination";
+import { SectionHead } from "@/shared/ui/section-head";
+
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
-const card = "rounded-[22px] border hairline bg-[#fbfaf7] shadow-card";
 function OrderTable({ compact = false }: { compact?: boolean }) {
-  const source = compact ? orders.slice(0, 4) : orders;
+  const { data: customers = [] } = useSellerCustomers(DEMO_STORE_ID);
+  const source = compact ? customers.slice(0, 4) : customers;
   const { pageRows, pagination } = useClientPagination(source);
   return (
     <>
@@ -70,17 +81,11 @@ function OrderTable({ compact = false }: { compact?: boolean }) {
   );
 }
 function Customers() {
-  const data = orders.map((o, i) => ({
-    ...o,
-    orders: [12, 8, 5, 3, 9, 6, 4, 11, 2, 7, 5, 3, 8][i % 13],
-    spent: [
-      948000, 732000, 547000, 299000, 412000, 680000, 255000, 1_120_000,
-      188000, 503000, 367000, 921000, 144000,
-    ][i % 13],
-  }));
+  const { data: customers } = useSellerCustomers(DEMO_STORE_ID);
+  const data = customers ?? [];
   const { pageRows, pagination } = useClientPagination(data);
   return (
-    <section className={`${card} overflow-hidden`}>
+    <section className={`${sellerCard} overflow-hidden`}>
       <div className="hairline flex gap-3 border-b p-4">
         <SearchBox placeholder="Cari pelanggan..." />
         <button className="hairline ml-auto rounded-xl border bg-white px-4 text-[10px] font-bold">
@@ -139,10 +144,12 @@ function Customers() {
   );
 }
 function CustomerDetail({ id }: { id: string }) {
-  const o = orders.find((x) => x.id === id) || orders[0];
+  const { data: customer } = useSellerCustomer(DEMO_STORE_ID, id);
+  if (!customer) return null;
+  const o = customer;
   return (
     <>
-      <section className={`${card} p-5 sm:p-7`}>
+      <section className={`${sellerCard} p-5 sm:p-7`}>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <span className="grid size-16 place-items-center rounded-full bg-[#dfe8dc] text-sm font-black">
             {o.avatar}
@@ -182,14 +189,14 @@ function CustomerDetail({ id }: { id: string }) {
         </div>
       </section>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
-        <section className={`${card} overflow-hidden`}>
+        <section className={`${sellerCard} overflow-hidden`}>
           <SectionHead
             title="Riwayat pembelian"
             desc="Semua produk yang dibeli pelanggan"
           />
           <OrderTable compact />
         </section>
-        <section className={`${card} p-5`}>
+        <section className={`${sellerCard} p-5`}>
           <h3 className="text-xs font-extrabold">Catatan internal</h3>
           <textarea
             rows={5}
@@ -210,77 +217,6 @@ function CustomerDetail({ id }: { id: string }) {
     </>
   );
 }
-function SearchBox({ placeholder }: { placeholder: string }) {
-  return (
-    <div className="hairline flex h-10 w-full max-w-sm items-center gap-2 rounded-xl border bg-white px-3 text-[10px] text-[#829087]">
-      <Search className="size-3.5" />
-      <input
-        placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent outline-none"
-      />
-    </div>
-  );
-}
-function Status({ status }: { status: string }) {
-  const positive = ["Paid", "Active", "Completed", "Delivered"].includes(
-    status,
-  );
-  const pending = ["Pending", "Processing"].includes(status);
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[9px] font-extrabold ${positive ? "bg-[#e5f5e6] text-[#2e714f]" : pending ? "bg-[#fff4ce] text-[#8a6c22]" : "bg-[#ffebe3] text-[#a7573e]"}`}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {status}
-    </span>
-  );
-}
-function MiniStat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-  return (
-    <div className={`${card} p-5`}>
-      <p className="text-[9px] font-extrabold tracking-wider text-[#7d8982] uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-extrabold tracking-tight">{value}</p>
-      <p className="mt-1 text-[9px] text-[#7d8982]">{note}</p>
-    </div>
-  );
-}
-function SectionHead({
-  title,
-  desc,
-  link,
-}: {
-  title: string;
-  desc: string;
-  link?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between p-5">
-      <div>
-        <h2 className="text-sm font-extrabold">{title}</h2>
-        <p className="mt-1 text-[10px] text-[#7d8982]">{desc}</p>
-      </div>
-      {link && (
-        <Link
-          href="/dashboard/orders"
-          className="text-[10px] font-extrabold text-[#356549]"
-        >
-          {link} <ArrowRight className="ml-1 inline size-3" />
-        </Link>
-      )}
-    </div>
-  );
-}
-
 export {
   Customers as SellerCustomersScreen,
   CustomerDetail as SellerCustomerDetailScreen,

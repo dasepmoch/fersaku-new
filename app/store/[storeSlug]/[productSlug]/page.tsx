@@ -12,9 +12,12 @@ import {
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import { getStorefront } from "@/lib/storefront-mock-data";
+import { getPublicStorefront } from "@/features/catalog/api";
+import {
+  listPublicProductReviews,
+  getPublicProductRating,
+} from "@/features/seller/reviews/api";
 import { rupiah } from "@/lib/utils";
-import { ratingSummary, reviews } from "@/lib/reviews-mock-data";
 
 export default async function ProductPage({
   params,
@@ -22,9 +25,13 @@ export default async function ProductPage({
   params: Promise<{ storeSlug: string; productSlug: string }>;
 }) {
   const { storeSlug, productSlug } = await params;
-  const store = getStorefront(storeSlug);
+  const store = await getPublicStorefront(storeSlug);
   const p = store?.products.find((x) => x.slug === productSlug);
   if (!store || !p) notFound();
+  const [ratingSummary, reviews] = await Promise.all([
+    getPublicProductRating(p.id),
+    listPublicProductReviews(p.id),
+  ]);
   return (
     <main className="min-h-screen bg-[#f8f7f2]">
       <header className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-5 lg:px-8">

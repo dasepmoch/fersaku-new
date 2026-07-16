@@ -48,3 +48,9 @@ export type SellerWithdrawalLock = {
   unlockedAt: string | null;
   remainingLabel: string | null;
 };
+
+export type SellerRevenuePoint = {
+  day: string;
+  revenue: number;
+  orders: number;
+};

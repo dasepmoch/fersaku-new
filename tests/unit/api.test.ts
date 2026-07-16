@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getSellerProduct,
-  listSellerProducts,
-} from "@/features/catalog/api";
+import { getSellerProduct, listSellerProducts } from "@/features/catalog/api";
 import {
   getSellerFinanceSummary,
   getSellerWithdrawalLock,

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AdminAction } from "@/features/admin/screens/actions";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminShell } from "./admin-shell";
 import { AdminPermissionBoundary } from "./admin-permission-boundary";
 import {
   getAdminPageMeta,

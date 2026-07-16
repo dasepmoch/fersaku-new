@@ -19,10 +19,7 @@ export function SectionHead({
         <p className="mt-1 text-[10px] text-[#7d8982]">{desc}</p>
       </div>
       {link && (
-        <Link
-          href={href}
-          className="text-[10px] font-extrabold text-[#356549]"
-        >
+        <Link href={href} className="text-[10px] font-extrabold text-[#356549]">
           {link} <ArrowRight className="ml-1 inline size-3" />
         </Link>
       )}
