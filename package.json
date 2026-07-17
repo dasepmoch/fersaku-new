@@ -31,6 +31,7 @@
     "ci:assert:performance": "node scripts/ci-assert-suite.mjs qlt-310-performance",
     "ci:assert:observability": "node scripts/ci-assert-suite.mjs qlt-320-observability",
     "ci:assert:flags": "node scripts/ci-assert-suite.mjs qlt-400-flags",
+    "ci:assert:deploy": "node scripts/ci-assert-suite.mjs qlt-410-deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "npm run format:check && npm run lint -- --max-warnings=0 && npm run typecheck && npm run test:run && npm run build"

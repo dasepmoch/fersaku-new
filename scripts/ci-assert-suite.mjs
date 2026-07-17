@@ -862,6 +862,112 @@ switch (suite) {
     break;
   }
 
+  case "qlt-410-deploy": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-410 continuous).
+    minLines(join(root, "docs/QLT-410-DEPLOY-ROLLBACK-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-410-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-410-DEPLOY-ROLLBACK-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "Expand schema/API",
+      "Dual-write / dual-read backend",
+      "Backfill",
+      "Consumer roll",
+      "No FE rollback via destructive migrate down",
+      "Callbacks accepted",
+      "Money facts are not rolled back",
+      "qlt-410-deploy",
+      "same PR",
+      "Do not invent",
+      "code/flags only",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-410 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const samples = [
+      "backend/migrations/README.md",
+      "backend/scripts/migrate.sh",
+      "backend/docs/launch/canary-rollback.md",
+      "backend/docs/launch/topology.md",
+      "backend/docs/runbooks/backup-restore-integrity.md",
+      "backend/test/integration/foundation_test.go",
+      "tests/unit/qlt-410-parent-framework.test.ts",
+    ];
+    for (const f of samples) minLines(join(root, f), 30);
+
+    const migrateSh = readFileSync(
+      join(root, "backend/scripts/migrate.sh"),
+      "utf8",
+    );
+    for (const needle of ["golang-migrate", "DATABASE_URL", "MIGRATIONS_PATH"]) {
+      if (!migrateSh.includes(needle)) {
+        fail(`migrate.sh missing parent marker: ${needle}`);
+      }
+    }
+
+    const canary = readFileSync(
+      join(root, "backend/docs/launch/canary-rollback.md"),
+      "utf8",
+    );
+    for (const needle of ["Rollback", "immutable", "callback", "migrate"]) {
+      if (!canary.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`canary-rollback.md missing parent marker: ${needle}`);
+      }
+    }
+
+    const topology = readFileSync(
+      join(root, "backend/docs/launch/topology.md"),
+      "utf8",
+    );
+    for (const needle of ["migrate job", "rolling", "fersaku-worker"]) {
+      if (!topology.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`topology.md missing parent marker: ${needle}`);
+      }
+    }
+
+    const foundation = readFileSync(
+      join(root, "backend/test/integration/foundation_test.go"),
+      "utf8",
+    );
+    for (const needle of [
+      "TestMigrateUpFromZero",
+      "TestMigrateUpgradeFromSupportedPrevious",
+      "runMigrate",
+    ]) {
+      if (!foundation.includes(needle)) {
+        fail(`foundation_test.go missing parent marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-410-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-410",
+      "EXPAND_CONTRACT_STEPS",
+      "HARD_RULES",
+      "No FE rollback via destructive migrate down",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-410-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-410 parent harness + expand-contract + rules + samples=${samples.length} + migrate/canary/topology/foundation + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

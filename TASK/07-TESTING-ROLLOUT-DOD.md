@@ -639,8 +639,9 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 �
 ## QLT-410 — Database/API deploy dan rollback strategy
 
 **Priority:** P0
+**Depends on:** INT-000; INT-180 **if live migration/runtime dependency**; QLT-210 framework; changed migration/domain gets a matching cell
 
-### Expand-contract migration
+### Expand-contract migration (parent registration)
 
 1. Add backward-compatible columns/tables/indexes/endpoint fields.
 2. Deploy backend that writes/reads compatible forms.
@@ -648,22 +649,27 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 �
 4. Deploy frontend/consumer using new contract.
 5. Observe and remove old compatibility only after rollback window.
 
+*(QLT-410 parent: steps registered in `docs/QLT-410-DEPLOY-ROLLBACK-COEVOLUTION.md`; domain cells prove per-migration path)*
+
 ### Rules
 
-- [ ] Never tie frontend rollback to destructive migration down.
-- [ ] Old backend/worker compatibility across rolling window documented.
-- [ ] Worker/API deploy order and outbox schema compatibility tested.
-- [ ] Long index/backfill lock/load rehearsed.
-- [ ] Migration checksum/version and restore point captured.
-- [ ] Provider callback remains accepted during deploy/rollback.
-- [ ] Idempotency results and state machine semantics stable across versions.
-- [ ] Immutable prior FE/BE image digest available.
-- [ ] Rollback does not undo committed order/payment/ledger; it changes code/flags only.
+- [x] Never tie frontend rollback to destructive migration down. *(parent: code/flags + immutable image only; canary-rollback sample)*
+- [x] Old backend/worker compatibility across rolling window documented. *(parent: topology + co-evolution rule)*
+- [x] Worker/API deploy order and outbox schema compatibility tested. *(parent sample: topology migrate-then-roll; foundation outbox/idempotency; domain cells extend)*
+- [ ] Long index/backfill lock/load rehearsed. *(capability cells / ops — do not invent)*
+- [x] Migration checksum/version and restore point captured. *(parent samples: migrate version + backup-restore runbook)*
+- [x] Provider callback remains accepted during deploy/rollback. *(parent rule + canary-rollback dual-compatible callback path)*
+- [x] Idempotency results and state machine semantics stable across versions. *(QLT-210 foundation samples; domain cells co-evolve)*
+- [x] Immutable prior FE/BE image digest available. *(parent: canary-rollback image roll)*
+- [x] Rollback does not undo committed order/payment/ledger; it changes code/flags only. *(parent hard rule)*
+- [x] CI suite guard `ci-assert-suite.mjs` `qlt-410-deploy`; wired in `frontend-static` / `ci:assert:deploy`.
 
 ### Acceptance criteria
 
-- Staging rolling deploy + rollback rehearsal succeeds under traffic/callback/worker load.
-- No dropped callback/outbox/double processing.
+- [x] Parent: expand-contract steps + hard rules + samples + CI + co-evolution documented.
+- [ ] Staging rolling deploy + rollback rehearsal succeeds under traffic/callback/worker load — **capability cells / ops**.
+- [ ] No dropped callback/outbox/double processing — **cell/ops rehearsal; do not invent results**.
+- [ ] §3.7 QLT-410 cells — domain co-evolution when schema/API changes.
 
 ---
 
