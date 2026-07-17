@@ -670,6 +670,102 @@ switch (suite) {
     break;
   }
 
+  case "qlt-320-observability": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-320 continuous).
+    minLines(join(root, "docs/QLT-320-OBSERVABILITY-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-320-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-320-OBSERVABILITY-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "Structured signals",
+      "Alerts",
+      "Dashboards",
+      "Runbooks",
+      "qlt-320-observability",
+      "requestId",
+      "same PR",
+      "Do not invent",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-320 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const samples = [
+      "shared/observability/reporter.ts",
+      "shared/observability/redact.ts",
+      "shared/api/http-client.ts",
+      "shared/api/server-http-client.ts",
+      "tests/unit/observability.test.ts",
+      "tests/unit/int-170-error-mock-observability.test.ts",
+      "backend/docs/observability-log-fields.md",
+      "backend/internal/platform/metrics/metrics.go",
+      "backend/docs/slo.md",
+      "backend/docs/dashboards/launch-overview.md",
+      "backend/docs/dashboards/launch-overview.json",
+      "backend/docs/runbooks/incident-diagnosis.md",
+      "backend/docs/runbooks/callback-failure.md",
+      "backend/docs/runbooks/queue-outbox.md",
+      "tests/unit/qlt-320-parent-framework.test.ts",
+    ];
+    for (const f of samples) minLines(join(root, f), 20);
+
+    const reporter = readFileSync(
+      join(root, "shared/observability/reporter.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "buildTelemetryContext",
+      "reportTransportError",
+      "requestId",
+      "redactContext",
+    ]) {
+      if (!reporter.includes(needle)) {
+        fail(`reporter.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const metrics = readFileSync(
+      join(root, "backend/internal/platform/metrics/metrics.go"),
+      "utf8",
+    );
+    for (const needle of [
+      "fersaku_http_requests_total",
+      "fersaku_callback_processed_total",
+      "fersaku_outbox_pending",
+    ]) {
+      if (!metrics.includes(needle)) {
+        fail(`metrics.go missing parent marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-320-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-320",
+      "MATRIX_CATEGORIES",
+      "Structured signals",
+      "runbooks",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-320-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-320 parent harness + 4 categories + samples=${samples.length} + FE reporter/requestId + BE metrics/runbooks + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

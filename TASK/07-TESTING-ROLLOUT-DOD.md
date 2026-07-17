@@ -519,18 +519,29 @@ Targets harus dikonfirmasi dengan actual baseline/SLO, tetapi gunakan guard beri
 ## QLT-320 — Observability, alerts, dashboards, runbooks
 
 **Priority:** P0 before live
+**Depends on:** INT-170; INT-180/185 **if live signals/runtime active**; capability cells co-evolve
 
-### Structured signals
+Parent framework (category registration/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-320-OBSERVABILITY-COEVOLUTION.md` and `TASK/evidence/QLT-320/`. Parent `[x]` does **not** mark every structured-signal / alert / dashboard / runbook bullet or §3.7 capability cell complete; cells co-evolve with domain observability-sensitive slices. **Do not invent** alert firings or game-day results.
 
-- request ID, trace ID, release ID, route template/operation ID, surface, status/problem code, latency;
-- actor/tenant identifiers only in approved pseudonymous form; never high-cardinality/raw PII;
+### Parent framework (done)
+
+- [x] Four categories registered: Structured signals, Alerts, Dashboards, Runbooks.
+- [x] Required non-empty samples (FE reporter/redaction, requestId propagation, BE metrics, runbook index + dashboard/SLO anchors).
+- [x] Parent assert suite `tests/unit/qlt-320-parent-framework.test.ts`.
+- [x] CI suite guard `ci-assert-suite.mjs` `qlt-320-observability`; wired in `frontend-static` / `ci:assert:observability`.
+- [x] Continuous co-evolution rule documented — domain slices expand signals/alerts/runbooks in same PR as observability-sensitive changes; canary firings/game-days co-evolve via §3.7 cells.
+
+### Structured signals (capability cells / domain co-evolution — not claimed by parent alone)
+
+- request ID, trace ID, release ID, route template/operation ID, surface, status/problem code, latency; *(parent samples: FE reporter, log fields, metrics)*
+- actor/tenant identifiers only in approved pseudonymous form; never high-cardinality/raw PII; *(parent sample: redact)*
 - payment/provider mode/account scope/reference hashed/bounded where useful;
-- queue lag/retry/DLQ; callback rejection/dedupe; checkout conversion/state age;
+- queue lag/retry/DLQ; callback rejection/dedupe; checkout conversion/state age; *(parent sample: BE metrics series)*
 - ledger/withdrawal invariant failures; auth/CSRF/MFA/permission denials;
 - contract-invalid rate; cache/SSR errors; frontend API errors by operation;
 - dependency health/readiness from real adapters.
 
-### Alerts
+### Alerts (capability cells / domain co-evolution — not claimed by parent alone)
 
 - paid callback not transitioning order;
 - callback signature rejection spike or duplicate storm;
@@ -541,24 +552,31 @@ Targets harus dikonfirmasi dengan actual baseline/SLO, tetapi gunakan guard beri
 - cross-tenant/permission denial anomaly;
 - contract invalid after deploy;
 - error budget burn/readiness failure.
+*(parent registers taxonomy via `backend/docs/slo.md`; do not invent firings)*
 
-### Runbooks
+### Dashboards (capability cells / domain co-evolution — not claimed by parent alone)
+
+- HTTP rate/latency, payment paid, callback, webhook, outbox, audit chain panels. *(parent sample: `backend/docs/dashboards/launch-overview`)*
+
+### Runbooks (capability cells / domain co-evolution — not claimed by parent alone)
 
 - Xendit outage/unknown create/disbursement;
-- callback backlog/replay safely;
-- delivery/webhook DLQ;
-- object scanner/storage outage;
+- callback backlog/replay safely; *(parent sample: callback-failure)*
+- delivery/webhook DLQ; *(parent sample: queue-outbox)*
+- object scanner/storage outage; *(parent sample: r2-email-health)*
 - CSRF/session incident;
 - credential/secret exposure;
 - ledger/withdrawal containment;
 - emergency switches;
 - rollout rollback and data migration issue.
+*(parent sample index: `backend/docs/runbooks/` + incident-diagnosis)*
 
 ### Acceptance criteria
 
-- Synthetic/canary event proves each critical alert reaches owner.
-- Operator can trace UI request -> Go -> DB/outbox/worker/provider without raw secret.
-- Runbook exercised in staging/game day.
+- [x] Parent: categories + samples + CI + co-evolution documented; operator correlation path samples exist (requestId/trace without raw secret).
+- [ ] Synthetic/canary event proves each critical alert reaches owner — **capability cells / ops**.
+- [ ] Full signal/alert/dashboard/runbook bullets / §3.7 cells — domain co-evolution before canary.
+- [ ] Runbook exercised in staging/game day — **ops / cell when claimed; do not invent results**.
 
 ---
 
