@@ -10,14 +10,17 @@ import {
 } from "@/features/admin/ui";
 import Link from "next/link";
 import { Ban, Eye, KeyRound, ShieldCheck, UserCog } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
-  type AdminBuyerSession,
   useAdminActionMutation,
   useAdminBuyer,
   useAdminBuyerPurchases,
   useAdminBuyerSessions,
+  useAdminBuyerSupportWriteEnabled,
 } from "@/features/admin/data";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import { getDomainSource } from "@/shared/data/domain-source";
+import { rupiah } from "@/lib/utils";
 
 type BuyerSupportAction =
   | { kind: "magic-link"; title: string }
@@ -25,38 +28,55 @@ type BuyerSupportAction =
   | { kind: "revoke-sessions"; title: string; sessionId?: string };
 
 export function BuyerIdentityDetail({ id }: { id: string }) {
+  const isMock = getDomainSource("adminRead") === "mock";
+  const canWrite = useAdminBuyerSupportWriteEnabled();
   const { data: buyer } = useAdminBuyer(id);
   const { data: purchases } = useAdminBuyerPurchases(id);
-  const { data: sessionData } = useAdminBuyerSessions(id);
+  /** Authoritative query — do not clone into local state (async copy bug). */
+  const { data: sessions } = useAdminBuyerSessions(id);
   const actionMutation = useAdminActionMutation();
   const [action, setAction] = useState<BuyerSupportAction | null>(null);
   const [lastCommand, setLastCommand] = useState<
     "magic-link" | "email-change" | null
   >(null);
-  const [sessions, setSessions] = useState<AdminBuyerSession[]>(
-    sessionData ?? [],
-  );
+  const actionIdemRef = useRef<string | null>(null);
+
   if (!buyer) return null;
+
+  const sessionRows = sessions ?? [];
+  const purchaseRows = purchases ?? [];
+  const lifetimeSpend = rupiah(buyer.spent);
+  const purchaseNote = isMock
+    ? "Across 4 sellers"
+    : purchaseRows.length > 0
+      ? `${purchaseRows.length} listed`
+      : "Server total";
+  const sessionNote = isMock ? "Passwordless login" : "From server";
+
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2">
         <AdminButton
           secondary
-          onClick={() =>
-            setAction({ kind: "magic-link", title: "Send buyer magic link" })
-          }
+          disabled={!canWrite || actionMutation.isPending}
+          onClick={() => {
+            actionIdemRef.current = createIdempotencyKey();
+            setAction({ kind: "magic-link", title: "Send buyer magic link" });
+          }}
         >
           <KeyRound className="size-4" />
           {lastCommand === "magic-link" ? "Link queued" : "Send magic link"}
         </AdminButton>
         <AdminButton
           secondary
-          onClick={() =>
+          disabled={!canWrite || actionMutation.isPending}
+          onClick={() => {
+            actionIdemRef.current = createIdempotencyKey();
             setAction({
               kind: "email-change",
               title: "Start verified buyer email change",
-            })
-          }
+            });
+          }}
         >
           <UserCog className="size-4" />
           {lastCommand === "email-change"
@@ -64,13 +84,16 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
             : "Start email change"}
         </AdminButton>
         <button
-          onClick={() =>
+          type="button"
+          disabled={!canWrite || actionMutation.isPending}
+          onClick={() => {
+            actionIdemRef.current = createIdempotencyKey();
             setAction({
               kind: "revoke-sessions",
               title: "Revoke all buyer sessions",
-            })
-          }
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#efc8c4] bg-[#fff5f4] px-4 text-[9px] font-extrabold text-[#c6534c]"
+            });
+          }}
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#efc8c4] bg-[#fff5f4] px-4 text-[9px] font-extrabold text-[#c6534c] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Ban className="size-4" /> Revoke all sessions
         </button>
@@ -87,7 +110,7 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-black">{buyer.name}</h2>
-                <AdminStatus status="Verified" />
+                <AdminStatus status={buyer.verified} />
               </div>
               <p className="mt-1 text-[9px] text-[#7d879b]">
                 {buyer.email} • {buyer.id}
@@ -98,17 +121,17 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
             <Metric
               label="Purchases"
               value={String(buyer.purchases)}
-              note="Across 4 sellers"
+              note={purchaseNote}
             />
             <Metric
               label="Lifetime spend"
-              value={`Rp${buyer.spent.toLocaleString("id-ID")}`}
+              value={lifetimeSpend}
               note="Across all purchases"
             />
             <Metric
               label="Active sessions"
-              value={String(sessions.length)}
-              note="Passwordless login"
+              value={String(sessionRows.length)}
+              note={sessionNote}
             />
           </div>
           <div className="mt-7 border-t border-[#e5e8ef] pt-6">
@@ -120,7 +143,7 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
               isolated to orders from their own store.
             </p>
             <div className="mt-4 grid gap-3">
-              {(purchases ?? []).map((p) => (
+              {purchaseRows.map((p) => (
                 <div
                   key={p.orderId}
                   className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-[#e1e5ed] p-3"
@@ -146,8 +169,8 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
             desc="Magic-link sessions and device access"
           />
           <div>
-            {sessions.length ? (
-              sessions.map((s) => (
+            {sessionRows.length ? (
+              sessionRows.map((s) => (
                 <div
                   key={s.id}
                   className="flex items-center gap-3 border-t border-[#e8eaf0] p-4"
@@ -163,14 +186,17 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
                   </div>
                   {!s.current && (
                     <button
-                      onClick={() =>
+                      type="button"
+                      disabled={!canWrite || actionMutation.isPending}
+                      onClick={() => {
+                        actionIdemRef.current = createIdempotencyKey();
                         setAction({
                           kind: "revoke-sessions",
                           title: `Revoke buyer session ${s.id}`,
                           sessionId: s.id,
-                        })
-                      }
-                      className="ml-auto text-[8px] font-bold text-[#c6534c]"
+                        });
+                      }}
+                      className="ml-auto text-[8px] font-bold text-[#c6534c] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Revoke
                     </button>
@@ -190,33 +216,55 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
           title={action.title}
           target={id}
           auditHandledExternally
+          requiresRecentMfa={!isMock}
           onClose={() => setAction(null)}
           onConfirm={async (reason) => {
+            if (action.kind === "revoke-sessions") {
+              // BE action requires sessionId; bulk = each non-current session.
+              const targets = action.sessionId
+                ? [action.sessionId]
+                : sessionRows.filter((s) => !s.current).map((s) => s.id);
+              for (const sessionId of targets) {
+                const result = await actionMutation.mutateAsync({
+                  action: "buyer.sessions.revoke",
+                  resourceId: id,
+                  sessionId,
+                  reason,
+                  idempotencyKey: createIdempotencyKey(),
+                });
+                if (
+                  result &&
+                  JSON.stringify(result).toLowerCase().includes("token")
+                ) {
+                  throw new Error(
+                    "Buyer support response must not include token",
+                  );
+                }
+              }
+              actionIdemRef.current = null;
+              return;
+            }
+
             const command =
               action.kind === "magic-link"
                 ? "buyer.magic_link.send"
-                : action.kind === "email-change"
-                  ? "buyer.email_change.start"
-                  : "buyer.sessions.revoke";
-            await actionMutation.mutateAsync({
+                : "buyer.email_change.start";
+            const result = await actionMutation.mutateAsync({
               action: command,
               resourceId: id,
-              sessionId:
-                action.kind === "revoke-sessions"
-                  ? action.sessionId
-                  : undefined,
               reason,
-              idempotencyKey: `${command}-${id}-${Date.now()}`,
+              idempotencyKey:
+                actionIdemRef.current ?? createIdempotencyKey(),
             });
-            if (action.kind === "revoke-sessions") {
-              setSessions((current) =>
-                action.sessionId
-                  ? current.filter((session) => session.id !== action.sessionId)
-                  : [],
-              );
-            } else {
-              setLastCommand(action.kind);
+            // Admin never receives login token from magic-link workflow.
+            if (
+              result &&
+              JSON.stringify(result).toLowerCase().includes("token")
+            ) {
+              throw new Error("Buyer support response must not include token");
             }
+            setLastCommand(action.kind);
+            actionIdemRef.current = null;
           }}
         />
       )}

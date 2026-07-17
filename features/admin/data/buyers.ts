@@ -1,6 +1,7 @@
 /**
- * ADM-120 — admin buyer list/detail read foundation (buyers.read).
- * Full support surface remains ADM-210.
+ * ADM-210 — admin buyer support surface (list/detail/purchases/sessions).
+ * Builds on ADM-120 read foundation; permission buyers.read.
+ * Delivery secrets and magic-link tokens are never part of these projections.
  */
 
 import type { z } from "zod";
@@ -22,7 +23,10 @@ import type {
 } from "./contracts";
 import {
   adminListQueryParams,
+  assertNoSecretsInAdminBuyerProjection,
   mapAdminBuyerDto,
+  mapAdminBuyerPurchaseDto,
+  mapAdminBuyerSessionDto,
   mapAdminListPage,
   normalizeAdminListFilters,
 } from "./mappers";
@@ -150,13 +154,16 @@ export async function listBuyersPage(
     },
     signal,
   });
-  return mapAdminListPage(response.data, response.meta, mapAdminBuyerDto);
+  const page = mapAdminListPage(response.data, response.meta, mapAdminBuyerDto);
+  assertNoSecretsInAdminBuyerProjection(page.items);
+  return page;
 }
 
 export async function getBuyer(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyer | null> {
+  if (!buyerId) return null;
   if (shouldUseMockFixtures("adminRead")) {
     return demoBuyers().find((b) => b.id === buyerId) || null;
   }
@@ -168,7 +175,9 @@ export async function getBuyer(
       signal,
     },
   );
-  return mapAdminBuyerDto(response.data);
+  const buyer = mapAdminBuyerDto(response.data);
+  assertNoSecretsInAdminBuyerProjection(buyer);
+  return buyer;
 }
 
 /** Admin-scoped purchase projection; delivery secrets are not part of it. */
@@ -184,7 +193,12 @@ export async function listBuyerPurchases(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyerPurchase[]> {
-  if (shouldUseMockFixtures("adminRead")) return demoBuyerPurchases();
+  if (!buyerId) return [];
+  if (shouldUseMockFixtures("adminRead")) {
+    const rows = demoBuyerPurchases();
+    assertNoSecretsInAdminBuyerProjection(rows);
+    return rows;
+  }
   const response = await apiRequest<PurchaseEnvelope>(
     `/v1/admin/buyers/${encodeURIComponent(buyerId)}/purchases`,
     {
@@ -193,18 +207,16 @@ export async function listBuyerPurchases(
       signal,
     },
   );
-  return response.data.map((row) => ({
-    orderId: row.orderId,
-    product: row.product,
-    seller: row.seller,
-    status: row.status,
-  }));
+  const rows = response.data.map(mapAdminBuyerPurchaseDto);
+  assertNoSecretsInAdminBuyerProjection(rows);
+  return rows;
 }
 
 export async function listBuyerSessions(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyerSession[]> {
+  if (!buyerId) return [];
   if (shouldUseMockFixtures("adminRead")) return demoBuyerSessions();
   const response = await apiRequest<SessionEnvelope>(
     `/v1/admin/buyers/${encodeURIComponent(buyerId)}/sessions`,
@@ -214,12 +226,7 @@ export async function listBuyerSessions(
       signal,
     },
   );
-  return response.data.map((row) => ({
-    id: row.id,
-    device: row.device,
-    location: row.location,
-    ip: row.ip,
-    active: row.active,
-    current: Boolean(row.current),
-  }));
+  const rows = response.data.map(mapAdminBuyerSessionDto);
+  assertNoSecretsInAdminBuyerProjection(rows);
+  return rows;
 }

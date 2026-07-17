@@ -94,10 +94,14 @@ export {
   type AdminActionResult,
 } from "./mutations";
 export {
+  assertNoSecretsInAdminBuyerProjection,
   formatCountId,
   formatSuccessRateBps,
   humanizeMerchantApiAccess,
   humanizeMerchantStatus,
+  mapAdminBuyerDto,
+  mapAdminBuyerPurchaseDto,
+  mapAdminBuyerSessionDto,
   mapAdminMaskedCredentialDto,
   mapAdminMerchantDto,
   mapAdminMerchantFinanceSummaryDto,
@@ -115,9 +119,17 @@ export {
 } from "./mappers";
 
 export {
+  demoBuyerPurchases,
+  demoBuyerSessions,
+  listBuyerPurchases,
+  listBuyerSessions,
+} from "./buyers";
+
+export {
   useAdminBuyer,
   useAdminBuyerPurchases,
   useAdminBuyerSessions,
+  useAdminBuyerSupportWriteEnabled,
   useAdminBuyers,
   useAdminAuditEvents,
   useAdminInventory,

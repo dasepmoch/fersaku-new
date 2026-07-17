@@ -78,8 +78,24 @@ export function useAdminActionMutation() {
     mutationKey: ["admin", "action"],
     mutationFn: (input: AdminActionInput, signal) =>
       executeAdminAction(input, signal),
-    onSuccess: () => {
+    onSuccess: (_data, input) => {
       void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      // Narrow buyer support invalidation so sessions/purchases re-read server.
+      if (
+        input.action === "buyer.sessions.revoke" ||
+        input.action === "buyer.magic_link.send" ||
+        input.action === "buyer.email_change.start"
+      ) {
+        void queryClient.invalidateQueries({
+          queryKey: ["admin", "buyers", input.resourceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["admin", "buyers", input.resourceId, "sessions"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["admin", "buyers", input.resourceId, "purchases"],
+        });
+      }
     },
   });
 }

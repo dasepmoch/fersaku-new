@@ -2047,6 +2047,10 @@ export const adminReviewDtoSchema = z.object({
   sellerReply: z.string().optional(),
 });
 
+/**
+ * ADM-210 — admin purchase shell only. Unknown keys stripped; never delivery
+ * secret/credential/code/password fields on this projection.
+ */
 export const adminBuyerPurchaseDtoSchema = z.object({
   orderId: z.string().min(1),
   product: z.string(),
@@ -2054,13 +2058,14 @@ export const adminBuyerPurchaseDtoSchema = z.object({
   status: z.string(),
 });
 
+/** ADM-210 — session metadata; hashed/display IP only, no tokens. */
 export const adminBuyerSessionDtoSchema = z.object({
   id: z.string().min(1),
   device: z.string(),
   location: z.string(),
   ip: z.string(),
   active: z.string(),
-  current: z.boolean(),
+  current: z.boolean().optional().default(false),
 });
 
 export const adminInventoryFieldDtoSchema = z.object({
@@ -2262,6 +2267,8 @@ export const adminCredentialAuthorizeEnvelopeSchema = successEnvelopeSchema(
 export type AdminOverviewDto = z.infer<typeof adminOverviewDataSchema>;
 export type AdminMerchantDto = z.infer<typeof adminMerchantDtoSchema>;
 export type AdminBuyerDto = z.infer<typeof adminBuyerDtoSchema>;
+export type AdminBuyerPurchaseDto = z.infer<typeof adminBuyerPurchaseDtoSchema>;
+export type AdminBuyerSessionDto = z.infer<typeof adminBuyerSessionDtoSchema>;
 export type AdminOrderDto = z.infer<typeof adminOrderDtoSchema>;
 export type AdminPaymentDto = z.infer<typeof adminPaymentDtoSchema>;
 export type AdminWithdrawalDto = z.infer<typeof adminWithdrawalDtoSchema>;

@@ -11,27 +11,61 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { rupiah } from "@/lib/utils";
 import { useAdminBuyers } from "@/features/admin/data";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
 export function BuyerIdentities() {
+  const isMock = getDomainSource("adminRead") === "mock";
   const { data } = useAdminBuyers();
   const buyers = data ?? [];
   const { pageRows, pagination } = useClientPagination(buyers);
+
+  const identityLabel = isMock
+    ? "8.942"
+    : buyers.length > 0
+      ? buyers.length.toLocaleString("id-ID")
+      : "—";
+  const purchaseLinksLabel = isMock
+    ? "12.481"
+    : buyers.length > 0
+      ? buyers
+          .reduce((sum, b) => sum + Math.max(0, b.purchases), 0)
+          .toLocaleString("id-ID")
+      : "—";
+  const sessionsLabel = isMock
+    ? "2.184"
+    : buyers.length > 0
+      ? buyers
+          .reduce((sum, b) => sum + Math.max(0, b.sessions), 0)
+          .toLocaleString("id-ID")
+      : "—";
+  const unclaimedLabel = isMock
+    ? "184"
+    : String(buyers.filter((b) => b.verified !== "Verified").length);
+
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
-        <Metric label="Buyer identities" value="8.942" note="6,812 verified" />
+        <Metric
+          label="Buyer identities"
+          value={identityLabel}
+          note={isMock ? "6,812 verified" : "Current page"}
+        />
         <Metric
           label="Purchase links"
-          value="12.481"
-          note="Across 1,284 stores"
+          value={purchaseLinksLabel}
+          note={isMock ? "Across 1,284 stores" : "Listed buyers"}
         />
-        <Metric label="Active sessions" value="2.184" note="30 day sessions" />
+        <Metric
+          label="Active sessions"
+          value={sessionsLabel}
+          note={isMock ? "30 day sessions" : "Listed buyers"}
+        />
         <Metric
           label="Unclaimed purchases"
-          value="184"
-          note="Email not verified"
+          value={unclaimedLabel}
+          note={isMock ? "Email not verified" : "Pending verification"}
           tone="warning"
         />
       </div>

@@ -7,6 +7,8 @@ import { compactRupiah } from "@/shared/format/money";
 import type {
   AdminAuditEventDto,
   AdminBuyerDto,
+  AdminBuyerPurchaseDto,
+  AdminBuyerSessionDto,
   AdminMaskedCredentialDto,
   AdminMerchantDto,
   AdminMerchantFinanceSummaryDto,
@@ -21,6 +23,8 @@ import type {
 import type {
   AdminAuditEvent,
   AdminBuyer,
+  AdminBuyerPurchase,
+  AdminBuyerSession,
   AdminMaskedCredential,
   AdminMerchant,
   AdminMerchantApiAccessWire,
@@ -244,6 +248,54 @@ export function mapAdminBuyerDto(dto: AdminBuyerDto): AdminBuyer {
     sessions: nonNegInt(dto.sessions),
     last: dto.last,
   };
+}
+
+/** Purchase shell only — never maps delivery secret/credential/code fields. */
+export function mapAdminBuyerPurchaseDto(
+  dto: AdminBuyerPurchaseDto,
+): AdminBuyerPurchase {
+  return {
+    orderId: dto.orderId,
+    product: dto.product,
+    seller: dto.seller,
+    status: dto.status,
+  };
+}
+
+/** Session metadata only — no tokens or raw auth material. */
+export function mapAdminBuyerSessionDto(
+  dto: AdminBuyerSessionDto,
+): AdminBuyerSession {
+  return {
+    id: dto.id,
+    device: dto.device,
+    location: dto.location,
+    ip: dto.ip,
+    active: dto.active,
+    current: Boolean(dto.current),
+  };
+}
+
+/** Runtime guard: admin buyer support projections must not carry secrets. */
+export function assertNoSecretsInAdminBuyerProjection(value: unknown): void {
+  const blob = JSON.stringify(value ?? null).toLowerCase();
+  const forbidden = [
+    "password",
+    "rawkey",
+    "raw_key",
+    "deliverysecret",
+    "delivery_secret",
+    "credentialfields",
+    "fsk_live_",
+    "fsk_test_",
+    "magiclinktoken",
+    "magic_link_token",
+  ];
+  for (const key of forbidden) {
+    if (blob.includes(key)) {
+      throw new Error(`Admin buyer projection must not include secret material (${key})`);
+    }
+  }
 }
 
 function mapPaymentSource(raw: string): AdminPaymentSource {

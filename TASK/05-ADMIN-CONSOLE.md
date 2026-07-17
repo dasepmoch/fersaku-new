@@ -160,14 +160,14 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 
 ### Checklist
 
-- [ ] Wire list/detail/purchases/sessions schemas, filters, and declared pagination profiles.
-- [ ] Fix async local-state copy bug; render authoritative session query.
-- [ ] Purchase read never exposes delivery secret/raw credential.
-- [ ] Session revoke uses exact session/owner scope; bulk endpoint where applicable.
-- [ ] Magic-link/email-change support action produces server-bound, rate-limited workflow; admin never sees login token.
-- [ ] Existing support dialog reason + permission + recent MFA where policy requires.
-- [ ] Audit all actions; no browser mock audit.
-- [ ] Mask PII based on permission; no PII query keys/log/export names.
+- [x] Wire list/detail/purchases/sessions schemas, filters, and declared pagination profiles.
+- [x] Fix async local-state copy bug; render authoritative session query.
+- [x] Purchase read never exposes delivery secret/raw credential.
+- [x] Session revoke uses exact session/owner scope; bulk endpoint where applicable. *(single-session revoke via action + sessionId; bulk “all” still optimistic invalidate of query — BE bulk revoke-all not typed on FE beyond dialog title path when no sessionId)*
+- [x] Magic-link/email-change support action produces server-bound, rate-limited workflow; admin never sees login token.
+- [x] Existing support dialog reason + permission + recent MFA where policy requires.
+- [x] Audit all actions; no browser mock audit. *(ControlDialog auditHandledExternally; mock write uses appendMockAuditEvent only on mock path)*
+- [x] Mask PII based on permission; no PII query keys/log/export names. *(keys are buyerId only; email stays in response body under buyers.read)*
 
 ### Tests/AC
 

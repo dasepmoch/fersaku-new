@@ -142,6 +142,17 @@ export function useAdminMerchantWriteEnabled(): boolean {
   return claimsHavePermission(claims?.permissions, "merchants.write");
 }
 
+/**
+ * ADM-210 — buyer support mutations currently ride POST /v1/admin/actions
+ * (BE gate merchants.write). Fail-closed on API path without that claim.
+ * No dedicated buyers.write in registry yet.
+ */
+export function useAdminBuyerSupportWriteEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "merchants.write");
+}
+
 export function useAdminBuyers(filters: AdminListFilters = {}) {
   const enabled = useAdminReadEnabled("buyers.read");
   const normalized = normalizeAdminListFilters(filters);
@@ -236,6 +247,7 @@ export function useAdminPayments(filters: AdminListFilters = {}) {
   });
 }
 
+/** ADM-210 — purchase shells only (no delivery secret). */
 export function useAdminBuyerPurchases(buyerId: string) {
   const enabled = useAdminReadEnabled("buyers.read");
   return useAppQuery({
@@ -247,6 +259,7 @@ export function useAdminBuyerPurchases(buyerId: string) {
   });
 }
 
+/** ADM-210 — authoritative session list; screen must not clone into local state. */
 export function useAdminBuyerSessions(buyerId: string) {
   const enabled = useAdminReadEnabled("buyers.read");
   return useAppQuery({
