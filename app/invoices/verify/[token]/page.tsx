@@ -8,6 +8,25 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Logo } from "@/components/brand";
+import {
+  isInvoiceVerifyApiDomain,
+  type InvoiceVerifyResult,
+  verifyInvoiceByCode,
+} from "@/features/commerce/invoice";
+import { verifyInvoiceServer } from "@/features/commerce/invoice/server";
+import { getDomainSource } from "@/shared/data/domain-source";
+import { rupiah } from "@/shared/format/money";
+
+export const dynamic = "force-dynamic";
+
+async function loadVerify(token: string): Promise<InvoiceVerifyResult> {
+  const source = getDomainSource("checkout");
+  if (source === "disabled") return { valid: false };
+  if (isInvoiceVerifyApiDomain()) {
+    return verifyInvoiceServer(token);
+  }
+  return verifyInvoiceByCode(token);
+}
 
 export default async function InvoiceVerificationPage({
   params,
@@ -15,8 +34,9 @@ export default async function InvoiceVerificationPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const verified = /^FRS-\d{6}-\d{4}-[A-F0-9]{8}$/.test(token);
-  const orderId = token.replace(/-[^-]+$/, "");
+  // Do not log token; use only for backend verify.
+  const result = await loadVerify(token);
+  const verified = result.valid === true;
 
   return (
     <main className="min-h-screen bg-[#e9eee6] px-4 py-8 text-[#17231d] sm:py-14">
@@ -54,13 +74,13 @@ export default async function InvoiceVerificationPage({
                 : "Token verifikasi tidak sesuai format dokumen Fersaku. Jangan gunakan invoice ini sebagai bukti pembayaran sebelum menghubungi penerbit."}
             </p>
 
-            {verified && (
+            {verified && result.valid && (
               <>
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   <Fact
                     icon={ReceiptText}
                     label="Nomor invoice"
-                    value={`INV-${orderId.replace("FRS-", "")}`}
+                    value={result.invoiceNumber}
                   />
                   <Fact
                     icon={BadgeCheck}
@@ -71,12 +91,12 @@ export default async function InvoiceVerificationPage({
                   <Fact
                     icon={CalendarClock}
                     label="Waktu pembayaran"
-                    value="12 Jul 2026, 14:42 WIB"
+                    value={result.paidAtLabel}
                   />
                   <Fact
                     icon={Fingerprint}
                     label="Document signature"
-                    value="SHA256:6AD891CE...CB42"
+                    value={result.signatureLabel}
                     mono
                   />
                 </div>
@@ -87,18 +107,21 @@ export default async function InvoiceVerificationPage({
                       Total verified
                     </p>
                     <p className="mt-2 text-3xl font-black tracking-[-.04em]">
-                      Rp129.000
+                      {rupiah(result.grossIdr)}
                     </p>
                     <p className="mt-1 text-[9px] text-white/45">
-                      Asep AI Tools - Nadia Putri - QRIS
+                      {result.storeName}
+                      {result.orderNumber ? ` - ${result.orderNumber}` : ""}
                     </p>
                   </div>
-                  <Link
-                    href={`/orders/${orderId}/invoice`}
-                    className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#d7ff64] px-4 text-[9px] font-extrabold text-[#173f2c] sm:mt-0 sm:ml-auto"
-                  >
-                    Lihat invoice resmi <ArrowRight className="size-4" />
-                  </Link>
+                  {result.invoiceHref ? (
+                    <Link
+                      href={result.invoiceHref}
+                      className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#d7ff64] px-4 text-[9px] font-extrabold text-[#173f2c] sm:mt-0 sm:ml-auto"
+                    >
+                      Lihat invoice resmi <ArrowRight className="size-4" />
+                    </Link>
+                  ) : null}
                 </div>
               </>
             )}

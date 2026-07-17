@@ -590,6 +590,119 @@ export const deliveryResendEnvelopeSchema = successEnvelopeSchema(
 export type DeliveryAccessDto = z.infer<typeof deliveryAccessDtoSchema>;
 export type DeliveryResendDto = z.infer<typeof deliveryResendDtoSchema>;
 
+// --- Invoice read / public verify (CHK-150) — immutable snapshot; no delivery secrets ---
+
+/** Line frozen at invoice issue (not live catalog). */
+export const invoiceLineSnapshotDtoSchema = z.object({
+  orderItemId: z.string().optional(),
+  productId: z.string().optional(),
+  title: z.string().min(1),
+  productType: z.string().optional(),
+  version: z.string().optional(),
+  unitPriceIdr: moneyIdrSchema.optional(),
+  quantity: z.number().int().min(0).optional(),
+  lineTotalIdr: moneyIdrSchema,
+  discountIdr: moneyIdrSchema.optional(),
+});
+
+/** Buyer identity frozen on authorized invoice only — never on public verify. */
+export const invoiceBuyerSnapshotDtoSchema = z.object({
+  userId: z.string().optional().nullable(),
+  email: z.string().optional(),
+  name: z.string().optional(),
+});
+
+export const invoiceIssuerSnapshotDtoSchema = z.object({
+  storeId: z.string().optional(),
+  storeName: z.string().optional(),
+  merchantId: z.string().optional(),
+});
+
+/**
+ * Immutable invoice body (jsonb). Catalog/price changes never rewrite.
+ * Money fields are server authority — client must not recompute totals.
+ */
+export const invoiceSnapshotDtoSchema = z
+  .object({
+    invoiceNumber: z.string().optional(),
+    orderId: z.string().optional(),
+    orderNumber: z.string().optional(),
+    storeId: z.string().optional(),
+    merchantId: z.string().optional(),
+    currency: z.string().optional(),
+    subtotalIdr: moneyIdrSchema.optional(),
+    discountIdr: moneyIdrSchema.optional(),
+    tipIdr: moneyIdrSchema.optional(),
+    feeIdr: moneyIdrSchema.optional(),
+    grossIdr: moneyIdrSchema.optional(),
+    merchantNetIdr: moneyIdrSchema.optional(),
+    couponCode: z.string().optional(),
+    couponVersion: z.number().int().optional().nullable(),
+    paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional().nullable(),
+    buyer: invoiceBuyerSnapshotDtoSchema.optional(),
+    issuer: invoiceIssuerSnapshotDtoSchema.optional(),
+    lines: z.array(invoiceLineSnapshotDtoSchema).optional(),
+    rendererVersion: z.string().optional(),
+  })
+  .passthrough();
+
+/**
+ * GET invoice DTO (buyer/order/invoice id).
+ * Snapshot is optional object; empty map still validates.
+ */
+export const invoiceDtoSchema = z.object({
+  id: z.string().min(1),
+  orderId: z.string().min(1),
+  storeId: z.string().min(1),
+  invoiceNumber: z.string().min(1),
+  status: z.string().min(1),
+  currency: z.string().min(1),
+  grossIdr: moneyIdrSchema,
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
+  currentVersion: z.number().int().min(1),
+  payloadHash: z.string().min(1),
+  rendererVersion: z.string().optional(),
+  renderStatus: z.string().optional(),
+  /**
+   * Immutable financial/product snapshot. OpenAPI allows free-form object;
+   * when structured fields present, money must be int IDR.
+   */
+  snapshot: z.union([invoiceSnapshotDtoSchema, z.record(z.string(), z.unknown())]).optional(),
+  /** Raw public verify code only if BE ever projects it (usually omitted after issue). */
+  publicCode: z.string().min(1).optional(),
+});
+
+export const invoiceEnvelopeSchema = successEnvelopeSchema(invoiceDtoSchema);
+
+/**
+ * Public verify — privacy-safe only.
+ * Never buyer email/name, secrets, or provider refs.
+ */
+export const publicInvoiceVerifyDtoSchema = z.object({
+  valid: z.boolean(),
+  invoiceNumber: z.string().optional(),
+  orderNumber: z.string().optional(),
+  currency: z.string().optional(),
+  grossIdr: moneyIdrSchema.optional(),
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional()
+    .nullable(),
+  storeName: z.string().optional(),
+});
+
+export const publicInvoiceVerifyEnvelopeSchema = successEnvelopeSchema(
+  publicInvoiceVerifyDtoSchema,
+);
+
+export type InvoiceLineSnapshotDto = z.infer<typeof invoiceLineSnapshotDtoSchema>;
+export type InvoiceSnapshotDto = z.infer<typeof invoiceSnapshotDtoSchema>;
+export type InvoiceDto = z.infer<typeof invoiceDtoSchema>;
+export type PublicInvoiceVerifyDto = z.infer<typeof publicInvoiceVerifyDtoSchema>;
+
 // --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
 
 /** Launch bounded page size; PurchaseLibrary has no paging control (BoundedNoPaging). */

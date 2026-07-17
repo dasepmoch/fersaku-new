@@ -102,7 +102,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `CHK-120` | P0 | CHK-110 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Authoritative QR polling/terminal recovery | TASK/evidence/CHK-120/20260717-1505-nikki.md · features/commerce/checkout · tests/unit/chk-120-checkout-poll.test.ts |
 | `[x]` | `CHK-130` | P0 | CHK-110, INT-120 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Safe order-result capability | TASK/evidence/CHK-130/20260717-1500-nikki.md · features/commerce/order-result · tests/unit/chk-130-order-result.test.ts |
 | `[x]` | `CHK-140` | P0/P1 | CHK-130, INT-180, INT-185 | PUB/RTM | completed @nikki/opencode · main · 2026-07-17 · claim released | Delivery access/resend/download lifecycle | TASK/evidence/CHK-140/20260717-1505-nikki.md · features/commerce/delivery-access · tests/unit/chk-140-delivery-access.test.ts |
-| `[ ]` | `CHK-150` | P1 | CHK-130 | PUB | — | Invoice read/print/download/verify | — |
+| `[x]` | `CHK-150` | P1 | CHK-130 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Invoice read/print/download/verify | TASK/evidence/CHK-150/20260717-1510-nikki.md · features/commerce/invoice · tests/unit/chk-150-invoice.test.ts |
 | `[x]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 14:35 WIB · claim released | Buyer purchase list/detail/search | TASK/evidence/BUY-100/20260717-1435-nikki.md · tests/unit/buy-100-buyer-purchases.test.ts |
 | `[ ]` | `BUY-110` | P1 | BUY-100 | PUB | — | Buyer review and purchase commands | — |
 | `[ ]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | — | Buyer profile/preferences/avatar | — |

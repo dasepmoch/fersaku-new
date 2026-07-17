@@ -13,19 +13,31 @@ import {
 } from "lucide-react";
 import { Logo } from "./brand";
 import { rupiah } from "@/lib/utils";
+import type { InvoiceProjection } from "@/features/commerce/invoice";
 
-const verificationToken = "FRS-240712-1848-6AD891CE";
-
-export function InvoiceView({ orderId }: { orderId: string }) {
+/**
+ * Existing invoice print chrome — markup/class/copy frozen.
+ * Data only via projection (CHK-150); never recompute totals client-side.
+ */
+export function InvoiceView({
+  orderId,
+  projection,
+}: {
+  orderId: string;
+  /** When omitted (legacy), mock geometry is not used — callers must pass projection. */
+  projection: InvoiceProjection;
+}) {
   const qrRef = useRef<HTMLCanvasElement>(null);
-  const verificationUrl = `/invoices/verify/${verificationToken}`;
-  const productSubtotal = 118000;
-  const tip = 25000;
-  const couponDiscount = 14000;
-  const total = productSubtotal + tip - couponDiscount;
+  const verificationUrl = projection.verificationPath;
+  const productSubtotal = projection.subtotalIdr;
+  const tip = projection.tipIdr;
+  const couponDiscount = projection.discountIdr;
+  const fee = projection.feeIdr;
+  const total = projection.grossIdr;
+  const displayOrderId = projection.orderNumber || orderId;
 
   useEffect(() => {
-    if (!qrRef.current) return;
+    if (!qrRef.current || !verificationUrl) return;
     const url = `${window.location.origin}${verificationUrl}`;
     void QRCode.toCanvas(qrRef.current, url, {
       width: 144,
@@ -35,17 +47,24 @@ export function InvoiceView({ orderId }: { orderId: string }) {
     });
   }, [verificationUrl]);
 
+  const couponLabel = projection.couponCode
+    ? `Potongan kupon ${projection.couponCode}`
+    : "Potongan kupon";
+
   return (
     <main className="invoice-page min-h-screen bg-[#e9eae5] px-4 py-8 print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-[820px] items-center justify-between gap-3 print:hidden">
         <Link
-          href={`/account/purchases/${orderId}`}
+          href={projection.backHref}
           className="flex items-center gap-2 text-[10px] font-bold"
         >
           <ArrowLeft className="size-4" /> Kembali ke pembelian
         </Link>
         <button
-          onClick={() => window.print()}
+          type="button"
+          onClick={() => {
+            if (projection.canPrint) window.print();
+          }}
           className="flex h-11 items-center gap-2 rounded-xl bg-[#173f2c] px-5 text-[10px] font-extrabold text-white shadow-lg shadow-[#173f2c]/15"
         >
           <Download className="size-4" /> Unduh Invoice PDF Resmi
@@ -77,18 +96,18 @@ export function InvoiceView({ orderId }: { orderId: string }) {
           <section className="grid gap-8 border-b border-[#17231d]/10 py-10 sm:grid-cols-3">
             <Info
               label="Nomor invoice"
-              value={`INV-${orderId.replace("FRS-", "")}`}
-              note="Diterbitkan 12 Jul 2026"
+              value={projection.invoiceNumber}
+              note={projection.issuedLabel}
             />
             <Info
               label="Ditagihkan kepada"
-              value="Nadia Putri"
-              note={"nadia@studio.id\n+62 812-2233-4455"}
+              value={projection.buyerName}
+              note={projection.buyerNote}
             />
             <Info
               label="Diterbitkan oleh"
-              value="Asep AI Tools"
-              note={"Asep Kurnia\nJakarta, Indonesia"}
+              value={projection.issuerName}
+              note={projection.issuerNote}
             />
           </section>
 
@@ -97,16 +116,14 @@ export function InvoiceView({ orderId }: { orderId: string }) {
               <span>Deskripsi</span>
               <span>Jumlah</span>
             </div>
-            <InvoiceRow
-              item="AI Prompt Pack"
-              detail="Digital download - lisensi personal - v3.1"
-              amount={79000}
-            />
-            <InvoiceRow
-              item="Cursor Rules Kit"
-              detail="Checkout offer - digital download"
-              amount={39000}
-            />
+            {projection.lines.map((line) => (
+              <InvoiceRow
+                key={`${line.item}-${line.amount}`}
+                item={line.item}
+                detail={line.detail}
+                amount={line.amount}
+              />
+            ))}
 
             <div className="mt-7 ml-auto max-w-sm space-y-3 text-xs">
               <SummaryRow
@@ -115,11 +132,18 @@ export function InvoiceView({ orderId }: { orderId: string }) {
               />
               <SummaryRow label="Tip untuk kreator" value={rupiah(tip)} />
               <SummaryRow
-                label="Potongan kupon LAUNCH10"
-                value={`- ${rupiah(couponDiscount)}`}
-                accent
+                label={couponLabel}
+                value={
+                  couponDiscount > 0
+                    ? `- ${rupiah(couponDiscount)}`
+                    : rupiah(0)
+                }
+                accent={couponDiscount > 0}
               />
-              <SummaryRow label="Biaya platform pembeli" value="Rp0" />
+              <SummaryRow
+                label="Biaya platform pembeli"
+                value={fee > 0 ? rupiah(fee) : "Rp0"}
+              />
               <div className="flex items-end justify-between border-t border-[#17231d]/10 pt-4">
                 <div>
                   <span className="text-sm font-extrabold">Total dibayar</span>
@@ -139,30 +163,36 @@ export function InvoiceView({ orderId }: { orderId: string }) {
                 terverifikasi
               </p>
               <p className="mt-2 text-[9px] leading-5 text-[#65736b]">
-                Dibayar via QRIS - Referensi provider XND-QR-88A21 - 12 Jul
-                2026, 14:42 WIB. Scan QR untuk memeriksa keaslian, status,
-                nilai, dan tanda tangan dokumen ini langsung di Fersaku.
+                {projection.paymentSummary}
               </p>
               <div className="mt-4 flex items-center gap-2 text-[8px] font-bold text-[#47735b]">
-                <FileCheck2 className="size-3.5" /> Signature:
-                SHA256:6AD891CE...CB42
+                <FileCheck2 className="size-3.5" /> Signature:{" "}
+                {projection.signatureLabel}
               </div>
             </div>
-            <div className="rounded-2xl border border-[#dfe7dc] bg-white p-3 text-center shadow-sm">
-              <canvas
-                ref={qrRef}
-                className="mx-auto size-32"
-                aria-label="QR verifikasi invoice"
-              />
-              <p className="mt-1 text-[7px] font-extrabold tracking-[.12em] text-[#718078] uppercase">
-                Scan untuk verifikasi
-              </p>
-            </div>
+            {verificationUrl ? (
+              <div className="rounded-2xl border border-[#dfe7dc] bg-white p-3 text-center shadow-sm">
+                <canvas
+                  ref={qrRef}
+                  className="mx-auto size-32"
+                  aria-label="QR verifikasi invoice"
+                />
+                <p className="mt-1 text-[7px] font-extrabold tracking-[.12em] text-[#718078] uppercase">
+                  Scan untuk verifikasi
+                </p>
+              </div>
+            ) : null}
           </section>
 
-          <p className="mt-3 text-center font-mono text-[7px] break-all text-[#7d8881]">
-            {verificationUrl}
-          </p>
+          {verificationUrl ? (
+            <p className="mt-3 text-center font-mono text-[7px] break-all text-[#7d8881]">
+              {verificationUrl}
+            </p>
+          ) : (
+            <p className="mt-3 text-center font-mono text-[7px] break-all text-[#7d8881]">
+              Order {displayOrderId}
+            </p>
+          )}
 
           <footer className="mt-16 flex items-end justify-between border-t border-[#17231d]/10 pt-6">
             <p className="max-w-lg text-[8px] leading-4 text-[#718078]">

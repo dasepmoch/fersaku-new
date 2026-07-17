@@ -501,14 +501,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist
 
-- [ ] Replace hardcoded `InvoiceView` data through mapper only; component markup unchanged.
-- [ ] Authenticated invoice validates buyer/seller/admin permission/ownership.
-- [ ] Guest order-result invoice CTA either exchanges the same scoped guest capability through a documented public operation or is explicitly login-gated/disabled; a valid guest purchase must not lead to an auth-only dead end.
-- [ ] Public verify accepts privacy-safe code/body/capability contract; path token must not be raw bootstrap secret if logged.
-- [ ] Verification response exposes minimal seller/order/amount/status/signature fields; no delivery secret/full buyer PII.
-- [ ] Invoice is immutable snapshot; no client fee/total recomputation.
-- [ ] Print/download uses verified server data or short-lived signed file, `no-store` as appropriate.
-- [ ] Invalid/tampered/revoked code returns safe invalid state, never fabricated valid invoice.
+- [x] Replace hardcoded `InvoiceView` data through mapper only; component markup unchanged.
+- [x] Authenticated invoice validates buyer/seller/admin permission/ownership. *(FE: session SSR + BE ownership; foreign → notFound)*
+- [x] Guest order-result invoice CTA either exchanges the same scoped guest capability through a documented public operation or is explicitly login-gated/disabled; a valid guest purchase must not lead to an auth-only dead end. *(login-gated: 401 → buyer login with safe returnTo under /account; no guest invoice capability exchange advertised)*
+- [x] Public verify accepts privacy-safe code/body/capability contract; path token must not be raw bootstrap secret if logged. *(GET path code + POST body token adapters; token not logged)*
+- [x] Verification response exposes minimal seller/order/amount/status/signature fields; no delivery secret/full buyer PII.
+- [x] Invoice is immutable snapshot; no client fee/total recomputation.
+- [x] Print/download uses verified server data or short-lived signed file, `no-store` as appropriate. *(print from projection only; private SSR privacy: private)*
+- [x] Invalid/tampered/revoked code returns safe invalid state, never fabricated valid invoice.
 
 ### Tests/AC
 
