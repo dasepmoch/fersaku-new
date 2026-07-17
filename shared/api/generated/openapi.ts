@@ -482,7 +482,14 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        /** Current session principal */
+        /**
+         * Current session principal
+         * @description Returns principal fields and a freshly rotated session-bound CSRF token
+         *     (INT-130). Raw CSRF is never stored server-side (hash only). Client keeps
+         *     the token in memory for X-CSRF-Token on cookie+unsafe methods. Safe GET;
+         *     does not mutate business resources. Hard-refresh recovery path.
+         *
+         */
         get: operations["authGetSession"];
         put?: never;
         post?: never;
@@ -1429,9 +1436,35 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        /** Current seller merchant membership */
+        /**
+         * Seller bootstrap — merchant, memberships, stores, current store (INT-150/SEL-100)
+         * @description Returns primary merchant, all active memberships with store-scoped capabilities,
+         *     allowed stores, canonicalStoreId, server-selected currentStoreId,
+         *     onboardingState, and onboardingCompleted.
+         *     Selection: valid preferred store → canonical → first stable store.
+         *     Cross-tenant store IDs are never returned. Membership required (403 if none).
+         *     Incomplete onboarding is signalled via onboardingCompleted=false (workspace redirect).
+         *
+         */
         get: operations["sellerMeMerchant"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seller/me/current-store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Persist preferred current store (must be membership-owned) */
+        put: operations["sellerSetCurrentStore"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3143,6 +3176,40 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/stores/{storeId}/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped seller order list (NumberedPageList; no delivery secrets) */
+        get: operations["listStoreOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/orders/{orderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped seller order detail (no delivery secrets) */
+        get: operations["getStoreOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stores/{storeId}/orders/{orderId}/delivery": {
         parameters: {
             query?: never;
@@ -4788,6 +4855,35 @@ export type components = {
             data: components["schemas"]["AuthLoginData"];
             meta: components["schemas"]["Meta"];
         };
+        AuthSessionData: {
+            userId?: string;
+            sessionId?: string;
+            surface?: string;
+            email?: string;
+            name?: string;
+            mfaEnabled?: boolean;
+            mfaVerified?: boolean;
+            emailVerified?: boolean;
+            status?: string;
+            /** @description Rotated session-bound CSRF raw token for memory-only client store (INT-130) */
+            csrfToken: string;
+            /** @description Effective permission codes (UX/navigation hint only; server still authorizes) */
+            permissions?: string[];
+            /** @description Assigned role codes (informational) */
+            roles?: string[];
+            /** @description Present only when session is a derived support impersonation (BE-520) */
+            impersonation?: {
+                active?: boolean;
+                id?: string;
+                scope?: string;
+                actorId?: string;
+                expiresAt?: string;
+            };
+        };
+        AuthSessionEnvelope: {
+            data: components["schemas"]["AuthSessionData"];
+            meta: components["schemas"]["Meta"];
+        };
         ProfileData: {
             userId: string;
             email: string;
@@ -4929,6 +5025,8 @@ export type components = {
             palette: string;
             glyph: string;
             includes: string[];
+            /** @description Canonical owning store slug (public featured/product; required for homepage links) */
+            storeSlug?: string;
             allowPayWhatYouWant?: boolean;
             /** Format: int64 */
             minimumPrice?: number;
@@ -4939,7 +5037,9 @@ export type components = {
              * @enum {string}
              */
             status?: "draft" | "published" | "archived";
+            /** @description Owning store id (public product/storefront for checkout quote; seller status still seller-only) */
             storeId?: string;
+            /** @description Seller-only field */
             merchantId?: string;
         };
         CreateProductRequest: {
@@ -6058,6 +6158,108 @@ export type components = {
             data: unknown[];
             meta: components["schemas"]["NumberedPageListMeta"];
         };
+        /** @description Store-scoped seller order list row (no delivery secrets). */
+        SellerOrderSummary: {
+            orderId: string;
+            orderNumber: string;
+            storeId: string;
+            merchantId: string;
+            buyerName: string;
+            buyerEmail: string;
+            productTitle: string;
+            paymentStatus: string;
+            source: string;
+            currency: string;
+            grossIdr: components["schemas"]["MoneyIdr"];
+            feeIdr: components["schemas"]["MoneyIdr"];
+            merchantNetIdr: components["schemas"]["MoneyIdr"];
+            deliveryStatus?: string;
+            /** Format: date-time */
+            paidAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SellerOrderItem: {
+            orderItemId: string;
+            productId: string;
+            productTitle: string;
+            productType: string;
+            productVersion?: string;
+            unitPriceIdr: components["schemas"]["MoneyIdr"];
+            quantity: number;
+            lineTotalIdr: components["schemas"]["MoneyIdr"];
+            deliveryKind: string;
+        };
+        /** @description Grant metadata without access token hash or secrets. */
+        SellerOrderGrantMeta: {
+            grantId: string;
+            orderItemId: string;
+            productId: string;
+            deliveryKind: string;
+            status: string;
+            accessCount: number;
+            maxAccesses: number;
+            /** Format: date-time */
+            activatedAt?: string | null;
+            /** Format: date-time */
+            revokedAt?: string | null;
+            /** Format: date-time */
+            failedAt?: string | null;
+            failReason?: string | null;
+            /** Format: date-time */
+            lastAccessedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SellerOrderPaymentSummary: {
+            paymentIntentId: string;
+            provider: string;
+            providerReference?: string;
+            status: string;
+            source?: string;
+            amountIdr: components["schemas"]["MoneyIdr"];
+            paidLate: boolean;
+        };
+        SellerOrderTimelineEvent: {
+            label: string;
+            /** Format: date-time */
+            at: string;
+        };
+        /** @description Store-scoped seller order detail aggregate (no raw delivery secret). */
+        SellerOrderDetail: {
+            orderId: string;
+            orderNumber: string;
+            storeId: string;
+            merchantId: string;
+            buyerName: string;
+            buyerEmail: string;
+            paymentStatus: string;
+            source: string;
+            currency: string;
+            subtotalIdr: components["schemas"]["MoneyIdr"];
+            discountIdr: components["schemas"]["MoneyIdr"];
+            tipIdr: components["schemas"]["MoneyIdr"];
+            feeIdr: components["schemas"]["MoneyIdr"];
+            grossIdr: components["schemas"]["MoneyIdr"];
+            merchantNetIdr: components["schemas"]["MoneyIdr"];
+            /** Format: date-time */
+            paidAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            productTitle?: string;
+            items: components["schemas"]["SellerOrderItem"][];
+            grants: components["schemas"]["SellerOrderGrantMeta"][];
+            payment?: components["schemas"]["SellerOrderPaymentSummary"];
+            timeline: components["schemas"]["SellerOrderTimelineEvent"][];
+        };
+        SellerOrderListEnvelope: {
+            data: components["schemas"]["SellerOrderSummary"][];
+            meta: components["schemas"]["NumberedPageListMeta"];
+        };
+        SellerOrderDetailEnvelope: {
+            data: components["schemas"]["SellerOrderDetail"];
+            meta: components["schemas"]["Meta"];
+        };
         FieldViolation: {
             field: string;
             /** @example INVALID */
@@ -6144,6 +6346,8 @@ export type SchemaAuthMessageData = components['schemas']['AuthMessageData'];
 export type SchemaAuthMessageEnvelope = components['schemas']['AuthMessageEnvelope'];
 export type SchemaAuthLoginData = components['schemas']['AuthLoginData'];
 export type SchemaAuthLoginEnvelope = components['schemas']['AuthLoginEnvelope'];
+export type SchemaAuthSessionData = components['schemas']['AuthSessionData'];
+export type SchemaAuthSessionEnvelope = components['schemas']['AuthSessionEnvelope'];
 export type SchemaProfileData = components['schemas']['ProfileData'];
 export type SchemaProfileEnvelope = components['schemas']['ProfileEnvelope'];
 export type SchemaNotificationData = components['schemas']['NotificationData'];
@@ -6237,6 +6441,14 @@ export type SchemaCursorListMeta = components['schemas']['CursorListMeta'];
 export type SchemaNumberedPageListMeta = components['schemas']['NumberedPageListMeta'];
 export type SchemaCursorListEnvelope = components['schemas']['CursorListEnvelope'];
 export type SchemaNumberedPageListEnvelope = components['schemas']['NumberedPageListEnvelope'];
+export type SchemaSellerOrderSummary = components['schemas']['SellerOrderSummary'];
+export type SchemaSellerOrderItem = components['schemas']['SellerOrderItem'];
+export type SchemaSellerOrderGrantMeta = components['schemas']['SellerOrderGrantMeta'];
+export type SchemaSellerOrderPaymentSummary = components['schemas']['SellerOrderPaymentSummary'];
+export type SchemaSellerOrderTimelineEvent = components['schemas']['SellerOrderTimelineEvent'];
+export type SchemaSellerOrderDetail = components['schemas']['SellerOrderDetail'];
+export type SchemaSellerOrderListEnvelope = components['schemas']['SellerOrderListEnvelope'];
+export type SchemaSellerOrderDetailEnvelope = components['schemas']['SellerOrderDetailEnvelope'];
 export type SchemaFieldViolation = components['schemas']['FieldViolation'];
 export type SchemaMoneyIdr = components['schemas']['MoneyIdr'];
 export type SchemaRfc3339Timestamp = components['schemas']['Rfc3339Timestamp'];
@@ -7128,13 +7340,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Session */
+            /** @description Session principal + rotated csrfToken */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SuccessEnvelope"];
+                    "application/json": components["schemas"]["AuthSessionEnvelope"];
                 };
             };
             /** @description Not authenticated */
@@ -8773,7 +8985,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Active merchant membership */
+            /** @description Seller bootstrap snapshot */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8784,6 +8996,41 @@ export interface operations {
             };
             /** @description No active merchant membership */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    sellerSetCurrentStore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    storeId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated current store selection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessEnvelope"];
+                };
+            };
+            /** @description Unknown or cross-tenant store */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11474,7 +11721,10 @@ export interface operations {
     };
     getPublicProduct: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional store slug to bind product slug to the correct tenant (PUB-100) */
+                store?: string;
+            };
             header?: never;
             path: {
                 idOrSlug: string;
@@ -11969,6 +12219,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvoiceEnvelope"];
+                };
+            };
+        };
+    };
+    listStoreOrders: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description Payment status filter (UNPAID|PENDING|PAID|FAILED|EXPIRED|CANCELLED) */
+                status?: string;
+                source?: "STOREFRONT" | "QRIS_API";
+                /** @description Search order number, buyer name/email, product title */
+                q?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                storeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerOrderSummary[] with NumberedPageListMeta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerOrderListEnvelope"];
+                };
+            };
+            /** @description Foreign/unknown store (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    getStoreOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+                /** @description Internal order id or public order number */
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerOrderDetail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerOrderDetailEnvelope"];
+                };
+            };
+            /** @description Foreign store/order (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
                 };
             };
         };

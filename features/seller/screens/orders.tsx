@@ -9,9 +9,14 @@ import {
 
 import { Check, CheckCircle2, FileDown, MoreHorizontal } from "lucide-react";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { useSellerOrder, useSellerOrders } from "@/features/orders/hooks";
+import {
+  useResendSellerOrderDelivery,
+  useSellerOrder,
+  useSellerOrders,
+} from "@/features/orders/hooks";
+import type { SellerOrderStatusTab } from "@/features/orders/contracts";
 
 import { rupiah } from "@/lib/utils";
 
@@ -23,13 +28,49 @@ import { StatusBadge } from "@/shared/ui/status-badge";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 
-import { useClientPagination } from "@/shared/ui/use-client-pagination";
-
 function Orders() {
+  const storeId = useSellerStoreId();
+  const [q, setQ] = useState("");
+  const [statusTab, setStatusTab] = useState<SellerOrderStatusTab>("Semua");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const filters = useMemo(
+    () => ({
+      q,
+      statusTab,
+      page,
+      pageSize,
+    }),
+    [q, statusTab, page, pageSize],
+  );
+
+  const { data } = useSellerOrders(storeId, filters);
+  const orders = data?.items ?? [];
+  const total = data?.totalCount ?? 0;
+  const pageCount = Math.max(1, data?.pageCount ?? 1);
+  const safePage = Math.min(Math.max(data?.page ?? page, 1), pageCount);
+  const start = total === 0 ? 0 : (safePage - 1) * pageSize;
+  const end = total === 0 ? 0 : Math.min(start + orders.length, total);
+
+  const tabs: { key: SellerOrderStatusTab; label: string }[] = [
+    { key: "Semua", label: "Semua" },
+    { key: "Paid", label: "Paid" },
+    { key: "Pending", label: "Pending" },
+    { key: "Failed", label: "Failed" },
+  ];
+
   return (
     <section className={`${sellerCard} overflow-hidden`}>
       <div className="hairline flex flex-col gap-3 border-b p-4 sm:flex-row">
-        <SearchBox placeholder="Cari pesanan, nama, atau email..." />
+        <SearchBox
+          placeholder="Cari pesanan, nama, atau email..."
+          value={q}
+          onChange={(value) => {
+            setQ(value);
+            setPage(1);
+          }}
+        />
         <div className="flex gap-2 sm:ml-auto">
           <FilterButton />
           <button className="hairline flex items-center gap-2 rounded-xl border bg-white px-3 text-[10px] font-bold">
@@ -38,89 +79,130 @@ function Orders() {
         </div>
       </div>
       <div className="hairline flex gap-1 overflow-x-auto border-b px-4 pt-2">
-        {["Semua 482", "Paid 431", "Pending 38", "Failed 13"].map((x, i) => (
+        {tabs.map((tab) => (
           <button
-            key={x}
-            className={`border-b-2 px-4 py-3 text-[10px] font-extrabold whitespace-nowrap ${i === 0 ? "border-[#173f2c] text-[#173f2c]" : "border-transparent text-[#829087]"}`}
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setStatusTab(tab.key);
+              setPage(1);
+            }}
+            className={`border-b-2 px-4 py-3 text-[10px] font-extrabold whitespace-nowrap ${statusTab === tab.key ? "border-[#173f2c] text-[#173f2c]" : "border-transparent text-[#829087]"}`}
           >
-            {x}
+            {tab.label}
           </button>
         ))}
       </div>
-      <OrderTable />
+      <OrderTable rows={orders} />
+      <TablePagination
+        page={safePage}
+        pageSize={pageSize}
+        total={total}
+        pageCount={pageCount}
+        start={start}
+        end={end}
+        setPage={setPage}
+        setPageSize={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        pageSizeOptions={[5, 10, 25, 50]}
+      />
     </section>
   );
 }
-function OrderTable({ compact = false }: { compact?: boolean }) {
+function OrderTable({
+  rows,
+  compact = false,
+}: {
+  rows?: {
+    id: string;
+    date: string;
+    avatar: string;
+    customer: string;
+    email: string;
+    product: string;
+    status: string;
+    amount: number;
+  }[];
+  compact?: boolean;
+}) {
   const storeId = useSellerStoreId();
-  const { data } = useSellerOrders(storeId);
-  const orders = data?.items ?? [];
+  const { data } = useSellerOrders(storeId, { page: 1, pageSize: 20 });
+  const orders = rows ?? data?.items ?? [];
   const source = compact ? orders.slice(0, 4) : orders;
-  const { pageRows, pagination } = useClientPagination(source);
   return (
-    <>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left">
-          <thead>
-            <tr className="bg-[#f3f4ef] text-[9px] font-extrabold tracking-wider text-[#7f8a83] uppercase">
-              <th className="px-5 py-3">Pesanan</th>
-              <th className="px-5 py-3">Pelanggan</th>
-              <th className="px-5 py-3">Produk</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3 text-right">Total</th>
-              <th className="w-12" />
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((o) => (
-              <tr
-                key={o.id}
-                className="hairline border-t text-[11px] hover:bg-[#f8f8f4]"
-              >
-                <td className="px-5 py-4">
-                  <b>{o.id}</b>
-                  <span className="mt-1 block text-[9px] text-[#8a948e]">
-                    {o.date}
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px] text-left">
+        <thead>
+          <tr className="bg-[#f3f4ef] text-[9px] font-extrabold tracking-wider text-[#7f8a83] uppercase">
+            <th className="px-5 py-3">Pesanan</th>
+            <th className="px-5 py-3">Pelanggan</th>
+            <th className="px-5 py-3">Produk</th>
+            <th className="px-5 py-3">Status</th>
+            <th className="px-5 py-3 text-right">Total</th>
+            <th className="w-12" />
+          </tr>
+        </thead>
+        <tbody>
+          {source.map((o) => (
+            <tr
+              key={o.id}
+              className="hairline border-t text-[11px] hover:bg-[#f8f8f4]"
+            >
+              <td className="px-5 py-4">
+                <b>{o.id}</b>
+                <span className="mt-1 block text-[9px] text-[#8a948e]">
+                  {o.date}
+                </span>
+              </td>
+              <td className="px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-8 place-items-center rounded-full bg-[#e3e8df] text-[9px] font-extrabold">
+                    {o.avatar}
                   </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <span className="grid size-8 place-items-center rounded-full bg-[#e3e8df] text-[9px] font-extrabold">
-                      {o.avatar}
+                  <div>
+                    <b>{o.customer}</b>
+                    <span className="block text-[9px] text-[#849087]">
+                      {o.email}
                     </span>
-                    <div>
-                      <b>{o.customer}</b>
-                      <span className="block text-[9px] text-[#849087]">
-                        {o.email}
-                      </span>
-                    </div>
                   </div>
-                </td>
-                <td className="px-5 py-4 font-semibold">{o.product}</td>
-                <td className="px-5 py-4">
-                  <StatusBadge status={o.status} />
-                </td>
-                <td className="px-5 py-4 text-right font-extrabold">
-                  {rupiah(o.amount)}
-                </td>
-                <td>
-                  <MoreHorizontal className="size-4" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <TablePagination {...pagination} />
-    </>
+                </div>
+              </td>
+              <td className="px-5 py-4 font-semibold">{o.product}</td>
+              <td className="px-5 py-4">
+                <StatusBadge status={o.status} />
+              </td>
+              <td className="px-5 py-4 text-right font-extrabold">
+                {rupiah(o.amount)}
+              </td>
+              <td>
+                <MoreHorizontal className="size-4" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 function SellerOrderDetail({ id }: { id: string }) {
   const storeId = useSellerStoreId();
   const { data: order } = useSellerOrder(storeId, id);
-  const [resent, setResent] = useState(false);
+  const resend = useResendSellerOrderDelivery(storeId, id);
   if (!order) return null;
   const o = order;
+  const fee = o.feeIdr ?? 0;
+  const net = o.merchantNetIdr ?? o.amount - fee;
+  const payment = o.payment ?? {
+    method: "QRIS",
+    paymentIntent: "—",
+    provider: "—",
+    status: o.status,
+  };
+  const delivery = o.delivery;
+  const timeline = o.timeline ?? [];
+  const resent = resend.isSuccess;
   return (
     <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
       <section className={`${sellerCard} p-5 sm:p-7`}>
@@ -138,10 +220,10 @@ function SellerOrderDetail({ id }: { id: string }) {
             value={rupiah(o.amount)}
             note="Gross amount"
           />
-          <MiniStat label="Biaya" value="Rp3.070" note="Platform + payment" />
+          <MiniStat label="Biaya" value={rupiah(fee)} note="Platform + payment" />
           <MiniStat
             label="Pendapatan bersih"
-            value={rupiah(o.amount - 3070)}
+            value={rupiah(net)}
             note="Masuk settlement"
           />
         </div>
@@ -161,31 +243,40 @@ function SellerOrderDetail({ id }: { id: string }) {
           <InfoList
             title="Pembayaran"
             rows={[
-              ["Metode", "QRIS"],
-              ["Payment intent", "qris_2Yc91p"],
-              ["Provider", "Xendit"],
-              ["Status", o.status],
+              ["Metode", payment.method],
+              ["Payment intent", payment.paymentIntent],
+              ["Provider", payment.provider],
+              ["Status", payment.status],
             ]}
           />
         </div>
-        <div className="mt-7 rounded-2xl bg-[#eef3e9] p-5">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-[#2e714f]" />
-            <h3 className="text-xs font-extrabold">Delivery fulfilled</h3>
+        {delivery ? (
+          <div className="mt-7 rounded-2xl bg-[#eef3e9] p-5">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-[#2e714f]" />
+              <h3 className="text-xs font-extrabold">
+                {delivery.fulfilled ? "Delivery fulfilled" : "Delivery"}
+              </h3>
+            </div>
+            <p className="mt-2 text-[9px] leading-4 text-[#6c7971]">
+              {delivery.summary}
+            </p>
+            <button
+              type="button"
+              disabled={resend.isPending || resent}
+              onClick={() => {
+                if (!resent) resend.mutate(undefined);
+              }}
+              className="hairline mt-4 rounded-lg border bg-white px-3 py-2 text-[9px] font-bold disabled:opacity-60"
+            >
+              {resent
+                ? "Email berhasil dikirim ulang"
+                : resend.isPending
+                  ? "Mengirim..."
+                  : "Kirim ulang email delivery"}
+            </button>
           </div>
-          <p className="mt-2 text-[9px] leading-4 text-[#6c7971]">
-            Link download dibuat dan dikirim ke {o.email}. Digunakan 1 dari 5
-            kali.
-          </p>
-          <button
-            onClick={() => setResent(true)}
-            className="hairline mt-4 rounded-lg border bg-white px-3 py-2 text-[9px] font-bold"
-          >
-            {resent
-              ? "Email berhasil dikirim ulang"
-              : "Kirim ulang email delivery"}
-          </button>
-        </div>
+        ) : null}
       </section>
       <section className={`${sellerCard} overflow-hidden`}>
         <SectionHead
@@ -193,24 +284,18 @@ function SellerOrderDetail({ id }: { id: string }) {
           desc="Semua perubahan pada order"
         />
         <div className="p-5">
-          {[
-            ["Pesanan dibuat", "14:32:08"],
-            ["QRIS dibuat", "14:32:09"],
-            ["Pembayaran terkonfirmasi", "14:33:21"],
-            ["Delivery berhasil", "14:33:23"],
-            ["Saldo seller dikreditkan", "14:33:23"],
-          ].map((x, i) => (
-            <div key={x[0]} className="relative flex gap-3 pb-6 last:pb-0">
+          {timeline.map((x, i) => (
+            <div key={`${x.label}-${i}`} className="relative flex gap-3 pb-6 last:pb-0">
               <span className="relative z-10 grid size-6 place-items-center rounded-full bg-[#dff2e2] text-[#2e714f]">
                 <Check className="size-3" />
               </span>
-              {i < 4 && (
+              {i < timeline.length - 1 && (
                 <span className="absolute top-6 left-[11px] h-full w-px bg-[#dfe3dc]" />
               )}
               <div>
-                <b className="block text-[10px]">{x[0]}</b>
+                <b className="block text-[10px]">{x.label}</b>
                 <span className="text-[8px] text-[#7f8a83]">
-                  12 Jul 2026 • {x[1]}
+                  {x.atDisplay} • {x.timeDisplay}
                 </span>
               </div>
             </div>
@@ -238,4 +323,5 @@ function InfoList({ title, rows }: { title: string; rows: string[][] }) {
 export {
   Orders as SellerOrdersScreen,
   SellerOrderDetail as SellerOrderDetailScreen,
+  OrderTable as SellerOrderTable,
 };

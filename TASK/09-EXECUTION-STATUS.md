@@ -120,7 +120,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `SEL-220` | P1 | SEL-210 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Product command lifecycle | TASK/evidence/SEL-220/20260717-sel220-nikki.md · features/catalog · tests/unit/sel-220-seller-product-commands.test.ts |
 | `[ ]` | `SEL-230` | P1 | SEL-100; INT-180/185 **if scan lifecycle active** | SEL/RTM | — | Store/public asset safe upload/scan | — |
 | `[ ]` | `SEL-240` | P0/P1 | SEL-220, INT-140 | SEL | — | Inventory schema/import/reveal/revoke | — |
-| `[ ]` | `SEL-250` | P0 gap/P1 wire | SEL-100, INT-190 | SEL | — | Seller order read models/delivery commands | — |
+| `[x]` | `SEL-250` | P0 gap/P1 wire | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller order read models/delivery commands | TASK/evidence/SEL-250/20260717-1522-nikki.md · features/orders · tests/unit/sel-250-seller-orders.test.ts |
 | `[ ]` | `SEL-260` | P1 gap | SEL-100, SEL-250 | SEL | — | Tenant customer read model/notes | — |
 | `[ ]` | `SEL-270` | P1 gap | SEL-100, BUY-110 | SEL | — | Seller review read/reply/report | — |
 | `[ ]` | `SEL-280` | P1 | SEL-100, CHK-100 | SEL | — | Coupon lifecycle/redemption | — |

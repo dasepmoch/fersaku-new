@@ -5718,6 +5718,108 @@ paths:
                 $ref: '#/components/schemas/InvoiceEnvelope'
       security:
       - sessionCookie: []
+  /v1/stores/{storeId}/orders:
+    get:
+      operationId: listStoreOrders
+      summary: Store-scoped seller order list (NumberedPageList; no delivery secrets)
+      tags:
+      - seller
+      - orders
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: status
+        in: query
+        description: Payment status filter (UNPAID|PENDING|PAID|FAILED|EXPIRED|CANCELLED)
+        schema:
+          type: string
+      - name: source
+        in: query
+        schema:
+          type: string
+          enum:
+          - STOREFRONT
+          - QRIS_API
+      - name: q
+        in: query
+        description: Search order number, buyer name/email, product title
+        schema:
+          type: string
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: SellerOrderSummary[] with NumberedPageListMeta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerOrderListEnvelope'
+        '404':
+          description: Foreign/unknown store (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/orders/{orderId}:
+    get:
+      operationId: getStoreOrder
+      summary: Store-scoped seller order detail (no delivery secrets)
+      tags:
+      - seller
+      - orders
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: orderId
+        in: path
+        required: true
+        description: Internal order id or public order number
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SellerOrderDetail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerOrderDetailEnvelope'
+        '404':
+          description: Foreign store/order (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
   /v1/stores/{storeId}/orders/{orderId}/delivery:
     get:
       operationId: sellerGetDeliveryGrant
@@ -11028,6 +11130,272 @@ components:
           items: {}
         meta:
           $ref: '#/components/schemas/NumberedPageListMeta'
+    SellerOrderSummary:
+      type: object
+      required:
+      - orderId
+      - orderNumber
+      - storeId
+      - merchantId
+      - buyerName
+      - buyerEmail
+      - productTitle
+      - paymentStatus
+      - source
+      - currency
+      - grossIdr
+      - feeIdr
+      - merchantNetIdr
+      - createdAt
+      description: Store-scoped seller order list row (no delivery secrets).
+      properties:
+        orderId:
+          type: string
+        orderNumber:
+          type: string
+        storeId:
+          type: string
+        merchantId:
+          type: string
+        buyerName:
+          type: string
+        buyerEmail:
+          type: string
+        productTitle:
+          type: string
+        paymentStatus:
+          type: string
+        source:
+          type: string
+        currency:
+          type: string
+        grossIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        feeIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        merchantNetIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        deliveryStatus:
+          type: string
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    SellerOrderItem:
+      type: object
+      required:
+      - orderItemId
+      - productId
+      - productTitle
+      - productType
+      - unitPriceIdr
+      - quantity
+      - lineTotalIdr
+      - deliveryKind
+      properties:
+        orderItemId:
+          type: string
+        productId:
+          type: string
+        productTitle:
+          type: string
+        productType:
+          type: string
+        productVersion:
+          type: string
+        unitPriceIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        quantity:
+          type: integer
+        lineTotalIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        deliveryKind:
+          type: string
+    SellerOrderGrantMeta:
+      type: object
+      required:
+      - grantId
+      - orderItemId
+      - productId
+      - deliveryKind
+      - status
+      - accessCount
+      - maxAccesses
+      - createdAt
+      description: Grant metadata without access token hash or secrets.
+      properties:
+        grantId:
+          type: string
+        orderItemId:
+          type: string
+        productId:
+          type: string
+        deliveryKind:
+          type: string
+        status:
+          type: string
+        accessCount:
+          type: integer
+        maxAccesses:
+          type: integer
+        activatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failReason:
+          type: string
+          nullable: true
+        lastAccessedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    SellerOrderPaymentSummary:
+      type: object
+      required:
+      - paymentIntentId
+      - provider
+      - status
+      - amountIdr
+      - paidLate
+      properties:
+        paymentIntentId:
+          type: string
+        provider:
+          type: string
+        providerReference:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        amountIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        paidLate:
+          type: boolean
+    SellerOrderTimelineEvent:
+      type: object
+      required:
+      - label
+      - at
+      properties:
+        label:
+          type: string
+        at:
+          type: string
+          format: date-time
+    SellerOrderDetail:
+      type: object
+      required:
+      - orderId
+      - orderNumber
+      - storeId
+      - merchantId
+      - buyerName
+      - buyerEmail
+      - paymentStatus
+      - source
+      - currency
+      - subtotalIdr
+      - discountIdr
+      - tipIdr
+      - feeIdr
+      - grossIdr
+      - merchantNetIdr
+      - createdAt
+      - items
+      - grants
+      - timeline
+      description: Store-scoped seller order detail aggregate (no raw delivery secret).
+      properties:
+        orderId:
+          type: string
+        orderNumber:
+          type: string
+        storeId:
+          type: string
+        merchantId:
+          type: string
+        buyerName:
+          type: string
+        buyerEmail:
+          type: string
+        paymentStatus:
+          type: string
+        source:
+          type: string
+        currency:
+          type: string
+        subtotalIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        discountIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        tipIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        feeIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        grossIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        merchantNetIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        productTitle:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerOrderItem'
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerOrderGrantMeta'
+        payment:
+          $ref: '#/components/schemas/SellerOrderPaymentSummary'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerOrderTimelineEvent'
+    SellerOrderListEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerOrderSummary'
+        meta:
+          $ref: '#/components/schemas/NumberedPageListMeta'
+    SellerOrderDetailEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerOrderDetail'
+        meta:
+          $ref: '#/components/schemas/Meta'
     FieldViolation:
       type: object
       required:

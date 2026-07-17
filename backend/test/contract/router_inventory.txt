@@ -271,6 +271,8 @@ GET /v1/stores/{storeId}/objects/{objectId}
 POST /v1/stores/{storeId}/objects/{objectId}/complete
 POST /v1/stores/{storeId}/objects/{objectId}/delivery-grants
 GET /v1/stores/{storeId}/objects/{objectId}/download-url
+GET /v1/stores/{storeId}/orders/
+GET /v1/stores/{storeId}/orders/{orderId}
 GET /v1/stores/{storeId}/orders/{orderId}/delivery
 POST /v1/stores/{storeId}/orders/{orderId}/delivery/resend
 POST /v1/stores/{storeId}/orders/{orderId}/delivery/retry

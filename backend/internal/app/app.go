@@ -129,6 +129,8 @@ type Runtime struct {
 	Webhooks *application.WebhookService
 	// Buyer is wired when DATABASE_URL is set (BE-430).
 	Buyer *application.BuyerService
+	// SellerOrders is wired when DATABASE_URL is set (SEL-250).
+	SellerOrders *application.SellerOrderService
 	// Reviews is wired when DATABASE_URL is set (BE-430).
 	Reviews *application.ReviewService
 	// AdminReads is wired when DATABASE_URL is set (BE-500).
@@ -321,6 +323,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	var credentialSvc *application.CredentialService
 	var webhookSvc *application.WebhookService
 	var buyerSvc *application.BuyerService
+	var sellerOrderSvc *application.SellerOrderService
 	var reviewSvc *application.ReviewService
 	var adminReadSvc *application.AdminReadService
 	var adminOpsSvc *application.AdminOpsService
@@ -570,6 +573,12 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock:     clock,
 			Log:       log,
 		}
+		// SEL-250: seller store-scoped order list/detail.
+		sellerOrderSvc = &application.SellerOrderService{
+			Store: postgres.NewSellerOrderRepo(pool.Pool()),
+			Clock: clock,
+			Log:   log,
+		}
 		reviewSvc = &application.ReviewService{
 			Store: postgres.NewReviewRepo(pool.Pool()),
 			IDs:   ids,
@@ -676,6 +685,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		Credentials:   credentialSvc,
 		Webhooks:      webhookSvc,
 		Buyer:         buyerSvc,
+		SellerOrders:  sellerOrderSvc,
 		Reviews:       reviewSvc,
 		AdminReads:    adminReadSvc,
 		AdminOps:      adminOpsSvc,
@@ -843,6 +853,7 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		CredentialService:   rt.Credentials,
 		WebhookService:      rt.Webhooks,
 		BuyerService:        rt.Buyer,
+		SellerOrderService:  rt.SellerOrders,
 		ReviewService:       rt.Reviews,
 		AdminReadService:     rt.AdminReads,
 		AdminOpsService:      rt.AdminOps,

@@ -1,8 +1,5 @@
 import { SellerOrderDetailScreen } from "@/features/seller/screens/orders";
-import { getSellerOrder } from "@/features/orders/api";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
-import { getDomainSource } from "@/shared/data/domain-source";
-import { notFound } from "next/navigation";
+import { getSellerOrderServer } from "@/features/orders/server";
 
 export default async function SellerOrderDetailPage({
   params,
@@ -10,8 +7,6 @@ export default async function SellerOrderDetailPage({
   params: Promise<{ orderId: string }>;
 }) {
   const { orderId } = await params;
-  if (getDomainSource("sellerOperations") === "mock") {
-    if (!(await getSellerOrder(DEMO_STORE_ID, orderId))) notFound();
-  }
+  await getSellerOrderServer(orderId);
   return <SellerOrderDetailScreen id={orderId} />;
 }

@@ -779,6 +779,130 @@ export type BuyerPurchaseDetailDto = z.infer<
   typeof buyerPurchaseDetailDtoSchema
 >;
 
+// --- Seller orders (SEL-250) — store-scoped; no delivery secrets ---
+
+/** Default/max page size for seller order NumberedPageList. */
+export const SELLER_ORDER_DEFAULT_PAGE_SIZE = 20;
+export const SELLER_ORDER_MAX_PAGE_SIZE = 50;
+
+export const sellerOrderSummaryDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().min(1),
+  storeId: z.string().min(1),
+  merchantId: z.string().min(1),
+  buyerName: z.string(),
+  buyerEmail: z.string(),
+  productTitle: z.string(),
+  paymentStatus: z.string().min(1),
+  source: z.string().optional(),
+  currency: z.string().optional(),
+  grossIdr: moneyIdrSchema,
+  feeIdr: moneyIdrSchema,
+  merchantNetIdr: moneyIdrSchema,
+  deliveryStatus: z.string().optional(),
+  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerOrderItemDtoSchema = z.object({
+  orderItemId: z.string().min(1),
+  productId: z.string().min(1),
+  productTitle: z.string().min(1),
+  productType: z.string().optional(),
+  productVersion: z.string().optional(),
+  unitPriceIdr: moneyIdrSchema,
+  quantity: z.number().int().min(1),
+  lineTotalIdr: moneyIdrSchema,
+  deliveryKind: z.string().min(1),
+});
+
+export const sellerOrderGrantMetaDtoSchema = z.object({
+  grantId: z.string().min(1),
+  orderItemId: z.string().min(1),
+  productId: z.string().min(1),
+  deliveryKind: z.string().min(1),
+  status: z.string().min(1),
+  accessCount: z.number().int().min(0),
+  maxAccesses: z.number().int().min(0),
+  activatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  revokedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  failedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  failReason: z.string().nullable().optional(),
+  lastAccessedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerOrderPaymentSummaryDtoSchema = z.object({
+  paymentIntentId: z.string().min(1),
+  provider: z.string().min(1),
+  providerReference: z.string().optional(),
+  status: z.string().min(1),
+  source: z.string().optional(),
+  amountIdr: moneyIdrSchema,
+  paidLate: z.boolean(),
+});
+
+export const sellerOrderTimelineEventDtoSchema = z.object({
+  label: z.string().min(1),
+  at: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerOrderDetailDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().min(1),
+  storeId: z.string().min(1),
+  merchantId: z.string().min(1),
+  buyerName: z.string(),
+  buyerEmail: z.string(),
+  paymentStatus: z.string().min(1),
+  source: z.string().optional(),
+  currency: z.string().optional(),
+  subtotalIdr: moneyIdrSchema,
+  discountIdr: moneyIdrSchema,
+  tipIdr: moneyIdrSchema,
+  feeIdr: moneyIdrSchema,
+  grossIdr: moneyIdrSchema,
+  merchantNetIdr: moneyIdrSchema,
+  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  productTitle: z.string().optional(),
+  items: z.array(sellerOrderItemDtoSchema),
+  grants: z.array(sellerOrderGrantMetaDtoSchema),
+  payment: sellerOrderPaymentSummaryDtoSchema.optional().nullable(),
+  timeline: z.array(sellerOrderTimelineEventDtoSchema),
+});
+
+export const sellerOrderListEnvelopeSchema = numberedPageListEnvelopeSchema(
+  sellerOrderSummaryDtoSchema,
+);
+
+export const sellerOrderDetailEnvelopeSchema = successEnvelopeSchema(
+  sellerOrderDetailDtoSchema,
+);
+
+export const sellerDeliveryResendResultSchema = z.object({
+  grantId: z.string().optional(),
+  orderId: z.string().optional(),
+  status: z.string().optional(),
+  queued: z.boolean().optional(),
+});
+
+export const sellerDeliveryResendEnvelopeSchema = successEnvelopeSchema(
+  sellerDeliveryResendResultSchema,
+);
+
+export type SellerOrderSummaryDto = z.infer<typeof sellerOrderSummaryDtoSchema>;
+export type SellerOrderDetailDto = z.infer<typeof sellerOrderDetailDtoSchema>;
+export type SellerOrderGrantMetaDto = z.infer<
+  typeof sellerOrderGrantMetaDtoSchema
+>;
+export type SellerOrderPaymentSummaryDto = z.infer<
+  typeof sellerOrderPaymentSummaryDtoSchema
+>;
+export type SellerOrderTimelineEventDto = z.infer<
+  typeof sellerOrderTimelineEventDtoSchema
+>;
+
 /** GET /v1/seller/me/merchant — seller bootstrap (INT-150). */
 export const sellerMembershipSchema = z.object({
   merchantId: z.string().min(1),

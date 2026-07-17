@@ -78,6 +78,8 @@ type RouterDeps struct {
 	WebhookService *application.WebhookService
 	// BuyerService when set enables BE-430 purchase list/detail.
 	BuyerService *application.BuyerService
+	// SellerOrderService when set enables SEL-250 store order list/detail.
+	SellerOrderService *application.SellerOrderService
 	// ReviewService when set enables BE-430 reviews.
 	ReviewService *application.ReviewService
 	// AdminReadService when set enables BE-500 admin read models.
@@ -797,6 +799,16 @@ func NewRouterWith(d RouterDeps) http.Handler {
 				br.Post("/delivery/resend", dh.BuyerResend)
 				br.Get("/invoice", dh.BuyerInvoice)
 			}
+		})
+	}
+	// SEL-250 seller order list/detail (store-scoped read model).
+	// Registered before delivery subroutes under the same path prefix.
+	if d.SellerOrderService != nil {
+		soh := &handlers.SellerOrderHandler{Svc: d.SellerOrderService}
+		r.Route("/v1/stores/{storeId}/orders", func(or chi.Router) {
+			or.Use(handlers.RequireAuth)
+			or.With(middleware.RequirePermission("seller.store.read")).Get("/", soh.ListOrders)
+			or.With(middleware.RequirePermission("seller.store.read")).Get("/{orderId}", soh.GetOrder)
 		})
 	}
 	if d.DeliveryService != nil {

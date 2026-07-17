@@ -22,6 +22,11 @@ type Meta struct {
 	Timestamp  string  `json:"timestamp"`
 	NextCursor *string `json:"nextCursor,omitempty"`
 	HasMore    *bool   `json:"hasMore,omitempty"`
+	// NumberedPageList fields (omit when unused).
+	Page       *int   `json:"page,omitempty"`
+	PageSize   *int   `json:"pageSize,omitempty"`
+	TotalCount *int64 `json:"totalCount,omitempty"`
+	PageCount  *int   `json:"pageCount,omitempty"`
 }
 
 // Envelope is the success response shape.
@@ -92,6 +97,25 @@ func WriteData(w http.ResponseWriter, r *http.Request, status int, data any) {
 func WriteList(w http.ResponseWriter, r *http.Request, status int, data any, next *cursor.Key, hasMore bool) {
 	rid := reqctx.RequestID(r.Context())
 	WriteSuccess(w, r, status, data, ListMeta(rid, time.Now().UTC(), next, hasMore))
+}
+
+// NumberedListMeta builds meta for NumberedPageList (TablePagination) endpoints.
+func NumberedListMeta(requestID string, now time.Time, page, pageSize int, totalCount int64, pageCount int) Meta {
+	m := NewMeta(requestID, now)
+	p, ps, pc := page, pageSize, pageCount
+	tc := totalCount
+	m.Page = &p
+	m.PageSize = &ps
+	m.TotalCount = &tc
+	m.PageCount = &pc
+	return m
+}
+
+// WriteNumberedList writes a NumberedPageList success envelope.
+// data should be the row array (or a wrapper that FE maps from).
+func WriteNumberedList(w http.ResponseWriter, r *http.Request, status int, data any, page, pageSize int, totalCount int64, pageCount int) {
+	rid := reqctx.RequestID(r.Context())
+	WriteSuccess(w, r, status, data, NumberedListMeta(rid, time.Now().UTC(), page, pageSize, totalCount, pageCount))
 }
 
 // WriteProblem writes a problem envelope. Never includes stack traces or secrets.

@@ -256,22 +256,22 @@ FE inventory contract berasal dari mock shape; backend summary/detail memiliki s
 
 ### Backend task
 
-- [ ] Implement store-scoped order list with search/status/source/date filters and authoritative `NumberedPageList` (`TablePagination` exists), bounded limit, stable ordering.
-- [ ] Implement detail read model containing immutable order/item/customer display snapshot, amount/discount/tip/fee/net integer IDR, payment state/reference summary, timeline, delivery state/attempts, invoice/review metadata—no raw delivery secret.
-- [ ] Enforce store membership; foreign ID -> safe 404.
-- [ ] Avoid N+1 with dedicated query/read model.
-- [ ] Define status/source enums and late provider event behavior.
-- [ ] Delivery resend/retry/revoke transition, idempotency, rate limit, reason/audit as applicable.
+- [x] Implement store-scoped order list with search/status/source/date filters and authoritative `NumberedPageList` (`TablePagination` exists), bounded limit, stable ordering.
+- [x] Implement detail read model containing immutable order/item/customer display snapshot, amount/discount/tip/fee/net integer IDR, payment state/reference summary, timeline, delivery state/attempts, invoice/review metadata—no raw delivery secret.
+- [x] Enforce store membership; foreign ID -> safe 404.
+- [x] Avoid N+1 with dedicated query/read model.
+- [x] Define status/source enums and late provider event behavior.
+- [x] Delivery resend/retry/revoke transition, idempotency, rate limit, reason/audit as applicable. *(existing BE-235 commands retained; UI wires resend only)*
 
 ### Frontend task
 
-- [ ] Update `features/orders/api.ts` schema/mapper; normalize backend list/meta to `NumberedPageList<SellerOrder>` behind adapter.
-- [ ] Extend existing view model only as presentation needs; do not show arbitrary backend fields.
-- [ ] Wire existing filters/table/pagination/timeline/detail panels.
-- [ ] Current seller order UI exposes resend email delivery, but no characterized retry/revoke control. Wire resend only; keep retry/revoke backend operations out-of-scope/disabled for this UI until an existing dialog/control is approved—do not add buttons or infer `MoreHorizontal` behavior.
-- [ ] Never calculate net/fee from UI guesses; use immutable server snapshot.
-- [ ] Detail SSR server client/cookie/no-store.
-- [ ] Mutation no optimistic success; invalidate exact list/detail/overview.
+- [x] Update `features/orders/api.ts` schema/mapper; normalize backend list/meta to `NumberedPageList<SellerOrder>` behind adapter.
+- [x] Extend existing view model only as presentation needs; do not show arbitrary backend fields.
+- [x] Wire existing filters/table/pagination/timeline/detail panels.
+- [x] Current seller order UI exposes resend email delivery, but no characterized retry/revoke control. Wire resend only; keep retry/revoke backend operations out-of-scope/disabled for this UI until an existing dialog/control is approved—do not add buttons or infer `MoreHorizontal` behavior.
+- [x] Never calculate net/fee from UI guesses; use immutable server snapshot.
+- [x] Detail SSR server client/cookie/no-store.
+- [x] Mutation no optimistic success; invalidate exact list/detail/overview.
 
 ### Tests/AC
 
