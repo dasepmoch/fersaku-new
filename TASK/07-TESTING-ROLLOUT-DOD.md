@@ -138,14 +138,14 @@ Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memer
 
 ### Fixture rules
 
-- [ ] Seed command refuses `APP_ENV=production`.
-- [ ] IDs/timestamps deterministic relative to fixed clock or seeded window.
-- [ ] No real provider secret, raw credential, PII, or production copy.
-- [ ] Database disposable per run; tests parallelized only with namespace/isolation.
+- [x] Seed command refuses `APP_ENV=production`.
+- [x] IDs/timestamps deterministic relative to fixed clock or seeded window.
+- [x] No real provider secret, raw credential, PII, or production copy.
+- [x] Database disposable per run; tests parallelized only with namespace/isolation.
 - [ ] Provider fake/test double is explicit and cannot be selected in live.
 - [ ] Mail links captured in Mailpit/test adapter and tokens consumed securely.
-- [ ] Teardown uses disposable environment, not destructive wildcard against shared DB.
-- [ ] Seed ownership tunggal berada di task ini; `INT-190` hanya memakai dan memvalidasi first vertical slice, tidak membuat command/persona kedua.
+- [x] Teardown uses disposable environment, not destructive wildcard against shared DB.
+- [x] Seed ownership tunggal berada di task ini; `INT-190` hanya memakai dan memvalidasi first vertical slice, tidak membuat command/persona kedua.
 
 ### Acceptance criteria
 

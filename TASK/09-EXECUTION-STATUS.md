@@ -87,11 +87,11 @@ Shared hotspot mempunyai single-writer rule:
 
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[ ]` | `AUT-100` | P0 | INT-010, INT-020, INT-025, INT-100, INT-110, INT-120, INT-130, INT-140; co-evolve INT-190 | PUB | — | Seller register/login/session/logout | — |
+| `[x]` | `AUT-100` | P0 | INT-010, INT-020, INT-025, INT-100, INT-110, INT-120, INT-130, INT-140; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:19 WIB · claim released | Seller register/login/session/logout | TASK/evidence/AUT-100/20260717-1319-nikki.md · features/auth · components/auth-form.tsx · tests/unit/aut-100-seller-auth.test.ts |
 | `[ ]` | `AUT-110` | P0 | INT-010, INT-020, INT-025, INT-100, INT-120, INT-130; INT-180 **if live mail** | PUB | — | Buyer magic-link session | — |
 | `[ ]` | `AUT-120` | P1 | AUT-100, AUT-110, INT-140 | PUB/FND | — | Shared reset/email/MFA/recovery ceremony | — |
 | `[ ]` | `AUT-130` | P1 decision | INT-025, INT-120, INT-130 | PUB | — | OAuth implemented or authoritatively disabled | — |
-| `[ ]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | — | Featured/store/product/review reads | — |
+| `[~]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | @nikki/opencode · main · 2026-07-17 · files: public catalog, TASK/evidence/PUB-100 | Featured/store/product/review reads | TASK/evidence/PUB-100/ |
 | `[ ]` | `PUB-110` | P1 | INT-000, INT-010, INT-100 | PUB | — | Authoritative public fee copy | — |
 | `[ ]` | `PUB-200` | P1 decision | INT-025, INT-100, INT-130 | PUB | — | Contact submit or disabled disposition | — |
 | `[ ]` | `PUB-210` | P1 | PUB-100 | PUB | — | Store search and safe social links | — |
@@ -161,7 +161,7 @@ Shared hotspot mempunyai single-writer rule:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `QLT-100` | P0 | — | QA | completed @nikki/opencode · 2026-07-17 12:24 WIB · claim released | Correct CI paths/toolchain/job skeleton | TASK/evidence/QLT-100/20260717-1224-nikki.md |
 | `[ ]` | `QLT-105` | P0 rollout | QLT-100, INT-000, INT-010, QLT-110, QLT-215; QLT-200/210 framework may co-evolve, capability cells are canary evidence (not parent hard dependencies) | QA | — | Real required CI gates, no no-op jobs | — |
-| `[ ]` | `QLT-110` | P0 | INT-000, INT-030; co-evolve INT-150/domain migrations | QA | — | Single deterministic nonprod seed owner | — |
+| `[x]` | `QLT-110` | P0 | INT-000, INT-030; co-evolve INT-150/domain migrations | QA | completed @nikki/opencode · 2026-07-17 · claim released | Single deterministic nonprod seed owner | TASK/evidence/QLT-110/20260717-qlt110-nikki.md · seed-ids.json · backend/internal/seed · backend/cmd/seed |
 | `[ ]` | `QLT-200` | P0/P1 continuous | INT-000, INT-010; domain task co-evolves | QA/domain | — | Unit/mapper/provider-consumer contract tests | — |
 | `[ ]` | `QLT-210` | P0 continuous | QLT-100; tested migration/domain co-evolves | QA/domain | — | Real DB/concurrency/integration suite | — |
 | `[ ]` | `QLT-215` | P0 | QLT-100, QLT-110, INT-025, INT-030, INT-100 | QA | — | Disposable API-mode Playwright harness | — |

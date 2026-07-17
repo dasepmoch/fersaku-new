@@ -28,20 +28,24 @@ Version table: `schema_migrations` (golang-migrate default).
 - Timestamps: `timestamptz` UTC.
 - Money (later domain tables): `bigint` whole IDR units — never float.
 
-## BE-130 RBAC bootstrap
+## QLT-110 deterministic nonprod seed
 
-Migration `000004_rbac` seeds immutable system roles (`SUPER_ADMIN`, `ADMIN_SUPPORT`,
-`ADMIN_FINANCE`, `SELLER_OWNER`, `BUYER`) and the stable permission registry.
+Single seed owner: `make seed` → `scripts/seed.sh` → `cmd/seed` → `internal/seed`.
 
-To attach `SUPER_ADMIN` to an existing user after register/verify:
+- Refuses `APP_ENV=production` (exit 2).
+- Fixed clock `2026-01-15T12:00:00Z`; stable `01HQ0SEED…` IDs.
+- Required personas + commerce/finance/KYC/callback scenarios for isolation tests.
+- Optional `SEED_MANIFEST_PATH` writes JSON ID map (see `TASK/evidence/QLT-110/`).
+- Optional `BOOTSTRAP_ADMIN_EMAIL` still attaches `SUPER_ADMIN` to an **existing** user after persona seed (does not create a second seed command).
 
 ```bash
 export DATABASE_URL='postgres://fersaku:fersaku_local@localhost:5433/fersaku?sslmode=disable'
-export BOOTSTRAP_ADMIN_EMAIL='admin@example.com'
+export APP_ENV=local
+make migrate
 make seed
 ```
 
-`BOOTSTRAP_ADMIN_EMAIL` does **not** create users; seed fails if the email is unknown.
+Migration `000004_rbac` still seeds immutable system roles/permissions.
 
 ### Authorization policy (FORBIDDEN vs NOT_FOUND)
 

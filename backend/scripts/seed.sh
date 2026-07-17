@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
-# Deterministic seed for BE-130 RBAC bootstrap.
-# System roles/permissions are seeded by migration 000004_rbac.
-# Optional: BOOTSTRAP_ADMIN_EMAIL attaches SUPER_ADMIN to an existing user.
+# QLT-110 single deterministic nonprod seed owner.
+# Refuses APP_ENV=production (enforced in cmd/seed).
+# System roles/permissions still come from migration 000004_rbac.
+# Optional: BOOTSTRAP_ADMIN_EMAIL attaches SUPER_ADMIN to an existing user after seed.
 set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
@@ -10,6 +11,16 @@ cd "$ROOT"
 if [ -z "${DATABASE_URL:-}" ]; then
   DATABASE_URL='postgres://fersaku:fersaku_local@localhost:5433/fersaku?sslmode=disable'
   export DATABASE_URL
+fi
+
+if [ -z "${APP_ENV:-}" ]; then
+  APP_ENV=local
+  export APP_ENV
+fi
+
+if [ "$APP_ENV" = "production" ]; then
+  echo "seed: refused APP_ENV=production (QLT-110)" >&2
+  exit 2
 fi
 
 GO_BIN="${GO_BIN:-}"
@@ -24,15 +35,16 @@ if [ -z "$GO_BIN" ]; then
   fi
 fi
 
-echo "seed: system roles/permissions come from migration 000004_rbac"
+echo "seed: QLT-110 deterministic nonprod seed (APP_ENV=$APP_ENV)"
+export DATABASE_URL
+export APP_ENV
+if [ -n "${SEED_MANIFEST_PATH:-}" ]; then
+  export SEED_MANIFEST_PATH
+fi
 if [ -n "${BOOTSTRAP_ADMIN_EMAIL:-}" ]; then
-  echo "seed: attaching SUPER_ADMIN to BOOTSTRAP_ADMIN_EMAIL (user must exist)"
-  export DATABASE_URL
   export BOOTSTRAP_ADMIN_EMAIL
-  "$GO_BIN" run ./cmd/seed
-else
-  echo "seed: BOOTSTRAP_ADMIN_EMAIL unset — skip SUPER_ADMIN attach"
-  echo "seed: set BOOTSTRAP_ADMIN_EMAIL=admin@example.com after registering that user"
+  echo "seed: will also attach SUPER_ADMIN to BOOTSTRAP_ADMIN_EMAIL after persona seed"
 fi
 
+"$GO_BIN" run ./cmd/seed
 echo "seed: done"

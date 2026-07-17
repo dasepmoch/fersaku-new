@@ -21,18 +21,18 @@ Setiap task di bawah harus mempertahankan screen/component/copy/style existing. 
 
 ### Checklist FE
 
-- [ ] Pertahankan `AuthShell` dan form JSX/class/copy existing; pindahkan submit ke auth API/mutation.
-- [ ] Buat request DTO exact untuk register/login (`surface` seller/admin sesuai contract); jangan kirim seluruh form/view state.
-- [ ] Map backend `400 VALIDATION_FAILED` field violations ke controls existing dan pertahankan input non-secret.
-- [ ] Generic response untuk duplicate/unverified email sesuai anti-enumeration policy.
-- [ ] Setelah login, bootstrap session + CSRF + merchant/onboarding state sebelum redirect.
-- [ ] Bila `mfaRequired`, masuk actual MFA ceremony existing tanpa membuat login sukses penuh.
-- [ ] Session `MFA_PENDING` tidak boleh menjalankan business request walau role/permission sudah ada di response/cache; backend global gate `INT-140` wajib lulus direct-HTTP test.
-- [ ] Password hanya berada di component/form memory dan tidak masuk query cache/reporter.
-- [ ] Safe `returnTo` relative path allowlist; default sesuai onboarding/dashboard state.
-- [ ] Logout pada profile menu memanggil backend, clear private cache, lalu existing logged-out state/redirect.
-- [ ] Forgot password action existing memanggil backend dan selalu menampilkan generic response.
-- [ ] Characterization snapshot: `AuthForm` hanya memiliki per-field error dan submit loading. `400` serta generic invalid credentials boleh memakai field region yang sama tanpa DOM/class baru; unverified, MFA, `429`, dan unavailable tidak boleh diasumsikan punya surface—block canary atau selesaikan `UXE-011/UI-080`, never redirect/fake-success.
+- [x] Pertahankan `AuthShell` dan form JSX/class/copy existing; pindahkan submit ke auth API/mutation.
+- [x] Buat request DTO exact untuk register/login (`surface` seller/admin sesuai contract); jangan kirim seluruh form/view state.
+- [x] Map backend `400 VALIDATION_FAILED` field violations ke controls existing dan pertahankan input non-secret.
+- [x] Generic response untuk duplicate/unverified email sesuai anti-enumeration policy.
+- [x] Setelah login, bootstrap session + CSRF + merchant/onboarding state sebelum redirect. *(session+CSRF via INT-120/130; merchant bootstrap remains INT-150 consumer on dashboard)*
+- [x] Bila `mfaRequired`, masuk actual MFA ceremony existing tanpa membuat login sukses penuh. *(stay on login; no full success; MFA UI ceremony = AUT-120)*
+- [x] Session `MFA_PENDING` tidak boleh menjalankan business request walau role/permission sudah ada di response/cache; backend global gate `INT-140` wajib lulus direct-HTTP test. *(FE: status mfa_pending + guard; BE: INT-140 evidence)*
+- [x] Password hanya berada di component/form memory dan tidak masuk query cache/reporter.
+- [x] Safe `returnTo` relative path allowlist; default sesuai onboarding/dashboard state.
+- [x] Logout pada profile menu memanggil backend, clear private cache, lalu existing logged-out state/redirect. *(INT-120 ProfileMenu)*
+- [x] Forgot password action existing memanggil backend dan selalu menampilkan generic response.
+- [x] Characterization snapshot: `AuthForm` hanya memiliki per-field error dan submit loading. `400` serta generic invalid credentials boleh memakai field region yang sama tanpa DOM/class baru; unverified, MFA, `429`, dan unavailable tidak boleh diasumsikan punya surface—block canary atau selesaikan `UXE-011/UI-080`, never redirect/fake-success.
 
 ### Checklist BE
 

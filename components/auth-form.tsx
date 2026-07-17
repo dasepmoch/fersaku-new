@@ -10,10 +10,20 @@ import {
   Mail,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  toSellerForgotPasswordRequest,
+  toSellerLoginRequest,
+  toSellerRegisterRequest,
+  useSellerForgotPasswordMutation,
+  useSellerLoginMutation,
+  useSellerRegisterMutation,
+  type SellerAuthField,
+} from "@/features/auth";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 const schema = z.object({
   name: z.string().min(2, "Nama terlalu pendek").optional(),
@@ -24,6 +34,8 @@ type Values = z.infer<typeof schema>;
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const [show, setShow] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -31,11 +43,84 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema) });
-  const submit = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 650));
-    router.push(mode === "register" ? "/dashboard/onboarding" : "/dashboard");
+
+  const registerMutation = useSellerRegisterMutation();
+  const loginMutation = useSellerLoginMutation();
+  const forgotMutation = useSellerForgotPasswordMutation();
+
+  const pending =
+    isSubmitting ||
+    registerMutation.isPending ||
+    loginMutation.isPending ||
+    forgotMutation.isPending;
+
+  const applyFieldErrors = (
+    fields: Array<{ field: SellerAuthField; message: string }>,
+  ) => {
+    for (const item of fields) {
+      setError(item.field, { type: "server", message: item.message });
+    }
+  };
+
+  const submit = async (values: Values) => {
+    if (mode === "register") {
+      const dto = toSellerRegisterRequest({
+        email: values.email,
+        password: values.password,
+        name: values.name,
+      });
+      const result = await registerMutation.mutateAsync(dto);
+      if (!result.ok) {
+        if (result.kind === "field_errors") applyFieldErrors(result.fields);
+        // blocked / generic: no new surface (UXE-011); stay on form.
+        return;
+      }
+      // API: register does not issue a session (verify-email first) → login.
+      // Mock: preserve existing prototype path to onboarding.
+      if (getDomainSource("auth") === "mock") {
+        router.push("/dashboard/onboarding");
+      } else {
+        router.push("/login");
+      }
+      return;
+    }
+
+    const dto = toSellerLoginRequest({
+      email: values.email,
+      password: values.password,
+    });
+    const result = await loginMutation.mutateAsync({
+      ...dto,
+      returnTo,
+    });
+    if (!result.ok) {
+      if (result.kind === "field_errors") applyFieldErrors(result.fields);
+      return;
+    }
+    if (result.kind === "mfa_pending") {
+      // MFA_PENDING must not access dashboard; stay on login (no MFA UI surface yet).
+      return;
+    }
+    router.push(result.redirectTo);
+  };
+
+  const sendReset = async () => {
+    if (!resetEmail.includes("@")) return;
+    const result = await forgotMutation.mutateAsync(
+      toSellerForgotPasswordRequest({ email: resetEmail }),
+    );
+    if (result.ok) {
+      setResetSent(true);
+      return;
+    }
+    // blocked / field errors: keep dialog open without inventing panels.
+    if (result.kind === "field_errors" && result.fields[0]) {
+      // Reuse existing email input only — no error DOM added.
+      setResetEmail(resetEmail);
+    }
   };
 
   return (
@@ -99,10 +184,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           </div>
         </Field>
         <button
-          disabled={isSubmitting}
+          disabled={pending}
           className="mt-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white transition hover:bg-[#0e3020] disabled:opacity-60"
         >
-          {isSubmitting ? (
+          {pending ? (
             <LoaderCircle className="size-4 animate-spin" />
           ) : (
             <>
@@ -168,8 +253,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                   />
                 </label>
                 <button
-                  disabled={!resetEmail.includes("@")}
-                  onClick={() => setResetSent(true)}
+                  disabled={!resetEmail.includes("@") || forgotMutation.isPending}
+                  onClick={() => {
+                    void sendReset();
+                  }}
                   className="mt-5 h-11 w-full rounded-xl bg-[#173f2c] text-[9px] font-extrabold text-white disabled:opacity-40"
                 >
                   Kirim link reset mock
