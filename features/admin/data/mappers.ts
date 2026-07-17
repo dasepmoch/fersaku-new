@@ -518,6 +518,57 @@ export function mapAdminAuditEventDto(
   };
 }
 
+/** Wire → existing AdminStatus chrome (Published / Pending moderation / …). */
+const ADMIN_REVIEW_STATUS_VIEW: Record<string, string> = {
+  PUBLISHED: "Published",
+  published: "Published",
+  Published: "Published",
+  PENDING: "Pending moderation",
+  pending: "Pending moderation",
+  "Pending moderation": "Pending moderation",
+  NEEDS_EDIT: "Needs edit",
+  needs_edit: "Needs edit",
+  "Needs edit": "Needs edit",
+  REMOVED: "Removed",
+  removed: "Removed",
+  Removed: "Removed",
+};
+
+/** BE ModerateReview allowlist: PUBLISHED|NEEDS_EDIT|REMOVED|PENDING. */
+export type AdminReviewStatusWire =
+  | "PUBLISHED"
+  | "NEEDS_EDIT"
+  | "REMOVED"
+  | "PENDING";
+
+export function humanizeAdminReviewStatus(raw: string): string {
+  const s = raw.trim();
+  return ADMIN_REVIEW_STATUS_VIEW[s] ?? s;
+}
+
+/** Map UI control status label → wire enum for POST …/transition. */
+export function toAdminReviewStatusWire(
+  displayOrWire: string,
+): AdminReviewStatusWire | null {
+  const s = displayOrWire.trim();
+  switch (s) {
+    case "PUBLISHED":
+    case "Published":
+      return "PUBLISHED";
+    case "NEEDS_EDIT":
+    case "Needs edit":
+      return "NEEDS_EDIT";
+    case "REMOVED":
+    case "Removed":
+      return "REMOVED";
+    case "PENDING":
+    case "Pending moderation":
+      return "PENDING";
+    default:
+      return null;
+  }
+}
+
 export function mapAdminReviewDto(dto: AdminReviewDto): AdminReview {
   return {
     id: dto.id,
@@ -530,7 +581,7 @@ export function mapAdminReviewDto(dto: AdminReviewDto): AdminReview {
     title: dto.title,
     body: dto.body,
     verified: Boolean(dto.verified),
-    status: dto.status,
+    status: humanizeAdminReviewStatus(dto.status),
     createdAt: dto.createdAt,
     ...(dto.sellerReply ? { sellerReply: dto.sellerReply } : {}),
   };

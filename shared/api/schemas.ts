@@ -2241,6 +2241,21 @@ export const adminAuditEventListEnvelopeSchema = adminListEnvelopeSchema(
 );
 export const adminReviewListEnvelopeSchema =
   adminListEnvelopeSchema(adminReviewDtoSchema);
+
+export const adminReviewEnvelopeSchema = successEnvelopeSchema(
+  adminReviewDtoSchema,
+);
+
+/** ADM-330 — POST /v1/admin/reviews/{reviewId}/transition result. */
+export const adminReviewModerateDataSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1),
+  productId: z.string().min(1).optional(),
+});
+
+export const adminReviewModerateEnvelopeSchema = successEnvelopeSchema(
+  adminReviewModerateDataSchema,
+);
 export const adminBuyerPurchaseListEnvelopeSchema = adminListEnvelopeSchema(
   adminBuyerPurchaseDtoSchema,
 );
@@ -2604,6 +2619,9 @@ export type AdminProviderLookupResultDto = z.infer<
 export type AdminWithdrawalDto = z.infer<typeof adminWithdrawalDtoSchema>;
 export type AdminAuditEventDto = z.infer<typeof adminAuditEventDtoSchema>;
 export type AdminReviewDto = z.infer<typeof adminReviewDtoSchema>;
+export type AdminReviewModerateDto = z.infer<
+  typeof adminReviewModerateDataSchema
+>;
 export type AdminInventorySnapshotDto = z.infer<
   typeof adminInventorySnapshotDtoSchema
 >;

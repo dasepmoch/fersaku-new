@@ -193,7 +193,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Payments list/detail | payments API partial | `GET /v1/admin/payments`, `GET /v1/admin/payments/{paymentIntentId}` | U | Detail adapter/filter/pagination. | ADM-300 |
 | Inventory read | admin inventory API | `GET /v1/admin/inventory` | M | Redacted snapshot/filter/pagination. | ADM-320 |
 | Fulfillment list/detail | fulfillment UI | `GET /v1/admin/fulfillments`, `GET /v1/admin/fulfillments/{deliveryId}` | U | Schema/hook replacing seed. | ADM-320 |
-| Reviews list/detail | reviews API | `GET /v1/admin/reviews`, `GET /v1/admin/reviews/{reviewId}` | U | Filter/pagination/detail. | ADM-330 |
+| Reviews list/detail | reviews API | `GET /v1/admin/reviews`, `GET /v1/admin/reviews/{reviewId}` | M | BoundedNoPaging first result; schema+mapper; no fixture in API mode. | ADM-330 |
 | Withdrawals list/detail | withdrawal API | `GET /v1/admin/withdrawals/` (router snapshot; FE currently calls no slash), `GET /v1/admin/withdrawals/{withdrawalId}` | M | Freeze canonical slash or tested redirect, align router/OpenAPI/FE, then map DTO/status/detail. | ADM-310/INT-000 |
 | Users lookup/detail | users UI | `GET /v1/admin/users`, `GET /v1/admin/users/{userId}` | U | Schema/filter/pagination. | ADM-220 |
 
@@ -218,7 +218,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Force fulfill/revoke | fulfillment composition (not admin order-detail control) | `POST /v1/admin/orders/{orderId}/delivery/force-fulfill`, `POST /v1/admin/orders/{orderId}/delivery/revoke` | U | Bind only to existing fulfillment controls; order screen keeps them disabled. Verified evidence/MFA/reason/idempotency. | ADM-300/ADM-320/ADM-350 |
 | Withdrawal review | detail | `POST /v1/admin/withdrawals/{withdrawalId}/review` | M | Transition/MFA/reason/idempotency/unknown outcome. | ADM-310 |
 | Admin inventory reveal | inventory API | expected `POST /v1/admin/inventory/items/{itemId}/reveal`; no route mounted | G | Add admin facade; server MFA; no-store. | ADM-320 |
-| Review moderation | generic action/review UI | `POST /v1/admin/reviews/{reviewId}/transition` | U | Typed transition/version/reason. | ADM-330 |
+| Review moderation | generic action/review UI | `POST /v1/admin/reviews/{reviewId}/transition` | M | Typed status+reason; reviews.moderate; replaces generic review.moderate action on screen. | ADM-330 |
 | Admin KYC | KYC UI | `GET /v1/admin/kyc/`, `GET /v1/admin/kyc/{caseId}`, `POST /v1/admin/kyc/{caseId}/transition` | M | Freeze slash policy; replace seed; document security/MFA. | ADM-340/INT-000 |
 | Admin KYC document content | KYC viewer | no decrypted-content route mounted | G | Add authenticated/recent-MFA/audited server-decrypt streaming route; direct R2 URL is ciphertext/unsafe. | ADM-340 |
 | Provider callbacks | webhooks UI | `GET /v1/admin/provider-callbacks/`, `GET /v1/admin/provider-callbacks/{callbackId}`, `POST /v1/admin/provider-callbacks/{callbackId}/replay` | U | Separate resource/replay permission; freeze slash policy. | ADM-350/INT-000 |

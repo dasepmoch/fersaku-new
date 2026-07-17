@@ -49,7 +49,7 @@ import {
   demoAdminFulfillments,
   listAdminFulfillments,
 } from "./fulfillments";
-import { demoAdminReviews, listAdminReviews } from "./reviews";
+import { demoAdminReviews, getAdminReview, listAdminReviews } from "./reviews";
 import { demoMerchants, getMerchant, listMerchants } from "./merchants";
 import {
   getMerchantFinanceSummary,
@@ -513,4 +513,22 @@ export function useAdminReviews(filters: AdminListFilters = {}) {
     enabled,
     placeholderData: mockPlaceholderData("adminRead", demoAdminReviews()),
   });
+}
+
+export function useAdminReview(reviewId: string) {
+  const enabled = useAdminReadEnabled("reviews.read");
+  const id = reviewId.trim();
+  return useAppQuery({
+    queryKey: ["admin", "reviews", id] as const,
+    queryFn: (signal) => getAdminReview(id, signal),
+    surface: "private",
+    enabled: enabled && Boolean(id),
+  });
+}
+
+/** reviews.moderate gate for existing moderation controls (API path). */
+export function useAdminReviewsModerateEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "reviews.moderate");
 }

@@ -157,9 +157,18 @@ export {
 } from "./fulfillment-commands";
 export {
   demoAdminReviews,
+  getAdminReview,
+  isAdminReviewsApiDomain,
   listAdminReviews,
   listAdminReviewsPage,
 } from "./reviews";
+export {
+  isReviewModerateApi,
+  moderateAdminReview,
+  useModerateAdminReviewMutation,
+  type ModerateAdminReviewInput,
+  type ModerateAdminReviewResult,
+} from "./review-commands";
 export {
   executeAdminAction,
   useAdminActionMutation,
@@ -171,6 +180,7 @@ export {
   assertNoSecretsInAdminInventory,
   formatCountId,
   formatSuccessRateBps,
+  humanizeAdminReviewStatus,
   humanizeMerchantApiAccess,
   humanizeMerchantStatus,
   mapAdminBuyerDto,
@@ -206,8 +216,10 @@ export {
   normalizeAdminListFilters,
   overviewMetricLabels,
   slugifyRoleCode,
+  toAdminReviewStatusWire,
   toMerchantApiAccessWire,
   toMerchantStatusWire,
+  type AdminReviewStatusWire,
 } from "./mappers";
 
 export {
@@ -243,7 +255,9 @@ export {
   useAdminProviderLookupEnabled,
   useAdminPermissionGroups,
   useAdminPlatformVolume,
+  useAdminReview,
   useAdminReviews,
+  useAdminReviewsModerateEnabled,
   useAdminRole,
   useAdminRoles,
   useAdminRolesAssignEnabled,

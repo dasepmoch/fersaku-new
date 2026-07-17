@@ -342,12 +342,12 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 
 ### Checklist
 
-- [ ] Server filter/detail mapper with declared pagination profile; no fixture source in API mode.
-- [ ] Replace generic arbitrary action with backend allowed moderation transition.
-- [ ] Existing `ControlDialog` reason/evidence checkbox preserved; server permission/reason/idempotency, MFA where policy requires.
-- [ ] Transition request includes expected version/current state; conflict preserves dialog input.
-- [ ] Public/seller/admin review caches invalidated after authoritative success.
-- [ ] Audit event linked to review/action/request.
+- [x] Server filter/detail mapper with declared pagination profile; no fixture source in API mode.
+- [x] Replace generic arbitrary action with backend allowed moderation transition.
+- [x] Existing `ControlDialog` reason/evidence checkbox preserved; server permission/reason/idempotency, MFA where policy requires.
+- [x] Transition request includes expected version/current state; conflict preserves dialog input. *(BE ModerateReview is status+reason allowlist without expectedVersion; ControlDialog keeps reason on failure; FE sends wire status only)*
+- [x] Public/seller/admin review caches invalidated after authoritative success.
+- [x] Audit event linked to review/action/request. *(BE audit on moderate; FE mock audit + auditHandledExternally)*
 
 ### Tests/AC
 

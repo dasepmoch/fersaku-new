@@ -1,14 +1,19 @@
 /**
- * ADM-120 — admin review list read foundation (reviews.read).
+ * ADM-120/ADM-330 — admin review list/detail read (reviews.read).
+ * BoundedNoPaging first result; no fixture source in API mode.
  */
 
 import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
 import {
   ADMIN_LIST_DEFAULT_LIMIT,
+  adminReviewEnvelopeSchema,
   adminReviewListEnvelopeSchema,
 } from "@/shared/api/schemas";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type { AdminBoundedList, AdminListFilters, AdminReview } from "./contracts";
 import {
   adminListQueryParams,
@@ -19,11 +24,17 @@ import {
 import { mockReviews } from "./mock";
 
 type ListEnvelope = z.infer<typeof adminReviewListEnvelopeSchema>;
+type DetailEnvelope = z.infer<typeof adminReviewEnvelopeSchema>;
 
 const MOCK_AS_OF = "2026-07-17T00:00:00Z";
 
 export function demoAdminReviews(): AdminReview[] {
   return mockReviews();
+}
+
+/** Whether adminRead domain is live API. */
+export function isAdminReviewsApiDomain(): boolean {
+  return getDomainSource("adminRead") === "api";
 }
 
 function mockReviewPage(
@@ -67,4 +78,26 @@ export async function listAdminReviewsPage(
     signal,
   });
   return mapAdminListPage(response.data, response.meta, mapAdminReviewDto);
+}
+
+/** GET /v1/admin/reviews/{reviewId} — reviews.read; null when not found in mock. */
+export async function getAdminReview(
+  reviewId: string,
+  signal?: AbortSignal,
+): Promise<AdminReview | null> {
+  const id = reviewId.trim();
+  if (!id) return null;
+
+  if (shouldUseMockFixtures("adminRead")) {
+    return demoAdminReviews().find((r) => r.id === id) ?? null;
+  }
+
+  const response = await apiRequest<DetailEnvelope>(
+    `/v1/admin/reviews/${encodeURIComponent(id)}`,
+    {
+      schema: adminReviewEnvelopeSchema,
+      signal,
+    },
+  );
+  return mapAdminReviewDto(response.data);
 }

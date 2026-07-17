@@ -8,35 +8,45 @@ import {
   ControlDialog,
 } from "@/features/admin/ui";
 import {
-  type AdminReview,
-  useAdminActionMutation,
   useAdminReviews,
+  useAdminReviewsModerateEnabled,
+  useModerateAdminReviewMutation,
 } from "@/features/admin/data";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
 
 import { Star } from "lucide-react";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 function ReviewModeration() {
+  const canModerate = useAdminReviewsModerateEnabled();
   const { data } = useAdminReviews();
-  const actionMutation = useAdminActionMutation();
-  const [items, setItems] = useState<AdminReview[]>(data ?? []);
+  const moderateMutation = useModerateAdminReviewMutation();
+  const items = data ?? [];
   const [action, setAction] = useState<{
     title: string;
     reviewId: string;
     status: string;
     danger?: boolean;
   } | null>(null);
+  const idemRef = useRef<string | null>(null);
+
   const update = async (id: string, status: string, reason: string) => {
-    await actionMutation.mutateAsync({
-      action: "review.moderate",
-      resourceId: id,
+    if (!canModerate) {
+      throw new Error("Missing reviews.moderate permission");
+    }
+    const row = items.find((item) => item.id === id);
+    if (!idemRef.current) {
+      idemRef.current = createIdempotencyKey();
+    }
+    await moderateMutation.mutateAsync({
+      reviewId: id,
       status,
       reason,
+      productId: row?.productId,
+      idempotencyKey: idemRef.current,
     });
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
+    idemRef.current = null;
   };
   return (
     <>
@@ -140,39 +150,51 @@ function ReviewModeration() {
                   </div>
                   <div className="mt-5 grid gap-2">
                     <button
-                      onClick={() =>
+                      type="button"
+                      disabled={!canModerate || moderateMutation.isPending}
+                      onClick={() => {
+                        if (!canModerate) return;
+                        idemRef.current = null;
                         setAction({
                           title: `Approve and publish ${review.id}`,
                           reviewId: review.id,
                           status: "Published",
-                        })
-                      }
-                      className="h-9 rounded-lg bg-[#1d8b50] text-[8px] font-extrabold text-white"
+                        });
+                      }}
+                      className="h-9 rounded-lg bg-[#1d8b50] text-[8px] font-extrabold text-white disabled:opacity-50"
                     >
                       Approve & publish
                     </button>
                     <button
-                      onClick={() =>
+                      type="button"
+                      disabled={!canModerate || moderateMutation.isPending}
+                      onClick={() => {
+                        if (!canModerate) return;
+                        idemRef.current = null;
                         setAction({
                           title: `Request edit for ${review.id}`,
                           reviewId: review.id,
                           status: "Needs edit",
-                        })
-                      }
-                      className="h-9 rounded-lg border border-[#dce1e9] text-[8px] font-bold"
+                        });
+                      }}
+                      className="h-9 rounded-lg border border-[#dce1e9] text-[8px] font-bold disabled:opacity-50"
                     >
                       Request buyer edit
                     </button>
                     <button
-                      onClick={() =>
+                      type="button"
+                      disabled={!canModerate || moderateMutation.isPending}
+                      onClick={() => {
+                        if (!canModerate) return;
+                        idemRef.current = null;
                         setAction({
                           title: `Remove review ${review.id}`,
                           reviewId: review.id,
                           status: "Removed",
                           danger: true,
-                        })
-                      }
-                      className="h-9 rounded-lg border border-[#efc8c4] bg-[#fff5f4] text-[8px] font-bold text-[#c6534c]"
+                        });
+                      }}
+                      className="h-9 rounded-lg border border-[#efc8c4] bg-[#fff5f4] text-[8px] font-bold text-[#c6534c] disabled:opacity-50"
                     >
                       Remove review
                     </button>
@@ -189,8 +211,13 @@ function ReviewModeration() {
           target={action.reviewId}
           danger={action.danger}
           auditHandledExternally
-          onConfirm={(reason) => update(action.reviewId, action.status, reason)}
-          onClose={() => setAction(null)}
+          onConfirm={(reason) =>
+            update(action.reviewId, action.status, reason)
+          }
+          onClose={() => {
+            setAction(null);
+            idemRef.current = null;
+          }}
         />
       )}
     </>
