@@ -62,7 +62,13 @@ export const queryKeys = {
     reviews: (storeId: string) => ["seller", storeId, "reviews"] as const,
     reviewsSummary: (storeId: string) =>
       ["seller", storeId, "reviews", "summary"] as const,
+    /**
+     * SEL-320: store-scoped webhook endpoints (masked metadata only).
+     * Never put claimToken / signingSecret in keys or cached query data.
+     */
     webhooks: (storeId: string) => ["seller", storeId, "webhooks"] as const,
+    webhookDeliveries: (storeId: string) =>
+      ["seller", storeId, "webhooks", "deliveries"] as const,
     apiKeys: (storeId: string) => ["seller", storeId, "api-keys"] as const,
     storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
     /**

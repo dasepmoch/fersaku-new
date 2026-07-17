@@ -1916,6 +1916,139 @@ export type CouponDto = z.infer<typeof couponDtoSchema>;
 export type CouponCreateRequest = z.infer<typeof couponCreateRequestSchema>;
 export type CouponPatchRequest = z.infer<typeof couponPatchRequestSchema>;
 
+// --- Seller outbound webhooks (SEL-320) — endpoints / deliveries / secret claim ---
+
+/** Masked endpoint metadata only — never signingSecret on list/GET. */
+export const sellerWebhookEndpointDtoSchema = z.object({
+  id: z.string().min(1),
+  merchantId: z.string().optional(),
+  storeId: z.string().optional(),
+  paymentMode: z.enum(["SANDBOX", "LIVE"]).or(z.string().min(1)),
+  url: z.string().min(1).optional(),
+  urlHost: z.string().optional(),
+  status: z.string().min(1),
+  configVersion: z.number().int().optional(),
+  eventAllowlist: z.array(z.string()).optional(),
+  currentSecretVersion: z.number().int().optional(),
+  failureCount: z.number().int().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const sellerWebhookEndpointListDataSchema = z.object({
+  endpoints: z.array(sellerWebhookEndpointDtoSchema),
+});
+
+export const sellerWebhookEndpointListEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookEndpointListDataSchema,
+);
+
+export const sellerWebhookEndpointEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookEndpointDtoSchema,
+);
+
+export const sellerWebhookCreateRequestSchema = z.object({
+  url: z.string().min(1).max(2048),
+  paymentMode: z.enum(["SANDBOX", "LIVE"]),
+  eventAllowlist: z.array(z.string()).optional(),
+});
+
+export const sellerWebhookUpdateRequestSchema = z.object({
+  url: z.string().min(1).max(2048).optional(),
+  eventAllowlist: z.array(z.string()).optional(),
+  disable: z.boolean().optional(),
+  reason: z.string().optional(),
+});
+
+/**
+ * Create/rotate response: claimToken once (no-store). Raw secret only after exchange.
+ * claimId path segment is opaque routing; BE resolves claim by token hash.
+ */
+export const sellerWebhookClaimOfferDataSchema = z.object({
+  endpoint: sellerWebhookEndpointDtoSchema,
+  claimToken: z.string().min(1),
+  claimExpiresAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+  secretVersion: z.number().int().optional(),
+});
+
+export const sellerWebhookClaimOfferEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookClaimOfferDataSchema,
+);
+
+export const sellerWebhookSecretClaimRequestSchema = z.object({
+  token: z.string().min(1).optional(),
+  claimToken: z.string().min(1).optional(),
+});
+
+/** One-time signingSecret — must stay out of query cache / storage / logs. */
+export const sellerWebhookSecretClaimDataSchema = z.object({
+  signingSecret: z.string().min(1),
+  fingerprint: z.string().optional(),
+  secretVersion: z.number().int().optional(),
+  endpoint: sellerWebhookEndpointDtoSchema.optional(),
+});
+
+export const sellerWebhookSecretClaimEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookSecretClaimDataSchema,
+);
+
+export const sellerWebhookDeliveryDtoSchema = z.object({
+  deliveryId: z.string().min(1),
+  kind: z.string().optional(),
+  endpointId: z.string().min(1),
+  merchantId: z.string().optional(),
+  paymentMode: z.string().optional(),
+  eventId: z.string().optional(),
+  eventType: z.string().min(1),
+  payloadVersion: z.string().optional(),
+  payloadHash: z.string().optional(),
+  sourceKind: z.string().optional(),
+  isTest: z.boolean().optional(),
+  status: z.string().min(1),
+  attemptCount: z.number().int().optional(),
+  lastHttpStatus: z.number().int().optional(),
+  lastLatencyMs: z.number().int().optional(),
+  lastErrorClass: z.string().optional(),
+  deadLetterReason: z.string().optional(),
+  nextRetryAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  deliveredAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const sellerWebhookDeliveryListDataSchema = z.object({
+  deliveries: z.array(sellerWebhookDeliveryDtoSchema),
+});
+
+export const sellerWebhookDeliveryListEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookDeliveryListDataSchema,
+);
+
+export const sellerWebhookDeliveryEnvelopeSchema = successEnvelopeSchema(
+  sellerWebhookDeliveryDtoSchema,
+);
+
+export type SellerWebhookEndpointDto = z.infer<
+  typeof sellerWebhookEndpointDtoSchema
+>;
+export type SellerWebhookCreateRequest = z.infer<
+  typeof sellerWebhookCreateRequestSchema
+>;
+export type SellerWebhookUpdateRequest = z.infer<
+  typeof sellerWebhookUpdateRequestSchema
+>;
+export type SellerWebhookClaimOfferData = z.infer<
+  typeof sellerWebhookClaimOfferDataSchema
+>;
+export type SellerWebhookSecretClaimData = z.infer<
+  typeof sellerWebhookSecretClaimDataSchema
+>;
+export type SellerWebhookDeliveryDto = z.infer<
+  typeof sellerWebhookDeliveryDtoSchema
+>;
+
 // --- Seller storefront studio (SEL-300) — draft / revision / publish ---
 
 /** Opaque JSON object for storefront builder config (BE validates object only). */

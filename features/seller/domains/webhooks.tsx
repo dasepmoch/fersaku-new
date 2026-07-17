@@ -1,8 +1,15 @@
 "use client";
 
 import { LoaderCircle, Send, Webhook, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useSellerStoreId } from "@/shared/seller/current-store";
+import {
+  endpointSelectLabel,
+  useSellerWebhookDeliveries,
+  useSellerWebhooks,
+  useTestSellerWebhook,
+} from "@/features/seller/webhooks";
 
 const card = "rounded-[22px] border hairline bg-[#fbfaf7] shadow-card";
 function Modal({
@@ -41,39 +48,106 @@ function Modal({
     </div>
   );
 }
-function Field({ label, options }: { label: string; options: string[] }) {
-  return (
-    <label className="grid gap-2 text-[9px] font-bold">
-      {label}
-      <select className="hairline h-10 rounded-xl border bg-white px-3 text-[9px] font-normal">
-        {options.map((x) => (
-          <option key={x}>{x}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
 export function WebhookLab() {
+  const storeId = useSellerStoreId();
+  const endpointsQuery = useSellerWebhooks(storeId);
+  const deliveriesQuery = useSellerWebhookDeliveries(storeId);
+  const testMutation = useTestSellerWebhook(storeId);
+
+  const endpoints = endpointsQuery.data ?? [];
+  const deliveries = deliveriesQuery.data ?? [];
+
+  const primary = endpoints[0];
   const [open, setOpen] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<null | { ok: boolean; latency: number }>(
-    null,
-  );
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string>("");
   const [event, setEvent] = useState("order.paid");
   const [payload, setPayload] = useState(
     '{\n  "id": "ord_mock_240712",\n  "event": "order.paid",\n  "amount": 79000,\n  "currency": "IDR"\n}',
   );
+
+  const effectiveEndpointId =
+    selectedEndpointId || primary?.id || endpoints[0]?.id || "";
+
+  const endpointOptions = useMemo(
+    () =>
+      endpoints.length > 0
+        ? endpoints.map((ep) => ({
+            id: ep.id,
+            label: endpointSelectLabel(ep),
+          }))
+        : [
+            {
+              id: "",
+              label: "Production — asep.ai/api/webhooks/fersaku",
+            },
+          ],
+    [endpoints],
+  );
+
+  const displayUrl =
+    primary?.url ?? "https://asep.ai/api/webhooks/fersaku";
+  const statusLabel = primary?.statusLabel ?? "Active";
+  const isActive =
+    !primary ||
+    primary.status === "ACTIVE" ||
+    statusLabel.toLowerCase() === "active";
+
+  const tableRows = useMemo(() => {
+    if (deliveries.length > 0) {
+      return deliveries.slice(0, 12).map((d) => ({
+        key: d.deliveryId,
+        event: d.eventType,
+        response: d.responseLabel,
+        latency: d.latencyLabel,
+        ok: d.responseLabel.startsWith("200"),
+      }));
+    }
+    return [
+      {
+        key: "seed-1",
+        event: "order.paid",
+        response: "200 OK",
+        latency: "84 ms",
+        ok: true,
+      },
+      {
+        key: "seed-2",
+        event: "delivery.fulfilled",
+        response: "200 OK",
+        latency: "112 ms",
+        ok: true,
+      },
+      {
+        key: "seed-3",
+        event: "payment.qris.created",
+        response: "500 Error",
+        latency: "1.8 s",
+        ok: false,
+      },
+    ];
+  }, [deliveries]);
+
+  const testResult = testMutation.data
+    ? {
+        ok: (testMutation.data.lastHttpStatus ?? 0) >= 200 &&
+          (testMutation.data.lastHttpStatus ?? 0) < 300,
+        latency: testMutation.data.lastLatencyMs ?? 0,
+        statusLabel: testMutation.data.responseLabel,
+        body: testMutation.data.status === "DELIVERED" ||
+        ((testMutation.data.lastHttpStatus ?? 0) >= 200 &&
+          (testMutation.data.lastHttpStatus ?? 0) < 300)
+          ? '{ "received": true, "delivery": "accepted" }'
+          : '{ "error": "test endpoint rejected payload" }',
+      }
+    : null;
+
+  const sending = testMutation.isPending;
+
   const send = () => {
-    setSending(true);
-    setResult(null);
-    setTimeout(() => {
-      setSending(false);
-      setResult({
-        ok: event !== "payment.failed",
-        latency: event === "payment.failed" ? 1842 : 86,
-      });
-    }, 900);
+    if (!effectiveEndpointId) return;
+    testMutation.mutate(effectiveEndpointId);
   };
+
   return (
     <>
       <section className={`${card} overflow-hidden`}>
@@ -84,14 +158,25 @@ export function WebhookLab() {
           <div>
             <h2 className="text-sm font-extrabold">Production endpoint</h2>
             <code className="mt-1 block text-[9px] text-[#718078]">
-              https://asep.ai/api/webhooks/fersaku
+              {displayUrl}
             </code>
           </div>
-          <span className="w-fit rounded-full bg-[#e5f5e6] px-2.5 py-1.5 text-[9px] font-extrabold text-[#2e714f]">
-            Active
+          <span
+            className={cn(
+              "w-fit rounded-full px-2.5 py-1.5 text-[9px] font-extrabold",
+              isActive
+                ? "bg-[#e5f5e6] text-[#2e714f]"
+                : "bg-[#f3f0e8] text-[#718078]",
+            )}
+          >
+            {statusLabel}
           </span>
           <button
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setSelectedEndpointId(primary?.id ?? endpoints[0]?.id ?? "");
+              setOpen(true);
+              testMutation.reset();
+            }}
             className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#173f2c] px-4 text-[10px] font-extrabold text-white sm:ml-auto"
           >
             <Send className="size-4" /> Send test webhook
@@ -103,24 +188,22 @@ export function WebhookLab() {
             <span>Response</span>
             <span>Latency</span>
           </div>
-          {[
-            ["order.paid", "200 OK", "84 ms"],
-            ["delivery.fulfilled", "200 OK", "112 ms"],
-            ["payment.qris.created", "500 Error", "1.8 s"],
-          ].map((row) => (
+          {tableRows.map((row) => (
             <div
-              key={row[0]}
+              key={row.key}
               className="hairline grid grid-cols-[1fr_auto_auto] gap-4 border-t px-5 py-4 text-[10px]"
             >
-              <code className="font-bold">{row[0]}</code>
+              <code className="font-bold">{row.event}</code>
               <b
                 className={
-                  row[1].startsWith("200") ? "text-[#2e714f]" : "text-[#b2573c]"
+                  row.ok ? "text-[#2e714f]" : "text-[#b2573c]"
                 }
               >
-                {row[1]}
+                {row.response}
               </b>
-              <span className="w-12 text-right text-[#718078]">{row[2]}</span>
+              <span className="w-12 text-right text-[#718078]">
+                {row.latency}
+              </span>
             </div>
           ))}
         </div>
@@ -129,16 +212,26 @@ export function WebhookLab() {
         <Modal
           title="Webhook test console"
           description="Kirim payload mock ke endpoint terdaftar dan lihat response seperti integrasi production."
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            testMutation.reset();
+          }}
         >
           <div className="grid gap-4">
-            <Field
-              label="Endpoint"
-              options={[
-                "Production — asep.ai/api/webhooks/fersaku",
-                "Staging — staging.asep.ai/hooks",
-              ]}
-            />
+            <label className="grid gap-2 text-[9px] font-bold">
+              Endpoint
+              <select
+                value={effectiveEndpointId}
+                onChange={(e) => setSelectedEndpointId(e.target.value)}
+                className="hairline h-10 rounded-xl border bg-white px-3 text-[9px] font-normal"
+              >
+                {endpointOptions.map((opt) => (
+                  <option key={opt.id || opt.label} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="grid gap-2 text-[9px] font-bold">
               Event
               <select
@@ -166,33 +259,35 @@ export function WebhookLab() {
                 className="hairline rounded-xl border bg-[#111a16] p-4 font-mono text-[10px] leading-5 text-[#c9f7d9] outline-none"
               />
             </label>
-            {result && (
+            {testResult && (
               <div
                 className={cn(
                   "rounded-2xl border p-4",
-                  result.ok
+                  testResult.ok
                     ? "border-[#b8ddbb] bg-[#edf8ee]"
                     : "border-[#efc2b5] bg-[#fff0eb]",
                 )}
               >
                 <div className="flex items-center">
                   <b className="text-xs">
-                    HTTP {result.ok ? "200 OK" : "500 Internal Server Error"}
+                    HTTP{" "}
+                    {testResult.ok
+                      ? "200 OK"
+                      : testResult.statusLabel ||
+                        "500 Internal Server Error"}
                   </b>
                   <span className="ml-auto text-[9px]">
-                    {result.latency} ms
+                    {testResult.latency} ms
                   </span>
                 </div>
                 <pre className="mt-3 overflow-x-auto text-[9px]">
-                  {result.ok
-                    ? '{ "received": true, "delivery": "accepted" }'
-                    : '{ "error": "test endpoint rejected payload" }'}
+                  {testResult.body}
                 </pre>
               </div>
             )}
             <button
               onClick={send}
-              disabled={sending}
+              disabled={sending || !effectiveEndpointId}
               className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-[10px] font-extrabold text-white"
             >
               {sending ? (

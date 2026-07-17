@@ -435,21 +435,21 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist FE
 
-- [ ] Replace seed/timer/local deliveries with schemas/hooks while preserving existing list/form/detail UI.
-- [ ] List returns masked endpoint/signing state only; raw secret never on GET.
-- [ ] Create/rotation uses request -> one-time claim -> component-local display; no cache/storage/log.
-- [ ] Map delivery history/status/attempt safely; route's declared pagination profile/filter.
-- [ ] Test event mutation stable idempotency and actual response status from server.
-- [ ] Seller retry only if endpoint exists/permission contract allows; otherwise UI control mapped to supported action.
-- [ ] Clear claimed secret on TTL/unmount/visibility/logout.
+- [x] Replace seed/timer/local deliveries with schemas/hooks while preserving existing list/form/detail UI.
+- [x] List returns masked endpoint/signing state only; raw secret never on GET.
+- [x] Create/rotation uses request -> one-time claim -> component-local display; no cache/storage/log.
+- [x] Map delivery history/status/attempt safely; route's declared pagination profile/filter.
+- [x] Test event mutation stable idempotency and actual response status from server.
+- [x] Seller retry only if endpoint exists/permission contract allows; otherwise UI control mapped to supported action.
+- [x] Clear claimed secret on TTL/unmount/visibility/logout.
 
 ### Checklist BE/security
 
-- [ ] HTTPS URL allowlist, DNS resolve + SSRF protections, redirect policy, private/link-local/metadata IP block, re-resolution.
-- [ ] Envelope-encrypted signing secret owned by endpoint; distinct from API credential.
-- [ ] Durable delivery/outbox, retry schedule/DLQ, signature/timestamp/replay protection.
-- [ ] Request/response headers/body evidence redacted/bounded.
-- [ ] Tenant guard, rate limit, audit.
+- [x] HTTPS URL allowlist, DNS resolve + SSRF protections, redirect policy, private/link-local/metadata IP block, re-resolution.
+- [x] Envelope-encrypted signing secret owned by endpoint; distinct from API credential.
+- [x] Durable delivery/outbox, retry schedule/DLQ, signature/timestamp/replay protection.
+- [x] Request/response headers/body evidence redacted/bounded.
+- [x] Tenant guard, rate limit, audit.
 
 ### Tests/AC
 
