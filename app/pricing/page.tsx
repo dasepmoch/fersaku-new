@@ -1,14 +1,16 @@
 import { Check, Minus } from "lucide-react";
 import { MarketingHero, MarketingShell } from "@/components/marketing-shell";
 import { PrimaryButton } from "@/components/brand";
+import {
+  getPublicFeeMarketingCopy,
+  PUBLIC_FEE_REVALIDATE_SECONDS,
+} from "@/features/platform-fees";
 
-const pricing = {
-  transaction: "3% + Rp700",
-  withdrawal: "3% + biaya proses",
-  minimumWithdrawal: "Rp50.000",
-};
+export const revalidate = PUBLIC_FEE_REVALIDATE_SECONDS;
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const pricing = await getPublicFeeMarketingCopy();
+
   return (
     <MarketingShell>
       <MarketingHero

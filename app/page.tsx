@@ -22,6 +22,7 @@ import { ProductArt } from "@/components/product-art";
 import { RotatingQuote } from "@/components/rotating-quote";
 import { listFeaturedProducts } from "@/features/catalog/api";
 import { publicProductHref } from "@/features/catalog/mappers";
+import { getPublicFeeMarketingCopy } from "@/features/platform-fees";
 
 const features = [
   [
@@ -65,7 +66,10 @@ const features = [
 export const revalidate = 60;
 
 export default async function Home() {
-  const products = await listFeaturedProducts(6);
+  const [products, feeCopy] = await Promise.all([
+    listFeaturedProducts(6),
+    getPublicFeeMarketingCopy(),
+  ]);
 
   return (
     <main className="landing-page overflow-hidden">
@@ -404,7 +408,7 @@ export default async function Home() {
             {[
               [
                 "Apakah ada biaya bulanan?",
-                "Tidak ada. Semua fitur storefront dan QRIS API gratis digunakan. Biaya transaksi hanya 3% + Rp700 saat pembayaran berhasil.",
+                `Tidak ada. Semua fitur storefront dan QRIS API gratis digunakan. Biaya transaksi hanya ${feeCopy.transaction} saat pembayaran berhasil.`,
               ],
               [
                 "Produk apa saja yang bisa dijual?",
@@ -416,7 +420,7 @@ export default async function Home() {
               ],
               [
                 "Kapan saldo bisa ditarik?",
-                "Setelah masa settlement selesai, saldo storefront dan QRIS API masuk ke satu saldo. Minimum penarikan Rp50.000 dengan biaya 3% + biaya proses.",
+                `Setelah masa settlement selesai, saldo storefront dan QRIS API masuk ke satu saldo. Minimum penarikan ${feeCopy.minimumWithdrawal} dengan biaya ${feeCopy.withdrawal}.`,
               ],
               [
                 "Apakah tersedia API?",
@@ -448,8 +452,9 @@ export default async function Home() {
                 Semua fitur gratis. Bayar hanya saat berhasil.
               </h3>
               <p className="mt-2 text-xs text-[#6c7971]">
-                Storefront dan QRIS API memakai biaya yang sama: 3% + Rp700 per
-                transaksi berhasil. Tanpa paket bulanan.
+                Storefront dan QRIS API memakai biaya yang sama:{" "}
+                {feeCopy.transaction} per transaksi berhasil. Tanpa paket
+                bulanan.
               </p>
             </div>
             <Link

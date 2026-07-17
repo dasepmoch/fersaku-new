@@ -472,6 +472,55 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("AUT-130: seller Google OAuth is authoritatively disabled in API mode", () => {
+    /**
+     * OAuth is OUT-OF-SCOPE for launch. Seller AuthShell Google control must be
+     * mode-gated: mock may keep prototype affordance; API/disabled must set
+     * disabled + title (never no-op / fake-success). BuyerLogin must not gain Google.
+     */
+    const authShell = path.join(root, "components/auth-shell.tsx");
+    const shellSource = readFileSync(authShell, "utf8");
+
+    expect(shellSource).toMatch(/Lanjutkan dengan/);
+    expect(shellSource).toMatch(/Google/);
+    expect(shellSource).toMatch(/getDomainSource\(["']auth["']\)/);
+    expect(shellSource).toMatch(/googleOAuthEnabled/);
+    expect(shellSource).toMatch(/disabled=\{!googleOAuthEnabled\}/);
+    expect(shellSource).toMatch(
+      /Google sign-in is out of scope for launch \(AUT-130 deferred\)/,
+    );
+    // No OAuth start/callback transport on the shell (disposition title may mention OAuth)
+    expect(shellSource).not.toMatch(
+      /\/v1\/auth\/oauth|oauth\/callback|openid-connect|accounts\.google\.com|pkce/i,
+    );
+    expect(shellSource).not.toMatch(/onClick|href=.*google|window\.location/i);
+
+    const buyerLogin = path.join(root, "components/buyer-login.tsx");
+    const buyerSource = readFileSync(buyerLogin, "utf8");
+    expect(buyerSource).not.toMatch(
+      /Lanjutkan dengan Google|Google sign-in|accounts\.google/i,
+    );
+
+    // Auth feature adapters must not mount OAuth transport for launch
+    const authFeatureDir = path.join(root, "features/auth");
+    const authFiles = sourceFiles(authFeatureDir);
+    const oauthViolations: string[] = [];
+    for (const file of authFiles) {
+      const content = readFileSync(file, "utf8");
+      if (
+        /\/v1\/auth\/oauth|oauth\/callback|openid-connect|accounts\.google\.com/i.test(
+          content,
+        )
+      ) {
+        oauthViolations.push(relativeSource(file));
+      }
+    }
+    expect(
+      oauthViolations,
+      "features/auth must not wire OAuth endpoints until product re-opens AUT-130 as IMPLEMENT",
+    ).toEqual([]);
+  });
+
   it("INT-175: forbids store-scoped objects for personal profile media", () => {
     /**
      * Personal avatar/photo is launch-deferred (DISABLED/OUT-OF-SCOPE).

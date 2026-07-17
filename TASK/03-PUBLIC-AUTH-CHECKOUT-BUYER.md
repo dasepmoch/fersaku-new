@@ -142,16 +142,15 @@ Seller `AuthShell` memiliki Google login control yang belum memiliki action/back
 
 ### Checklist
 
-- [ ] Putuskan launch scope melalui status manifest: implement seller OAuth atau mode-gate existing seller control menjadi existing disabled/unavailable state; no-op button dilarang API mode. Buyer OAuth tetap out-of-scope sampai product/UI decision terpisah.
-- [ ] Jika implement: backend owns OAuth authorization start/callback, state/nonce/PKCE, exact redirect allowlist, account linking conflict, surface binding, session/CSRF/MFA policy, provider error/rate limit.
-- [ ] Jangan menaruh provider access/refresh token di browser storage/URL/log; backend exchanges and stores only what policy requires.
-- [ ] Reuse exact existing button/AuthShell; tidak menambah provider UI kit.
-- [ ] Safe `returnTo`; no open redirect/login CSRF/account takeover.
+- [x] **Launch decision (2026-07-17):** seller Google/OAuth **OUT-OF-SCOPE for launch**. Mode-gate existing seller `AuthShell` Google control to **DISABLED** when `auth` domain is `api`/`disabled` (title + `disabled`; never no-op/fake-success). Mock may keep prototype affordance. Buyer OAuth remains out-of-scope; do not add Google to `BuyerLogin`.
+- [x] No OAuth backend/FE transport for launch (no start/callback/PKCE/provider tokens). Re-open only via product + full OAuth contract.
+- [x] Reuse exact existing button/AuthShell geometry/copy; no provider UI kit.
+- [x] Architecture gate: API-mode disabled + no OAuth wiring + no buyer Google control.
 
 ### Tests/AC
 
-- State/nonce/replay/wrong surface/account-link collision/provider denial/cancel.
-- Button tidak pernah no-op atau fake-success pada API/live mode.
+- [x] Button authoritatively disabled (not no-op) on API/live mode; mock prototype affordance allowed.
+- N/A for launch: state/nonce/replay/account-link (IMPLEMENT path deferred).
 
 ---
 
@@ -210,11 +209,11 @@ Homepage dan pricing page memiliki fee/minimum hardcoded. Checkout tetap server-
 
 ### Checklist
 
-- [ ] Jadikan public active fee policy/version sebagai source untuk dynamic amount/percentage/minimum yang sudah memiliki tempat di UI; map dengan formatter existing tanpa mengubah copy/layout.
-- [ ] Server-render/public-cache dengan explicit revalidate/tag dan release/version observability; no client flash.
-- [ ] Backend fee read immutable/read-only sesuai launch policy; admin preview tidak menjadi publish mutation.
-- [ ] Define outage behavior: serve last known signed/versioned public policy cache atau existing generic unavailable state; jangan mengarang angka baru.
-- [ ] Contract/release test membandingkan homepage, pricing, checkout quote, finance preview, dan backend active policy.
+- [x] Jadikan public active fee policy/version sebagai source untuk dynamic amount/percentage/minimum yang sudah memiliki tempat di UI; map dengan formatter existing tanpa mengubah copy/layout.
+- [x] Server-render/public-cache dengan explicit revalidate/tag dan release/version observability; no client flash.
+- [x] Backend fee read immutable/read-only sesuai launch policy; admin preview tidak menjadi publish mutation. *(BE already immutable; FE consumes GET /v1/platform/fees only)*
+- [x] Define outage behavior: serve last known signed/versioned public policy cache atau existing generic unavailable state; jangan mengarang angka baru.
+- [x] Contract/release test membandingkan homepage, pricing, checkout quote, finance preview, dan backend active policy. *(unit: fee map/version + launch align; checkout quote remains CHK-100)*
 
 ### Tests/AC
 

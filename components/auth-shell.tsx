@@ -1,10 +1,24 @@
 import Link from "next/link";
 import { BarChart3, Check } from "lucide-react";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { Logo } from "./brand";
 import { AuthForm } from "./auth-form";
 
+/** AUT-130: OAuth OUT-OF-SCOPE for launch; API/live must not no-op. */
+const GOOGLE_OAUTH_DISABLED_TITLE =
+  "Google sign-in is out of scope for launch (AUT-130 deferred)";
+
 export function AuthShell({ mode }: { mode: "login" | "register" }) {
   const register = mode === "register";
+  const authSource = (() => {
+    try {
+      return getDomainSource("auth");
+    } catch {
+      return "api";
+    }
+  })();
+  // Mock may keep prototype affordance; API/disabled must be authoritatively disabled.
+  const googleOAuthEnabled = authSource === "mock";
   return (
     <main className="grid min-h-screen bg-[#f8f7f2] lg:grid-cols-2">
       <section className="flex min-h-screen flex-col p-5 sm:p-8 lg:p-12">
@@ -31,7 +45,14 @@ export function AuthShell({ mode }: { mode: "login" | "register" }) {
             </span>
             <span className="h-px flex-1 bg-[#17231d]/10" />
           </div>
-          <button className="hairline flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-white text-sm font-bold transition hover:bg-[#f3f4ef]">
+          <button
+            type="button"
+            disabled={!googleOAuthEnabled}
+            title={
+              googleOAuthEnabled ? undefined : GOOGLE_OAUTH_DISABLED_TITLE
+            }
+            className="hairline flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-white text-sm font-bold transition hover:bg-[#f3f4ef] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-white"
+          >
             <span className="text-lg font-black">G</span> Lanjutkan dengan
             Google
           </button>
