@@ -92,8 +92,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Assert mock e2e suite + visual baselines present
-        run: node scripts/ci-assert-suite.mjs frontend-mock-e2e
+      - name: Assert mock e2e + QLT-230 visual/a11y harness present
+        run: |
+          node scripts/ci-assert-suite.mjs frontend-mock-e2e
+          node scripts/ci-assert-suite.mjs qlt-230-visual-a11y
 
       - run: npx playwright install --with-deps chromium
 

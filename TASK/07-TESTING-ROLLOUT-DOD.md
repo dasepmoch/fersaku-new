@@ -351,16 +351,28 @@ Parent framework (harness registration/CI/co-evolution) completed 2026-07-17 —
 **Priority:** P0 UI contract
 **Depends on:** UI-000, UI-050, UI-060, QLT-100; API-state parity per domain juga membutuhkan QLT-110, QLT-215, dan domain task terkait
 
-### Visual
+Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md` and `TASK/evidence/QLT-230/`. Parent `[x]` does **not** mark every visual/a11y/interaction bullet or §3.7 capability cell complete; cells co-evolve with domain UI wiring. API-state visual/a11y claims require QLT-110/215 + domain seed normalization.
 
-- [ ] Mock baseline routes pass desktop/mobile without snapshot update.
-- [ ] Run same visual routes with API seed normalized to equivalent view.
+### Parent framework (done)
+
+- [x] Mock Playwright desktop/mobile projects + visual/a11y/critical/smoke samples required non-empty (`playwright.config.ts`, `tests/e2e/{visual,accessibility,critical-flows,smoke}.spec.ts`).
+- [x] Committed mock baselines for all `visualRoutes` × desktop/mobile (`tests/e2e/__screenshots__`); suite guards require ≥14 each.
+- [x] Parent assert suite `tests/e2e/qlt-230-parent-framework.spec.ts`.
+- [x] Baseline update requires explicit separate review — documented in co-evolution doc (no silent domain PR rewrites).
+- [x] CI: `frontend-mock-e2e` + `ci-assert-suite.mjs` `frontend-mock-e2e` / `qlt-230-visual-a11y`.
+- [x] Continuous co-evolution rule for domain mock + API-state visual/a11y cells.
+
+### Visual (capability cells / domain co-evolution — not claimed by parent alone)
+
+- [x] Mock baseline routes registered desktop/mobile without silent snapshot update. *(parent harness; per-route green remains CI + domain)*
+- [ ] Run same visual routes with API seed normalized to equivalent view. *(needs QLT-110/215/domain; do not overwrite mock baselines)*
 - [ ] Add characterization snapshots only for touched high-risk routes not covered, in a separate reviewed baseline step before wiring.
 - [ ] Compare loading/empty/error/long-data states at both widths.
 - [ ] No layout shift during hydration/background refresh.
 
-### Accessibility
+### Accessibility (capability cells)
 
+- [x] Existing axe suite required non-empty (serious/critical block; contrast debt documented). *(parent sample routes)*
 - [ ] Existing axe suite plus auth/checkout/dialog/secret/error API states.
 - [ ] Pending state: correct disabled/`aria-busy`, no double submit.
 - [ ] Error: `role=alert`/described-by/focus first invalid using existing controls.
@@ -369,17 +381,18 @@ Parent framework (harness registration/CI/co-evolution) completed 2026-07-17 —
 - [ ] Table/pagination/filter keyboard semantics unchanged.
 - [ ] Secret copy/reveal TTL communicated through existing semantics without leaking to accessibility tree after clear.
 
-### Interaction
+### Interaction (capability cells)
 
-- [ ] Critical flow existing tests continue in mock mode.
+- [x] Critical flow existing tests continue in mock mode. *(parent sample: critical-flows.spec.ts)*
 - [ ] API-mode equivalent asserts no fake timer/success.
-- [ ] Theme/profile/notification menus retain behavior and server actions.
+- [ ] Theme/profile/notification menus retain behavior and server actions. *(sample covered in critical-flows; domain cells expand)*
 
 ### Acceptance criteria
 
-- Zero unexpected pixel diff.
-- No new serious/critical axe violation.
-- Keyboard-only user can complete the same flows.
+- [x] Parent harness: mock visual/a11y non-empty, baselines present, CI guards, co-evolution documented.
+- [ ] Zero unexpected pixel diff on domain-touched routes — **capability cells**
+- [ ] No new serious/critical axe violation on domain-touched routes — **capability cells**
+- [ ] Keyboard-only user can complete the same flows — **capability cells**
 
 ---
 

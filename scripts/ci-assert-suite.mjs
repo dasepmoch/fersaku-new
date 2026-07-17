@@ -174,6 +174,8 @@ switch (suite) {
       "tests/e2e/critical-flows.spec.ts",
       "tests/e2e/accessibility.spec.ts",
       "tests/e2e/visual.spec.ts",
+      "tests/e2e/qlt-230-parent-framework.spec.ts",
+      "tests/e2e/routes.ts",
     ]) {
       minLines(join(root, f), 10);
     }
@@ -185,10 +187,148 @@ switch (suite) {
     const mobile = countFiles(join(shots, "mobile-chromium"), (n) =>
       n.endsWith(".png"),
     );
-    if (desktop < 5 || mobile < 5) {
-      fail(`visual baselines desktop=${desktop} mobile=${mobile} (need >= 5 each)`);
+    // QLT-230: mock visual matrix is 14 routes × desktop/mobile (allow slight growth).
+    if (desktop < 14 || mobile < 14) {
+      fail(
+        `visual baselines desktop=${desktop} mobile=${mobile} (need >= 14 each for QLT-230)`,
+      );
     }
-    ok(`mock e2e specs + visual baselines desktop=${desktop} mobile=${mobile}`);
+    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    for (const needle of [
+      "desktop-chromium",
+      "mobile-chromium",
+      'testIgnore: ["**/api/**"]',
+    ]) {
+      if (!mockCfg.includes(needle)) {
+        fail(`playwright.config.ts missing mock marker: ${needle}`);
+      }
+    }
+    ok(
+      `mock e2e specs + qlt-230 parent + visual baselines desktop=${desktop} mobile=${mobile}`,
+    );
+    break;
+  }
+
+  case "qlt-230-visual-a11y": {
+    // Parent framework must stay non-empty (QLT-230 continuous).
+    minLines(join(root, "docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md"), 40);
+    minLines(join(root, "playwright.config.ts"), 20);
+    minLines(join(root, "tests/e2e/visual.spec.ts"), 15);
+    minLines(join(root, "tests/e2e/accessibility.spec.ts"), 20);
+    minLines(join(root, "tests/e2e/critical-flows.spec.ts"), 40);
+    minLines(join(root, "tests/e2e/smoke.spec.ts"), 15);
+    minLines(join(root, "tests/e2e/routes.ts"), 40);
+    minLines(join(root, "tests/e2e/fixtures.ts"), 15);
+    minLines(join(root, "tests/e2e/qlt-230-parent-framework.spec.ts"), 80);
+    minLines(join(root, "TASK/evidence/UI-060/invariants.md"), 30);
+
+    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    for (const needle of [
+      "desktop-chromium",
+      "mobile-chromium",
+      'testIgnore: ["**/api/**"]',
+      "snapshotPathTemplate",
+    ]) {
+      if (!mockCfg.includes(needle)) {
+        fail(`playwright.config.ts missing QLT-230 marker: ${needle}`);
+      }
+    }
+
+    const visualSrc = readFileSync(join(root, "tests/e2e/visual.spec.ts"), "utf8");
+    for (const needle of ["visualRoutes", "toHaveScreenshot", "fullPage", "animations"]) {
+      if (!visualSrc.includes(needle)) {
+        fail(`visual.spec.ts missing marker: ${needle}`);
+      }
+    }
+
+    const a11ySrc = readFileSync(
+      join(root, "tests/e2e/accessibility.spec.ts"),
+      "utf8",
+    );
+    for (const needle of ["AxeBuilder", "serious", "critical", "color-contrast"]) {
+      if (!a11ySrc.includes(needle)) {
+        fail(`accessibility.spec.ts missing marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/e2e/qlt-230-parent-framework.spec.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-230",
+      "visualRoutes",
+      "__screenshots__",
+      "co-evolution",
+      "QLT-110",
+      "QLT-215",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-230-parent-framework.spec.ts missing marker: ${needle}`);
+      }
+    }
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "Baseline update",
+      "QLT-110",
+      "QLT-215",
+      "frontend-mock-e2e",
+      "__screenshots__",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-230 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const routesSrc = readFileSync(join(root, "tests/e2e/routes.ts"), "utf8");
+    // visualRoutes array must list enough characterization routes (14 frozen).
+    const routeMatches = routesSrc.match(/export const visualRoutes = \[([\s\S]*?)\]/);
+    if (!routeMatches) fail("routes.ts missing visualRoutes export");
+    const routeCount = (routeMatches[1].match(/"[^"]+"/g) || []).length;
+    if (routeCount < 14) {
+      fail(`visualRoutes has ${routeCount} entries (need >= 14)`);
+    }
+
+    const shots = join(root, "tests/e2e/__screenshots__");
+    if (!existsSync(shots)) fail("missing tests/e2e/__screenshots__");
+    const desktop = countFiles(join(shots, "desktop-chromium"), (n) =>
+      n.endsWith(".png"),
+    );
+    const mobile = countFiles(join(shots, "mobile-chromium"), (n) =>
+      n.endsWith(".png"),
+    );
+    if (desktop < 14 || mobile < 14) {
+      fail(
+        `QLT-230 baselines desktop=${desktop} mobile=${mobile} (need >= 14 each)`,
+      );
+    }
+
+    // Per-route baseline presence (name derived like visual.spec.ts).
+    const visualBlock = routeMatches[1];
+    const routes = (visualBlock.match(/"([^"]+)"/g) || []).map((s) =>
+      s.slice(1, -1),
+    );
+    for (const route of routes) {
+      const name =
+        route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home";
+      const png = `${name}.png`;
+      if (!existsSync(join(shots, "desktop-chromium", png))) {
+        fail(`missing desktop baseline for ${route} → ${png}`);
+      }
+      if (!existsSync(join(shots, "mobile-chromium", png))) {
+        fail(`missing mobile baseline for ${route} → ${png}`);
+      }
+    }
+
+    ok(
+      `qlt-230 parent harness + visual/a11y/critical samples + baselines desktop=${desktop} mobile=${mobile} routes=${routeCount}`,
+    );
     break;
   }
 

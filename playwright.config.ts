@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Mock-mode Playwright (smoke / critical / a11y / visual).
+ * Mock-mode Playwright (smoke / critical / a11y / visual + QLT-230 parent).
  * QLT-220: distinct from API-mode — see playwright.api.config.ts + docs/QLT-220-API-E2E-COEVOLUTION.md.
  * API specs under tests/e2e/api are excluded here and run only via test:e2e:api.
  */

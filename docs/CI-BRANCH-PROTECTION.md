@@ -12,7 +12,7 @@ Configure repository **Settings → Branches → Branch protection** (or Ruleset
 | --- | --- |
 | `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives |
 | `frontend-build (production + bundle budget)` | Production build + bundle budget |
-| `frontend-mock-e2e (smoke/critical/a11y/visual)` | Mock Playwright smoke, critical, a11y, visual |
+| `frontend-mock-e2e (smoke/critical/a11y/visual)` | Mock Playwright smoke, critical, a11y, visual + QLT-230 parent harness |
 | `cross-stack-api-e2e (API stack + harness + INT-190 + QLT-220)` | Disposable stack + API harness + INT-190 + QLT-220 parent |
 
 ### Workflow: `Backend CI` (`.github/workflows/backend-ci.yml`)
@@ -48,6 +48,7 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 - Dirty sqlc `gen/`
 - Cross-tenant / CSRF / idempotency negative test failures
 - Missing mock visual baselines or empty e2e/unit suites
+- QLT-230 parent assert / `qlt-230-visual-a11y` suite guard failure
 - API stack fail (migrate/seed/health) or harness/INT-190/QLT-220 parent failure
 - Integration suite with `DATABASE_URL` unset under `CI=1`
 
@@ -57,4 +58,4 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 2. Add every job name above that applies to the protected branch.
 3. Disable “Allow force pushes” on release branches.
 4. Do not mark any P0 job `continue-on-error: true`.
-5. Visual baseline updates require separate review (do not regenerate baselines inside domain PRs).
+5. Visual baseline updates require separate review (do not regenerate baselines inside domain PRs). See `docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md`.

@@ -1,0 +1,32 @@
+ci-assert-suite: OK — mock e2e specs + qlt-230 parent + visual baselines desktop=14 mobile=14
+ci-assert-suite: OK — qlt-230 parent harness + visual/a11y/critical samples + baselines desktop=14 mobile=14 routes=14
+
+Running 10 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:31:7 › QLT-230 parent — mock registration + isolation › mock Playwright projects are desktop + mobile; API isolated (6ms)
+  ✓   2 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:57:7 › QLT-230 parent — mock registration + isolation › required parent sample specs and docs exist (4ms)
+  ✓   3 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:76:7 › QLT-230 parent — visual baselines non-empty › visualRoutes has at least 14 characterization routes (1ms)
+  ✓   4 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:80:7 › QLT-230 parent — visual baselines non-empty › committed PNG baselines exist for every visual route × project (22ms)
+  ✓   5 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:114:7 › QLT-230 parent — visual baselines non-empty › visual.spec uses stable full-page snapshot options (3ms)
+  ✓   6 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:125:7 › QLT-230 parent — a11y + interaction samples › accessibility suite is non-empty and blocks serious/critical (4ms)
+  ✓   7 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:148:7 › QLT-230 parent — a11y + interaction samples › critical-flows mock interaction samples remain present (3ms)
+  ✓   8 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:166:7 › QLT-230 parent — baseline review + API co-evolution policy › co-evolution doc encodes baseline review and API prerequisites (4ms)
+  ✓   9 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:189:7 › QLT-230 parent — baseline review + API co-evolution policy › CI assert suite registers qlt-230 and frontend-mock-e2e (1ms)
+  ✓  10 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:200:7 › QLT-230 parent — baseline review + API co-evolution policy › mock baselines path is not an API-mode capture dump (1ms)
+
+  10 passed (623ms)
+
+Running 10 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:31:7 › QLT-230 parent — mock registration + isolation › mock Playwright projects are desktop + mobile; API isolated (7ms)
+  ✓   2 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:57:7 › QLT-230 parent — mock registration + isolation › required parent sample specs and docs exist (4ms)
+  ✓   3 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:76:7 › QLT-230 parent — visual baselines non-empty › visualRoutes has at least 14 characterization routes (1ms)
+  ✓   4 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:80:7 › QLT-230 parent — visual baselines non-empty › committed PNG baselines exist for every visual route × project (19ms)
+  ✓   5 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:114:7 › QLT-230 parent — visual baselines non-empty › visual.spec uses stable full-page snapshot options (2ms)
+  ✓   6 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:125:7 › QLT-230 parent — a11y + interaction samples › accessibility suite is non-empty and blocks serious/critical (3ms)
+  ✓   7 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:148:7 › QLT-230 parent — a11y + interaction samples › critical-flows mock interaction samples remain present (2ms)
+  ✓   8 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:166:7 › QLT-230 parent — baseline review + API co-evolution policy › co-evolution doc encodes baseline review and API prerequisites (3ms)
+  ✓   9 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:189:7 › QLT-230 parent — baseline review + API co-evolution policy › CI assert suite registers qlt-230 and frontend-mock-e2e (1ms)
+  ✓  10 [desktop-chromium] › tests/e2e/qlt-230-parent-framework.spec.ts:200:7 › QLT-230 parent — baseline review + API co-evolution policy › mock baselines path is not an API-mode capture dump (1ms)
+
+  10 passed (561ms)
