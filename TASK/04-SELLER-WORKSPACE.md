@@ -46,22 +46,22 @@ Semua route `/dashboard/**` harus tetap memakai shell, navigation, cards, tables
 
 ### Checklist FE
 
-- [ ] Pertahankan `store-onboarding` layout/stepper/form exact.
-- [ ] GET/resume server progress pada load/refresh; jangan reset ke step awal.
-- [ ] Slug availability debounced, cancellable, normalization sama dengan backend; stale response tidak overwrite input terbaru.
-- [ ] Store create memakai idempotency key; duplicate submit tidak membuat dua store.
-- [ ] PATCH exact draft fields/revision; map `400 VALIDATION_FAILED` dan slug conflict ke form existing.
-- [ ] Completion server-authoritative; setelah success refetch merchant context lalu redirect.
-- [ ] Completion panel currently says “Storefront mock telah dibuat” and hardcodes “Atelier theme • Published”. In API mode, bind the same text nodes/classes to truthful returned theme/publish state and remove only the documented fake/mock claim; if exact approved copy/value mapping is unavailable, block via `UI-080`. Do not leave “Published” when backend state differs or alter geometry.
-- [ ] Product creation tetap optional sesuai existing product rule; canonical store mandatory.
-- [ ] Jika emergency registration off, gunakan hanya feedback/unavailable state yang benar-benar sudah ada dan lulus characterization; bila `StoreOnboarding` tidak memiliki composition tersebut, blokir capability atau minta `UI-080`—jangan membuat maintenance banner/copy/panel baru di wiring PR.
+- [x] Pertahankan `store-onboarding` layout/stepper/form exact.
+- [x] GET/resume server progress pada load/refresh; jangan reset ke step awal.
+- [x] Slug availability debounced, cancellable, normalization sama dengan backend; stale response tidak overwrite input terbaru.
+- [x] Store create memakai idempotency key; duplicate submit tidak membuat dua store.
+- [x] PATCH exact draft fields/revision; map `400 VALIDATION_FAILED` dan slug conflict ke form existing.
+- [x] Completion server-authoritative; setelah success refetch merchant context lalu redirect.
+- [x] Completion panel currently says “Storefront mock telah dibuat” and hardcodes “Atelier theme • Published”. In API mode, bind the same text nodes/classes to truthful returned theme/publish state and remove only the documented fake/mock claim; if exact approved copy/value mapping is unavailable, block via `UI-080`. Do not leave “Published” when backend state differs or alter geometry.
+- [x] Product creation tetap optional sesuai existing product rule; canonical store mandatory.
+- [x] Jika emergency registration off, gunakan hanya feedback/unavailable state yang benar-benar sudah ada dan lulus characterization; bila `StoreOnboarding` tidak memiliki composition tersebut, blokir capability atau minta `UI-080`—jangan membuat maintenance banner/copy/panel baru di wiring PR.
 
 ### Checklist BE
 
-- [ ] One canonical store invariant + tenant membership transaction.
-- [ ] Slug unique/normalized/race-safe; availability is advisory, create remains authoritative.
-- [ ] Resume state and completion idempotent.
-- [ ] Audit creation/completion without PII leakage.
+- [x] One canonical store invariant + tenant membership transaction.
+- [x] Slug unique/normalized/race-safe; availability is advisory, create remains authoritative.
+- [x] Resume state and completion idempotent.
+- [x] Audit creation/completion without PII leakage.
 
 ### Tests/AC
 

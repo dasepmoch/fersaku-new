@@ -394,3 +394,58 @@ export const sellerCurrentStoreEnvelopeSchema = successEnvelopeSchema(
 );
 
 export type SellerBootstrapDto = z.infer<typeof sellerBootstrapDataSchema>;
+
+/** SEL-110 — onboarding progress + slug availability. */
+export const onboardingStateSchema = z.enum([
+  "NOT_STARTED",
+  "IDENTITY",
+  "SLUG",
+  "VISUAL",
+  "PRODUCT_OPTIONAL",
+  "COMPLETE",
+]);
+
+export const onboardingStoreSummarySchema = z.object({
+  storeId: z.string().optional(),
+  merchantId: z.string().optional(),
+  slug: z.string().optional(),
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  address: z.string().optional(),
+  accentColor: z.string().optional(),
+  status: z.string().optional(),
+  canonical: z.boolean().optional(),
+});
+
+export const onboardingProgressDataSchema = z.object({
+  state: onboardingStateSchema,
+  step: onboardingStateSchema,
+  completed: z.boolean(),
+  completedAt: z.string().nullable().optional(),
+  merchantId: z.string().optional(),
+  storeId: z.string().optional(),
+  store: onboardingStoreSummarySchema.optional(),
+  canComplete: z.boolean().optional(),
+  productOptional: z.boolean(),
+  progress: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const onboardingProgressEnvelopeSchema = successEnvelopeSchema(
+  onboardingProgressDataSchema,
+);
+
+export const slugAvailabilityDataSchema = z.object({
+  slug: z.string(),
+  available: z.boolean(),
+});
+
+export const slugAvailabilityEnvelopeSchema = successEnvelopeSchema(
+  slugAvailabilityDataSchema,
+);
+
+export type OnboardingStateDto = z.infer<typeof onboardingStateSchema>;
+export type OnboardingProgressDto = z.infer<typeof onboardingProgressDataSchema>;
+export type OnboardingStoreSummaryDto = z.infer<
+  typeof onboardingStoreSummarySchema
+>;
+export type SlugAvailabilityDto = z.infer<typeof slugAvailabilityDataSchema>;

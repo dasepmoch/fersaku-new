@@ -14,9 +14,30 @@ import {
   Store,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/brand";
+import { ApiError } from "@/shared/api/http-client";
+import { getDomainSource } from "@/shared/data/domain-source";
+import {
+  createIdempotencyIntentHolder,
+  createPendingDedupe,
+} from "@/shared/query/mutation-policy";
+import { useCurrentStore } from "@/shared/seller/current-store";
 import { cn } from "@/lib/utils";
+import {
+  checkSlugAvailability,
+  completeOnboarding,
+  createOnboardingStore,
+  getOnboardingProgress,
+  patchOnboardingStore,
+} from "./api";
+import type { OnboardingProgress } from "./contracts";
+import {
+  formFieldsFromProgress,
+  mapCompletionDisplay,
+  uiStepFromServerState,
+} from "./mappers";
+import { normalizeStoreSlug } from "./slug";
 
 const steps = [
   "Welcome",
@@ -27,8 +48,21 @@ const steps = [
   "Selesai",
 ];
 
+const SLUG_DEBOUNCE_MS = 400;
+
+function sellerIsApi(): boolean {
+  try {
+    return getDomainSource("sellerCatalog") === "api";
+  } catch {
+    return false;
+  }
+}
+
 export function StoreOnboarding() {
   const router = useRouter();
+  const { refresh: refreshBootstrap } = useCurrentStore();
+  const apiMode = sellerIsApi();
+
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -36,31 +70,233 @@ export function StoreOnboarding() {
   const [accent, setAccent] = useState("#d7ff64");
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
-  const progress = ((step + 1) / steps.length) * 100;
+  const [hydrating, setHydrating] = useState(apiMode);
+  const [submitting, setSubmitting] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<OnboardingProgress | null>(null);
+
+  const slugRequestSeq = useRef(0);
+  const slugAbortRef = useRef<AbortController | null>(null);
+  const slugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestSlugRef = useRef("");
+  const createIdemRef = useRef(createIdempotencyIntentHolder());
+  const completeIdemRef = useRef(createIdempotencyIntentHolder());
+  const pendingRef = useRef(createPendingDedupe());
+  const hydratedRef = useRef(false);
+
+  const progressPct = ((step + 1) / steps.length) * 100;
   const canContinue = useMemo(
     () =>
-      step === 1
-        ? name.trim().length > 2 && bio.trim().length > 12
-        : step === 2
-          ? slug.length > 3 && available === true
-          : true,
-    [step, name, bio, slug, available],
+      submitting || hydrating
+        ? false
+        : step === 1
+          ? name.trim().length > 2 && bio.trim().length > 12
+          : step === 2
+            ? slug.length > 3 && available === true
+            : true,
+    [step, name, bio, slug, available, submitting, hydrating],
   );
-  const checkSlug = (value: string) => {
-    const clean = value
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-");
-    setSlug(clean);
-    setAvailable(null);
-    if (clean.length > 3) {
-      setChecking(true);
-      setTimeout(() => {
+
+  const applyProgress = useCallback((p: OnboardingProgress) => {
+    setProgress(p);
+    const fields = formFieldsFromProgress(p);
+    if (fields.name) setName(fields.name);
+    if (fields.bio) setBio(fields.bio);
+    if (fields.slug) {
+      setSlug(fields.slug);
+      latestSlugRef.current = fields.slug;
+      setAvailable(true);
+    }
+    if (fields.accent) setAccent(fields.accent);
+    setStep(uiStepFromServerState(p.step, p.completed));
+  }, []);
+
+  useEffect(() => {
+    if (!apiMode || hydratedRef.current) {
+      setHydrating(false);
+      return;
+    }
+    hydratedRef.current = true;
+    const ac = new AbortController();
+    void (async () => {
+      try {
+        const p = await getOnboardingProgress(ac.signal);
+        if (ac.signal.aborted) return;
+        applyProgress(p);
+      } catch {
+        // Keep step 0; root/form can surface unexpected failures later.
+      } finally {
+        if (!ac.signal.aborted) setHydrating(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [apiMode, applyProgress]);
+
+  useEffect(() => {
+    return () => {
+      if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
+      slugAbortRef.current?.abort();
+    };
+  }, []);
+
+  const runSlugCheck = useCallback(
+    (clean: string) => {
+      latestSlugRef.current = clean;
+      setAvailable(null);
+      if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
+      slugAbortRef.current?.abort();
+
+      if (clean.length <= 3) {
         setChecking(false);
-        setAvailable(!["admin", "fersaku", "asep-ai-tools"].includes(clean));
-      }, 500);
+        return;
+      }
+
+      setChecking(true);
+      const seq = ++slugRequestSeq.current;
+      slugTimerRef.current = setTimeout(() => {
+        const ac = new AbortController();
+        slugAbortRef.current = ac;
+        void (async () => {
+          try {
+            const result = await checkSlugAvailability(clean, ac.signal);
+            if (seq !== slugRequestSeq.current) return;
+            if (result.slug !== latestSlugRef.current) return;
+            setAvailable(result.available);
+          } catch (err) {
+            if (ac.signal.aborted) return;
+            if (seq !== slugRequestSeq.current) return;
+            if (
+              err instanceof DOMException &&
+              (err.name === "AbortError" || err.name === "TimeoutError")
+            ) {
+              return;
+            }
+            setAvailable(null);
+          } finally {
+            if (seq === slugRequestSeq.current) setChecking(false);
+          }
+        })();
+      }, SLUG_DEBOUNCE_MS);
+    },
+    [],
+  );
+
+  const checkSlug = (value: string) => {
+    const clean = normalizeStoreSlug(value);
+    setSlug(clean);
+    setFieldError(null);
+    runSlugCheck(clean);
+  };
+
+  const mapSubmitError = (err: unknown): string | null => {
+    if (!(err instanceof ApiError)) return null;
+    if (err.status === 409) {
+      setAvailable(false);
+      return "Alamat ini sudah digunakan. Coba variasi lain.";
+    }
+    if (err.status === 400) {
+      return err.message || "Periksa kembali data toko.";
+    }
+    return null;
+  };
+
+  const advanceApi = async () => {
+    if (!pendingRef.current.tryBegin()) return;
+    setSubmitting(true);
+    setFieldError(null);
+    try {
+      if (step === 0) {
+        setStep(1);
+        return;
+      }
+      if (step === 1) {
+        const body = { name: name.trim(), bio: bio.trim() };
+        let p: OnboardingProgress;
+        if (progress?.storeId) {
+          p = await patchOnboardingStore({
+            ...body,
+            step: "SLUG",
+          });
+        } else {
+          createIdemRef.current.bindBody(body);
+          p = await createOnboardingStore(body, {
+            idempotencyKey: createIdemRef.current.getKey(),
+          });
+          createIdemRef.current.reset();
+        }
+        applyProgress(p);
+        setStep(Math.max(2, uiStepFromServerState(p.step, p.completed)));
+        return;
+      }
+      if (step === 2) {
+        const p = await patchOnboardingStore({
+          slug,
+          step: "VISUAL",
+        });
+        applyProgress(p);
+        setStep(Math.max(3, uiStepFromServerState(p.step, p.completed)));
+        return;
+      }
+      if (step === 3) {
+        const p = await patchOnboardingStore({
+          accentColor: accent,
+          step: "PRODUCT_OPTIONAL",
+        });
+        applyProgress(p);
+        setStep(Math.max(4, uiStepFromServerState(p.step, p.completed)));
+        return;
+      }
+      if (step === 4) {
+        completeIdemRef.current.bindBody({ skipProduct: true });
+        const p = await completeOnboarding({
+          skipProduct: true,
+          idempotencyKey: completeIdemRef.current.getKey(),
+        });
+        completeIdemRef.current.reset();
+        applyProgress(p);
+        setStep(5);
+        return;
+      }
+      if (step === 5) {
+        await refreshBootstrap();
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      const msg = mapSubmitError(err);
+      if (msg) setFieldError(msg);
+    } finally {
+      pendingRef.current.end();
+      setSubmitting(false);
     }
   };
+
+  const advanceMock = () => {
+    if (step === 5) {
+      router.push("/dashboard");
+      return;
+    }
+    setStep((s) => s + 1);
+  };
+
+  const onContinue = () => {
+    if (!canContinue) return;
+    if (apiMode) void advanceApi();
+    else advanceMock();
+  };
+
+  const onBack = () => {
+    if (submitting) return;
+    setFieldError(null);
+    setStep((s) => Math.max(0, s - 1));
+  };
+
+  const completion = mapCompletionDisplay(
+    progress,
+    apiMode ? "api" : "mock",
+  );
+  const displayName = name || progress?.store?.name || "";
+  const displaySlug = slug || progress?.store?.slug || "toko-kamu";
+
   return (
     <main className="min-h-screen bg-[#f1f2ed]">
       <header className="hairline flex h-20 items-center justify-between border-b bg-[#f8f7f2] px-5 sm:px-8">
@@ -72,12 +308,17 @@ export function StoreOnboarding() {
       <div className="h-1 bg-[#e2e5df]">
         <div
           className="h-full bg-[#173f2c] transition-all duration-500"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${progressPct}%` }}
         />
       </div>
       <section className="mx-auto grid min-h-[calc(100vh-85px)] max-w-[1180px] items-center gap-10 px-5 py-10 lg:grid-cols-[1fr_420px]">
         <div className="mx-auto w-full max-w-[650px]">
-          {step === 0 && (
+          {hydrating ? (
+            <div className="flex min-h-[240px] items-center justify-center">
+              <LoaderCircle className="size-6 animate-spin text-[#173f2c]" />
+            </div>
+          ) : null}
+          {!hydrating && step === 0 && (
             <Step
               icon={Sparkles}
               eyebrow="Selamat datang di Fersaku"
@@ -85,7 +326,7 @@ export function StoreOnboarding() {
               description="Setup ini hanya butuh beberapa menit. Semua pengaturan tetap bisa kamu ubah kapan saja dari dashboard."
             />
           )}{" "}
-          {step === 1 && (
+          {!hydrating && step === 1 && (
             <div>
               <Step
                 icon={Store}
@@ -114,7 +355,7 @@ export function StoreOnboarding() {
               </div>
             </div>
           )}
-          {step === 2 && (
+          {!hydrating && step === 2 && (
             <div>
               <Step
                 icon={Globe2}
@@ -157,7 +398,7 @@ export function StoreOnboarding() {
               </div>
             </div>
           )}
-          {step === 3 && (
+          {!hydrating && step === 3 && (
             <div>
               <Step
                 icon={Palette}
@@ -176,6 +417,7 @@ export function StoreOnboarding() {
                 ].map((x) => (
                   <button
                     key={x}
+                    type="button"
                     onClick={() => setAccent(x)}
                     className={cn(
                       "aspect-square rounded-[22px] border-4 transition",
@@ -189,7 +431,7 @@ export function StoreOnboarding() {
               </div>
             </div>
           )}
-          {step === 4 && (
+          {!hydrating && step === 4 && (
             <div>
               <Step
                 icon={PackagePlus}
@@ -205,6 +447,7 @@ export function StoreOnboarding() {
                 ].map((x) => (
                   <button
                     key={x}
+                    type="button"
                     className="hairline rounded-[22px] border bg-white p-5 text-left transition hover:-translate-y-1 hover:border-[#173f2c]"
                   >
                     <PackagePlus className="size-5" />
@@ -217,13 +460,13 @@ export function StoreOnboarding() {
               </div>
             </div>
           )}
-          {step === 5 && (
+          {!hydrating && step === 5 && (
             <div>
               <Step
                 icon={BadgeCheck}
                 eyebrow="Toko siap"
-                title={`${name || "Tokomu"} resmi punya rumah.`}
-                description="Storefront mock telah dibuat. Selanjutnya lengkapi produk, rekening payout, MFA, dan test webhook."
+                title={`${displayName || "Tokomu"} resmi punya rumah.`}
+                description={completion.description}
               />
               <div className="mt-7 rounded-[24px] border border-[#bfd8aa] bg-[#edf8df] p-5">
                 <div className="flex items-center gap-3">
@@ -231,12 +474,12 @@ export function StoreOnboarding() {
                     className="grid size-11 place-items-center rounded-xl font-black text-[#173f2c]"
                     style={{ backgroundColor: accent }}
                   >
-                    {(name || "T")[0]}
+                    {(displayName || "T")[0]}
                   </span>
                   <div>
-                    <b className="text-xs">fersaku.id/@{slug || "toko-kamu"}</b>
+                    <b className="text-xs">fersaku.id/@{displaySlug}</b>
                     <p className="mt-1 text-[9px] text-[#65736b]">
-                      Atelier theme • Published
+                      {completion.themePublishLine}
                     </p>
                   </div>
                   <Check className="ml-auto size-5 text-[#2e714f]" />
@@ -244,30 +487,40 @@ export function StoreOnboarding() {
               </div>
             </div>
           )}
-          <div className="mt-10 flex items-center gap-3">
-            {step > 0 && step < 5 && (
+          {fieldError ? (
+            <p className="mt-4 text-[10px] font-bold text-[#b2573c]">
+              {fieldError}
+            </p>
+          ) : null}
+          {!hydrating && (
+            <div className="mt-10 flex items-center gap-3">
+              {step > 0 && step < 5 && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="hairline flex h-12 items-center gap-2 rounded-xl border bg-white px-5 text-[10px] font-bold"
+                >
+                  <ArrowLeft className="size-4" /> Kembali
+                </button>
+              )}
               <button
-                onClick={() => setStep((s) => s - 1)}
-                className="hairline flex h-12 items-center gap-2 rounded-xl border bg-white px-5 text-[10px] font-bold"
+                type="button"
+                disabled={!canContinue}
+                onClick={onContinue}
+                className="ml-auto flex h-12 items-center gap-2 rounded-xl bg-[#173f2c] px-6 text-[10px] font-extrabold text-white disabled:opacity-35"
               >
-                <ArrowLeft className="size-4" /> Kembali
+                {submitting ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : null}
+                {step === 4
+                  ? "Lewati untuk sekarang"
+                  : step === 5
+                    ? "Masuk ke dashboard"
+                    : "Lanjutkan"}
+                <ArrowRight className="size-4" />
               </button>
-            )}
-            <button
-              disabled={!canContinue}
-              onClick={() =>
-                step === 5 ? router.push("/dashboard") : setStep((s) => s + 1)
-              }
-              className="ml-auto flex h-12 items-center gap-2 rounded-xl bg-[#173f2c] px-6 text-[10px] font-extrabold text-white disabled:opacity-35"
-            >
-              {step === 4
-                ? "Lewati untuk sekarang"
-                : step === 5
-                  ? "Masuk ke dashboard"
-                  : "Lanjutkan"}
-              <ArrowRight className="size-4" />
-            </button>
-          </div>
+            </div>
+          )}
         </div>
         <aside className="hidden lg:block">
           <div className="noise shadow-float rounded-[34px] bg-[#173f2c] p-6 text-white">
@@ -277,13 +530,13 @@ export function StoreOnboarding() {
                   className="grid size-12 place-items-center rounded-xl text-lg font-black text-[#173f2c]"
                   style={{ backgroundColor: accent }}
                 >
-                  {(name || "T")[0]}
+                  {(displayName || "T")[0]}
                 </span>
                 <p className="mt-7 text-[7px] font-bold tracking-[.18em] text-white/45 uppercase">
                   Your new storefront
                 </p>
                 <h3 className="font-display mt-2 text-3xl">
-                  {name || "Nama tokomu"}
+                  {displayName || "Nama tokomu"}
                 </h3>
                 <p className="mt-2 text-[8px] leading-4 text-white/50">
                   {bio || "Deskripsi toko akan tampil indah di sini."}
@@ -354,3 +607,4 @@ function Label({
     </label>
   );
 }
+
