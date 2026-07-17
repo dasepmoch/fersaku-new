@@ -161,10 +161,10 @@ Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memer
 
 ### Coverage configuration
 
-- [ ] Expand `vitest.config.ts` include secara bertahap dari snapshot HTTP client/pagination-only ke seluruh live feature adapters, schemas, mappers, query policies, session/source registry, dan pure security helpers.
-- [ ] Threshold tidak boleh memberi false confidence karena hanya dua file masuk denominator; report per critical directory/domain.
-- [ ] Exclude generated code, visual-only components, mock fixtures, dan config hanya dengan alasan tertulis; generated contract diuji provider/drift, bukan line coverage.
-- [ ] Coverage adalah signal tambahan, bukan pengganti negative/integration/E2E tests.
+- [x] Expand `vitest.config.ts` include secara bertahap dari snapshot HTTP client/pagination-only ke seluruh live feature adapters, schemas, mappers, query policies, session/source registry, dan pure security helpers. *(QLT-200 parent 2026-07-17)*
+- [x] Threshold tidak boleh memberi false confidence karena hanya dua file masuk denominator; report per critical directory/domain. *(expanded denominator; thresholds honest vs full adapter set)*
+- [x] Exclude generated code, visual-only components, mock fixtures, dan config hanya dengan alasan tertulis; generated contract diuji provider/drift, bukan line coverage. *(see vitest.config.ts + docs/QLT-200-CONTRACT-COEVOLUTION.md)*
+- [x] Coverage adalah signal tambahan, bukan pengganti negative/integration/E2E tests.
 
 ### Frontend adapter minimum
 
@@ -194,10 +194,11 @@ For every feature API function:
 
 ### Contract compatibility strategy
 
-- Generate raw DTO fixtures from OpenAPI examples or schema-valid builders.
-- Provider test: Go presenter response validates OpenAPI schema.
-- Consumer test: raw response maps to existing FE view model.
+- Generate raw DTO fixtures from OpenAPI examples or schema-valid builders. *(harness: `tests/contract/fixtures/` + `backend/test/fixtures/contract/`)*
+- Provider test: Go presenter response validates OpenAPI schema. *(sample: `backend/test/contract/provider_presenter_test.go`)*
+- Consumer test: raw response maps to existing FE view model. *(sample: `tests/contract/qlt-200-consumer-foundation.test.ts` + helpers)*
 - Mock/API parity: semantically equivalent fixture yields equal normalized view object, except fields explicitly nonvisual/authority-only.
+- Continuous co-evolution: domain tasks extend harness in the same slice as adapters — `docs/QLT-200-CONTRACT-COEVOLUTION.md`. Parent framework ≠ full capability matrix (§3.7 cells).
 
 ### Acceptance criteria
 

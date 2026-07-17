@@ -85,6 +85,31 @@ switch (suite) {
     break;
   }
 
+  case "qlt-200-contract": {
+    // Parent framework must stay non-empty (QLT-200 continuous).
+    minLines(join(root, "vitest.config.ts"), 40);
+    minLines(join(root, "tests/contract/helpers/consumer.ts"), 40);
+    minLines(
+      join(root, "tests/contract/qlt-200-consumer-foundation.test.ts"),
+      40,
+    );
+    minLines(
+      join(root, "backend/test/contract/provider_presenter_test.go"),
+      40,
+    );
+    minLines(
+      join(root, "backend/test/fixtures/contract/featured-products.provider.json"),
+      10,
+    );
+    minLines(join(root, "docs/QLT-200-CONTRACT-COEVOLUTION.md"), 30);
+    const n = countFiles(join(root, "tests/contract"), (name) =>
+      name.endsWith(".test.ts"),
+    );
+    if (n < 1) fail(`contract tests: ${n} files (need >= 1)`);
+    ok(`qlt-200 harness + consumer tests=${n} + provider sample`);
+    break;
+  }
+
   case "frontend-mock-e2e": {
     for (const f of [
       "tests/e2e/smoke.spec.ts",

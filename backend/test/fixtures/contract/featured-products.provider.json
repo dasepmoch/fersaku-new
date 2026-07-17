@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": "prod_qlt200_01",
+      "slug": "ai-prompt-pack",
+      "title": "AI Prompt Pack",
+      "short": "Short blurb",
+      "description": "Long description",
+      "price": 149000,
+      "type": "download",
+      "sales": 12,
+      "palette": "violet",
+      "glyph": "✦",
+      "includes": ["PDF", "Notion"],
+      "storeSlug": "designkit-studio",
+      "storeId": "store_qlt200"
+    }
+  ],
+  "meta": {
+    "requestId": "req_qlt200_provider",
+    "timestamp": "2026-07-17T12:00:00Z"
+  }
+}

@@ -60,4 +60,15 @@ npm run api:check      # fails if generated types are dirty
 npm run api:lint       # Redocly (INT-000)
 ```
 
-Generated files start with `Do not make direct changes`. Change the OpenAPI spec, then regenerate.
+Generated files start with `Do not make direct changes`. Change the OpenAPI spec, then regenerate. Generated types are **not** line-covered (QLT-200); drift is `api:check` + provider/router contract tests.
+
+## QLT-200 contract harness (continuous)
+
+When adding a live adapter, co-evolve provider/consumer tests in the same slice:
+
+- FE helpers: `tests/contract/helpers/consumer.ts`
+- FE samples: `tests/contract/**/*.test.ts`
+- BE samples: `backend/test/contract/provider_presenter_test.go`
+- Policy: `docs/QLT-200-CONTRACT-COEVOLUTION.md`
+
+Parent QLT-200 is the harness only; capability cells in `09` §3.7 prove domain depth.
