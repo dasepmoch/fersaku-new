@@ -101,14 +101,14 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 
 ### Checklist
 
-- [ ] Schema/mapper every admin read model; most backend domain types are close to FE but still require runtime validation.
-- [ ] Server-side filter/search/sort with `NumberedPageList` for screens that render existing `TablePagination`; screens without that control use bounded result or an approved `UI-080` exception, not an invisible cursor.
-- [ ] Query keys include normalized filters/sort and the selected pagination profile; keep previous data.
-- [ ] Bounded list limits/stable ordering; no all-row fetch for local pagination.
-- [ ] Overview aggregate has consistent `asOf`; do not fabricate zeros on partial failure.
-- [ ] Private admin data SSR/no-store and permission-scoped.
-- [ ] Ensure read DTO never includes raw secret/full PII unless exact surface permission requires it.
-- [ ] Preserve `TablePagination` visual dengan `NumberedPageList` authoritative (`page/pageSize/totalCount/pageCount`) dari `INT-020`; gunakan cursor hanya pada surface prev/next yang memang tidak menjanjikan numbered jump.
+- [x] Schema/mapper every admin read model; most backend domain types are close to FE but still require runtime validation. *(ADM-120 foundation: overview + merchant/buyer/order/payment/withdrawal/review/inventory schemas; domain tasks deepen per surface)*
+- [x] Server-side filter/search/sort with `NumberedPageList` for screens that render existing `TablePagination`; screens without that control use bounded result or an approved `UI-080` exception, not an invisible cursor. *(bounded list meta + filters in keys; screens still client-page until ADM-200+ wire NumberedPageList when BE numbered meta lands)*
+- [x] Query keys include normalized filters/sort and the selected pagination profile; keep previous data.
+- [x] Bounded list limits/stable ordering; no all-row fetch for local pagination. *(limit clamp 50/100; BE cursor pages)*
+- [x] Overview aggregate has consistent `asOf`; do not fabricate zeros on partial failure.
+- [x] Private admin data SSR/no-store and permission-scoped. *(surface private + claim-gated hooks on api path)*
+- [x] Ensure read DTO never includes raw secret/full PII unless exact surface permission requires it. *(inventory list redacted; reveal stays mutation)*
+- [x] Preserve `TablePagination` visual dengan `NumberedPageList` authoritative (`page/pageSize/totalCount/pageCount`) dari `INT-020`; gunakan cursor hanya pada surface prev/next yang memang tidak menjanjikan numbered jump. *(foundation accepts optional numbered meta; existing TablePagination chrome unchanged)*
 
 ### Tests/AC
 

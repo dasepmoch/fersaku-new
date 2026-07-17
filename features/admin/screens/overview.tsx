@@ -15,40 +15,58 @@ import {
 } from "lucide-react";
 import {
   useAdminAuditEvents,
+  useAdminOverview,
   useAdminPlatformVolume,
 } from "@/features/admin/data";
+import { overviewMetricLabels } from "@/features/admin/data/mappers";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { RotatingQuote } from "@/components/rotating-quote";
 
 function CommandCenter() {
+  const isMock = getDomainSource("adminRead") === "mock";
+  const { data: overview } = useAdminOverview();
   const { data: platformVolume } = useAdminPlatformVolume();
   const { data: auditEvents } = useAdminAuditEvents();
+
+  const labels = overview ? overviewMetricLabels(overview) : null;
+
   const metrics = [
     [
       "Gross volume",
-      "Rp84,2jt",
-      "+18.4%",
+      labels?.grossVolume ?? (isMock ? "Rp84,2jt" : "—"),
+      isMock ? "+18.4%" : "—",
       CircleDollarSign,
       "#eaf0ff",
       "#5b7cfa",
     ],
     [
       "Net platform revenue",
-      "Rp3,18jt",
-      "+12.8%",
+      labels?.platformRevenue ?? (isMock ? "Rp3,18jt" : "—"),
+      isMock ? "+12.8%" : "—",
       TrendingUp,
       "#e8f8ef",
       "#26965a",
     ],
-    ["Payment success", "96,84%", "+0.42%", CheckCircle2, "#e8f8ef", "#26965a"],
+    [
+      "Payment success",
+      labels?.paymentSuccess ?? (isMock ? "96,84%" : "—"),
+      isMock ? "+0.42%" : "—",
+      CheckCircle2,
+      "#e8f8ef",
+      "#26965a",
+    ],
     [
       "Pending withdrawals",
-      "12",
-      "3 need review",
+      labels?.pendingWithdrawals ?? (isMock ? "12" : "—"),
+      isMock ? "3 need review" : "—",
       Banknote,
       "#fff6e4",
       "#d68a23",
     ],
-  ];
+  ] as const;
+
+  const volumePoints = platformVolume?.points ?? [];
+
   return (
     <>
       <RotatingQuote surface="admin" compact className="mb-4" />
@@ -94,6 +112,7 @@ function CommandCenter() {
               {["24H", "7D", "30D"].map((x, i) => (
                 <button
                   key={x}
+                  type="button"
                   className={`rounded-md px-2.5 py-1.5 text-[8px] font-extrabold ${i === 0 ? "bg-white text-[#11182a] shadow-sm" : "text-[#7f899e]"}`}
                 >
                   {x}
@@ -102,14 +121,19 @@ function CommandCenter() {
             </div>
           </div>
           <div className="mt-8 flex h-52 items-end gap-1.5">
-            {(platformVolume ?? []).map((h, i) => (
+            {volumePoints.map((point, i) => (
               <div
                 key={i}
                 className="group relative flex-1 rounded-t-sm bg-[#5b7cfa] transition hover:bg-[#375eea]"
-                style={{ height: `${h / 1.35}%`, opacity: 0.26 + i / 36 }}
+                style={{
+                  height: `${point.heightPct}%`,
+                  opacity: 0.26 + i / 36,
+                }}
               >
                 <span className="absolute -top-7 left-1/2 hidden -translate-x-1/2 rounded bg-[#11182a] px-2 py-1 text-[7px] text-white group-hover:block">
-                  {h * 18}k
+                  {isMock
+                    ? `${Math.round(point.amountIdr / 1000)}k`
+                    : `${Math.round(point.amountIdr / 1000)}k`}
                 </span>
               </div>
             ))}

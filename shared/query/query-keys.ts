@@ -67,47 +67,49 @@ export const queryKeys = {
     storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
   },
   admin: {
+    /** ADM-120 overview aggregate (admin.dashboard.read). */
+    overview: () => ["admin", "overview"] as const,
     merchants: (filters: Record<string, unknown> = {}) =>
-      ["admin", "merchants", filters] as const,
+      ["admin", "merchants", "bounded", filters] as const,
     merchant: (merchantId: string) =>
       ["admin", "merchants", merchantId] as const,
     buyers: (filters: Record<string, unknown> = {}) =>
-      ["admin", "buyers", filters] as const,
+      ["admin", "buyers", "bounded", filters] as const,
     buyer: (buyerId: string) => ["admin", "buyers", buyerId] as const,
     buyerPurchases: (buyerId: string) =>
       ["admin", "buyers", buyerId, "purchases"] as const,
     buyerSessions: (buyerId: string) =>
       ["admin", "buyers", buyerId, "sessions"] as const,
     orders: (filters: Record<string, unknown> = {}) =>
-      ["admin", "orders", filters] as const,
+      ["admin", "orders", "bounded", filters] as const,
     order: (orderId: string) => ["admin", "orders", orderId] as const,
     withdrawals: (filters: Record<string, unknown> = {}) =>
-      ["admin", "withdrawals", filters] as const,
+      ["admin", "withdrawals", "bounded", filters] as const,
     withdrawal: (withdrawalId: string) =>
       ["admin", "withdrawals", withdrawalId] as const,
     payments: (filters: Record<string, unknown> = {}) =>
-      ["admin", "payments", filters] as const,
+      ["admin", "payments", "bounded", filters] as const,
     kyc: (filters: Record<string, unknown> = {}) =>
-      ["admin", "kyc", filters] as const,
+      ["admin", "kyc", "bounded", filters] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>
-      ["admin", "webhooks", filters] as const,
+      ["admin", "webhooks", "bounded", filters] as const,
     roles: () => ["admin", "roles"] as const,
     users: (filters: Record<string, unknown> = {}) =>
-      ["admin", "users", filters] as const,
+      ["admin", "users", "bounded", filters] as const,
     campaigns: (filters: Record<string, unknown> = {}) =>
-      ["admin", "campaigns", filters] as const,
+      ["admin", "campaigns", "bounded", filters] as const,
     providers: () => ["admin", "providers"] as const,
     platformVolume: () => ["admin", "platform-volume"] as const,
     permissionGroups: () => ["admin", "permission-groups"] as const,
     inventory: (filters: Record<string, unknown> = {}) =>
-      ["admin", "inventory", filters] as const,
+      ["admin", "inventory", "bounded", filters] as const,
     fulfillment: (filters: Record<string, unknown> = {}) =>
-      ["admin", "fulfillment", filters] as const,
+      ["admin", "fulfillment", "bounded", filters] as const,
     reviews: (filters: Record<string, unknown> = {}) =>
-      ["admin", "reviews", filters] as const,
+      ["admin", "reviews", "bounded", filters] as const,
     system: () => ["admin", "system"] as const,
     auditLogs: (filters: Record<string, unknown> = {}) =>
-      ["admin", "audit-logs", filters] as const,
+      ["admin", "audit-logs", "bounded", filters] as const,
   },
   buyer: {
     /**

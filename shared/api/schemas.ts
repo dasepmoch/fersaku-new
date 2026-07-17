@@ -1797,3 +1797,250 @@ export type StorefrontPublishRequest = z.infer<
 >;
 export type StorefrontPublishDto = z.infer<typeof storefrontPublishDtoSchema>;
 
+// --- Admin read models (ADM-120) — overview + shared list foundation ---
+
+/** GET /v1/admin/overview — safe command-center KPIs (admin.dashboard.read). */
+export const adminOverviewDataSchema = z.object({
+  merchantCount: z.number().int().min(0),
+  buyerCount: z.number().int().min(0),
+  orderCount: z.number().int().min(0),
+  paymentCount: z.number().int().min(0),
+  pendingWithdrawalCount: z.number().int().min(0),
+  openKycCount: z.number().int().min(0),
+  grossVolumePaidIdr: moneyIdrSchema,
+  platformFeePaidIdr: moneyIdrSchema,
+  paymentSuccessRateBps: z.number().int().min(0),
+  platformVolume: z.array(moneyIdrSchema).optional(),
+});
+
+export const adminOverviewEnvelopeSchema = successEnvelopeSchema(
+  adminOverviewDataSchema,
+);
+
+/** GET /v1/admin/overview/platform-volume — 24 hourly gross paid IDR buckets. */
+export const adminPlatformVolumeDataSchema = z.array(moneyIdrSchema);
+
+export const adminPlatformVolumeEnvelopeSchema = successEnvelopeSchema(
+  adminPlatformVolumeDataSchema,
+);
+
+export const adminMerchantDtoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  owner: z.string(),
+  email: z.string(),
+  volume: moneyIdrSchema,
+  orders: z.number().int().min(0),
+  risk: z.string(),
+  status: z.string(),
+  joined: z.string(),
+  apiAccess: z.string(),
+});
+
+export const adminBuyerDtoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  email: z.string(),
+  verified: z.string(),
+  purchases: z.number().int().min(0),
+  spent: moneyIdrSchema,
+  sessions: z.number().int().min(0),
+  last: z.string(),
+});
+
+export const adminOrderDtoSchema = z.object({
+  id: z.string().min(1),
+  store: z.string(),
+  customer: z.string(),
+  product: z.string(),
+  gross: moneyIdrSchema,
+  totalFeeCharged: moneyIdrSchema,
+  status: z.string(),
+  payment: z.string(),
+  created: z.string(),
+  source: z.string(),
+});
+
+export const adminPaymentDtoSchema = z.object({
+  id: z.string().min(1),
+  provider: z.string(),
+  merchant: z.string(),
+  amount: moneyIdrSchema,
+  providerRef: z.string(),
+  status: z.string(),
+  latency: z.string(),
+  created: z.string(),
+  source: z.string(),
+});
+
+export const adminWithdrawalDtoSchema = z.object({
+  id: z.string().min(1),
+  merchant: z.string(),
+  owner: z.string(),
+  amount: moneyIdrSchema,
+  bank: z.string(),
+  account: z.string(),
+  risk: z.string(),
+  status: z.string(),
+  requested: z.string(),
+  source: z.string(),
+  providerProcessingFee: moneyIdrSchema.nullable(),
+  providerFeeStatus: z.string(),
+  providerFeeReference: z.string().optional(),
+});
+
+export const adminAuditEventDtoSchema = z.object({
+  id: z.string().min(1),
+  actor: z.string(),
+  action: z.string(),
+  target: z.string(),
+  ip: z.string(),
+  result: z.string(),
+  time: z.string(),
+  context: z.string().optional(),
+  previousHash: z.string().optional(),
+  integrityHash: z.string().optional(),
+});
+
+export const adminReviewDtoSchema = z.object({
+  id: z.string().min(1),
+  productId: z.string().min(1),
+  product: z.string(),
+  seller: z.string(),
+  buyer: z.string(),
+  initials: z.string(),
+  rating: z.number().int(),
+  title: z.string(),
+  body: z.string(),
+  verified: z.boolean(),
+  status: z.string(),
+  createdAt: z.string(),
+  sellerReply: z.string().optional(),
+});
+
+export const adminBuyerPurchaseDtoSchema = z.object({
+  orderId: z.string().min(1),
+  product: z.string(),
+  seller: z.string(),
+  status: z.string(),
+});
+
+export const adminBuyerSessionDtoSchema = z.object({
+  id: z.string().min(1),
+  device: z.string(),
+  location: z.string(),
+  ip: z.string(),
+  active: z.string(),
+  current: z.boolean(),
+});
+
+export const adminInventoryFieldDtoSchema = z.object({
+  key: z.string().min(1),
+  label: z.string(),
+  secret: z.boolean(),
+  required: z.boolean(),
+  buyerCopyable: z.boolean(),
+});
+
+export const adminStockProductDtoSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  type: z.string(),
+  available: z.number().int().min(0),
+  reserved: z.number().int().min(0),
+  sold: z.number().int().min(0),
+  invalid: z.number().int().min(0),
+  lowAt: z.number().int().min(0),
+  delivery: z.string(),
+});
+
+export const adminStockItemDtoSchema = z.object({
+  id: z.string().min(1),
+  schemaPreview: z.string(),
+  status: z.string(),
+  orderId: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export const adminInventorySnapshotDtoSchema = z.object({
+  products: z.array(adminStockProductDtoSchema),
+  items: z.array(adminStockItemDtoSchema),
+  schema: z.array(adminInventoryFieldDtoSchema),
+});
+
+/** Bounded admin list (BE cursor meta; FE screens may still client-page until domain tasks). */
+export const adminBoundedListMetaSchema = z.object({
+  requestId: z.string().min(1),
+  timestamp: rfc3339TimestampSchema,
+  nextCursor: z.string().nullable().optional(),
+  previousCursor: z.string().nullable().optional(),
+  hasMore: z.boolean().optional(),
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).optional(),
+  totalCount: z.number().int().min(0).optional(),
+  pageCount: z.number().int().min(0).optional(),
+});
+
+export function adminListEnvelopeSchema<TSchema extends z.ZodType>(
+  itemSchema: TSchema,
+) {
+  return z.object({
+    data: z.array(itemSchema),
+    meta: adminBoundedListMetaSchema,
+  });
+}
+
+export const adminMerchantListEnvelopeSchema =
+  adminListEnvelopeSchema(adminMerchantDtoSchema);
+export const adminBuyerListEnvelopeSchema =
+  adminListEnvelopeSchema(adminBuyerDtoSchema);
+export const adminOrderListEnvelopeSchema =
+  adminListEnvelopeSchema(adminOrderDtoSchema);
+export const adminPaymentListEnvelopeSchema =
+  adminListEnvelopeSchema(adminPaymentDtoSchema);
+export const adminWithdrawalListEnvelopeSchema = adminListEnvelopeSchema(
+  adminWithdrawalDtoSchema,
+);
+export const adminAuditEventListEnvelopeSchema = adminListEnvelopeSchema(
+  adminAuditEventDtoSchema,
+);
+export const adminReviewListEnvelopeSchema =
+  adminListEnvelopeSchema(adminReviewDtoSchema);
+export const adminBuyerPurchaseListEnvelopeSchema = adminListEnvelopeSchema(
+  adminBuyerPurchaseDtoSchema,
+);
+export const adminBuyerSessionListEnvelopeSchema = adminListEnvelopeSchema(
+  adminBuyerSessionDtoSchema,
+);
+
+export const adminMerchantEnvelopeSchema = successEnvelopeSchema(
+  adminMerchantDtoSchema,
+);
+export const adminBuyerEnvelopeSchema =
+  successEnvelopeSchema(adminBuyerDtoSchema);
+export const adminOrderEnvelopeSchema =
+  successEnvelopeSchema(adminOrderDtoSchema);
+export const adminWithdrawalEnvelopeSchema = successEnvelopeSchema(
+  adminWithdrawalDtoSchema,
+);
+export const adminInventoryEnvelopeSchema = successEnvelopeSchema(
+  adminInventorySnapshotDtoSchema,
+);
+
+/** Default/max page size for admin bounded list reads (matches BE MaxListLimit). */
+export const ADMIN_LIST_DEFAULT_LIMIT = 50;
+export const ADMIN_LIST_MAX_LIMIT = 100;
+
+export type AdminOverviewDto = z.infer<typeof adminOverviewDataSchema>;
+export type AdminMerchantDto = z.infer<typeof adminMerchantDtoSchema>;
+export type AdminBuyerDto = z.infer<typeof adminBuyerDtoSchema>;
+export type AdminOrderDto = z.infer<typeof adminOrderDtoSchema>;
+export type AdminPaymentDto = z.infer<typeof adminPaymentDtoSchema>;
+export type AdminWithdrawalDto = z.infer<typeof adminWithdrawalDtoSchema>;
+export type AdminAuditEventDto = z.infer<typeof adminAuditEventDtoSchema>;
+export type AdminReviewDto = z.infer<typeof adminReviewDtoSchema>;
+export type AdminInventorySnapshotDto = z.infer<
+  typeof adminInventorySnapshotDtoSchema
+>;
+export type AdminBoundedListMeta = z.infer<typeof adminBoundedListMetaSchema>;
+

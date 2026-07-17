@@ -184,7 +184,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 
 | Operation/UI | FE seam | Backend route | Status | Required mapping/gap | Task/evidence |
 | --- | --- | --- | --- | --- | --- |
-| Overview | admin hooks/screens | `GET /v1/admin/overview` | U | Schema/consistent asOf/permission. | ADM-120 |
+| Overview | admin hooks/screens | `GET /v1/admin/overview` | M | Schema/consistent asOf/permission. | ADM-120 |
 | Platform volume | overview API | `GET /v1/admin/overview/platform-volume` | M | Schema/range, not bare guessed points. | ADM-120 |
 | Merchants list/detail | admin merchants API | `GET /v1/admin/merchants`, `GET /v1/admin/merchants/{merchantId}` | M | Filter/pagination profile/detail composition. | ADM-200 |
 | Buyers list/detail | admin buyers API | `GET /v1/admin/buyers`, `GET /v1/admin/buyers/{buyerId}` | M | Filter/pagination profile/PII. | ADM-210 |

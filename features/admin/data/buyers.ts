@@ -1,10 +1,39 @@
+/**
+ * ADM-120 — admin buyer list/detail read foundation (buyers.read).
+ * Full support surface remains ADM-210.
+ */
+
+import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
-import { structuralEnvelopeSchema } from "@/shared/api/schemas";
-import type { ApiEnvelope } from "@/shared/api/contracts";
+import {
+  ADMIN_LIST_DEFAULT_LIMIT,
+  adminBuyerEnvelopeSchema,
+  adminBuyerListEnvelopeSchema,
+  adminBuyerPurchaseListEnvelopeSchema,
+  adminBuyerSessionListEnvelopeSchema,
+} from "@/shared/api/schemas";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
-import type { AdminBuyer } from "./contracts";
-import type { AdminBuyerPurchase, AdminBuyerSession } from "./contracts";
+import type {
+  AdminBoundedList,
+  AdminBuyer,
+  AdminBuyerPurchase,
+  AdminBuyerSession,
+  AdminListFilters,
+} from "./contracts";
+import {
+  adminListQueryParams,
+  mapAdminBuyerDto,
+  mapAdminListPage,
+  normalizeAdminListFilters,
+} from "./mappers";
 import { mockBuyerPurchases, mockBuyerSessions } from "./mock";
+
+type ListEnvelope = z.infer<typeof adminBuyerListEnvelopeSchema>;
+type DetailEnvelope = z.infer<typeof adminBuyerEnvelopeSchema>;
+type PurchaseEnvelope = z.infer<typeof adminBuyerPurchaseListEnvelopeSchema>;
+type SessionEnvelope = z.infer<typeof adminBuyerSessionListEnvelopeSchema>;
+
+const MOCK_AS_OF = "2026-07-17T00:00:00Z";
 
 /** Deterministic buyer fixtures used by the admin buyers console. */
 export function demoBuyers(): AdminBuyer[] {
@@ -72,15 +101,56 @@ export function demoBuyers(): AdminBuyer[] {
   ];
 }
 
-export async function listBuyers(signal?: AbortSignal): Promise<AdminBuyer[]> {
-  if (shouldUseMockFixtures("adminRead")) return demoBuyers();
-
-  const response = await apiRequest<ApiEnvelope<AdminBuyer[]>>(
-    "/v1/admin/buyers",
-    {
-    schema: structuralEnvelopeSchema, signal },
+function mockBuyerPage(
+  filters: AdminListFilters = {},
+): AdminBoundedList<AdminBuyer> {
+  const limit = Math.min(
+    100,
+    Math.max(1, filters.limit ?? ADMIN_LIST_DEFAULT_LIMIT),
   );
-  return response.data;
+  let rows = demoBuyers();
+  const q = filters.q?.trim().toLowerCase();
+  if (q) {
+    rows = rows.filter(
+      (b) =>
+        b.name.toLowerCase().includes(q) ||
+        b.email.toLowerCase().includes(q) ||
+        b.id.toLowerCase().includes(q),
+    );
+  }
+  return {
+    items: rows.slice(0, limit),
+    hasMore: rows.length > limit,
+    nextCursor: null,
+    asOf: MOCK_AS_OF,
+    totalCount: rows.length,
+  };
+}
+
+export async function listBuyers(
+  filters: AdminListFilters = {},
+  signal?: AbortSignal,
+): Promise<AdminBuyer[]> {
+  const page = await listBuyersPage(filters, signal);
+  return page.items;
+}
+
+export async function listBuyersPage(
+  filters: AdminListFilters = {},
+  signal?: AbortSignal,
+): Promise<AdminBoundedList<AdminBuyer>> {
+  if (shouldUseMockFixtures("adminRead")) return mockBuyerPage(filters);
+
+  const normalized = normalizeAdminListFilters(filters);
+  const response = await apiRequest<ListEnvelope>("/v1/admin/buyers", {
+    schema: adminBuyerListEnvelopeSchema,
+    query: {
+      ...adminListQueryParams(filters),
+      limit: (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
+    },
+    signal,
+  });
+  return mapAdminListPage(response.data, response.meta, mapAdminBuyerDto);
 }
 
 export async function getBuyer(
@@ -91,12 +161,14 @@ export async function getBuyer(
     return demoBuyers().find((b) => b.id === buyerId) || null;
   }
 
-  const response = await apiRequest<ApiEnvelope<AdminBuyer>>(
-    `/v1/admin/buyers/${buyerId}`,
+  const response = await apiRequest<DetailEnvelope>(
+    `/v1/admin/buyers/${encodeURIComponent(buyerId)}`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: adminBuyerEnvelopeSchema,
+      signal,
+    },
   );
-  return response.data;
+  return mapAdminBuyerDto(response.data);
 }
 
 /** Admin-scoped purchase projection; delivery secrets are not part of it. */
@@ -113,12 +185,20 @@ export async function listBuyerPurchases(
   signal?: AbortSignal,
 ): Promise<AdminBuyerPurchase[]> {
   if (shouldUseMockFixtures("adminRead")) return demoBuyerPurchases();
-  const response = await apiRequest<ApiEnvelope<AdminBuyerPurchase[]>>(
-    `/v1/admin/buyers/${buyerId}/purchases`,
+  const response = await apiRequest<PurchaseEnvelope>(
+    `/v1/admin/buyers/${encodeURIComponent(buyerId)}/purchases`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: adminBuyerPurchaseListEnvelopeSchema,
+      query: { limit: ADMIN_LIST_DEFAULT_LIMIT },
+      signal,
+    },
   );
-  return response.data;
+  return response.data.map((row) => ({
+    orderId: row.orderId,
+    product: row.product,
+    seller: row.seller,
+    status: row.status,
+  }));
 }
 
 export async function listBuyerSessions(
@@ -126,10 +206,20 @@ export async function listBuyerSessions(
   signal?: AbortSignal,
 ): Promise<AdminBuyerSession[]> {
   if (shouldUseMockFixtures("adminRead")) return demoBuyerSessions();
-  const response = await apiRequest<ApiEnvelope<AdminBuyerSession[]>>(
-    `/v1/admin/buyers/${buyerId}/sessions`,
+  const response = await apiRequest<SessionEnvelope>(
+    `/v1/admin/buyers/${encodeURIComponent(buyerId)}/sessions`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: adminBuyerSessionListEnvelopeSchema,
+      query: { limit: ADMIN_LIST_DEFAULT_LIMIT },
+      signal,
+    },
   );
-  return response.data;
+  return response.data.map((row) => ({
+    id: row.id,
+    device: row.device,
+    location: row.location,
+    ip: row.ip,
+    active: row.active,
+    current: Boolean(row.current),
+  }));
 }

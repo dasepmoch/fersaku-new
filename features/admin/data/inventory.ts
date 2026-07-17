@@ -1,5 +1,14 @@
+/**
+ * ADM-120 — admin inventory snapshot read foundation (inventory.read).
+ * Reveal remains privileged mutation path.
+ */
+
+import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
-import { structuralEnvelopeSchema } from "@/shared/api/schemas";
+import {
+  adminInventoryEnvelopeSchema,
+  structuralEnvelopeSchema,
+} from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type {
@@ -8,6 +17,7 @@ import type {
   AdminStockItemSecret,
   AdminStockProduct,
 } from "./contracts";
+import { mapAdminInventorySnapshotDto } from "./mappers";
 import {
   mockInventorySchema,
   mockStockItemSecret,
@@ -15,6 +25,8 @@ import {
   mockStockProducts,
 } from "./mock";
 import { appendMockAuditEvent } from "./mock-audit";
+
+type InventoryEnvelope = z.infer<typeof adminInventoryEnvelopeSchema>;
 
 export type AdminInventorySnapshot = {
   products: AdminStockProduct[];
@@ -34,12 +46,11 @@ export async function getInventory(
   signal?: AbortSignal,
 ): Promise<AdminInventorySnapshot> {
   if (shouldUseMockFixtures("adminRead")) return demoInventory();
-  const response = await apiRequest<ApiEnvelope<AdminInventorySnapshot>>(
-    "/v1/admin/inventory",
-    {
-    schema: structuralEnvelopeSchema, signal },
-  );
-  return response.data;
+  const response = await apiRequest<InventoryEnvelope>("/v1/admin/inventory", {
+    schema: adminInventoryEnvelopeSchema,
+    signal,
+  });
+  return mapAdminInventorySnapshotDto(response.data);
 }
 
 export type RevealInventoryItemInput = {

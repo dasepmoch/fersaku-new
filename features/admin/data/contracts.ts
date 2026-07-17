@@ -1,3 +1,60 @@
+/** ADM-120 — command-center KPI view model (server aggregates + asOf). */
+export type AdminOverview = {
+  merchantCount: number;
+  buyerCount: number;
+  orderCount: number;
+  paymentCount: number;
+  pendingWithdrawalCount: number;
+  openKycCount: number;
+  grossVolumePaidIdr: number;
+  platformFeePaidIdr: number;
+  paymentSuccessRateBps: number;
+  /** Envelope meta.timestamp — never client-fabricated. */
+  asOf: string;
+};
+
+/** Platform volume chart series: server IDR + display height only. */
+export type AdminPlatformVolumePoint = {
+  /** Server gross paid IDR for the hour bucket. */
+  amountIdr: number;
+  /** Relative bar height 0–100 for existing chart geometry. */
+  heightPct: number;
+};
+
+export type AdminPlatformVolumeSeries = {
+  points: AdminPlatformVolumePoint[];
+  asOf: string;
+};
+
+/** Shared admin list filter bag (query-key + wire). */
+export type AdminListFilters = {
+  q?: string;
+  status?: string;
+  source?: string;
+  cursor?: string;
+  limit?: number;
+  /** NumberedPageList profile when BE/meta supports page/pageSize. */
+  page?: number;
+  pageSize?: number;
+  from?: string;
+  to?: string;
+};
+
+/**
+ * Bounded list page foundation for ADM-200+.
+ * BE currently returns cursor meta; numbered fields optional when present.
+ */
+export type AdminBoundedList<T> = {
+  items: T[];
+  hasMore: boolean;
+  nextCursor: string | null;
+  page?: number;
+  pageSize?: number;
+  totalCount?: number;
+  pageCount?: number;
+  asOf: string;
+};
+
 export type AdminMerchant = {
   id: string;
   name: string;
