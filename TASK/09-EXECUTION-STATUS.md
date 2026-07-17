@@ -78,9 +78,9 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `INT-150` | P0 | INT-120 | FND | completed @nikki/opencode · 2026-07-17 12:45 WIB · claim released | Membership capabilities/current store/tenant guards | TASK/evidence/INT-150/20260717-1245-nikki.md |
 | `[x]` | `INT-160` | P1 | INT-100, INT-120, INT-150 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Safe query/cache/mutation/idempotency policy | TASK/evidence/INT-160/20260717-1300-nikki.md · shared/query/* · tests/unit/int-160-query-mutation.test.ts |
 | `[x]` | `INT-170` | P1 | INT-100, INT-120, UI-050 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Error/redaction/mock reachability boundary | TASK/evidence/INT-170/20260717-1300-nikki.md · shared/observability/* · shared/data/mock-interaction.ts · shared/api/error-presentation.ts · tests/unit/int-170-error-mock-observability.test.ts · architecture-boundaries.test.ts |
-| `[ ]` | `INT-175` | P1 | INT-000, INT-120; INT-180/185 if capability active | FND/RTM | — | User-scoped personal media contract | — |
-| `[ ]` | `INT-180` | P0 live | INT-000, INT-030 | RTM | — | Real adapters, callback security, truthful G4 | — |
-| `[ ]` | `INT-185` | P0 live | INT-150, INT-180 | RTM | — | HA scheduler/lifecycle jobs | — |
+| `[x]` | `INT-175` | P1 | INT-000, INT-120; INT-180/185 if capability active | FND/RTM | completed @nikki/opencode · 2026-07-17 · claim released | User-scoped personal media: launch DISABLED/OUT-OF-SCOPE + store-object forbid gate | TASK/evidence/INT-175/20260717-1257-nikki.md · tests/unit/architecture-boundaries.test.ts |
+| `[x]` | `INT-180` | P0 live | INT-000, INT-030 | RTM | completed @nikki/opencode · 2026-07-17 · claim released | Real adapters, callback security, truthful G4 | TASK/evidence/INT-180/20260717-int180-nikki.md |
+| `[x]` | `INT-185` | P0 live | INT-150, INT-180 | RTM | completed @nikki/opencode · 2026-07-17 · claim released | HA scheduler/lifecycle jobs | TASK/evidence/INT-185/20260717-int185-nikki.md |
 | `[ ]` | `INT-190` | P0 | INT-010, INT-020, INT-025, INT-030, INT-100, INT-110, INT-120, INT-130, INT-140, INT-150, QLT-110, QLT-215; co-evolve AUT-100/PUB-100/SEL-100 | FND/QA | — | First public + authenticated API vertical slice | — |
 
 ### 3.3 Public, auth, checkout, and buyer

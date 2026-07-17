@@ -94,6 +94,10 @@ type RouterDeps struct {
 	// RateLimiter is optional; nil disables rate limiting.
 	RateLimiter middleware.Limiter
 
+	// XenditWebhookToken for inbound payment + disbursement callback auth (INT-180).
+	// Never logged; constant-time compared at handlers.
+	XenditWebhookToken string
+
 	// RequestTimeout bounds handler context (default 30s).
 	RequestTimeout time.Duration
 
@@ -706,7 +710,10 @@ func NewRouterWith(d RouterDeps) http.Handler {
 
 	// BE-350 bank / withdrawal quotes / disbursement.
 	if d.WithdrawalService != nil {
-		wh := &handlers.WithdrawalHandler{Svc: d.WithdrawalService}
+		wh := &handlers.WithdrawalHandler{
+			Svc:          d.WithdrawalService,
+			WebhookToken: d.XenditWebhookToken,
+		}
 		// Separate subpaths to avoid chi Mount conflict with catalog /v1/stores/{storeId}.
 		r.Route("/v1/stores/{storeId}/bank-accounts", func(br chi.Router) {
 			br.Use(handlers.RequireAuth)

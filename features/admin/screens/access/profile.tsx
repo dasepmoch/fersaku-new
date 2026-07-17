@@ -155,7 +155,7 @@ function AdminProfileSettings() {
                 <button
                   type="button"
                   disabled
-                  title="Photo uploads are available after object storage is connected"
+                  title="Personal photo upload is out of scope for launch (INT-175 deferred)"
                   className="rounded-lg border border-[#dce1e9] bg-white px-3 py-2 text-[8px] font-bold disabled:cursor-not-allowed"
                 >
                   Upload new photo

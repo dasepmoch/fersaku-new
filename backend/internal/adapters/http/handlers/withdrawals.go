@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/presenters"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/reqctx"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
+	"github.com/dasepmoch/fersaku-new/backend/internal/domain/payments"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/withdrawals"
 	"github.com/dasepmoch/fersaku-new/backend/internal/platform/cursor"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
@@ -21,6 +23,9 @@ import (
 // WithdrawalHandler serves seller bank/quote/withdrawal + minimal admin review (BE-350).
 type WithdrawalHandler struct {
 	Svc *application.WithdrawalService
+	// WebhookToken is XENDIT_WEBHOOK_TOKEN for disbursement ingress (INT-180).
+	// Constant-time compared; empty rejects all.
+	WebhookToken string
 }
 
 func (h *WithdrawalHandler) ListBanks(w http.ResponseWriter, r *http.Request) {
@@ -358,14 +363,44 @@ func (h *WithdrawalHandler) AdminReview(w http.ResponseWriter, r *http.Request) 
 	presenters.WriteData(w, r, http.StatusOK, withdrawalDTO(wd))
 }
 
-// DisbursementWebhook is POST /v1/webhooks/xendit/disbursement (token verified by caller or shared pipeline).
+// DisbursementWebhook is POST /v1/webhooks/xendit/disbursement.
+// INT-180: same ingress security as payment callbacks — bounded body, constant-time token,
+// reject invalid/oversize without mutating withdrawal state.
 func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.Request) {
 	if h.Svc == nil {
 		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Withdrawals unavailable"))
 		return
 	}
-	// Token check: reuse X-Callback-Token constant-time via CallbackService path when available;
-	// for BE-350 core, accept body with provider reference and status after optional token header presence.
+	// Bounded raw body (+1 to detect oversize).
+	r.Body = http.MaxBytesReader(w, r.Body, payments.MaxCallbackBodyBytes+1)
+	raw, err := io.ReadAll(r.Body)
+	if err != nil || len(raw) > payments.MaxCallbackBodyBytes {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"oversize"}`))
+		return
+	}
+	if len(raw) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"empty"}`))
+		return
+	}
+
+	token := disbursementCallbackToken(r)
+	if strings.TrimSpace(token) == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"missing_token"}`))
+		return
+	}
+	if !application.ConstantTimeTokenEqual(token, h.WebhookToken) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"invalid_token"}`))
+		return
+	}
+
 	var body struct {
 		ID             string `json:"id"`
 		ExternalID     string `json:"external_id"`
@@ -374,24 +409,55 @@ func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.R
 		Fee            *int64 `json:"fee"`
 		ProviderFee    *int64 `json:"provider_fee"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		presenters.WriteAppError(w, r, apperr.Validation(apperr.CodeValidationFailed, "invalid body"))
+	if err := json.Unmarshal(raw, &body); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"malformed"}`))
 		return
 	}
 	ref := body.ID
 	if ref == "" {
 		ref = body.ExternalID
 	}
+	if ref == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"missing_ref"}`))
+		return
+	}
 	fee := body.Fee
 	if fee == nil {
 		fee = body.ProviderFee
 	}
 	if err := h.Svc.HandleDisbursementCallback(r.Context(), ref, body.Status, fee, body.Amount); err != nil {
-		// Acknowledge durable acceptance; business mismatch still 200 to avoid retry storms when quarantined
+		// Business not-found/quarantine: ack 200 when resource missing to limit retry storms;
+		// auth already passed. Persistence failures surface as 5xx.
+		if ae, ok := apperr.AsAppError(err); ok && ae.Kind == apperr.KindNotFound {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok":true,"quarantined":true}`))
+			return
+		}
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	presenters.WriteData(w, r, http.StatusOK, map[string]any{"received": true})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
+func disbursementCallbackToken(r *http.Request) string {
+	if t := strings.TrimSpace(r.Header.Get("X-Callback-Token")); t != "" {
+		return t
+	}
+	if t := strings.TrimSpace(r.Header.Get("x-callback-token")); t != "" {
+		return t
+	}
+	auth := strings.TrimSpace(r.Header.Get("Authorization"))
+	if strings.HasPrefix(strings.ToLower(auth), "bearer ") {
+		return strings.TrimSpace(auth[7:])
+	}
+	return ""
 }
 
 func bankDTO(b withdrawals.BankAccount) map[string]any {

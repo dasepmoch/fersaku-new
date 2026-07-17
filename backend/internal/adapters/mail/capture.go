@@ -14,7 +14,7 @@ type Message struct {
 	Body    string
 }
 
-// Capture stores sent messages in memory for tests.
+// Capture stores sent messages in memory for tests / local nonprod.
 type Capture struct {
 	mu   sync.Mutex
 	msgs []Message
@@ -23,6 +23,9 @@ type Capture struct {
 func NewCapture() *Capture {
 	return &Capture{}
 }
+
+// Kind returns adapter kind for readiness.
+func (*Capture) Kind() string { return "capture" }
 
 func (c *Capture) Send(_ context.Context, to, subject, body string) error {
 	c.mu.Lock()

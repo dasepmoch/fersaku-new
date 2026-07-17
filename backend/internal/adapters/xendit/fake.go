@@ -87,6 +87,9 @@ func NewFake() *Fake {
 // Name returns provider name for logging.
 func (f *Fake) Name() string { return "xendit-fake" }
 
+// IsFake reports adapter kind for readiness (true for fake).
+func (f *Fake) IsFake() bool { return true }
+
 // CreateQRIS creates a deterministic QRIS payment. Idempotent on ExternalID.
 func (f *Fake) CreateQRIS(ctx context.Context, in ports.CreateQRISInput) (ports.CreateQRISResult, error) {
 	_ = ctx

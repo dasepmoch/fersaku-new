@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,6 +27,8 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/config"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/admin"
 	domainauth "github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/dasepmoch/fersaku-new/backend/internal/jobs"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 	"github.com/dasepmoch/fersaku-new/backend/internal/version"
@@ -35,6 +38,28 @@ import (
 type DBPinger interface {
 	Ping(ctx context.Context) error
 }
+
+// paymentAdapter is QRIS + disbursement (Fake or Real).
+type paymentAdapter interface {
+	ports.QRISProvider
+	ports.DisbursementProvider
+	Name() string
+	IsFake() bool
+}
+
+// RedisPinger is satisfied by redis.Client and redis.Noop wrappers.
+type RedisPinger interface {
+	Ping(ctx context.Context) error
+	Kind() string
+	Close() error
+}
+
+// noopRedis adapts redis.Noop to RedisPinger.
+type noopRedis struct{}
+
+func (noopRedis) Ping(context.Context) error { return nil }
+func (noopRedis) Kind() string               { return "noop" }
+func (noopRedis) Close() error               { return nil }
 
 // Runtime holds shared dependencies for api and worker.
 type Runtime struct {
@@ -48,10 +73,20 @@ type Runtime struct {
 	DB *postgres.Pool
 	// DBPing is always non-nil (Pool or Noop) for readiness checks.
 	DBPing DBPinger
-	Redis  redis.Noop
-	Xendit *xendit.Fake
-	R2     r2.Noop
-	Health *application.HealthService
+	// Redis is real client on staging/production; noop only local/test.
+	Redis RedisPinger
+	// Payment is Fake (local/test) or Real (live mode).
+	Payment paymentAdapter
+	// XenditFake is non-nil only when fake adapter selected (local/test).
+	XenditFake *xendit.Fake
+	// Adapter kinds for truthful readiness/admin health (never secrets).
+	XenditKind string
+	MailKind   string
+	RedisKind  string
+	// RateLimiter is process-local on local/test; Redis-backed on staging/production.
+	RateLimiter middleware.Limiter
+	R2          r2.Noop
+	Health      *application.HealthService
 	// Auth is wired when DATABASE_URL is set (BE-120).
 	Auth *application.AuthService
 	// Authz is wired when DATABASE_URL is set (BE-130).
@@ -109,6 +144,7 @@ type Runtime struct {
 }
 
 // NewRuntime loads config and wires adapters. Uses real pgx pool when DATABASE_URL is set.
+// INT-180: staging/production reject fake/noop payment, mail, redis, and storage authority.
 func NewRuntime(serviceName string) (*Runtime, error) {
 	cfg, err := config.Load(serviceName)
 	if err != nil {
@@ -118,10 +154,60 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	clock := observability.SystemClock{}
 	ids := observability.NewULIDGenerator()
 	q := queue.NewFake()
-	mailer := mail.Noop{}
-	rd := redis.Noop{}
-	xd := xendit.NewFake()
 
+	// --- Mail (capture/noop local only; SMTP required on live runtime) ---
+	mailer, mailKind, err := wireMailer(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// --- Redis (noop local/test; real required on staging/production) ---
+	var rd RedisPinger = noopRedis{}
+	redisKind := "noop"
+	var redisClient *redis.Client
+	if cfg.RedisURL != "" {
+		rc, rerr := redis.NewClient(redis.Config{URL: cfg.RedisURL})
+		if rerr != nil {
+			if cfg.IsLiveRuntime() {
+				return nil, fmt.Errorf("app: redis required on staging/production: %w", rerr)
+			}
+			log.Warn("redis unavailable; using noop", "err", rerr.Error())
+		} else {
+			redisClient = rc
+			rd = rc
+			redisKind = "redis"
+		}
+	} else if cfg.IsLiveRuntime() {
+		return nil, fmt.Errorf("app: REDIS_URL required on staging/production (INT-180)")
+	}
+
+	// --- Xendit payment + disbursement ---
+	accountScope := cfg.XenditAccountScope
+	if accountScope == "" {
+		accountScope = "xendit-primary"
+	}
+	var pay paymentAdapter
+	var xdFake *xendit.Fake
+	xenditKind := "fake"
+	if cfg.UseFakeXendit() {
+		if cfg.IsLiveRuntime() {
+			return nil, fmt.Errorf("app: XENDIT_MODE=fake is forbidden on staging/production (INT-180)")
+		}
+		xdFake = xendit.NewFake()
+		xdFake.AccountScope = accountScope
+		pay = xdFake
+		xenditKind = "fake"
+	} else {
+		real, xerr := xendit.NewReal(accountScope, cfg.XenditSecretKey, "")
+		if xerr != nil {
+			return nil, fmt.Errorf("app: xendit real adapter: %w", xerr)
+		}
+		real.Log = log
+		pay = real
+		xenditKind = "real"
+	}
+
+	// --- Object store ---
 	var objStore ports.ObjectStore = r2.Noop{}
 	if cfg.R2Endpoint != "" && cfg.R2AccessKeyID != "" && cfg.R2SecretAccessKey != "" {
 		client, cerr := r2.NewClient(r2.Config{
@@ -140,11 +226,22 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			_ = r2.EnsureBuckets(bctx, client, cfg.R2BucketPublic, cfg.R2BucketPrivate)
 			bcancel()
 		}
+	} else if cfg.IsLiveRuntime() && cfg.AppEnv == config.EnvProduction {
+		return nil, fmt.Errorf("app: object storage (R2) required when APP_ENV=production (INT-180)")
+	}
+
+	// --- Rate limiter: process-local local/test; Redis on live ---
+	var rateLimiter middleware.Limiter = middleware.NewTokenBucketLimiter(120, 20)
+	if cfg.RequiresDistributedLimiter() {
+		if redisClient == nil {
+			return nil, fmt.Errorf("app: redis rate limiter required on staging/production (INT-180)")
+		}
+		rateLimiter = redis.NewTokenBucketLimiter(redisClient, 120, time.Minute)
 	}
 
 	var pool *postgres.Pool
 	var dbPing DBPinger = postgres.Noop{}
-	adapters := "fake/noop"
+	adapters := xenditKind + "+" + mailKind + "+" + redisKind
 	if cfg.DatabaseURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -153,20 +250,55 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			return nil, fmt.Errorf("app: open database: %w", err)
 		}
 		dbPing = pool
-		adapters = "postgres+fake"
+		adapters = "postgres+" + adapters
 		if objStore.Configured() {
-			adapters = "postgres+r2"
+			adapters += "+r2"
 		}
+	} else if cfg.IsLiveRuntime() {
+		return nil, fmt.Errorf("app: DATABASE_URL required on staging/production")
 	}
 
-	health := application.NewHealthService(
+	// Truthful readiness: never report OK for fake/noop on live runtime.
+	healthChecks := []func() error{
 		func() error {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			return dbPing.Ping(ctx)
 		},
-		func() error { return rd.Ping() },
-	)
+	}
+	if cfg.IsLiveRuntime() || redisKind == "redis" {
+		healthChecks = append(healthChecks, func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if rd.Kind() == "noop" && cfg.IsLiveRuntime() {
+				return fmt.Errorf("redis: noop not allowed on live runtime")
+			}
+			return rd.Ping(ctx)
+		})
+	}
+	if cfg.IsLiveRuntime() {
+		healthChecks = append(healthChecks, func() error {
+			if xenditKind == "fake" || pay == nil || pay.IsFake() {
+				return fmt.Errorf("xendit: fake adapter not allowed on live runtime")
+			}
+			return nil
+		})
+		healthChecks = append(healthChecks, func() error {
+			if mailKind == "noop" || mailKind == "capture" {
+				return fmt.Errorf("mail: %s not allowed on live runtime", mailKind)
+			}
+			return nil
+		})
+		if cfg.AppEnv == config.EnvProduction {
+			healthChecks = append(healthChecks, func() error {
+				if !objStore.Configured() {
+					return fmt.Errorf("object store: not configured")
+				}
+				return nil
+			})
+		}
+	}
+	health := application.NewHealthService(healthChecks...)
 
 	var authSvc *application.AuthService
 	var authzSvc *application.AuthzService
@@ -289,7 +421,8 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock: clock,
 			Log:   log,
 		}
-		// BE-310: hosted checkout uses fake Xendit in local/test; SANDBOX mode.
+		// payment_mode is financial identity (SANDBOX|LIVE), not APP_ENV.
+		// Production defaults LIVE; staging/local default SANDBOX with real or fake provider.
 		paymentMode := "SANDBOX"
 		if cfg.AppEnv == config.EnvProduction {
 			paymentMode = "LIVE"
@@ -309,13 +442,13 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Coupons:         couponSvc,
 			Inventory:       inventorySvc,
 			Analytics:       analyticsSvc,
-			QRIS:            xd,
+			QRIS:            pay,
 			IDs:             ids,
 			Clock:           clock,
 			Log:             log,
 			PaymentMode:     paymentMode,
-			AccountScope:    xd.AccountScope,
-			SimulateEnabled: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			AccountScope:    accountScope,
+			SimulateEnabled: (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) && xdFake != nil,
 			TokenSecret:     cfg.SessionSecret,
 		}
 		// BE-320: QRIS gateway shares fee service + QRIS provider; mode from API key.
@@ -323,12 +456,12 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Store:         postgres.NewGatewayRepo(pool.Pool()),
 			Fees:          feeSvc,
 			Analytics:     analyticsSvc,
-			QRIS:          xd,
+			QRIS:          pay,
 			IDs:           ids,
 			Clock:         clock,
 			Log:           log,
 			KeyHashSecret: cfg.SessionSecret,
-			AccountScope:  xd.AccountScope,
+			AccountScope:  accountScope,
 		}
 		// BE-340: unified ledger; local/test force immediate available (delay 0 policy via ForceImmediateRelease).
 		ledgerSvc = &application.LedgerService{
@@ -374,7 +507,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock:              clock,
 			Log:                log,
 			WebhookToken:       webhookToken,
-			AccountScope:       cfg.XenditAccountScope,
+			AccountScope:       accountScope,
 			DefaultPaymentMode: paymentMode,
 			TokenSecret:        cfg.SessionSecret,
 		}
@@ -391,12 +524,12 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Store:              postgres.NewWithdrawalRepo(pool.Pool()),
 			Ledger:             ledgerSvc,
 			Fees:               feeSvc,
-			Disburse:           xd,
+			Disburse:           pay,
 			IDs:                ids,
 			Clock:              clock,
 			Log:                log,
 			EncryptionKey:      encKey,
-			AccountScope:       cfg.XenditAccountScope,
+			AccountScope:       accountScope,
 			DefaultPaymentMode: paymentMode,
 			ForceAutoApprove:   &auto,
 		}
@@ -469,7 +602,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock:       clock,
 			Log:         log,
 			ComponentHealth: func(ctx context.Context) []admin.ComponentHealth {
-				return platformComponentHealth(ctx, pool, clock)
+				return platformComponentHealth(ctx, pool, clock, xenditKind, mailKind, redisKind, rd, objStore, cfg)
 			},
 		}
 		// BE-520: admin impersonation (derived session + scope gate).
@@ -513,7 +646,12 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		DB:            pool,
 		DBPing:        dbPing,
 		Redis:         rd,
-		Xendit:        xd,
+		Payment:       pay,
+		XenditFake:    xdFake,
+		XenditKind:    xenditKind,
+		MailKind:      mailKind,
+		RedisKind:     redisKind,
+		RateLimiter:   rateLimiter,
 		R2:            r2.Noop{},
 		ObjectStore:   objStore,
 		Health:        health,
@@ -604,10 +742,54 @@ func (rt *Runtime) Close() error {
 	if rt.DB != nil {
 		rt.DB.Close()
 	}
+	if rt.Redis != nil {
+		_ = rt.Redis.Close()
+	}
 	if rt.Queue != nil {
 		return rt.Queue.Close()
 	}
 	return nil
+}
+
+func effectiveWebhookToken(cfg config.Config) string {
+	if t := strings.TrimSpace(cfg.XenditWebhookToken); t != "" {
+		return t
+	}
+	if cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest {
+		return "local-xendit-webhook-token"
+	}
+	return ""
+}
+
+// wireMailer selects capture (local/test), smtp (live), or fails closed.
+func wireMailer(cfg config.Config) (ports.Mailer, string, error) {
+	mode := cfg.EffectiveMailMode()
+	switch mode {
+	case "noop":
+		if cfg.IsLiveRuntime() {
+			return nil, "", fmt.Errorf("app: mail noop forbidden on staging/production (INT-180)")
+		}
+		return mail.Noop{}, "noop", nil
+	case "capture":
+		if cfg.IsLiveRuntime() {
+			return nil, "", fmt.Errorf("app: mail capture forbidden on staging/production (INT-180)")
+		}
+		return mail.NewCapture(), "capture", nil
+	case "smtp":
+		s, err := mail.NewSMTP(mail.SMTPConfig{
+			Host:     cfg.MailSMTPHost,
+			Port:     cfg.MailSMTPPort,
+			From:     cfg.MailFrom,
+			Username: cfg.MailSMTPUser,
+			Password: cfg.MailSMTPPassword,
+		})
+		if err != nil {
+			return nil, "", fmt.Errorf("app: smtp mailer: %w", err)
+		}
+		return s, "smtp", nil
+	default:
+		return nil, "", fmt.Errorf("app: unknown MAIL_MODE %q", mode)
+	}
 }
 
 // RunAPI starts the HTTP server and blocks until SIGINT/SIGTERM or ctx cancel.
@@ -667,8 +849,9 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		ImpersonationService: rt.Impersonation,
 		SecureCookies:        rt.Config.AppEnv == config.EnvProduction || rt.Config.AppEnv == config.EnvStaging,
 		SameSiteStrict:    false, // Lax: documented default for buyer/seller storefronts
-		RateLimiter:       middleware.NewTokenBucketLimiter(120, 20),
-		RequestTimeout:    30 * time.Second,
+		RateLimiter:        rt.RateLimiter,
+		XenditWebhookToken: effectiveWebhookToken(rt.Config),
+		RequestTimeout:     30 * time.Second,
 	})
 	srv := &http.Server{
 		Addr:              rt.Config.HTTPAddr,
@@ -704,126 +887,52 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 	}
 }
 
-// RunWorker starts the worker (no public listener) and waits on signal/ctx.
+// RunWorker starts the HA job registry runner (INT-185) and waits on signal/ctx.
+// Multi-replica safety is via job_leases; graceful drain stops new batches and finishes in-flight.
 func (rt *Runtime) RunWorker(ctx context.Context) error {
-	sched := jobs.Scheduler{Log: rt.Log, Queue: rt.Queue}
+	owner := rt.Config.ServiceName
+	if owner == "" {
+		owner = "fersaku-worker"
+	}
+	var pgPool *pgxpool.Pool
+	if rt.DB != nil {
+		pgPool = rt.DB.Pool()
+	}
+
+	deps := jobs.Deps{
+		Pool:          pgPool,
+		Log:           rt.Log,
+		Clock:         rt.Clock,
+		Owner:         owner,
+		Coupons:       rt.Coupons,
+		Inventory:     rt.Inventory,
+		Objects:       rt.Objects,
+		Checkout:      rt.Checkout,
+		Domains:       rt.Domains,
+		Withdrawals:   rt.Withdrawals,
+		Notifications: rt.Notifications,
+		Callbacks:     rt.Callbacks,
+		Webhooks:      rt.Webhooks,
+		Ledger:        rt.Ledger,
+		Analytics:     rt.Analytics,
+		Impersonation: rt.Impersonation,
+	}
+	reg := jobs.BuildRegistry(deps)
+	leases := &jobs.LeaseStore{Pool: pgPool, Clock: rt.Clock}
+	runner := &jobs.Runner{
+		Registry: reg,
+		Leases:   leases,
+		Log:      rt.Log,
+		Clock:    rt.Clock,
+		Owner:    owner,
+		Tick:     time.Second,
+	}
+	sched := jobs.Scheduler{Log: rt.Log, Queue: rt.Queue, Runner: runner}
+
 	if rt.Config.WorkerRunOnce {
-		nNotif, nCb, nWh, nRel := 0, 0, 0, 0
-		var err error
-		if rt.DB != nil && rt.Notifications != nil {
-			w := &jobs.NotificationWorker{
-				Pool: rt.DB.Pool(),
-				Svc:  rt.Notifications,
-				Log:  rt.Log,
-			}
-			nNotif, err = w.ProcessReady(ctx, 50)
-		}
-		if rt.DB != nil && rt.Callbacks != nil {
-			cw := &jobs.CallbackWorker{
-				Pool: rt.DB.Pool(),
-				Svc:  rt.Callbacks,
-				Log:  rt.Log,
-			}
-			nCb, _ = cw.ProcessReady(ctx, 50)
-		}
-		if rt.DB != nil && rt.Webhooks != nil {
-			ww := &jobs.WebhookWorker{
-				Pool: rt.DB.Pool(),
-				Svc:  rt.Webhooks,
-				Log:  rt.Log,
-			}
-			nWh, _ = ww.ProcessReady(ctx, 50)
-		}
-		if rt.Ledger != nil {
-			nRel, _ = rt.Ledger.ReleaseDueSettlements(ctx, 50)
-		}
-		if rt.Analytics != nil {
-			_ = rt.Analytics.RunRetentionDeletion(ctx)
-		}
-		rt.Log.Info("worker ready (run-once mode)", "notification_outbox_processed", nNotif, "callback_outbox_processed", nCb, "seller_webhook_outbox_processed", nWh, "settlement_releases", nRel)
+		err := runner.RunOnce(ctx)
+		rt.Log.Info("worker ready (run-once mode)", "jobs", len(reg.All()), "owner", owner)
 		return err
-	}
-	// Poll notification + callback outbox until cancelled.
-	if rt.DB != nil && rt.Notifications != nil {
-		w := &jobs.NotificationWorker{
-			Pool: rt.DB.Pool(),
-			Svc:  rt.Notifications,
-			Log:  rt.Log,
-		}
-		go func() {
-			t := time.NewTicker(2 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-t.C:
-					if _, err := w.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
-						rt.Log.Warn("notification outbox poll", "err", err.Error())
-					}
-				}
-			}
-		}()
-	}
-	if rt.DB != nil && rt.Callbacks != nil {
-		cw := &jobs.CallbackWorker{
-			Pool: rt.DB.Pool(),
-			Svc:  rt.Callbacks,
-			Log:  rt.Log,
-		}
-		go func() {
-			t := time.NewTicker(2 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-t.C:
-					if _, err := cw.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
-						rt.Log.Warn("callback outbox poll", "err", err.Error())
-					}
-				}
-			}
-		}()
-	}
-	// BE-420: outbound seller-webhook delivery poller.
-	if rt.DB != nil && rt.Webhooks != nil {
-		ww := &jobs.WebhookWorker{
-			Pool: rt.DB.Pool(),
-			Svc:  rt.Webhooks,
-			Log:  rt.Log,
-		}
-		go func() {
-			t := time.NewTicker(2 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-t.C:
-					if _, err := ww.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
-						rt.Log.Warn("seller webhook outbox poll", "err", err.Error())
-					}
-				}
-			}
-		}()
-	}
-	// BE-340: pending→available settlement release poller.
-	if rt.Ledger != nil {
-		go func() {
-			t := time.NewTicker(5 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-t.C:
-					if _, err := rt.Ledger.ReleaseDueSettlements(ctx, 50); err != nil && rt.Log != nil {
-						rt.Log.Warn("settlement release poll", "err", err.Error())
-					}
-				}
-			}
-		}()
 	}
 	return sched.Run(ctx)
 }
@@ -837,50 +946,79 @@ func authHashToken(raw, secret string) string {
 	return domainauth.HashTokenKeyed(raw, secret)
 }
 
-// platformComponentHealth probes Xendit/R2/Redis/mail without exposing secrets (BE-530).
-func platformComponentHealth(ctx context.Context, pool *postgres.Pool, clock ports.Clock) []admin.ComponentHealth {
+// platformComponentHealth probes Xendit/R2/Redis/mail without exposing secrets (BE-530 / INT-180).
+// Fake/noop on live runtime is reported DOWN, never OK.
+func platformComponentHealth(
+	ctx context.Context,
+	pool *postgres.Pool,
+	clock ports.Clock,
+	xenditKind, mailKind, redisKind string,
+	rd RedisPinger,
+	objStore ports.ObjectStore,
+	cfg config.Config,
+) []admin.ComponentHealth {
 	now := time.Now().UTC().Format(time.RFC3339)
 	if clock != nil {
 		now = clock.Now().UTC().Format(time.RFC3339)
 	}
 	out := make([]admin.ComponentHealth, 0, 4)
+	live := cfg.IsLiveRuntime()
 
-	// Xendit: local/fake mode always OK; never include API keys.
-	out = append(out, admin.ComponentHealth{
-		Component: "xendit",
-		Status:    "OK",
-		CheckedAt: now,
-		Message:   "adapter reachable (no secrets)",
-	})
+	// Xendit: never include API keys.
+	xStatus, xMsg := "OK", "adapter kind="+xenditKind
+	if xenditKind == "fake" {
+		if live {
+			xStatus, xMsg = "DOWN", "fake adapter forbidden on live runtime"
+		} else {
+			xStatus, xMsg = "OK", "fake adapter (local/test only)"
+		}
+	} else if xenditKind != "real" {
+		xStatus, xMsg = "DOWN", "xendit adapter not configured"
+	}
+	out = append(out, admin.ComponentHealth{Component: "xendit", Status: xStatus, CheckedAt: now, Message: xMsg})
 
-	// R2: noop Ready in local.
-	r2Status := "OK"
-	r2Msg := "object store ready"
-	if !(r2.Noop{}).Ready() {
-		r2Status = "DEGRADED"
-		r2Msg = "object store not ready"
+	// R2 / object store
+	r2Status, r2Msg := "OK", "object store configured"
+	if objStore == nil || !objStore.Configured() {
+		if live && cfg.AppEnv == config.EnvProduction {
+			r2Status, r2Msg = "DOWN", "object store not configured"
+		} else {
+			r2Status, r2Msg = "DEGRADED", "object store noop/unconfigured"
+		}
 	}
 	out = append(out, admin.ComponentHealth{Component: "r2", Status: r2Status, CheckedAt: now, Message: r2Msg})
 
-	// Redis: non-authoritative; noop Ping.
-	rdStatus := "OK"
-	rdMsg := "redis optional/noop"
-	if err := (redis.Noop{}).Ping(); err != nil {
-		rdStatus = "DEGRADED"
-		rdMsg = "redis ping failed"
+	// Redis
+	rdStatus, rdMsg := "OK", "redis kind="+redisKind
+	if redisKind == "noop" || rd == nil || rd.Kind() == "noop" {
+		if live {
+			rdStatus, rdMsg = "DOWN", "redis noop forbidden on live runtime"
+		} else {
+			rdStatus, rdMsg = "OK", "redis optional/noop (local/test)"
+		}
+	} else {
+		pctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		err := rd.Ping(pctx)
+		cancel()
+		if err != nil {
+			rdStatus, rdMsg = "DEGRADED", "redis ping failed"
+		}
 	}
 	out = append(out, admin.ComponentHealth{Component: "redis", Status: rdStatus, CheckedAt: now, Message: rdMsg})
 
-	// Mail: capture/noop — report configured without addresses/secrets.
-	out = append(out, admin.ComponentHealth{
-		Component: "mail",
-		Status:    "OK",
-		CheckedAt: now,
-		Message:   "mailer configured (no secrets)",
-	})
+	// Mail
+	mStatus, mMsg := "OK", "mailer kind="+mailKind
+	if mailKind == "noop" || mailKind == "capture" {
+		if live {
+			mStatus, mMsg = "DOWN", "mail "+mailKind+" forbidden on live runtime"
+		} else {
+			mStatus, mMsg = "OK", "mailer "+mailKind+" (nonprod)"
+		}
+	} else if mailKind != "smtp" {
+		mStatus, mMsg = "DOWN", "mailer not configured"
+	}
+	out = append(out, admin.ComponentHealth{Component: "mail", Status: mStatus, CheckedAt: now, Message: mMsg})
 
-	// Postgres is not listed here (already on /health/ready); keep components to Xendit/R2/Redis/mail.
-	_ = ctx
 	_ = pool
 	return out
 }

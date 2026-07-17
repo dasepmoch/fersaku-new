@@ -503,7 +503,7 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 - [ ] Bank CRUD/verify/make-primary/delete uses server validation/lookup; never trust typed bank label/account owner.
 - [ ] Mask account number; raw values not log/query key; sensitive changes require recent proof and trigger withdrawal lock according to backend policy.
 - [ ] Remove fake audit append/local saved truth on API path.
-- [ ] Personal avatar bila aktif memakai user-scoped `INT-175`; business/store logo memakai store-scoped asset lifecycle `SEL-230`. Jangan memakai store object ownership untuk personal admin/buyer/seller avatar.
+- [x] Personal avatar launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Business/store logo remains store-scoped `SEL-230`. Never use store object ownership for personal avatar.
 - [ ] Reuse shared auth/security adapters dari `AUT-120`; task ini hanya bind seller settings screens.
 
 ### Tests/AC

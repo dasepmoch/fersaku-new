@@ -187,4 +187,56 @@ func setMinimalProduction(t *testing.T) {
 	t.Setenv("R2_BUCKET_PUBLIC", "fersaku-public")
 	t.Setenv("R2_ACCESS_KEY_ID", "r2-access-key")
 	t.Setenv("R2_SECRET_ACCESS_KEY", "r2-secret-key")
+	// INT-180: production requires real SMTP (secrets owner-filled).
+	t.Setenv("MAIL_MODE", "smtp")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_SMTP_PORT", "587")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+}
+
+func TestStagingRejectsFakeXendit(t *testing.T) {
+	t.Setenv("APP_ENV", "staging")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("SESSION_SECRET", "staging-session-secret-16")
+	t.Setenv("CSRF_SECRET", "staging-csrf-secret")
+	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "fake") {
+		t.Fatalf("expected staging fake xendit forbidden, got %v", err)
+	}
+}
+
+func TestStagingRejectsCaptureMail(t *testing.T) {
+	t.Setenv("APP_ENV", "staging")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "live")
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_staging_test")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_staging")
+	t.Setenv("SESSION_SECRET", "staging-session-secret-16")
+	t.Setenv("CSRF_SECRET", "staging-csrf-secret")
+	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
+	t.Setenv("MAIL_MODE", "capture")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "capture") {
+		t.Fatalf("expected staging capture mail forbidden, got %v", err)
+	}
+}
+
+func TestProductionRejectsNoopMail(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("MAIL_MODE", "noop")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "noop") {
+		t.Fatalf("expected production noop mail forbidden, got %v", err)
+	}
 }

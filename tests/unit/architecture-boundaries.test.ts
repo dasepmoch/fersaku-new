@@ -472,6 +472,85 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("INT-175: forbids store-scoped objects for personal profile media", () => {
+    /**
+     * Personal avatar/photo is launch-deferred (DISABLED/OUT-OF-SCOPE).
+     * Store object routes (`/v1/stores/{storeId}/objects...`) are for product/store
+     * assets only (SEL-230). Profile surfaces must not call them for personal media.
+     */
+    const storeObjectPath =
+      /\/v1\/stores\/[^"'`\s]+\/objects|stores\/\$\{[^}]+}\/objects|\/objects\/uploads/;
+    const personalMediaContext =
+      /avatar|photo|profile.?media|Upload new photo|PROFILE_ASSET|avatarRef/i;
+    const profileSurface =
+      /profile|buyer-profile|account\/profile|admin\/profile|seller-settings|seller-profile/i;
+
+    const violations: string[] = [];
+
+    for (const file of files) {
+      const relative = relativeSource(file);
+      if (relative.startsWith("shared/api/generated/")) continue;
+      if (relative.endsWith(".test.ts") || relative.endsWith(".test.tsx"))
+        continue;
+
+      const content = readFileSync(file, "utf8");
+      if (!storeObjectPath.test(content)) continue;
+
+      const isProfileSurface =
+        profileSurface.test(relative) || profileSurface.test(content);
+      const isPersonalMedia =
+        personalMediaContext.test(relative) ||
+        personalMediaContext.test(content);
+
+      // Profile presentation/adapters must never wire store object upload for personal media
+      if (
+        (relative.startsWith("features/") ||
+          relative.startsWith("app/") ||
+          relative.startsWith("components/")) &&
+        (isProfileSurface || isPersonalMedia) &&
+        storeObjectPath.test(content)
+      ) {
+        // Seller product/store asset adapters may use store objects — only forbid when
+        // the same file also targets personal avatar/photo lifecycle.
+        const personalUploadIntent =
+          /avatarRef|Upload new photo|PROFILE_ASSET|personal.?avatar|profile.?photo|profile.?media/i.test(
+            content,
+          ) && storeObjectPath.test(content);
+        if (personalUploadIntent || (isProfileSurface && isPersonalMedia)) {
+          violations.push(
+            `${relative}: store-scoped objects must not serve personal profile media (INT-175)`,
+          );
+        }
+      }
+    }
+
+    // Authoritative disabled control: admin photo upload must remain disabled
+    const adminProfile = path.join(
+      root,
+      "features/admin/screens/access/profile.tsx",
+    );
+    const adminSource = readFileSync(adminProfile, "utf8");
+    expect(adminSource).toMatch(/Upload new photo/);
+    expect(adminSource).toMatch(/disabled/);
+    // Must not enable upload handler or store object call
+    expect(adminSource).not.toMatch(storeObjectPath);
+    expect(adminSource).not.toMatch(/\/v1\/me\/objects/);
+
+    // Buyer profile is initials-only (no upload control)
+    const buyerProfile = path.join(
+      root,
+      "features/buyer/screens/buyer-profile.tsx",
+    );
+    const buyerSource = readFileSync(buyerProfile, "utf8");
+    expect(buyerSource).not.toMatch(storeObjectPath);
+    expect(buyerSource).not.toMatch(/Upload new photo|\/v1\/me\/objects/);
+
+    expect(
+      violations,
+      "do not use /v1/stores/{storeId}/objects for personal avatar/photo",
+    ).toEqual([]);
+  });
+
   it("has no cycles between internal source modules", () => {
     const graph = new Map<string, string[]>();
     for (const file of files) {

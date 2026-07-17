@@ -55,7 +55,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Me profile | profile/settings | `GET /v1/me/profile`, `PATCH /v1/me/profile` | U | Revision, PII mapping, conflict. | BUY-120/SEL-340/ADM-230 |
 | Notification prefs | settings/profile | `GET /v1/me/notification-preferences`, `PATCH /v1/me/notification-preferences` | U | Schema/revision/CSRF. | BUY-120/SEL-340 |
 | Notifications | shared shell | `GET /v1/notifications/`, `GET /v1/notifications/unread-count`, `POST /v1/notifications/read-all`, `POST /v1/notifications/{notificationId}/read` | M | Use shared canonical recipient-scoped routes; freeze slash policy and pagination. | BUY-140/SEL-420/ADM-230/INT-000 |
-| Personal profile media | buyer/seller/admin profile | no user-scoped upload route mounted | D | Implement user-scoped upload/complete/attach via `INT-175` or keep control live-disabled; store object route is invalid. | INT-175 |
+| Personal profile media | buyer/seller/admin profile | none (launch deferred; no `/v1/me/objects`) | D | **Launch decision:** `DISABLED`/`OUT-OF-SCOPE`. Keep existing disabled controls; do not mount user-scoped upload; store object route is invalid for personal media. Re-open only with explicit product + INT-180/185. | INT-175 evidence |
 
 ## 3. Public catalog, checkout, order, delivery, invoice
 

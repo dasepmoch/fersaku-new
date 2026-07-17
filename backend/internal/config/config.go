@@ -73,9 +73,14 @@ type Config struct {
 	R2ForcePathStyle  bool
 
 	// Mail
-	MailSMTPHost string
-	MailSMTPPort string
-	MailFrom     string
+	MailSMTPHost     string
+	MailSMTPPort     string
+	MailFrom         string
+	MailSMTPUser     string
+	MailSMTPPassword string
+	// MailMode: capture|smtp|noop (empty = derived from AppEnv).
+	// capture/noop forbidden on staging/production.
+	MailMode string
 
 	// Observability
 	OTELEndpoint string
@@ -114,8 +119,11 @@ func Load(serviceName string) (Config, error) {
 		R2Region:           strings.TrimSpace(getEnv("R2_REGION", "auto")),
 		R2ForcePathStyle:   false,
 		MailSMTPHost:       strings.TrimSpace(os.Getenv("MAIL_SMTP_HOST")),
-		MailSMTPPort:       strings.TrimSpace(os.Getenv("MAIL_SMTP_PORT")),
+		MailSMTPPort:       strings.TrimSpace(getEnv("MAIL_SMTP_PORT", "587")),
 		MailFrom:           strings.TrimSpace(os.Getenv("MAIL_FROM")),
+		MailSMTPUser:       strings.TrimSpace(os.Getenv("MAIL_SMTP_USER")),
+		MailSMTPPassword:   strings.TrimSpace(os.Getenv("MAIL_SMTP_PASSWORD")),
+		MailMode:           strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_MODE"))),
 		OTELEndpoint:        strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
 		BootstrapAdminEmail: strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
 	}
@@ -215,6 +223,29 @@ func (c Config) IsProduction() bool {
 	return c.AppEnv == EnvProduction
 }
 
+// IsLiveRuntime is true for staging or production (no fake/noop authority).
+func (c Config) IsLiveRuntime() bool {
+	return c.AppEnv == EnvStaging || c.AppEnv == EnvProduction
+}
+
+// EffectiveMailMode returns capture|smtp|noop after defaults.
+// local/test default capture; staging/production require smtp.
+func (c Config) EffectiveMailMode() string {
+	m := strings.ToLower(strings.TrimSpace(c.MailMode))
+	if m != "" {
+		return m
+	}
+	if c.IsLiveRuntime() {
+		return "smtp"
+	}
+	return "capture"
+}
+
+// RequiresDistributedLimiter is true when multi-instance rate limiting is required.
+func (c Config) RequiresDistributedLimiter() bool {
+	return c.IsLiveRuntime()
+}
+
 func (c Config) validateByEnv() error {
 	switch c.AppEnv {
 	case EnvLocal, EnvTest:
@@ -228,11 +259,21 @@ func (c Config) validateByEnv() error {
 				return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN required when XENDIT_MODE=live")
 			}
 		}
+		if m := c.EffectiveMailMode(); m != "capture" && m != "smtp" && m != "noop" {
+			return fmt.Errorf("config: MAIL_MODE must be capture|smtp|noop, got %q", m)
+		}
 		return nil
 
 	case EnvStaging:
+		// INT-180: staging must not boot with fake payment authority.
 		if c.XenditMode == XenditModeFake {
-			// Staging may use fake for some tests; allow but require session secrets.
+			return fmt.Errorf("config: XENDIT_MODE=fake is forbidden when APP_ENV=staging (INT-180)")
+		}
+		if c.XenditSecretKey == "" {
+			return fmt.Errorf("config: XENDIT_SECRET_KEY is required when APP_ENV=staging")
+		}
+		if c.XenditWebhookToken == "" {
+			return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN is required when APP_ENV=staging")
 		}
 		if c.SessionSecret == "" {
 			return fmt.Errorf("config: SESSION_SECRET is required when APP_ENV=staging")
@@ -243,18 +284,16 @@ func (c Config) validateByEnv() error {
 		if c.CSRFSecret == "" {
 			return fmt.Errorf("config: CSRF_SECRET is required when APP_ENV=staging")
 		}
-		if c.XenditMode == XenditModeLive {
-			if c.XenditSecretKey == "" {
-				return fmt.Errorf("config: XENDIT_SECRET_KEY required when XENDIT_MODE=live")
-			}
-			if c.XenditWebhookToken == "" {
-				return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN required when XENDIT_MODE=live")
-			}
+		if err := c.validateLiveMail(); err != nil {
+			return err
+		}
+		if c.RedisURL == "" {
+			return fmt.Errorf("config: REDIS_URL is required when APP_ENV=staging (distributed limiter)")
 		}
 		return nil
 
 	case EnvProduction:
-		// Production fails closed (§3.4).
+		// Production fails closed (§3.4 + INT-180).
 		if c.XenditMode == XenditModeFake {
 			return fmt.Errorf("config: XENDIT_MODE=fake is forbidden when APP_ENV=production")
 		}
@@ -307,7 +346,27 @@ func (c Config) validateByEnv() error {
 		if c.R2AccessKeyID == "" || c.R2SecretAccessKey == "" {
 			return fmt.Errorf("config: R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required when APP_ENV=production")
 		}
+		if err := c.validateLiveMail(); err != nil {
+			return err
+		}
 		return nil
+	}
+	return nil
+}
+
+func (c Config) validateLiveMail() error {
+	m := c.EffectiveMailMode()
+	if m == "noop" || m == "capture" {
+		return fmt.Errorf("config: MAIL_MODE=%s is forbidden on staging/production (INT-180)", m)
+	}
+	if m != "smtp" {
+		return fmt.Errorf("config: MAIL_MODE must be smtp on staging/production, got %q", m)
+	}
+	if c.MailSMTPHost == "" {
+		return fmt.Errorf("config: MAIL_SMTP_HOST is required when mail mode is smtp")
+	}
+	if c.MailFrom == "" {
+		return fmt.Errorf("config: MAIL_FROM is required when mail mode is smtp")
 	}
 	return nil
 }

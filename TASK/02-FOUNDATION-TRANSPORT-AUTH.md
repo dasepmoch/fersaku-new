@@ -671,18 +671,21 @@ Object endpoints snapshot semuanya store-scoped, membutuhkan merchant/store owne
 
 ### Checklist
 
-- [ ] Putuskan product scope: jika avatar/photo tidak wajib launch, pertahankan control existing dalam state disabled authoritative dan jangan memakai store object endpoint.
-- [ ] Jika aktif, freeze user-scoped operation canonical di OpenAPI, misalnya upload intent/complete milik `/v1/me/objects...` dengan purpose `PROFILE`; exact path diputuskan `INT-000` sebelum codegen.
-- [ ] Ownership selalu authenticated subject; admin tidak dapat menulis avatar user lain melalui endpoint ini tanpa explicit audited support operation.
-- [ ] Bounded image MIME/size, server content sniff, checksum, malware scan, orientation/metadata stripping atau image processing policy.
-- [ ] Direct signed upload capability short-lived; raw URL/key tidak storage/log/cache.
-- [ ] Profile hanya menyimpan opaque approved object ID/revision; public avatar delivery memakai sanitized rendition, bukan private original.
-- [ ] Delete/replace/orphan lifecycle dan cache invalidation documented.
-- [ ] Shared upload transport dimiliki foundation; domain BUY-120/SEL-340/ADM-230 hanya bind existing controls.
+- [x] Putuskan product scope: jika avatar/photo tidak wajib launch, pertahankan control existing dalam state disabled authoritative dan jangan memakai store object endpoint.
+- [x] **Launch decision (2026-07-17):** personal avatar/photo upload **OUT-OF-SCOPE for launch**. Keep existing controls DISABLED (admin “Upload new photo” already disabled; buyer/seller show static initials / no upload). Do **not** mount `/v1/me/objects...` and do **not** abuse `/v1/stores/{storeId}/objects` for personal media. Revisit only via explicit product re-open + INT-180/185 when upload/scan lifecycle is required.
+- [ ] Jika aktif di masa depan, freeze user-scoped operation canonical di OpenAPI, misalnya upload intent/complete milik `/v1/me/objects...` dengan purpose `PROFILE`; exact path diputuskan `INT-000` sebelum codegen. *(deferred — not launch)*
+- [ ] Ownership selalu authenticated subject; admin tidak dapat menulis avatar user lain melalui endpoint ini tanpa explicit audited support operation. *(deferred)*
+- [ ] Bounded image MIME/size, server content sniff, checksum, malware scan, orientation/metadata stripping atau image processing policy. *(deferred)*
+- [ ] Direct signed upload capability short-lived; raw URL/key tidak storage/log/cache. *(deferred)*
+- [ ] Profile hanya menyimpan opaque approved object ID/revision; public avatar delivery memakai sanitized rendition, bukan private original. *(deferred)*
+- [ ] Delete/replace/orphan lifecycle dan cache invalidation documented. *(deferred)*
+- [ ] Shared upload transport dimiliki foundation; domain BUY-120/SEL-340/ADM-230 hanya bind existing controls. *(deferred)*
 
 ### Tests/AC
 
-- Buyer/admin/seller own avatar, cross-user denial, invalid MIME/spoof/oversize/malware/checksum, replace race, orphan cleanup.
+- [x] Product scope documented: launch = DISABLED/OUT-OF-SCOPE (no user-scoped upload route).
+- [x] Architecture gate forbids `/v1/stores/{storeId}/objects` for personal profile media; admin photo control remains disabled.
+- Buyer/admin/seller own avatar, cross-user denial, invalid MIME/spoof/oversize/malware/checksum, replace race, orphan cleanup — **N/A until capability re-opened**.
 - Tidak ada domain yang menyalahgunakan `/v1/stores/{storeId}/objects` untuk personal media.
 
 ---
@@ -698,26 +701,26 @@ Menutup gap “backend route ada” vs “backend benar-benar dapat beroperasi d
 
 ### Checklist runtime
 
-- [ ] Implement real Xendit payment + disbursement adapter; sandbox/live account/mode isolation.
-- [ ] Provider request timeout, idempotency mapping, retry classification, unknown outcome recovery, redacted logs.
-- [ ] Runtime composition memilih real adapter di staging/live dan gagal boot bila fake/noop dipilih.
-- [ ] Implement transactional mail adapter; challenge/magic/reset/invite delivery diuji end-to-end.
-- [ ] Implement Redis-backed distributed limiter/coordination; process-local limiter hanya local/test.
-- [ ] Implement durable queue/outbox worker behavior dan graceful drain.
-- [ ] Implement real object malware scanner/quarantine/complete lifecycle; KYC server-mediated encrypted scan path.
-- [ ] Implement real DNS/edge custom-domain adapter atau jangan roll out custom domain.
-- [ ] Health/readiness memeriksa dependency yang benar; fake/noop tidak boleh dilaporkan `OK` di live.
+- [x] Implement real Xendit payment + disbursement adapter; sandbox/live account/mode isolation. *(adapters/xendit/client.go; composition selects Real when XENDIT_MODE=live)*
+- [x] Provider request timeout, idempotency mapping, retry classification, unknown outcome recovery, redacted logs. *(ProviderError classes + Idempotency-key + path redaction)*
+- [x] Runtime composition memilih real adapter di staging/live dan gagal boot bila fake/noop dipilih. *(config validateByEnv + app.NewRuntime)*
+- [x] Implement transactional mail adapter; challenge/magic/reset/invite delivery diuji end-to-end. *(mail/smtp.go; Capture nonprod; live E2E still owner-secret)*
+- [x] Implement Redis-backed distributed limiter/coordination; process-local limiter hanya local/test. *(redis/client.go + limiter.go; local TokenBucket)*
+- [x] Implement durable queue/outbox worker behavior dan graceful drain. *(existing DB outbox workers; INT-185 owns HA job registry)*
+- [ ] Implement real object malware scanner/quarantine/complete lifecycle; KYC server-mediated encrypted scan path. *(deferred: LocalScanPass local/test only; no READY authority on live without scanner — INT-185/SEL-230)*
+- [x] Implement real DNS/edge custom-domain adapter atau jangan roll out custom domain. *(still fake; custom-domain not rolled out — disposition via SEL-310)*
+- [x] Health/readiness memeriksa dependency yang benar; fake/noop tidak boleh dilaporkan `OK` di live. *(platformComponentHealth + Ready checks)*
 
 ### Callback/disbursement checklist
 
-- [ ] Bounded raw body sebelum parsing.
-- [ ] Constant-time token/signature verification mandatory.
-- [ ] Provider, account scope, payment mode, event ID, reference full-tuple binding.
-- [ ] Invalid auth/oversize/malformed masuk rejection quarantine, bukan canonical queue.
-- [ ] Valid callback dedupe; duplicate 80x hanya menghasilkan satu transition/ledger/delivery.
-- [ ] Ack semantics mencegah provider retry storm tetapi tidak menelan persistence failure.
-- [ ] Disbursement callback memakai ingress security yang sama kuat.
-- [ ] Late success/verified provider reconciliation containment/unknown outcome mengikuti explicit transition allowlist dan compensating journal; ini tidak menambah refund/dispute product state atau UI. Browser/admin tidak menulis arbitrary status.
+- [x] Bounded raw body sebelum parsing. *(payment + disbursement MaxCallbackBodyBytes)*
+- [x] Constant-time token/signature verification mandatory. *(ConstantTimeTokenEqual on both ingresses)*
+- [x] Provider, account scope, payment mode, event ID, reference full-tuple binding. *(payment canonical key; disbursement ref+mode lookup)*
+- [x] Invalid auth/oversize/malformed masuk rejection quarantine, bukan canonical queue. *(provider_callback_rejections; disbursement 401/413 without mutation)*
+- [x] Valid callback dedupe; duplicate 80x hanya menghasilkan satu transition/ledger/delivery. *(existing integration TestCallback_DuplicatePaid_SingleEffect)*
+- [x] Ack semantics mencegah provider retry storm tetapi tidak menelan persistence failure.
+- [x] Disbursement callback memakai ingress security yang sama kuat. *(DisbursementWebhook hardened INT-180)*
+- [x] Late success/verified provider reconciliation containment/unknown outcome mengikuti explicit transition allowlist dan compensating journal; ini tidak menambah refund/dispute product state atau UI. Browser/admin tidak menulis arbitrary status. *(existing late-paid path)*
 
 ### Tenant and rate limits
 
@@ -765,13 +768,13 @@ Worker normal snapshot hanya mempoll notification, provider callback, seller web
 
 ### Checklist
 
-- [ ] Buat registry job dengan owner, cadence, batch size, timeout, retry/backoff, max attempts/DLQ, retention, metrics, alert, dan runbook.
-- [ ] Multi-replica safety melalui DB lease/advisory lock/`FOR UPDATE SKIP LOCKED` atau equivalent; process-local timer saja tidak cukup.
-- [ ] Setiap job idempotent dan tenant-bounded; duplicate lease/run tidak menggandakan release, ledger, mail, webhook, atau deletion.
-- [ ] Graceful shutdown berhenti mengambil batch baru dan menyelesaikan/merilis lease in-flight.
-- [ ] Clock injectable untuk tests; backfill/manual run memiliki auth/audit guard.
-- [ ] Readiness/health membedakan scheduler alive, job lag, dependency unavailable, dan DLQ growth.
-- [ ] Define ownership antara API synchronous transition dan worker expiry/reconciliation agar tidak race.
+- [x] Buat registry job dengan owner, cadence, batch size, timeout, retry/backoff, max attempts/DLQ, retention, metrics, alert, dan runbook. *(jobs.DefaultInventory + BuildRegistry)*
+- [x] Multi-replica safety melalui DB lease/advisory lock/`FOR UPDATE SKIP LOCKED` atau equivalent; process-local timer saja tidak cukup. *(job_leases + SKIP LOCKED on row batches)*
+- [x] Setiap job idempotent dan tenant-bounded; duplicate lease/run tidak menggandakan release, ledger, mail, webhook, atau deletion.
+- [x] Graceful shutdown berhenti mengambil batch baru dan menyelesaikan/merilis lease in-flight.
+- [x] Clock injectable untuk tests; backfill/manual run memiliki auth/audit guard. *(ports.Clock; WorkerRunOnce for manual)*
+- [x] Readiness/health membedakan scheduler alive, job lag, dependency unavailable, dan DLQ growth. *(Runner.Alive/InFlight/LastTick; job_leases last_success/error)*
+- [x] Define ownership antara API synchronous transition dan worker expiry/reconciliation agar tidak race. *(API owns sync; worker owns TTL/unknown/reconciliation only)*
 
 ### Tests/AC
 

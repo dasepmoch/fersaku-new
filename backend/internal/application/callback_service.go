@@ -1035,12 +1035,17 @@ func (s *CallbackService) GetAdminEvent(ctx context.Context, callbackID string) 
 }
 
 func constantTimeTokenEqual(got, want string) bool {
+	return ConstantTimeTokenEqual(got, want)
+}
+
+// ConstantTimeTokenEqual compares webhook tokens via fixed-size digests (INT-180).
+// Exported for disbursement ingress parity with payment callbacks.
+func ConstantTimeTokenEqual(got, want string) bool {
 	if want == "" {
 		// Misconfigured: reject all in production paths; local tests set token.
 		return false
 	}
-	// subtle.ConstantTimeCompare requires equal length; pad via SHA is overkill —
-	// compare fixed-size digests of both.
+	// subtle.ConstantTimeCompare requires equal length; compare fixed-size digests.
 	a := payments.DigestBody([]byte(got))
 	b := payments.DigestBody([]byte(want))
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1

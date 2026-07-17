@@ -224,7 +224,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 - [ ] Replace localStorage/timers with profile/preference/session hooks.
 - [ ] Profile PATCH with revision; dual-confirm email; password/MFA/session flows.
-- [ ] Photo uses user-scoped media contract `INT-175`; current store-scoped object endpoint is invalid for admin profile. If user media contract is not launched, keep exact existing control disabled.
+- [x] Photo launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Store-scoped object endpoint remains invalid for admin profile; keep exact existing control disabled.
 - [ ] Admin notification alias wired to shared notification center.
 - [ ] Reuse shared notification adapter owned by `BUY-140` and shared security adapters owned by `AUT-120`; this task only binds admin surface/context.
 - [ ] Revoke current/all sessions triggers correct logout/cache clear.
