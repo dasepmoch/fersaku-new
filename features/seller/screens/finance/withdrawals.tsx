@@ -7,7 +7,7 @@ import {
   useSellerWithdrawals,
 } from "@/features/finance/hooks";
 import { useSellerStoreId } from "@/shared/seller/current-store";
-import { rupiah } from "@/shared/format/money";
+import { compactRupiah, rupiah } from "@/shared/format/money";
 import { MiniStat } from "@/shared/ui/mini-stat";
 import { SectionHead } from "@/shared/ui/section-head";
 import { StatusBadge } from "@/shared/ui/status-badge";
@@ -16,6 +16,7 @@ import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { FinanceSourceBadge } from "@/shared/finance/source-badge";
 import { isSellerWithdrawalLockActive } from "@/features/finance/withdrawal-policy";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 export function Withdrawals() {
   const storeId = useSellerStoreId();
@@ -32,6 +33,17 @@ export function Withdrawals() {
         timeZone: "Asia/Jakarta",
       })
     : "—";
+
+  const processingTotal = rows
+    .filter((r) => r.status === "Pending" || r.status === "Processing")
+    .reduce((sum, r) => sum + r.amount, 0);
+  const completedTotal = rows
+    .filter((r) => r.status === "Completed")
+    .reduce((sum, r) => sum + r.amount, 0);
+  const financeApi = getDomainSource("sellerFinance") === "api";
+  const desc = financeApi
+    ? "Dana dikirim melalui Xendit Disbursement"
+    : "Dana dikirim melalui Xendit Disbursement (mock)";
 
   return (
     <>
@@ -69,25 +81,30 @@ export function Withdrawals() {
       <div className="grid gap-3 sm:grid-cols-3">
         <MiniStat
           label="Siap ditarik"
-          value="Rp18,24jt"
+          value={
+            financeApi
+              ? compactRupiah(summary.availableAmount)
+              : "Rp18,24jt"
+          }
           note="Storefront + QRIS API"
         />
         <MiniStat
           label="Sedang diproses"
-          value="Rp7jt"
+          value={
+            financeApi ? compactRupiah(processingTotal) : "Rp7jt"
+          }
           note="Estimasi hari ini"
         />
         <MiniStat
           label="Total ditarik"
-          value="Rp42,5jt"
+          value={
+            financeApi ? compactRupiah(completedTotal) : "Rp42,5jt"
+          }
           note="Sepanjang waktu"
         />
       </div>
       <section className={`${surfaceCard} mt-4 overflow-hidden`}>
-        <SectionHead
-          title="Riwayat penarikan"
-          desc="Dana dikirim melalui Xendit Disbursement (mock)"
-        />
+        <SectionHead title="Riwayat penarikan" desc={desc} />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left">
             <thead>

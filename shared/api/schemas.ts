@@ -1744,6 +1744,119 @@ export type BankAccountUpdateRequest = z.infer<
   typeof bankAccountUpdateRequestSchema
 >;
 
+// --- Seller withdrawals (SEL-410) — quote / list / lock; money server-authoritative ---
+
+/** Quote status on wire (ACTIVE until consumed/expired/invalidated). */
+export const withdrawalQuoteStatusSchema = z.enum([
+  "ACTIVE",
+  "CONSUMED",
+  "EXPIRED",
+  "INVALIDATED",
+  "VERIFIED", // mock / view alias accepted on parse when present
+]);
+
+/**
+ * BE quoteDTO from POST /withdrawal-quotes.
+ * amountDebited / netDisbursement are server fee truth — never recompute.
+ */
+export const withdrawalQuoteDtoSchema = z.object({
+  quoteId: z.string().min(1),
+  expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  amountDebited: moneyIdrNonNegSchema,
+  platformFee: moneyIdrNonNegSchema,
+  providerProcessingFee: moneyIdrNonNegSchema,
+  totalFee: moneyIdrNonNegSchema,
+  netDisbursement: moneyIdrNonNegSchema,
+  minimumAmount: moneyIdrNonNegSchema.optional(),
+  policyVersion: z.string().optional(),
+  bankAccountId: z.string().min(1).optional(),
+  bankAccountVersion: z.number().int().optional(),
+  status: z.string().min(1).optional(),
+});
+
+export const withdrawalQuoteEnvelopeSchema = successEnvelopeSchema(
+  withdrawalQuoteDtoSchema,
+);
+
+/** Domain withdrawal status wire values. */
+export const withdrawalStatusWireSchema = z.string().min(1);
+
+/**
+ * BE withdrawalDTO — list/detail/create response.
+ * amountDebited is wallet debit; bank fields are masked only.
+ */
+export const withdrawalDtoSchema = z.object({
+  id: z.string().min(1),
+  status: withdrawalStatusWireSchema,
+  amountDebited: moneyIdrNonNegSchema,
+  platformFee: moneyIdrNonNegSchema.optional(),
+  providerProcessingFee: moneyIdrNonNegSchema.optional(),
+  totalFee: moneyIdrNonNegSchema.optional(),
+  netDisbursement: moneyIdrNonNegSchema.optional(),
+  source: financeSourceWireSchema.or(z.string().min(1)).optional(),
+  bankAccountId: z.string().optional(),
+  bankAccountMasked: z.string().optional(),
+  bankCode: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  policyVersion: z.string().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  providerFeeActual: moneyIdrSchema.optional(),
+  providerReference: z.string().optional(),
+  allocations: z
+    .array(
+      z.object({
+        source: z.string().optional(),
+        amount: moneyIdrNonNegSchema.optional(),
+        settlementLotId: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
+
+/** GET list → `{ items: Withdrawal[] }` */
+export const withdrawalListDataSchema = z.object({
+  items: z.array(withdrawalDtoSchema),
+});
+
+export const withdrawalListEnvelopeSchema = successEnvelopeSchema(
+  withdrawalListDataSchema,
+);
+
+export const withdrawalEnvelopeSchema = successEnvelopeSchema(
+  withdrawalDtoSchema,
+);
+
+/**
+ * BE lock DTO: locked + lockedUntil + reason when active.
+ * remainingLabel is FE-derived, not on wire.
+ */
+export const withdrawalLockDtoSchema = z.object({
+  locked: z.boolean(),
+  lockedUntil: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional()
+    .nullable(),
+  reason: z.string().optional().nullable(),
+});
+
+export const withdrawalLockEnvelopeSchema = successEnvelopeSchema(
+  withdrawalLockDtoSchema,
+);
+
+/** POST create body — quoteId only; MFA via X-Recent-MFA-Proof header. */
+export const withdrawalCreateRequestSchema = z.object({
+  quoteId: z.string().min(1),
+  paymentMode: z.enum(["SANDBOX", "LIVE"]).optional(),
+});
+
+export type WithdrawalQuoteDto = z.infer<typeof withdrawalQuoteDtoSchema>;
+export type WithdrawalDto = z.infer<typeof withdrawalDtoSchema>;
+export type WithdrawalListDataDto = z.infer<typeof withdrawalListDataSchema>;
+export type WithdrawalLockDto = z.infer<typeof withdrawalLockDtoSchema>;
+export type WithdrawalCreateRequest = z.infer<
+  typeof withdrawalCreateRequestSchema
+>;
+
 // --- Seller inventory (SEL-240) — masked list/detail; reveal is no-store ---
 
 export const inventoryFieldDefSchema = z.object({

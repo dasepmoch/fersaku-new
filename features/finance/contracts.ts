@@ -68,6 +68,10 @@ export type SellerWithdrawalLock = {
   remainingLabel: string | null;
 };
 
+/**
+ * Server quote mapped for existing form chrome.
+ * status VERIFIED = wire ACTIVE (quotable); money fields are server integers.
+ */
 export type SellerWithdrawalQuote = {
   id: string;
   storeId: string;
@@ -80,19 +84,28 @@ export type SellerWithdrawalQuote = {
   provider: "Xendit";
   status: "VERIFIED";
   expiresAt: string;
+  minimumAmount?: number;
+  policyVersion?: string;
 };
 
 export type RequestSellerWithdrawalQuoteInput = {
   storeId: string;
   bankAccountId: string;
   amount: number;
+  /** Stable UUID per quote intent; omit to mint once in adapter. */
+  idempotencyKey?: string;
 };
 
+/**
+ * Create withdrawal — MFA via X-Recent-MFA-Proof (INT-140), never body reauthProof.
+ * idempotencyKey is UUID logical intent retained across timeout/retry.
+ */
 export type CreateSellerWithdrawalInput = {
   storeId: string;
   quoteId: string;
-  reauthProof: string;
   idempotencyKey: string;
+  /** Optional explicit proof; otherwise requireRecentMfa attaches memory proof. */
+  recentMfaProof?: string;
 };
 
 export type SellerRevenuePoint = {

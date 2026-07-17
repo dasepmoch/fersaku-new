@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { Check, LockKeyhole } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useCreateSellerWithdrawalMutation,
   useSellerFinanceSummary,
   useSellerWithdrawalLock,
   useSellerWithdrawalQuoteMutation,
 } from "@/features/finance/hooks";
+import {
+  isSellerWithdrawalQuoteFresh,
+} from "@/features/finance/mappers";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 import { rupiah } from "@/shared/format/money";
 import { FieldInput, FormGroup } from "@/shared/ui/form-controls";
@@ -20,6 +23,10 @@ import {
   isSellerWithdrawalLockActive,
 } from "@/features/finance/withdrawal-policy";
 import type { SellerWithdrawal } from "@/features/finance/contracts";
+import { useSellerBankAccounts } from "@/features/seller/settings/hooks";
+import { stepUpMfa } from "@/features/auth/api";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 export function WithdrawalForm() {
   const storeId = useSellerStoreId();
@@ -27,31 +34,64 @@ export function WithdrawalForm() {
   const [amountInput, setAmountInput] = useState("5000000");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const createIdemRef = useRef<string | null>(null);
+  const quoteIdemRef = useRef<string | null>(null);
+
   const { data: summary } = useSellerFinanceSummary(storeId);
   const { data: lock } = useSellerWithdrawalLock(storeId);
+  const { data: banks = [] } = useSellerBankAccounts(storeId);
   const quoteMutation = useSellerWithdrawalQuoteMutation();
   const createMutation = useCreateSellerWithdrawalMutation();
+
+  const primaryBank = useMemo(() => {
+    const verified = banks.filter((b) => b.verified);
+    return (
+      verified.find((b) => b.primary) ??
+      verified[0] ??
+      banks.find((b) => b.primary) ??
+      banks[0] ??
+      null
+    );
+  }, [banks]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 1_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   if (!summary || !lock) return null;
+
   const available = summary.availableAmount;
   const requestAmount = Number(amountInput) || 0;
+  // Pre-quote estimate only — never authority for submit net/fee.
   const withdrawalFee = calculateWithdrawalFee(requestAmount);
   const sourceAllocation = allocateWithdrawalSources(requestAmount, {
     storefrontAmount: summary.sources.STOREFRONT.availableAmount,
     qrisApiAmount: summary.sources.QRIS_API.availableAmount,
   });
+  const rawQuote =
+    quoteMutation.data?.amount === requestAmount &&
+    quoteMutation.data?.bankAccountId === (primaryBank?.id ?? "")
+      ? quoteMutation.data
+      : null;
   const quote =
-    quoteMutation.data?.amount === requestAmount ? quoteMutation.data : null;
+    rawQuote && isSellerWithdrawalQuoteFresh(rawQuote, nowTick)
+      ? rawQuote
+      : null;
   const canRequest = canRequestSellerWithdrawal({
     amount: requestAmount,
     availableAmount: available,
     lock,
   });
   const lockActive = isSellerWithdrawalLockActive(lock);
+  const hasVerifiedBank = Boolean(primaryBank?.verified || primaryBank);
   const submitDisabled =
     !canRequest ||
+    !hasVerifiedBank ||
     quoteMutation.isPending ||
     createMutation.isPending ||
-    Boolean(quote && password.trim().length < 8);
+    Boolean(quote && password.trim().length < 6);
   const sourceLabel =
     sourceAllocation.source === "MIXED"
       ? `Storefront ${rupiah(sourceAllocation.storefrontAmount)} + QRIS API ${rupiah(sourceAllocation.qrisApiAmount)}`
@@ -59,26 +99,70 @@ export function WithdrawalForm() {
         ? `QRIS API • ${rupiah(sourceAllocation.qrisApiAmount)}`
         : `Storefront • ${rupiah(sourceAllocation.storefrontAmount)}`;
 
+  const bankCode = primaryBank?.bankCode || primaryBank?.bank || "BCA";
+  const bankLast4 = primaryBank?.numberLast4 || "4821";
+  const bankHolder = primaryBank?.holder || "ASEP KURNIA";
+  const bankDisplay = primaryBank
+    ? `${primaryBank.bank || bankCode} • ${bankLast4}`
+    : "BCA • 4821";
+
+  const resetQuoteIntent = () => {
+    quoteMutation.reset();
+    quoteIdemRef.current = null;
+    createIdemRef.current = null;
+    setError("");
+  };
+
   const handlePrimaryAction = async () => {
-    if (!canRequest) return;
+    if (!canRequest || !primaryBank) return;
     setError("");
     try {
       if (!quote) {
+        if (!quoteIdemRef.current) {
+          quoteIdemRef.current = createIdempotencyKey();
+        }
         await quoteMutation.mutateAsync({
-          storeId: storeId,
-          bankAccountId: "bank_bca_4821",
+          storeId,
+          bankAccountId: primaryBank.id,
           amount: requestAmount,
+          idempotencyKey: quoteIdemRef.current,
         });
         return;
       }
-      if (password.trim().length < 8) return;
+      if (password.trim().length < 6) return;
+
+      // Mint purpose-scoped recent proof (INT-140); attach via header only.
+      const financeApi = getDomainSource("sellerFinance") === "api";
+      if (financeApi || getDomainSource("auth") === "api") {
+        const step = await stepUpMfa({
+          code: password.trim(),
+          purpose: "withdrawal.create",
+        });
+        if (!step.ok) {
+          setError(
+            "Verifikasi keamanan gagal. Masukkan kode autentikator atau password yang valid.",
+          );
+          return;
+        }
+      } else {
+        // Mock path: step-up still mints in-memory proof for create path.
+        await stepUpMfa({
+          code: password.trim(),
+          purpose: "withdrawal.create",
+        });
+      }
+
+      if (!createIdemRef.current) {
+        createIdemRef.current = createIdempotencyKey();
+      }
       const withdrawal = await createMutation.mutateAsync({
-        storeId: storeId,
+        storeId,
         quoteId: quote.id,
-        reauthProof: "mock-password-reauth",
-        idempotencyKey: `seller-withdrawal:${storeId}:${quote.id}:${Date.now()}`,
+        idempotencyKey: createIdemRef.current,
       });
       setSubmitted(withdrawal);
+      createIdemRef.current = null;
+      quoteIdemRef.current = null;
     } catch {
       setError(
         quote
@@ -133,8 +217,7 @@ export function WithdrawalForm() {
             inputMode="numeric"
             onChange={(value) => {
               setAmountInput(value.replace(/\D/g, ""));
-              quoteMutation.reset();
-              setError("");
+              resetQuoteIntent();
             }}
           />
           <div className="mt-3 flex justify-between text-[9px] text-[#748078]">
@@ -143,8 +226,7 @@ export function WithdrawalForm() {
               type="button"
               onClick={() => {
                 setAmountInput(String(available));
-                quoteMutation.reset();
-                setError("");
+                resetQuoteIntent();
               }}
               className="font-extrabold text-[#315d47]"
             >
@@ -159,11 +241,11 @@ export function WithdrawalForm() {
           <div className="rounded-2xl border-2 border-[#173f2c] bg-[#eff3e9] p-4">
             <div className="flex items-center">
               <span className="grid size-10 place-items-center rounded-xl bg-white font-black text-[#2855a5]">
-                BCA
+                {bankCode.slice(0, 3).toUpperCase()}
               </span>
               <div className="ml-3">
-                <b className="block text-xs">Bank Central Asia • 4821</b>
-                <span className="text-[9px] text-[#748078]">ASEP KURNIA</span>
+                <b className="block text-xs">{bankDisplay}</b>
+                <span className="text-[9px] text-[#748078]">{bankHolder}</span>
               </div>
               <span className="ml-auto grid size-5 place-items-center rounded-full border-[5px] border-[#173f2c] bg-white" />
             </div>
@@ -206,13 +288,15 @@ export function WithdrawalForm() {
         >
           {lockActive
             ? "Penarikan terkunci sementara"
-            : quoteMutation.isPending
-              ? "Memverifikasi biaya Xendit..."
-              : createMutation.isPending
-                ? "Mengajukan penarikan..."
-                : quote
-                  ? "Ajukan penarikan"
-                  : "Verifikasi biaya Xendit"}
+            : !hasVerifiedBank
+              ? "Tambah rekening terverifikasi"
+              : quoteMutation.isPending
+                ? "Memverifikasi biaya Xendit..."
+                : createMutation.isPending
+                  ? "Mengajukan penarikan..."
+                  : quote
+                    ? "Ajukan penarikan"
+                    : "Verifikasi biaya Xendit"}
         </button>
       </section>
       <aside>
@@ -222,7 +306,12 @@ export function WithdrawalForm() {
             {[
               ["Saldo tersedia", rupiah(available)],
               ["Jumlah ditarik", rupiah(requestAmount)],
-              ["Platform fee (3%)", rupiah(withdrawalFee.platformFee)],
+              [
+                "Platform fee (3%)",
+                quote
+                  ? rupiah(quote.platformFee)
+                  : rupiah(withdrawalFee.platformFee),
+              ],
               [
                 "Biaya proses Xendit",
                 quote

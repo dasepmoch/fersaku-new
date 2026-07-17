@@ -87,7 +87,12 @@ export function useSellerWithdrawals(storeId: string) {
     queryKey: queryKeys.seller.withdrawals(storeId),
     queryFn: (signal) => listSellerWithdrawals(storeId, signal),
     enabled: Boolean(storeId),
-    placeholderData: mockPlaceholderData("sellerFinance", demoSellerWithdrawals(storeId)),
+    surface: "finance",
+    keepPrevious: true,
+    placeholderData: mockPlaceholderData(
+      "sellerFinance",
+      demoSellerWithdrawals(storeId),
+    ),
   });
 }
 
@@ -96,6 +101,8 @@ export function useSellerWithdrawalLock(storeId: string) {
     queryKey: queryKeys.seller.withdrawalLock(storeId),
     queryFn: (signal) => getSellerWithdrawalLock(storeId, signal),
     enabled: Boolean(storeId),
+    surface: "finance",
+    keepPrevious: true,
     placeholderData: mockPlaceholderData("sellerFinance", demoWithdrawalLock),
   });
 }
@@ -115,6 +122,7 @@ export function useCreateSellerWithdrawalMutation() {
     mutationFn: (input: CreateSellerWithdrawalInput, signal) =>
       createSellerWithdrawal(input, signal),
     onSuccess: (withdrawal) => {
+      // Exact invalidate: summary / ledger / withdrawals / lock — no optimistic money.
       void queryClient.invalidateQueries({
         queryKey: queryKeys.seller.withdrawals(withdrawal.storeId),
       });
@@ -122,7 +130,13 @@ export function useCreateSellerWithdrawalMutation() {
         queryKey: queryKeys.seller.finance(withdrawal.storeId),
       });
       void queryClient.invalidateQueries({
+        queryKey: queryKeys.seller.ledger(withdrawal.storeId, {}),
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["seller", withdrawal.storeId, "ledger"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.seller.withdrawalLock(withdrawal.storeId),
       });
     },
   });

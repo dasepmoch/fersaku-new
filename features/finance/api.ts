@@ -1,13 +1,23 @@
 import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
 import {
   financeLedgerEnvelopeSchema,
   financeRevenueEnvelopeSchema,
   financeSummaryEnvelopeSchema,
-  structuralEnvelopeSchema,
+  withdrawalCreateRequestSchema,
+  withdrawalEnvelopeSchema,
+  withdrawalListEnvelopeSchema,
+  withdrawalLockEnvelopeSchema,
+  withdrawalQuoteEnvelopeSchema,
+  type WithdrawalCreateRequest,
 } from "@/shared/api/schemas";
-import type { ApiEnvelope, CursorPage } from "@/shared/api/contracts";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import type { CursorPage } from "@/shared/api/contracts";
+import {
+  DomainDisabledError,
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type {
   CreateSellerWithdrawalInput,
   RequestSellerWithdrawalQuoteInput,
@@ -33,19 +43,36 @@ import {
   readMockCreatedWithdrawals,
 } from "./mock-withdrawals";
 import {
+  isSellerWithdrawalQuoteFresh,
   mapFinanceLedgerPageDto,
   mapFinanceRevenueDto,
   mapFinanceSummaryDto,
+  mapWithdrawalDto,
+  mapWithdrawalListDto,
+  mapWithdrawalLockDto,
+  mapWithdrawalQuoteDto,
 } from "./mappers";
 
 const mockQuotes = new Map<string, SellerWithdrawalQuote>();
+/** In-memory fallback when localStorage is unavailable (unit tests / SSR). */
+const mockCreatedMemory = new Map<string, SellerWithdrawal[]>();
 
 type SummaryEnvelope = z.infer<typeof financeSummaryEnvelopeSchema>;
 type RevenueEnvelope = z.infer<typeof financeRevenueEnvelopeSchema>;
 type LedgerEnvelope = z.infer<typeof financeLedgerEnvelopeSchema>;
+type QuoteEnvelope = z.infer<typeof withdrawalQuoteEnvelopeSchema>;
+type WithdrawalListEnvelope = z.infer<typeof withdrawalListEnvelopeSchema>;
+type WithdrawalEnvelope = z.infer<typeof withdrawalEnvelopeSchema>;
+type LockEnvelope = z.infer<typeof withdrawalLockEnvelopeSchema>;
 
 function isSellerFinanceMock(): boolean {
   return shouldUseMockFixtures("sellerFinance");
+}
+
+function assertSellerFinanceEnabled(): void {
+  if (getDomainSource("sellerFinance") === "disabled") {
+    throw new DomainDisabledError("sellerFinance");
+  }
 }
 
 export type ListSellerLedgerParams = {
@@ -125,31 +152,39 @@ export async function listSellerLedger(
   return mapFinanceLedgerPageDto(response.data);
 }
 
+/** GET /v1/stores/{storeId}/withdrawals/ — items[] mapped to history rows. */
 export async function listSellerWithdrawals(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal[]> {
+  assertSellerFinanceEnabled();
   if (isSellerFinanceMock()) {
+    const memory = mockCreatedMemory.get(storeId) ?? [];
     return [
+      ...memory,
       ...readMockCreatedWithdrawals(storeId),
       ...demoSellerWithdrawals(storeId),
     ];
   }
 
-  const response = await apiRequest<ApiEnvelope<SellerWithdrawal[]>>(
-    `/v1/stores/${encodeURIComponent(storeId)}/withdrawals`,
+  const response = await apiRequest<WithdrawalListEnvelope>(
+    `/v1/stores/${encodeURIComponent(storeId)}/withdrawals/`,
     {
-      schema: structuralEnvelopeSchema,
+      schema: withdrawalListEnvelopeSchema,
       signal,
     },
   );
-  return response.data;
+  return mapWithdrawalListDto(response.data.items, storeId);
 }
 
+/**
+ * POST quote — server fees authoritative. Idempotency key stable per intent.
+ */
 export async function requestSellerWithdrawalQuote(
   input: RequestSellerWithdrawalQuoteInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalQuote> {
+  assertSellerFinanceEnabled();
   if (isSellerFinanceMock()) {
     const summary = demoFinanceSummary(input.storeId);
     if (
@@ -181,34 +216,45 @@ export async function requestSellerWithdrawalQuote(
     mockQuotes.set(quote.id, quote);
     return quote;
   }
+
+  const idempotencyKey =
+    input.idempotencyKey?.trim() || createIdempotencyKey();
   const response = await apiRequest<
-    ApiEnvelope<SellerWithdrawalQuote>,
+    QuoteEnvelope,
     { amount: number; bankAccountId: string }
   >(`/v1/stores/${encodeURIComponent(input.storeId)}/withdrawal-quotes`, {
-    schema: structuralEnvelopeSchema,
+    schema: withdrawalQuoteEnvelopeSchema,
     method: "POST",
     body: {
       amount: input.amount,
       bankAccountId: input.bankAccountId,
     },
     signal,
-    idempotencyKey: `withdrawal-quote:${input.storeId}:${input.bankAccountId}:${input.amount}`,
+    idempotencyKey,
   });
-  return response.data;
+  return mapWithdrawalQuoteDto(
+    response.data,
+    input.storeId,
+    input.bankAccountId,
+  );
 }
 
+/**
+ * POST create — body { quoteId } only; MFA via X-Recent-MFA-Proof.
+ * Idempotency UUID retained across timeout/retry by caller.
+ * No optimistic history; returns authoritative create result only.
+ */
 export async function createSellerWithdrawal(
   input: CreateSellerWithdrawalInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal> {
+  assertSellerFinanceEnabled();
   if (isSellerFinanceMock()) {
     const quote = mockQuotes.get(input.quoteId);
     if (
       !quote ||
       quote.storeId !== input.storeId ||
-      quote.status !== "VERIFIED" ||
-      new Date(quote.expiresAt).getTime() <= Date.now() ||
-      !input.reauthProof ||
+      !isSellerWithdrawalQuoteFresh(quote) ||
       !input.idempotencyKey
     ) {
       throw new Error(
@@ -221,7 +267,7 @@ export async function createSellerWithdrawal(
       qrisApiAmount: summary.sources.QRIS_API.availableAmount,
     });
     const withdrawal: SellerWithdrawal = {
-      id: `WD-MOCK-${Date.now().toString(36).toUpperCase()}`,
+      id: `WD-MOCK-${input.idempotencyKey.replace(/-/g, "").slice(0, 8).toUpperCase()}`,
       storeId: input.storeId,
       amount: quote.amount,
       bankLabel: "BCA • 4821",
@@ -230,36 +276,71 @@ export async function createSellerWithdrawal(
       source: allocation.source,
     };
     if (!persistMockCreatedWithdrawal(withdrawal)) {
-      throw new Error("Unable to persist the mock withdrawal.");
+      const prev = mockCreatedMemory.get(input.storeId) ?? [];
+      mockCreatedMemory.set(input.storeId, [withdrawal, ...prev].slice(0, 25));
     }
     mockQuotes.delete(input.quoteId);
     return withdrawal;
   }
-  const response = await apiRequest<
-    ApiEnvelope<SellerWithdrawal>,
-    { quoteId: string; reauthProof: string }
-  >(`/v1/stores/${encodeURIComponent(input.storeId)}/withdrawals`, {
-    schema: structuralEnvelopeSchema,
-    method: "POST",
-    body: { quoteId: input.quoteId, reauthProof: input.reauthProof },
-    signal,
-    idempotencyKey: input.idempotencyKey,
+
+  const body: WithdrawalCreateRequest = withdrawalCreateRequestSchema.parse({
+    quoteId: input.quoteId,
   });
-  return response.data;
+  const response = await apiRequest<WithdrawalEnvelope, WithdrawalCreateRequest>(
+    `/v1/stores/${encodeURIComponent(input.storeId)}/withdrawals/`,
+    {
+      schema: withdrawalEnvelopeSchema,
+      method: "POST",
+      body,
+      signal,
+      idempotencyKey: input.idempotencyKey,
+      requireRecentMfa: true,
+      ...(input.recentMfaProof
+        ? { recentMfaProof: input.recentMfaProof }
+        : {}),
+    },
+  );
+  return mapWithdrawalDto(response.data, input.storeId);
 }
 
+/** GET lock — map lockedUntil/reason → existing lock chrome. */
 export async function getSellerWithdrawalLock(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalLock> {
+  assertSellerFinanceEnabled();
   if (isSellerFinanceMock()) return demoWithdrawalLock;
 
-  const response = await apiRequest<ApiEnvelope<SellerWithdrawalLock>>(
+  const response = await apiRequest<LockEnvelope>(
     `/v1/stores/${encodeURIComponent(storeId)}/withdrawals/lock`,
     {
-      schema: structuralEnvelopeSchema,
+      schema: withdrawalLockEnvelopeSchema,
       signal,
     },
   );
-  return response.data;
+  return mapWithdrawalLockDto(response.data);
+}
+
+/** GET detail — for unknown-outcome reconcile before minting a new create key. */
+export async function getSellerWithdrawal(
+  storeId: string,
+  withdrawalId: string,
+  signal?: AbortSignal,
+): Promise<SellerWithdrawal> {
+  assertSellerFinanceEnabled();
+  if (isSellerFinanceMock()) {
+    const list = await listSellerWithdrawals(storeId, signal);
+    const found = list.find((w) => w.id === withdrawalId);
+    if (!found) throw new Error("Withdrawal not found.");
+    return found;
+  }
+
+  const response = await apiRequest<WithdrawalEnvelope>(
+    `/v1/stores/${encodeURIComponent(storeId)}/withdrawals/${encodeURIComponent(withdrawalId)}`,
+    {
+      schema: withdrawalEnvelopeSchema,
+      signal,
+    },
+  );
+  return mapWithdrawalDto(response.data, storeId);
 }

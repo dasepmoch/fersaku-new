@@ -555,24 +555,24 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist FE
 
-- [ ] Mapper quote: `quoteId`, amount debited, fees, net disbursement, expiry/status -> existing view fields.
-- [ ] Mapper list/detail/status/bank mask/source/timestamps -> existing rows without client financial calculation.
-- [ ] Load actual primary/selected bank from API, not demo ID.
-- [ ] Quote request stable idempotency and explicit bank ID; server fee verified.
-- [ ] Quote expiry countdown invalidates submit and requires requote.
-- [ ] Obtain actual recent proof from `INT-140`; send via canonical header/body contract only.
-- [ ] Create withdrawal uses UUID logical-intent key retained across timeout/retry, not timestamp.
-- [ ] Unknown outcome checks withdrawal/idempotency status before new request.
-- [ ] No optimistic history/success; only authoritative create result.
-- [ ] Exact invalidate summary/ledger/withdrawal/lock.
+- [x] Mapper quote: `quoteId`, amount debited, fees, net disbursement, expiry/status -> existing view fields.
+- [x] Mapper list/detail/status/bank mask/source/timestamps -> existing rows without client financial calculation.
+- [x] Load actual primary/selected bank from API, not demo ID.
+- [x] Quote request stable idempotency and explicit bank ID; server fee verified.
+- [x] Quote expiry countdown invalidates submit and requires requote.
+- [x] Obtain actual recent proof from `INT-140`; send via canonical header/body contract only.
+- [x] Create withdrawal uses UUID logical-intent key retained across timeout/retry, not timestamp.
+- [x] Unknown outcome checks withdrawal/idempotency status before new request.
+- [x] No optimistic history/success; only authoritative create result.
+- [x] Exact invalidate summary/ledger/withdrawal/lock.
 
 ### Checklist BE
 
-- [ ] Actor/store guard, balance/minimum/lock/bank ownership/quote validity/consumed checks transactionally.
-- [ ] Same key/body replay; different body conflict; concurrent overspend prevented.
-- [ ] Recent proof verified server-side.
-- [ ] Provider fee variance/unknown outcome/reserve/ledger rules explicit.
-- [ ] Signed/authenticated disbursement callback with dedupe/full reference.
+- [x] Actor/store guard, balance/minimum/lock/bank ownership/quote validity/consumed checks transactionally.
+- [x] Same key/body replay; different body conflict; concurrent overspend prevented.
+- [ ] Recent proof verified server-side. *(FE sends `X-Recent-MFA-Proof` + purpose `withdrawal.create`; BE middleware attach remains progressive — inventory reveal is wired; withdrawal create header is accepted for forward-compat.)*
+- [x] Provider fee variance/unknown outcome/reserve/ledger rules explicit.
+- [x] Signed/authenticated disbursement callback with dedupe/full reference.
 
 ### Tests/AC
 
