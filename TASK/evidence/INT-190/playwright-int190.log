@@ -1,0 +1,15 @@
+
+Running 10 tests using 1 worker
+
+[1/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:97:7 › INT-190 public catalog vertical slice (live API) › featured → storefront → product with stable QLT-110 seed IDs
+[2/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:171:7 › INT-190 public catalog vertical slice (live API) › Next same-origin rewrite serves public featured (when Next edge up)
+[3/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:199:7 › INT-190 authenticated seller vertical slice (live API) › login → session → merchant bootstrap → seller product read → logout
+[4/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:288:7 › INT-190 buyer session path (live API) › buyer magic-link request + optional password session path
+[5/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:341:7 › INT-190 negative probes (live API) › 401 without session on seller bootstrap
+[6/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:350:7 › INT-190 negative probes (live API) › CSRF invalid on logout without token
+[7/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:365:7 › INT-190 negative probes (live API) › foreign store product list → RESOURCE_NOT_FOUND
+[8/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:383:7 › INT-190 negative probes (live API) › unknown public store → RESOURCE_NOT_FOUND
+[9/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:392:7 › INT-190 negative probes (live API) › invalid credentials → AUTH_INVALID_CREDENTIALS (no session)
+[10/10] [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:413:7 › INT-190 seed identity stability › QLT-110 password helper matches seed persona password
+  1 skipped
+  9 passed (1.0s)

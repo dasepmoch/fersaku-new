@@ -1,0 +1,42 @@
+{
+  "no_auth_bootstrap": [
+    401,
+    {
+      "problem": {
+        "code": "AUTH_REQUIRED",
+        "message": "Authentication required",
+        "requestId": "01KXQEMECC8W0GV2G0H41SM7N6"
+      }
+    }
+  ],
+  "csrf_logout": [
+    403,
+    {
+      "problem": {
+        "code": "AUTH_CSRF_INVALID",
+        "message": "Invalid or missing CSRF token",
+        "requestId": "01KXQEMECD83YPN85GRFX5RZ9N"
+      }
+    }
+  ],
+  "foreign_store": [
+    404,
+    {
+      "problem": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "Resource not found",
+        "requestId": "01KXQEMECEVJJ5AQSHCAY37M5H"
+      }
+    }
+  ],
+  "unknown_store": [
+    404,
+    {
+      "problem": {
+        "code": "RESOURCE_NOT_FOUND",
+        "message": "Resource not found",
+        "requestId": "01KXQEMECGFS79M4NKKVBQAAMW"
+      }
+    }
+  ]
+}

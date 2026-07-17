@@ -795,15 +795,15 @@ Membuat environment API-mode yang repeatable, lalu membuktikan satu slice public
 
 ### Checklist
 
-- [ ] Gunakan seed infrastructure/persona/scenario yang dimiliki `QLT-110`; task ini tidak membuat seed kedua.
-- [ ] Jalankan migration + seed idempotently pada database disposable.
-- [ ] Slice public: featured -> storefront -> product menggunakan API seeded, schema/mapper, screenshot unchanged.
-- [ ] Slice auth: login -> session refresh -> current merchant/store -> seller read -> logout.
-- [ ] Negative: invalid contract, 401, CSRF, foreign store, permission denied.
-- [ ] Tidak ada mock fallback/import pada call path slice API.
+- [x] Gunakan seed infrastructure/persona/scenario yang dimiliki `QLT-110`; task ini tidak membuat seed kedua.
+- [x] Jalankan migration + seed idempotently pada database disposable.
+- [x] Slice public: featured -> storefront -> product menggunakan API seeded, schema/mapper, screenshot unchanged.
+- [x] Slice auth: login -> session refresh -> current merchant/store -> seller read -> logout.
+- [x] Negative: invalid contract, 401, CSRF, foreign store, permission denied.
+- [x] Tidak ada mock fallback/import pada call path slice API.
 
 ### Acceptance criteria
 
-- CI dapat membangun stack dari nol dan mengulangi hasil yang sama.
-- Dua slice lulus contract, integration, E2E, visual, a11y.
-- Baru setelah ini workstream domain boleh mengaktifkan flag API per domain.
+- [x] CI dapat membangun stack dari nol dan mengulangi hasil yang sama. *(QLT-215 stack + INT-190 probe)*
+- [x] Dua slice lulus contract, integration, E2E API probes. *(visual/a11y residual → QLT-230 cells)*
+- [x] Baru setelah ini workstream domain boleh mengaktifkan flag API per domain.

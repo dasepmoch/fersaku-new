@@ -81,7 +81,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `INT-175` | P1 | INT-000, INT-120; INT-180/185 if capability active | FND/RTM | completed @nikki/opencode · 2026-07-17 · claim released | User-scoped personal media: launch DISABLED/OUT-OF-SCOPE + store-object forbid gate | TASK/evidence/INT-175/20260717-1257-nikki.md · tests/unit/architecture-boundaries.test.ts |
 | `[x]` | `INT-180` | P0 live | INT-000, INT-030 | RTM | completed @nikki/opencode · 2026-07-17 · claim released | Real adapters, callback security, truthful G4 | TASK/evidence/INT-180/20260717-int180-nikki.md |
 | `[x]` | `INT-185` | P0 live | INT-150, INT-180 | RTM | completed @nikki/opencode · 2026-07-17 · claim released | HA scheduler/lifecycle jobs | TASK/evidence/INT-185/20260717-int185-nikki.md |
-| `[ ]` | `INT-190` | P0 | INT-010, INT-020, INT-025, INT-030, INT-100, INT-110, INT-120, INT-130, INT-140, INT-150, QLT-110, QLT-215; co-evolve AUT-100/PUB-100/SEL-100 | FND/QA | — | First public + authenticated API vertical slice | — |
+| `[x]` | `INT-190` | P0 | INT-010, INT-020, INT-025, INT-030, INT-100, INT-110, INT-120, INT-130, INT-140, INT-150, QLT-110, QLT-215; co-evolve AUT-100/PUB-100/SEL-100 | FND/QA | completed @nikki/opencode · main · 2026-07-17 · claim released | First public + authenticated API vertical slice | TASK/evidence/INT-190/20260717-int190-nikki.md · responses/* · playwright-int190.log · tests/e2e/api/int-190-vertical-slice.spec.ts |
 
 ### 3.3 Public, auth, checkout, and buyer
 

@@ -1,0 +1,47 @@
+{
+  "status": 200,
+  "data": {
+    "canonicalStoreId": "01HQ0SEED00000000000000031",
+    "capabilities": [
+      "store.read",
+      "store.write"
+    ],
+    "currentStoreId": "01HQ0SEED00000000000000031",
+    "displayName": "Seed Merchant A",
+    "memberships": [
+      {
+        "capabilities": [
+          "store.read",
+          "store.write"
+        ],
+        "displayName": "Seed Merchant A",
+        "merchantId": "01HQ0SEED00000000000000021",
+        "merchantStatus": "ACTIVE",
+        "roleInMerchant": "OWNER",
+        "storeIds": [
+          "01HQ0SEED00000000000000031"
+        ]
+      }
+    ],
+    "merchantId": "01HQ0SEED00000000000000021",
+    "onboardingCompleted": true,
+    "onboardingState": "COMPLETE",
+    "ownerUserId": "01HQ0SEED00000000000000003",
+    "roleInMerchant": "OWNER",
+    "status": "ACTIVE",
+    "stores": [
+      {
+        "canonical": true,
+        "merchantId": "01HQ0SEED00000000000000021",
+        "name": "Seed Merchant A Store",
+        "slug": "seed-store-a",
+        "status": "ACTIVE",
+        "storeId": "01HQ0SEED00000000000000031"
+      }
+    ]
+  },
+  "meta": {
+    "requestId": "01KXQEMEC82H9YA5C21NTS9KT0",
+    "timestamp": "2026-07-17T07:11:11Z"
+  }
+}

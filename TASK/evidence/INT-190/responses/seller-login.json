@@ -1,0 +1,23 @@
+{
+  "status": 200,
+  "data": {
+    "user": {
+      "email": "seller.owner.a@seed.fersaku.test",
+      "emailVerified": true,
+      "id": "01HQ0SEED00000000000000003",
+      "mfaEnabled": false,
+      "mfaVerified": true,
+      "name": "Seller Owner A Seed",
+      "status": "ACTIVE",
+      "surface": "SELLER"
+    },
+    "mfaRequired": false,
+    "sessionId": "01KXQEMEBSH5WJDCQZ34HAVTZ4",
+    "csrfToken": "(redacted)"
+  },
+  "meta": {
+    "requestId": "01KXQEME9KFNHY7X3MA54HCGQW",
+    "timestamp": "2026-07-17T07:11:11Z"
+  },
+  "setCookiePresent": true
+}

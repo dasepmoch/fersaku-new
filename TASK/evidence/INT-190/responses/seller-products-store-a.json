@@ -1,0 +1,64 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "currentVersion": "1.0.0",
+      "description": "Seed description",
+      "glyph": "",
+      "id": "01HQ0SEED00000000000000043",
+      "includes": [],
+      "merchantId": "01HQ0SEED00000000000000021",
+      "palette": "",
+      "price": 15000,
+      "sales": 0,
+      "short": "Seed Archived Product",
+      "slug": "seed-archived-product",
+      "status": "archived",
+      "storeId": "01HQ0SEED00000000000000031",
+      "title": "Seed Archived Product",
+      "type": "code",
+      "updatesEnabled": true
+    },
+    {
+      "currentVersion": "1.0.0",
+      "description": "Seed description",
+      "glyph": "",
+      "id": "01HQ0SEED00000000000000042",
+      "includes": [],
+      "merchantId": "01HQ0SEED00000000000000021",
+      "palette": "",
+      "price": 50000,
+      "publishedAt": "2026-01-13T12:00:00Z",
+      "sales": 0,
+      "short": "Seed Published Product",
+      "slug": "seed-published-product",
+      "status": "published",
+      "storeId": "01HQ0SEED00000000000000031",
+      "title": "Seed Published Product",
+      "type": "code",
+      "updatesEnabled": true
+    },
+    {
+      "currentVersion": "1.0.0",
+      "description": "Seed description",
+      "glyph": "",
+      "id": "01HQ0SEED00000000000000041",
+      "includes": [],
+      "merchantId": "01HQ0SEED00000000000000021",
+      "palette": "",
+      "price": 25000,
+      "sales": 0,
+      "short": "Seed Draft Product",
+      "slug": "seed-draft-product",
+      "status": "draft",
+      "storeId": "01HQ0SEED00000000000000031",
+      "title": "Seed Draft Product",
+      "type": "code",
+      "updatesEnabled": true
+    }
+  ],
+  "meta": {
+    "requestId": "01KXQEMECAGP657PW7TEPD134W",
+    "timestamp": "2026-07-17T07:11:11Z"
+  }
+}

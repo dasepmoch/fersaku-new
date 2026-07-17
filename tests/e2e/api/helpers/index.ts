@@ -20,3 +20,4 @@ export {
   postFakeXenditPaidCallback,
   postSimulatePayment,
 } from "./callback";
+export { QLT110_SEED } from "./seed";
