@@ -150,6 +150,12 @@ export const queryKeys = {
     system: () => ["admin", "system"] as const,
     auditLogs: (filters: Record<string, unknown> = {}) =>
       ["admin", "audit-logs", "bounded", filters] as const,
+    /** ADM-360 — single event detail (no free-text PII in key). */
+    auditLog: (eventId: string) =>
+      ["admin", "audit-logs", "detail", eventId] as const,
+    auditIntegrity: () => ["admin", "audit-integrity"] as const,
+    auditExport: (exportId: string) =>
+      ["admin", "audit-exports", exportId] as const,
     /**
      * ADM-230: own admin profile/prefs/sessions — subject/session-bound.
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses staff.

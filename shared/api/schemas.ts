@@ -2214,18 +2214,80 @@ export const adminWithdrawalDtoSchema = z.object({
   providerFeeReference: z.string().optional(),
 });
 
+/**
+ * ADM-360 — BE admin.AuditEvent wire (JSON tags from domain/admin.AuditEvent).
+ * Display fields (actor/target/ip/result) are derived in the mapper; never invent hashes.
+ */
 export const adminAuditEventDtoSchema = z.object({
   id: z.string().min(1),
-  actor: z.string(),
-  action: z.string(),
-  target: z.string(),
-  ip: z.string(),
-  result: z.string(),
-  time: z.string(),
+  sequenceNo: z.number().int().optional(),
+  payloadHash: z.string().optional(),
+  createdAt: z.union([z.string(), z.number()]).optional(),
+  actorUserId: z.string().nullable().optional(),
+  action: z.string().nullable().optional(),
+  resourceType: z.string().nullable().optional(),
+  resourceId: z.string().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  requestId: z.string().nullable().optional(),
+  merchantId: z.string().nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  // Optional display-shaped aliases (mock / future projection)
+  actor: z.string().optional(),
+  target: z.string().optional(),
+  ip: z.string().optional(),
+  result: z.string().optional(),
+  time: z.string().optional(),
   context: z.string().optional(),
   previousHash: z.string().optional(),
   integrityHash: z.string().optional(),
 });
+
+/** GET /v1/admin/audit-logs — data wrapper `{ items }` (handler WriteData). */
+export const adminAuditEventListDataSchema = z.object({
+  items: z.array(adminAuditEventDtoSchema),
+});
+
+export const adminAuditEventListItemsEnvelopeSchema = successEnvelopeSchema(
+  adminAuditEventListDataSchema,
+);
+
+export const adminAuditEventEnvelopeSchema = successEnvelopeSchema(
+  adminAuditEventDtoSchema,
+);
+
+/** GET /v1/admin/audit-integrity */
+export const adminAuditIntegrityDtoSchema = z.object({
+  eventCount: z.number().int().min(0),
+  headSequence: z.number().int().min(0),
+  minSequence: z.number().int().min(0),
+  headPayloadHash: z.string().nullable().optional(),
+  headCreatedAt: z.union([z.string(), z.number()]).nullable().optional(),
+  chainMode: z.string(),
+  verifierStatus: z.string(),
+});
+
+export const adminAuditIntegrityEnvelopeSchema = successEnvelopeSchema(
+  adminAuditIntegrityDtoSchema,
+);
+
+/** POST/GET audit-exports job handle */
+export const adminAuditExportDtoSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1),
+  redactionPolicy: z.string().optional(),
+  requesterId: z.string().optional(),
+  reason: z.string().optional(),
+  rowCount: z.number().int().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  expiresAt: z.union([z.string(), z.number()]).nullable().optional(),
+  completedAt: z.union([z.string(), z.number()]).nullable().optional(),
+  createdAt: z.union([z.string(), z.number()]).optional(),
+  downloadUrl: z.string().url().optional(),
+});
+
+export const adminAuditExportEnvelopeSchema = successEnvelopeSchema(
+  adminAuditExportDtoSchema,
+);
 
 export const adminReviewDtoSchema = z.object({
   id: z.string().min(1),
@@ -2331,6 +2393,7 @@ export const adminPaymentListEnvelopeSchema =
 export const adminWithdrawalListEnvelopeSchema = adminListEnvelopeSchema(
   adminWithdrawalDtoSchema,
 );
+/** Array-shaped list envelope (legacy / alternate). Prefer items wrapper. */
 export const adminAuditEventListEnvelopeSchema = adminListEnvelopeSchema(
   adminAuditEventDtoSchema,
 );
@@ -2713,6 +2776,10 @@ export type AdminProviderLookupResultDto = z.infer<
 >;
 export type AdminWithdrawalDto = z.infer<typeof adminWithdrawalDtoSchema>;
 export type AdminAuditEventDto = z.infer<typeof adminAuditEventDtoSchema>;
+export type AdminAuditIntegrityDto = z.infer<
+  typeof adminAuditIntegrityDtoSchema
+>;
+export type AdminAuditExportDto = z.infer<typeof adminAuditExportDtoSchema>;
 export type AdminReviewDto = z.infer<typeof adminReviewDtoSchema>;
 export type AdminReviewModerateDto = z.infer<
   typeof adminReviewModerateDataSchema

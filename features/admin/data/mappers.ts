@@ -6,6 +6,8 @@
 import { compactRupiah } from "@/shared/format/money";
 import type {
   AdminAuditEventDto,
+  AdminAuditExportDto,
+  AdminAuditIntegrityDto,
   AdminBuyerDto,
   AdminBuyerPurchaseDto,
   AdminBuyerSessionDto,
@@ -32,6 +34,9 @@ import type {
 } from "@/shared/api/schemas";
 import type {
   AdminAuditEvent,
+  AdminAuditExportJob,
+  AdminAuditIntegrity,
+  AdminAuditSearchFilters,
   AdminBuyer,
   AdminBuyerPurchase,
   AdminBuyerSession,
@@ -501,21 +506,179 @@ export function mapAdminWithdrawalDto(
   };
 }
 
+function auditOptionalString(
+  value: string | null | undefined,
+): string | undefined {
+  if (value == null) return undefined;
+  const t = String(value).trim();
+  return t.length > 0 ? t : undefined;
+}
+
+function auditDisplayTime(
+  createdAt: string | number | undefined,
+  timeAlias: string | undefined,
+): string {
+  if (typeof timeAlias === "string" && timeAlias.trim()) return timeAlias.trim();
+  if (createdAt == null) return "—";
+  if (typeof createdAt === "number" && Number.isFinite(createdAt)) {
+    return new Date(createdAt).toISOString();
+  }
+  const s = String(createdAt).trim();
+  return s || "—";
+}
+
+function auditMetadataString(
+  meta: Record<string, unknown> | undefined,
+  key: string,
+): string | undefined {
+  if (!meta) return undefined;
+  const v = meta[key];
+  if (typeof v === "string" && v.trim()) return v.trim();
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return undefined;
+}
+
+/**
+ * ADM-360 — map BE audit wire → existing AdminAuditEvent display contract.
+ * Never fabricates IP/result/hash when absent from server payload.
+ */
 export function mapAdminAuditEventDto(
   dto: AdminAuditEventDto,
 ): AdminAuditEvent {
+  const action =
+    auditOptionalString(dto.action) ??
+    auditOptionalString(dto.metadata?.action as string | undefined) ??
+    "—";
+  const actor =
+    auditOptionalString(dto.actor) ??
+    auditMetadataString(dto.metadata, "actorEmail") ??
+    auditMetadataString(dto.metadata, "actor") ??
+    auditOptionalString(dto.actorUserId) ??
+    "—";
+  const resourceType = auditOptionalString(dto.resourceType);
+  const resourceId = auditOptionalString(dto.resourceId);
+  const target =
+    auditOptionalString(dto.target) ??
+    (resourceType && resourceId
+      ? `${resourceType}:${resourceId}`
+      : resourceId ?? resourceType ?? "—");
+  const ip =
+    auditOptionalString(dto.ip) ??
+    auditMetadataString(dto.metadata, "ip") ??
+    auditMetadataString(dto.metadata, "ipAddress") ??
+    "—";
+  const result =
+    auditOptionalString(dto.result) ??
+    auditMetadataString(dto.metadata, "result") ??
+    auditMetadataString(dto.metadata, "outcome") ??
+    "—";
+  const context =
+    auditOptionalString(dto.context) ??
+    auditOptionalString(dto.reason) ??
+    auditMetadataString(dto.metadata, "context");
+  const integrityHash =
+    auditOptionalString(dto.integrityHash) ??
+    auditOptionalString(dto.payloadHash);
+  const previousHash = auditOptionalString(dto.previousHash);
+  const requestId = auditOptionalString(dto.requestId);
+  const merchantId = auditOptionalString(dto.merchantId);
+
   return {
     id: dto.id,
-    actor: dto.actor,
-    action: dto.action,
-    target: dto.target,
-    ip: dto.ip,
-    result: dto.result,
-    time: dto.time,
-    ...(dto.context ? { context: dto.context } : {}),
-    ...(dto.previousHash ? { previousHash: dto.previousHash } : {}),
-    ...(dto.integrityHash ? { integrityHash: dto.integrityHash } : {}),
+    actor,
+    action,
+    target,
+    ip,
+    result,
+    time: auditDisplayTime(dto.createdAt, dto.time),
+    ...(context ? { context } : {}),
+    ...(previousHash ? { previousHash } : {}),
+    ...(integrityHash ? { integrityHash } : {}),
+    ...(requestId ? { requestId } : {}),
+    ...(typeof dto.sequenceNo === "number"
+      ? { sequenceNo: dto.sequenceNo }
+      : {}),
+    ...(merchantId ? { merchantId } : {}),
+    ...(resourceType ? { resourceType } : {}),
+    ...(resourceId ? { resourceId } : {}),
   };
+}
+
+export function mapAdminAuditIntegrityDto(
+  dto: AdminAuditIntegrityDto,
+): AdminAuditIntegrity {
+  const status = String(dto.verifierStatus ?? "").trim();
+  const chainValid = status === "OK";
+  const headHash = auditOptionalString(
+    dto.headPayloadHash == null ? undefined : String(dto.headPayloadHash),
+  );
+  let headCreatedAt: string | undefined;
+  if (dto.headCreatedAt != null) {
+    if (typeof dto.headCreatedAt === "number") {
+      headCreatedAt = new Date(dto.headCreatedAt).toISOString();
+    } else {
+      const s = String(dto.headCreatedAt).trim();
+      headCreatedAt = s || undefined;
+    }
+  }
+  return {
+    eventCount: Math.max(0, Math.trunc(dto.eventCount)),
+    headSequence: Math.max(0, Math.trunc(dto.headSequence)),
+    minSequence: Math.max(0, Math.trunc(dto.minSequence)),
+    ...(headHash ? { headPayloadHash: headHash } : {}),
+    ...(headCreatedAt ? { headCreatedAt } : {}),
+    chainMode: String(dto.chainMode || "—"),
+    verifierStatus: status || "—",
+    chainValid,
+  };
+}
+
+export function mapAdminAuditExportDto(
+  dto: AdminAuditExportDto,
+): AdminAuditExportJob {
+  const toIso = (v: string | number | null | undefined): string | null | undefined => {
+    if (v == null) return v === null ? null : undefined;
+    if (typeof v === "number") return new Date(v).toISOString();
+    const s = String(v).trim();
+    return s || null;
+  };
+  return {
+    id: dto.id,
+    status: dto.status,
+    ...(dto.redactionPolicy ? { redactionPolicy: dto.redactionPolicy } : {}),
+    ...(dto.reason ? { reason: dto.reason } : {}),
+    ...(dto.rowCount !== undefined ? { rowCount: dto.rowCount } : {}),
+    ...(dto.errorMessage !== undefined
+      ? { errorMessage: dto.errorMessage }
+      : {}),
+    expiresAt: toIso(dto.expiresAt) ?? null,
+    completedAt: toIso(dto.completedAt) ?? null,
+    ...(dto.createdAt != null
+      ? { createdAt: toIso(dto.createdAt) ?? undefined }
+      : {}),
+    ...(dto.downloadUrl ? { downloadUrl: dto.downloadUrl } : {}),
+  };
+}
+
+/** Normalize audit search filters for query keys (no free-text PII). */
+export function normalizeAdminAuditSearchFilters(
+  filters: AdminAuditSearchFilters = {},
+): AdminAuditSearchFilters {
+  const limitRaw = filters.limit;
+  const limit =
+    typeof limitRaw === "number" && Number.isFinite(limitRaw)
+      ? Math.min(100, Math.max(1, Math.trunc(limitRaw)))
+      : 50;
+  const out: AdminAuditSearchFilters = { limit };
+  const action = auditOptionalString(filters.action);
+  const resourceType = auditOptionalString(filters.resourceType);
+  const resourceId = auditOptionalString(filters.resourceId);
+  const actorUserId = auditOptionalString(filters.actorUserId);
+  if (action) out.action = action;
+  if (resourceType) out.resourceType = resourceType;
+  if (resourceId) out.resourceId = resourceId;
+  if (actorUserId) out.actorUserId = actorUserId;
+  return out;
 }
 
 /** Wire → existing AdminStatus chrome (Published / Pending moderation / …). */

@@ -150,7 +150,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `ADM-330` | P1 | ADM-110, SEL-270 | ADM | completed @nikki/opencode · main · 2026-07-17 · claim released | Review moderation | TASK/evidence/ADM-330/20260717-adm330-nikki.md · features/admin/data/reviews.ts · review-commands.ts · screens/reviews.tsx · tests/unit/adm-330-admin-reviews.test.ts |
 | `[ ]` | `ADM-340` | P0 PII | ADM-110, INT-140; INT-180/185 **if KYC runtime active**; co-evolve SEL-330 | ADM/RTM | — | KYC review + server-decrypted content | — |
 | `[ ]` | `ADM-350` | P0/P1 | ADM-110, SEL-320; INT-180/185 **if callback/delivery runtime active** | ADM/RTM | — | Callback and seller-delivery operations | — |
-| `[ ]` | `ADM-360` | P0/P1 | ADM-110, ADM-120 | ADM | — | Audit search/integrity/export | — |
+| `[x]` | `ADM-360` | P0/P1 | ADM-110, ADM-120 | ADM | completed @nikki/opencode · main · 2026-07-17 · claim released | Audit search/integrity/export | TASK/evidence/ADM-360/20260717-adm360-nikki.md · features/admin/data/audit.ts · domains/admin-extras.tsx · tests/unit/adm-360-admin-audit.test.ts |
 | `[ ]` | `ADM-370` | P0 live | ADM-110; INT-180/185 **if runtime controls active**; QLT-320 framework; `admin-runtime-audit` QLT-320 cell before canary | ADM/RTM | — | Truthful provider/system/emergency controls | — |
 | `[ ]` | `ADM-380` | P1/P2 decision | ADM-110, INT-025, UI-080 | ADM/UX | — | Campaign implemented or live-disabled | — |
 | `[ ]` | `ADM-390` | P0 security | ADM-100, ADM-110, INT-120, INT-140, INT-150 | ADM/FND | — | Server-issued bounded impersonation | — |

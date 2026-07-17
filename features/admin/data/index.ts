@@ -1,5 +1,8 @@
 export type {
   AdminAuditEvent,
+  AdminAuditExportJob,
+  AdminAuditIntegrity,
+  AdminAuditSearchFilters,
   AdminBoundedList,
   AdminBuyer,
   AdminBuyerPurchase,
@@ -89,12 +92,22 @@ export {
 } from "./order-payment-commands";
 export {
   demoAdminOverview,
-  demoAuditEvents,
   demoPlatformVolume,
   getAdminOverview,
   getPlatformVolume,
-  listAuditEvents,
 } from "./overview";
+export {
+  createAuditExport,
+  demoAuditEvents,
+  demoAuditIntegrity,
+  getAuditEvent,
+  getAuditExport,
+  getAuditIntegrity,
+  isAuditExportComplete,
+  listAuditEvents,
+  runAuditExportJob,
+  type CreateAuditExportInput,
+} from "./audit";
 export {
   acceptStaffInvitation,
   archiveAdminRole,
@@ -197,6 +210,9 @@ export {
   mapAdminOrderDto,
   mapAdminOrderFeeDisplay,
   mapAdminOrderStatusDisplay,
+  mapAdminAuditEventDto,
+  mapAdminAuditExportDto,
+  mapAdminAuditIntegrityDto,
   mapAdminOverviewDto,
   mapAdminPaymentDto,
   mapAdminPaymentMismatchDto,
@@ -213,6 +229,7 @@ export {
   mapPlatformVolumeBuckets,
   nextMerchantApiAccessDisplay,
   nextMerchantStatusDisplay,
+  normalizeAdminAuditSearchFilters,
   normalizeAdminListFilters,
   overviewMetricLabels,
   slugifyRoleCode,
@@ -235,7 +252,9 @@ export {
   useAdminBuyerSessions,
   useAdminBuyerSupportWriteEnabled,
   useAdminBuyers,
+  useAdminAuditEvent,
   useAdminAuditEvents,
+  useAdminAuditIntegrity,
   useAdminFulfillmentForceEnabled,
   useAdminFulfillments,
   useAdminInventory,

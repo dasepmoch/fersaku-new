@@ -193,8 +193,51 @@ export type AdminAuditEvent = {
   result: string;
   time: string;
   context?: string;
+  /** Server chain hashes only — never client-fabricated on API path. */
   previousHash?: string;
   integrityHash?: string;
+  /** Optional server fields for detail inspector (API path). */
+  requestId?: string;
+  sequenceNo?: number;
+  merchantId?: string;
+  resourceType?: string;
+  resourceId?: string;
+};
+
+/** ADM-360 — server integrity verifier projection. */
+export type AdminAuditIntegrity = {
+  eventCount: number;
+  headSequence: number;
+  minSequence: number;
+  headPayloadHash?: string;
+  headCreatedAt?: string;
+  chainMode: string;
+  /** OK | AUDIT_CHAIN_BROKEN | PENDING | … — server authority. */
+  verifierStatus: string;
+  chainValid: boolean;
+};
+
+/** ADM-360 — async export job handle (no local full-data CSV on API). */
+export type AdminAuditExportJob = {
+  id: string;
+  status: string;
+  redactionPolicy?: string;
+  reason?: string;
+  rowCount?: number | null;
+  errorMessage?: string | null;
+  expiresAt?: string | null;
+  completedAt?: string | null;
+  createdAt?: string;
+  downloadUrl?: string;
+};
+
+/** ADM-360 — server filter bag for audit search (no PII query keys). */
+export type AdminAuditSearchFilters = {
+  action?: string;
+  resourceType?: string;
+  resourceId?: string;
+  actorUserId?: string;
+  limit?: number;
 };
 
 export type AdminRole = {

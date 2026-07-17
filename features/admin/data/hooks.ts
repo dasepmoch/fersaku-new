@@ -38,12 +38,17 @@ import {
 } from "./access";
 import {
   demoAdminOverview,
-  demoAuditEvents,
   demoPlatformVolume,
   getAdminOverview,
   getPlatformVolume,
-  listAuditEvents,
 } from "./overview";
+import {
+  demoAuditEvents,
+  demoAuditIntegrity,
+  getAuditEvent,
+  getAuditIntegrity,
+  listAuditEvents,
+} from "./audit";
 import { demoInventory, getInventory } from "./inventory";
 import {
   demoAdminFulfillments,
@@ -64,7 +69,11 @@ import {
   listPayments,
 } from "./payments";
 import { demoWithdrawals, getWithdrawal, listWithdrawals } from "./withdrawals";
-import { normalizeAdminListFilters } from "./mappers";
+import type { AdminAuditSearchFilters } from "./contracts";
+import {
+  normalizeAdminAuditSearchFilters,
+  normalizeAdminListFilters,
+} from "./mappers";
 
 function useAdminReadEnabled(permission: string): boolean {
   const claims = useSessionClaims();
@@ -335,16 +344,54 @@ export function useAdminBuyerSessions(buyerId: string) {
   });
 }
 
-export function useAdminAuditEvents(filters: AdminListFilters = {}) {
+export function useAdminAuditEvents(
+  filters: AdminListFilters & AdminAuditSearchFilters = {},
+) {
   const enabled = useAdminReadEnabled("audit.read");
   const normalized = normalizeAdminListFilters(filters);
+  const search = normalizeAdminAuditSearchFilters({
+    action:
+      typeof filters.action === "string"
+        ? filters.action
+        : typeof filters.status === "string"
+          ? filters.status
+          : undefined,
+    resourceType: filters.resourceType,
+    resourceId: filters.resourceId,
+    actorUserId: filters.actorUserId,
+    limit: (normalized.limit as number | undefined) ?? filters.limit,
+  });
   return useAppQuery({
-    queryKey: queryKeys.admin.auditLogs(normalized),
+    queryKey: queryKeys.admin.auditLogs({ ...normalized, ...search }),
     queryFn: (signal) => listAuditEvents(filters, signal),
     surface: "private",
     keepPrevious: true,
     enabled,
     placeholderData: mockPlaceholderData("adminRead", demoAuditEvents()),
+  });
+}
+
+/** ADM-360 — event detail; API uses GET /audit-logs/{id}. */
+export function useAdminAuditEvent(eventId: string) {
+  const enabled = useAdminReadEnabled("audit.read");
+  const id = eventId.trim();
+  return useAppQuery({
+    queryKey: queryKeys.admin.auditLog(id),
+    queryFn: (signal) => getAuditEvent(id, signal),
+    enabled: Boolean(id) && enabled,
+    surface: "private",
+  });
+}
+
+/** ADM-360 — server chain integrity (API) / mock local (mock). */
+export function useAdminAuditIntegrity() {
+  const enabled = useAdminReadEnabled("audit.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.auditIntegrity(),
+    queryFn: (signal) => getAuditIntegrity(signal),
+    surface: "private",
+    enabled,
+    placeholderData: mockPlaceholderData("adminRead", demoAuditIntegrity()),
   });
 }
 

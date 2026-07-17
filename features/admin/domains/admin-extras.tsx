@@ -17,9 +17,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   type AdminAuditEvent,
+  isAuditExportComplete,
+  runAuditExportJob,
+  useAdminAuditEvent,
   useAdminAuditEvents,
+  useAdminAuditIntegrity,
 } from "@/features/admin/data";
 import { cn } from "@/lib/utils";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
@@ -77,30 +82,54 @@ function downloadAuditCsv(events: AdminAuditEvent[]) {
   return true;
 }
 
+function openSignedDownload(url: string) {
+  if (typeof window === "undefined") return false;
+  window.open(url, "_blank", "noopener,noreferrer");
+  return true;
+}
+
 export function AdminAuditExplorer() {
+  const isMock = getDomainSource("adminRead") === "mock";
   const { data } = useAdminAuditEvents();
+  const { data: integrity } = useAdminAuditIntegrity();
   const queryClient = useQueryClient();
   const auditEvents = useMemo(() => data ?? [], [data]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All actors");
   const [action, setAction] = useState("All actions");
   const [result, setResult] = useState("All results");
-  const [selected, setSelected] = useState<AdminAuditEvent | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedFallback, setSelectedFallback] =
+    useState<AdminAuditEvent | null>(null);
   const [exported, setExported] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [verification, setVerification] = useState<
     "idle" | "valid" | "invalid"
   >("idle");
+
+  const { data: selectedDetail } = useAdminAuditEvent(selectedId ?? "");
+
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    return selectedDetail ?? selectedFallback;
+  }, [selectedId, selectedDetail, selectedFallback]);
+
   useEffect(() => {
     const refresh = () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.admin.auditLogs(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.auditIntegrity(),
       });
     };
     window.addEventListener("fersaku-admin-audit-updated", refresh);
     return () =>
       window.removeEventListener("fersaku-admin-audit-updated", refresh);
   }, [queryClient]);
+
   const actions = [...new Set(auditEvents.map((e) => e.action))];
   const rows = useMemo(
     () =>
@@ -116,28 +145,130 @@ export function AdminAuditExplorer() {
     [auditEvents, query, category, action, result],
   );
   const { pageRows, pagination } = useClientPagination(rows);
-  const chainIsValid = useMemo(
-    () => verifyMockAuditIntegrity(auditEvents),
-    [auditEvents],
-  );
+
+  const chainIsValid = useMemo(() => {
+    if (isMock) return verifyMockAuditIntegrity(auditEvents);
+    return integrity?.chainValid ?? false;
+  }, [isMock, auditEvents, integrity]);
+
+  const chainLabel = useMemo(() => {
+    if (isMock) {
+      return chainIsValid ? "chain verified" : "chain invalid";
+    }
+    if (!integrity) return "integrity pending";
+    if (integrity.chainValid) {
+      return `${integrity.chainMode} verified`;
+    }
+    return `${integrity.verifierStatus || "integrity failed"}`;
+  }, [isMock, chainIsValid, integrity]);
+
   const exportRows = useCallback(() => {
-    if (!downloadAuditCsv(rows)) return;
-    appendClientAuditEvent({
-      actor: "admin@fersaku.id",
-      action: "audit.export.csv",
-      target: "filtered-audit-events",
-      ip: "mock-admin-session",
-      result: "Success",
-      context: `Exported ${rows.length} filtered audit events`,
-    });
-    setExported(true);
-    window.setTimeout(() => setExported(false), 1800);
-  }, [rows]);
+    if (exportBusy) return;
+    setExportError(null);
+
+    if (isMock) {
+      if (!downloadAuditCsv(rows)) return;
+      appendClientAuditEvent({
+        actor: "admin@fersaku.id",
+        action: "audit.export.csv",
+        target: "filtered-audit-events",
+        ip: "mock-admin-session",
+        result: "Success",
+        context: `Exported ${rows.length} filtered audit events`,
+      });
+      setExported(true);
+      window.setTimeout(() => setExported(false), 1800);
+      return;
+    }
+
+    setExportBusy(true);
+    void (async () => {
+      try {
+        const job = await runAuditExportJob({
+          reason: "Admin console audit trail export request",
+          filter: {
+            ...(action !== "All actions" ? { action } : {}),
+            ...(result !== "All results" ? { result } : {}),
+          },
+        });
+        if (!isAuditExportComplete(job)) {
+          setExportError(
+            job.errorMessage ||
+              `Export ${job.status.toLowerCase()} — try again later`,
+          );
+          return;
+        }
+        if (job.downloadUrl) {
+          openSignedDownload(job.downloadUrl);
+        }
+        setExported(true);
+        window.setTimeout(() => setExported(false), 1800);
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.auditLogs(),
+        });
+      } catch {
+        setExportError("Export failed. Server remains authority.");
+      } finally {
+        setExportBusy(false);
+      }
+    })();
+  }, [action, exportBusy, isMock, queryClient, result, rows]);
+
   useEffect(() => {
     window.addEventListener("fersaku-admin-audit-export", exportRows);
     return () =>
       window.removeEventListener("fersaku-admin-audit-export", exportRows);
   }, [exportRows]);
+
+  const openInspector = (event: AdminAuditEvent) => {
+    setSelectedFallback(event);
+    setSelectedId(event.id);
+    setVerification("idle");
+    if (isMock) {
+      appendClientAuditEvent({
+        actor: "admin@fersaku.id",
+        action: "audit.event.inspect",
+        target: event.id,
+        ip: "mock-admin-session",
+        result: "Success",
+        context: "Read-only audit event detail access",
+      });
+    }
+  };
+
+  const inspectorEntries = useMemo(() => {
+    if (!selected) return [] as Array<[string, string]>;
+    const base: Record<string, string> = {
+      id: selected.id,
+      time: selected.time,
+      actor: selected.actor,
+      action: selected.action,
+      target: selected.target,
+      ip: selected.ip,
+      result: selected.result,
+      ...(selected.context ? { context: selected.context } : {}),
+      ...(selected.previousHash
+        ? { previousHash: selected.previousHash }
+        : {}),
+      ...(selected.integrityHash
+        ? { integrityHash: selected.integrityHash }
+        : {}),
+      category: categoryOf(selected.actor),
+    };
+    if (selected.requestId) base.requestId = selected.requestId;
+    if (typeof selected.sequenceNo === "number") {
+      base.sequenceNo = String(selected.sequenceNo);
+    }
+    if (selected.merchantId) base.merchantId = selected.merchantId;
+    if (selected.resourceType) base.resourceType = selected.resourceType;
+    if (selected.resourceId) base.resourceId = selected.resourceId;
+    if (isMock) {
+      base.userAgent = "Mozilla/5.0 • Chrome 126 • Linux";
+      if (!base.requestId) base.requestId = "req_01J2V9X24J";
+    }
+    return Object.entries(base);
+  }, [selected, isMock]);
+
   return (
     <>
       <section className={`${adminPanel} overflow-hidden`}>
@@ -169,15 +300,24 @@ export function AdminAuditExplorer() {
             />
             <button
               onClick={exportRows}
-              className="flex h-10 items-center gap-2 rounded-xl border border-[#dfe3eb] bg-white px-3 text-[9px] font-extrabold"
+              disabled={exportBusy}
+              className="flex h-10 items-center gap-2 rounded-xl border border-[#dfe3eb] bg-white px-3 text-[9px] font-extrabold disabled:opacity-60"
             >
               <Download className="size-3.5" />{" "}
-              {exported ? "CSV downloaded" : "Export CSV"}
+              {exportBusy
+                ? "Exporting…"
+                : exported
+                  ? "CSV downloaded"
+                  : "Export CSV"}
             </button>
           </div>
           <div className="mt-3 flex items-center gap-2 text-[8px] text-[#707a90]">
             <Filter className="size-3" /> Showing {rows.length} of{" "}
-            {auditEvents.length} mock events • Date range: last 24 hours
+            {auditEvents.length} {isMock ? "mock events" : "events"} • Date
+            range: last 24 hours
+            {exportError ? (
+              <span className="ml-2 font-bold text-[#b55039]">{exportError}</span>
+            ) : null}
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -240,17 +380,7 @@ export function AdminAuditExplorer() {
                     <button
                       type="button"
                       aria-label={`Inspect audit event ${event.id}`}
-                      onClick={() => {
-                        setSelected(event);
-                        appendClientAuditEvent({
-                          actor: "admin@fersaku.id",
-                          action: "audit.event.inspect",
-                          target: event.id,
-                          ip: "mock-admin-session",
-                          result: "Success",
-                          context: "Read-only audit event detail access",
-                        });
-                      }}
+                      onClick={() => openInspector(event)}
                       className="text-[#5b7cfa]"
                     >
                       <Eye className="size-4" />
@@ -283,10 +413,14 @@ export function AdminAuditExplorer() {
         <TablePagination {...pagination} />
         <div className="flex flex-col gap-2 border-t border-[#e5e8ef] px-5 py-4 text-[9px] text-[#707a90] sm:flex-row sm:items-center sm:justify-between">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5 text-[#2a8954]" />
-            Append-only mock •{" "}
-            {chainIsValid ? "chain verified" : "chain invalid"}• production
-            retention: 7 years
+            <ShieldCheck
+              className={cn(
+                "size-3.5",
+                chainIsValid ? "text-[#2a8954]" : "text-[#b55039]",
+              )}
+            />
+            {isMock ? "Append-only mock" : "Append-only server"} • {chainLabel}•
+            production retention: 7 years
           </span>
           <b>{rows.length} filtered events</b>
         </div>
@@ -313,19 +447,18 @@ export function AdminAuditExplorer() {
               </div>
               <button
                 aria-label="Close event inspector"
-                onClick={() => setSelected(null)}
+                onClick={() => {
+                  setSelectedId(null);
+                  setSelectedFallback(null);
+                  setVerification("idle");
+                }}
                 className="ml-auto grid size-9 place-items-center rounded-xl border border-[#dfe3eb]"
               >
                 <X className="size-4" />
               </button>
             </div>
             <div className="mt-6 grid gap-3">
-              {Object.entries({
-                ...selected,
-                category: categoryOf(selected.actor),
-                userAgent: "Mozilla/5.0 • Chrome 126 • Linux",
-                requestId: "req_01J2V9X24J",
-              }).map(([key, value]) => (
+              {inspectorEntries.map(([key, value]) => (
                 <div
                   key={key}
                   className="grid grid-cols-[110px_1fr] gap-3 border-b border-[#e8eaf0] pb-3 text-[9px]"
@@ -341,9 +474,9 @@ export function AdminAuditExplorer() {
                 This event is append-only.
               </div>
               <p className="mt-1 leading-4">
-                Detail access is itself recorded as an audit event. Integrity
-                verification uses a deterministic local mock chain; production
-                uses the server-side signed SHA-256 chain.
+                {isMock
+                  ? "Detail access is itself recorded as an audit event. Integrity verification uses a deterministic local mock chain; production uses the server-side signed SHA-256 chain."
+                  : "Integrity verification uses the server JCS-1 chain verifier. Hashes are shown only when the backend provides them."}
               </p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -366,6 +499,11 @@ export function AdminAuditExplorer() {
                 onClick={() => {
                   setVerification(chainIsValid ? "valid" : "invalid");
                   window.setTimeout(() => setVerification("idle"), 1800);
+                  if (!isMock) {
+                    void queryClient.invalidateQueries({
+                      queryKey: queryKeys.admin.auditIntegrity(),
+                    });
+                  }
                 }}
                 className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#11182a] text-[8px] font-extrabold text-white"
               >

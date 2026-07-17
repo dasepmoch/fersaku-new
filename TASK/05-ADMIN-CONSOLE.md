@@ -444,12 +444,12 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 
 ### Checklist FE
 
-- [ ] Schema/mapper canonical audit fields to existing display contract; no fabricated IP/result/hash.
-- [ ] Server filter/date/actor/action/resource/request/merchant with the declared `NumberedPageList` profile where the existing table has pagination; no PII query key.
-- [ ] Detail and integrity verification endpoint authoritative.
-- [ ] Export creates async job with reason/permission/MFA if required; poll bounded; short signed download; no local CSV of full data.
-- [ ] Remove `appendMockAuditEvent` and local chain from API path.
-- [ ] Display request/audit IDs through existing UI only, with copy safe.
+- [x] Schema/mapper canonical audit fields to existing display contract; no fabricated IP/result/hash.
+- [x] Server filter/date/actor/action/resource/request/merchant with the declared `NumberedPageList` profile where the existing table has pagination; no PII query key.
+- [x] Detail and integrity verification endpoint authoritative.
+- [x] Export creates async job with reason/permission/MFA if required; poll bounded; short signed download; no local CSV of full data.
+- [x] Remove `appendMockAuditEvent` and local chain from API path.
+- [x] Display request/audit IDs through existing UI only, with copy safe.
 
 ### Checklist BE
 
