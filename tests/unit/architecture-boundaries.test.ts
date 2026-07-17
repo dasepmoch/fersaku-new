@@ -472,6 +472,51 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("ADM-380: campaign commands are authoritatively disabled without BE", () => {
+    /**
+     * Campaigns are launch DISABLED / OUT-OF-SCOPE (no admin campaign route).
+     * Route disposition stays decision_pending; UI gates publish/test/pause on
+     * adminWrite mock only; API/disabled must not load seed or fake-success.
+     */
+    const routes = path.join(root, "features/admin/config/routes.ts");
+    const disposition = path.join(
+      root,
+      "features/admin/commerce/campaigns/disposition.ts",
+    );
+    const announcements = path.join(
+      root,
+      "features/admin/commerce/campaigns/announcements.tsx",
+    );
+    const preview = path.join(
+      root,
+      "features/admin/commerce/campaigns/preview.tsx",
+    );
+    const routesSource = readFileSync(routes, "utf8");
+    const dispositionSource = readFileSync(disposition, "utf8");
+    const announcementsSource = readFileSync(announcements, "utf8");
+    const previewSource = readFileSync(preview, "utf8");
+
+    expect(routesSource).toMatch(
+      /campaigns:\s*\{[\s\S]*?disposition:\s*["']decision_pending["']/,
+    );
+    expect(dispositionSource).toMatch(/getDomainSource\(["']adminWrite["']\)/);
+    expect(dispositionSource).toMatch(/campaignCommandsEnabled/);
+    expect(dispositionSource).toMatch(
+      /Campaign commands are out of scope for launch \(ADM-380 deferred/,
+    );
+    expect(announcementsSource).toMatch(/campaignCommandsEnabled/);
+    expect(announcementsSource).toMatch(/disabled=\{!commandsEnabled\}/);
+    expect(announcementsSource).toMatch(/if\s*\(\s*!commandsEnabled\s*\)\s*return/);
+    expect(announcementsSource).toMatch(
+      /fixturesAllowed\s*\?\s*campaignSeed\s*:\s*\[\]/,
+    );
+    expect(announcementsSource).not.toMatch(
+      /apiRequest|\/v1\/admin\/campaign|publishCampaign|postCampaign/i,
+    );
+    expect(previewSource).toMatch(/role="presentation"/);
+    expect(previewSource).not.toMatch(/onClick/);
+  });
+
   it("PUB-200: contact submit is authoritatively disabled in API mode", () => {
     /**
      * Contact is OUT-OF-SCOPE for launch (no public contact endpoint; UXE-010

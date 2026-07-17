@@ -25,7 +25,6 @@ import {
   useAdminProviderInfrastructure,
   useSetAdminEmergencyControlMutation,
 } from "./hooks";
-import { demoEmergencyControls } from "./mock";
 
 export function EmergencySwitchboard() {
   const isMock = getDomainSource("adminRead") === "mock";
@@ -34,6 +33,7 @@ export function EmergencySwitchboard() {
   const emergencyQuery = useAdminEmergencyControls();
   const mutation = useSetAdminEmergencyControlMutation();
 
+  // Mock fixtures are owned by hooks/api (INT-170); presentation never imports mock.
   const serverControls =
     infra.data?.emergencyControls?.length
       ? infra.data.emergencyControls
@@ -41,9 +41,7 @@ export function EmergencySwitchboard() {
         ? emergencyQuery.data
         : null;
 
-  const [controls, setControls] = useState<EmergencyControl[]>(() =>
-    isMock ? demoEmergencyControls() : [],
-  );
+  const [controls, setControls] = useState<EmergencyControl[]>([]);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [ticket, setTicket] = useState("");

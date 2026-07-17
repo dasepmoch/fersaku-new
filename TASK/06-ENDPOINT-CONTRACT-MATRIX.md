@@ -228,7 +228,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Providers/system | provider/system UI | `GET /v1/admin/providers`, `GET /v1/admin/system` | M | Truthful real-adapter health. | ADM-370 |
 | Emergency controls | system UI | `GET /v1/admin/system/emergency-controls`, `POST /v1/admin/system/emergency-controls` | M | Version/MFA/reason/ticket/idempotency. FE wired ADM-370. | ADM-370 |
 | Fee read/preview | fee UI | `GET /v1/admin/system/fees`, `POST /v1/admin/system/fees/preview` | M | Read-only active + pure preview; no publish. | ADM-370 |
-| Campaigns | campaign UI | no canonical method/path assigned or mounted | D | Implement/freeze exact campaign operations or live-disable explicitly. | ADM-380 |
+| Campaigns | campaign UI | no canonical method/path assigned or mounted | D | **Launch DISABLED / OUT-OF-SCOPE (ADM-380):** route `decision_pending` + domain-source command gate; no transport. Re-open only as IMPLEMENT with OpenAPI ops. | ADM-380 |
 
 ### 11.1 Admin page permission-code drift
 
@@ -237,7 +237,7 @@ The navigation boundary and backend middleware currently speak different permiss
 | Surface | FE permission snapshot | Backend guard snapshot | Status | Required resolution | Task/evidence |
 | --- | --- | --- | --- | --- | --- |
 | Admin own profile | `profile.read` | `/v1/me/profile` authenticated-subject only; code absent | M | Use admin-surface + subject ownership or add one deliberate profile code; remove unknown alias. | ADM-110/230 |
-| Campaign list | `campaigns.read` | No route; registry only has `campaigns.publish` | D | Keep disabled until ADM-380 defines separate read/publish operations and permissions. | ADM-110/380 |
+| Campaign list | `campaigns.read` | No route; registry only has `campaigns.publish` | D | **Launch DISABLED (ADM-380):** no `campaigns.read`; surface `decision_pending`; `campaigns.publish` alone must not open list UI. | ADM-110/380 |
 | Withdrawal list vs review | `withdrawals.read` | GET and POST review use `withdrawals.review` | M | Prefer `withdrawals.read` on list/detail and `withdrawals.review` on mutation, or document/test a deliberate combined policy. | ADM-110/310 |
 | KYC list/detail vs transition | `kyc.read` | GET and POST transition use `kyc.review` | M | Prefer `kyc.read` for safe reads and `kyc.review` for transition/document content; never grant review only to render list. | ADM-110/340 |
 | Provider health | `providers.read` | `GET /v1/admin/providers` uses `payments.read` | M | Add dedicated provider-read or explicitly justify/test the payment-read coupling. | ADM-110/370 |

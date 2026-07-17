@@ -28,15 +28,29 @@ import {
   Status,
 } from "./pieces";
 import { AnnouncementPreview } from "./preview";
+import {
+  CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY,
+  CAMPAIGN_COMMANDS_DISABLED_TITLE,
+  campaignCommandsEnabled,
+  campaignListFixturesAllowed,
+  getCampaignDomainSource,
+} from "./disposition";
 
 import { type Campaign, campaignSeed } from "./data";
 import { writeVersionedStorage } from "@/shared/storage/versioned-storage";
 
 type CampaignControl =
-  { kind: "publish" } | { kind: "toggle"; campaign: Campaign };
+  | { kind: "publish" }
+  | { kind: "toggle"; campaign: Campaign };
 
 export function CampaignsAnnouncements() {
-  const [campaigns, setCampaigns] = useState(campaignSeed);
+  const campaignSource = getCampaignDomainSource();
+  const commandsEnabled = campaignCommandsEnabled(campaignSource);
+  const fixturesAllowed = campaignListFixturesAllowed(campaignSource);
+
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() =>
+    fixturesAllowed ? campaignSeed : [],
+  );
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
     null,
   );
@@ -59,7 +73,12 @@ export function CampaignsAnnouncements() {
   const [control, setControl] = useState<CampaignControl | null>(null);
   const requiresRecentMfa = kind === "critical" || kind === "compliance";
 
+  const metricValue = (mockValue: string) => (fixturesAllowed ? mockValue : "—");
+  const metricNote = (mockNote: string) =>
+    fixturesAllowed ? mockNote : "Unavailable without campaign backend";
+
   const toggleChannel = (channel: string) => {
+    if (!commandsEnabled) return;
     setChannels((items) =>
       items.includes(channel)
         ? items.filter((item) => item !== channel)
@@ -68,6 +87,7 @@ export function CampaignsAnnouncements() {
   };
 
   const publish = () => {
+    if (!commandsEnabled) return;
     const next: Campaign = {
       id: `CMP-${Date.now().toString().slice(-6)}`,
       title,
@@ -100,7 +120,7 @@ export function CampaignsAnnouncements() {
   };
 
   const confirmControl = () => {
-    if (!control) return;
+    if (!control || !commandsEnabled) return;
     if (control.kind === "publish") {
       if (requiresRecentMfa && !recentMfaConfirmed) {
         throw new Error("Recent MFA confirmation is required");
@@ -128,32 +148,43 @@ export function CampaignsAnnouncements() {
 
   return (
     <>
+      {!commandsEnabled && (
+        <section className={`${adminPanel} mb-4 border border-[#efd39a] bg-[#fff8e9] p-5 text-[#806f4f]`}>
+          <p className="text-[8px] font-extrabold tracking-[.14em] uppercase">
+            Capability unavailable
+          </p>
+          <p className="mt-2 text-[9px] leading-5">
+            {CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY}
+          </p>
+        </section>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <OpsMetric
           icon={Megaphone}
           label="Active broadcasts"
-          value="2"
-          note="1 emergency, 1 compliance"
+          value={metricValue("2")}
+          note={metricNote("1 emergency, 1 compliance")}
           tone="warning"
         />
         <OpsMetric
           icon={Mail}
           label="Emails this month"
-          value="18.420"
-          note="71,8% open rate"
+          value={metricValue("18.420")}
+          note={metricNote("71,8% open rate")}
         />
         <OpsMetric
           icon={BellRing}
           label="In-app delivered"
-          value="12.480"
-          note="94,2% open rate"
+          value={metricValue("12.480")}
+          note={metricNote("94,2% open rate")}
           tone="success"
         />
         <OpsMetric
           icon={Users}
           label="Reachable sellers"
-          value="1.284"
-          note="96 restricted accounts"
+          value={metricValue("1.284")}
+          note={metricNote("96 restricted accounts")}
         />
       </div>
 
@@ -177,12 +208,18 @@ export function CampaignsAnnouncements() {
               </p>
             </div>
             <button
+              type="button"
+              disabled={!commandsEnabled}
+              title={
+                commandsEnabled ? undefined : CAMPAIGN_COMMANDS_DISABLED_TITLE
+              }
               onClick={() => {
+                if (!commandsEnabled) return;
                 setComposer(true);
                 setPublished(false);
                 setRecentMfaConfirmed(false);
               }}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[8px] font-extrabold text-[#11182a] sm:ml-auto"
+              className="flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[8px] font-extrabold text-[#11182a] disabled:cursor-not-allowed disabled:opacity-45 sm:ml-auto"
             >
               <Plus className="size-3.5" /> Create campaign
             </button>
@@ -209,51 +246,62 @@ export function CampaignsAnnouncements() {
               </tr>
             </thead>
             <tbody>
-              {pageRows.map((campaign) => (
-                <tr
-                  key={campaign.id}
-                  className="border-t border-[#e8eaf0] text-[9px]"
-                >
-                  <td className="px-5 py-4">
-                    <b className="block">{campaign.title}</b>
-                    <span className="mt-1 block font-mono text-[7px] text-[#7c879d]">
-                      {campaign.id}
-                    </span>
-                  </td>
-                  <td>{campaign.audience}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {campaign.channels.map((channel) => (
-                        <span
-                          key={channel}
-                          className="rounded-lg bg-[#eef1f6] px-2 py-1 text-[7px] font-bold"
-                        >
-                          {channel}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <Status value={campaign.status} />
-                  </td>
-                  <td>{campaign.sent}</td>
-                  <td>{campaign.openRate}</td>
-                  <td>{campaign.created}</td>
-                  <td>
-                    <button
-                      onClick={() => setSelectedCampaign(campaign)}
-                      aria-label={`Inspect ${campaign.title}`}
-                      className="grid size-8 place-items-center rounded-lg border border-[#dce1e9]"
-                    >
-                      <Eye className="size-3.5" />
-                    </button>
+              {pageRows.length === 0 ? (
+                <tr className="border-t border-[#e8eaf0] text-[9px]">
+                  <td colSpan={8} className="px-5 py-8 text-[#7c879d]">
+                    {fixturesAllowed
+                      ? "No campaigns yet."
+                      : "No campaign list is available without a backend route (ADM-380)."}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                pageRows.map((campaign) => (
+                  <tr
+                    key={campaign.id}
+                    className="border-t border-[#e8eaf0] text-[9px]"
+                  >
+                    <td className="px-5 py-4">
+                      <b className="block">{campaign.title}</b>
+                      <span className="mt-1 block font-mono text-[7px] text-[#7c879d]">
+                        {campaign.id}
+                      </span>
+                    </td>
+                    <td>{campaign.audience}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {campaign.channels.map((channel) => (
+                          <span
+                            key={channel}
+                            className="rounded-lg bg-[#eef1f6] px-2 py-1 text-[7px] font-bold"
+                          >
+                            {channel}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <Status value={campaign.status} />
+                    </td>
+                    <td>{campaign.sent}</td>
+                    <td>{campaign.openRate}</td>
+                    <td>{campaign.created}</td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCampaign(campaign)}
+                        aria-label={`Inspect ${campaign.title}`}
+                        className="grid size-8 place-items-center rounded-lg border border-[#dce1e9]"
+                      >
+                        <Eye className="size-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-        <TablePagination {...pagination} />
+        {fixturesAllowed ? <TablePagination {...pagination} /> : null}
       </section>
 
       <section className={`${adminPanel} mt-4 p-5`}>
@@ -265,11 +313,17 @@ export function CampaignsAnnouncements() {
             </p>
           </div>
           <button
+            type="button"
+            disabled={!commandsEnabled}
+            title={
+              commandsEnabled ? undefined : CAMPAIGN_COMMANDS_DISABLED_TITLE
+            }
             onClick={() => {
+              if (!commandsEnabled) return;
               setHealthRefreshed(true);
               setTimeout(() => setHealthRefreshed(false), 1800);
             }}
-            className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold"
+            className="ml-auto flex h-9 items-center gap-2 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold disabled:cursor-not-allowed disabled:opacity-45"
           >
             {healthRefreshed ? (
               <Check className="size-3.5" />
@@ -284,20 +338,28 @@ export function CampaignsAnnouncements() {
             icon={Mail}
             name="Transactional email"
             provider="Resend"
-            status="Operational"
-            note="HTML + text fallback"
+            status={fixturesAllowed ? "Operational" : "Unavailable"}
+            note={
+              fixturesAllowed
+                ? "HTML + text fallback"
+                : "No campaign delivery backend"
+            }
           />
           <ChannelHealth
             icon={BellRing}
             name="In-app announcements"
             provider="Fersaku config"
-            status="Operational"
-            note="Instant seller dashboard delivery"
+            status={fixturesAllowed ? "Operational" : "Unavailable"}
+            note={
+              fixturesAllowed
+                ? "Instant seller dashboard delivery"
+                : "No campaign delivery backend"
+            }
           />
         </div>
       </section>
 
-      {composer && (
+      {composer && commandsEnabled && (
         <div className="fixed inset-0 z-[190] overflow-y-auto bg-[#080d1b]/75 p-4 backdrop-blur-sm">
           <div className="mx-auto my-6 grid w-full max-w-6xl gap-4 lg:grid-cols-[1fr_420px]">
             <section className="rounded-[26px] bg-white p-6 text-[#131827] shadow-2xl">
@@ -453,7 +515,9 @@ export function CampaignsAnnouncements() {
                   )}
                   <div className="mt-6 flex flex-col gap-2 sm:flex-row">
                     <button
+                      type="button"
                       onClick={() => {
+                        if (!commandsEnabled) return;
                         setTestSent(true);
                         setTimeout(() => setTestSent(false), 1800);
                       }}
@@ -467,13 +531,16 @@ export function CampaignsAnnouncements() {
                       {testSent ? "Test delivered" : "Send test to me"}
                     </button>
                     <button
+                      type="button"
                       disabled={
+                        !commandsEnabled ||
                         !title.trim() ||
                         !message.trim() ||
                         channels.length === 0 ||
                         (requiresRecentMfa && !recentMfaConfirmed)
                       }
                       onClick={() => {
+                        if (!commandsEnabled) return;
                         setComposer(false);
                         setControl({ kind: "publish" });
                       }}
@@ -509,9 +576,13 @@ export function CampaignsAnnouncements() {
                 <p className="mt-3 text-[9px] leading-5 whitespace-pre-line text-[#667188]">
                   {message || "Message body"}
                 </p>
-                <button className="mt-4 h-9 rounded-xl bg-[#11182a] px-4 text-[8px] font-extrabold text-white">
+                <span
+                  role="presentation"
+                  aria-hidden="true"
+                  className="mt-4 inline-flex h-9 cursor-default select-none items-center rounded-xl bg-[#11182a] px-4 text-[8px] font-extrabold text-white"
+                >
                   {ctaLabel || "Open Fersaku"}
-                </button>
+                </span>
               </div>
             </aside>
           </div>
@@ -552,11 +623,17 @@ export function CampaignsAnnouncements() {
             </div>
           </div>
           <button
+            type="button"
+            disabled={!commandsEnabled}
+            title={
+              commandsEnabled ? undefined : CAMPAIGN_COMMANDS_DISABLED_TITLE
+            }
             onClick={() => {
+              if (!commandsEnabled) return;
               setControl({ kind: "toggle", campaign: selectedCampaign });
               setSelectedCampaign(null);
             }}
-            className="mt-5 h-10 w-full rounded-xl bg-[#11182a] text-[8px] font-extrabold text-white"
+            className="mt-5 h-10 w-full rounded-xl bg-[#11182a] text-[8px] font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#aeb5c2]"
           >
             {selectedCampaign.status === "Paused"
               ? "Resume campaign & audit"
@@ -564,7 +641,7 @@ export function CampaignsAnnouncements() {
           </button>
         </OpsModal>
       )}
-      {control && (
+      {control && commandsEnabled && (
         <ControlDialog
           title={
             control.kind === "publish"

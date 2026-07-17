@@ -32,7 +32,6 @@ import {
 } from "./hooks";
 import { isAdminKycApiDomain } from "./api";
 import { createIdempotencyKey } from "@/shared/api/idempotency";
-import { demoAdminKycQueue } from "./mock";
 
 export function KycVerificationCenter() {
   const canReview = useAdminKycReviewEnabled();
@@ -55,10 +54,9 @@ export function KycVerificationCenter() {
   });
   const transitionMutation = useTransitionAdminKycMutation();
 
+  // Mock fixtures live in hooks/api only (INT-170 presentation boundary).
   const applicants = useMemo(() => {
-    const base =
-      queueQuery.data ??
-      (isApi ? [] : demoAdminKycQueue());
+    const base = queueQuery.data ?? [];
     return base.map((item) => {
       const o = localOverrides[item.id];
       if (!o) return item;
@@ -68,7 +66,7 @@ export function KycVerificationCenter() {
         rejectionReason: o.rejectionReason ?? item.rejectionReason,
       };
     });
-  }, [queueQuery.data, localOverrides, isApi]);
+  }, [queueQuery.data, localOverrides]);
 
   const selected = applicants.find((item) => item.id === selectedId);
   const columns = [

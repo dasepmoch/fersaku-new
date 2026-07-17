@@ -501,13 +501,13 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 
 **Priority:** P2/P1 if launch-active
 **Route UI:** `/admin/campaigns`
-**Status:** backend route/domain not found at snapshot.
+**Status:** **Launch DISABLED / OUT-OF-SCOPE** — no canonical BE route; live-disabled 2026-07-17.
 
 ### Required decision
 
-Jika campaign tidak termasuk launch scope, capability flag harus menjaga API cutover surface ini tetap unavailable melalui existing state—tanpa mock data di production. Jika termasuk scope, implement backend berikut.
+- [x] **Product decision:** campaign/announcement commands are **not** launch-scope. Capability stays unavailable on API/live (route `decision_pending` + domain-source command gate). No mock campaign rows or fake publish/send on production path. IMPLEMENT path deferred until product re-opens with full aggregate + OpenAPI.
 
-### Backend task
+### Backend task (IMPLEMENT only — deferred)
 
 - [ ] Define announcement/campaign aggregate: draft, audience/surface, schedule, status, content constraints, acknowledgement/read model.
 - [ ] Endpoints list/detail/create/update/test/publish/pause/archive and recipient acknowledgement.
@@ -518,16 +518,20 @@ Jika campaign tidak termasuk launch scope, capability flag harus menjaga API cut
 
 ### Frontend task
 
-- [ ] Map backend contract to existing campaign/announcement UI; no new design.
-- [ ] `announcements.tsx` already renders `TablePagination`; if capability is activated, use authoritative `NumberedPageList` (`page/pageSize/totalCount/pageCount`). If backend remains absent, keep the entire route/capability disabled/`DecisionPending` and do not wire a hidden cursor or mock page count.
-- [ ] Replace local seed/timers with queries/mutations.
-- [ ] Preserve draft inputs on conflict/error; no optimistic published status.
-- [ ] Exact notification/campaign cache invalidation.
+- [x] Live-disable: keep `disposition: "decision_pending"` (nav hidden, boundary denies even `*`); domain-source gate on `adminWrite` — mock may keep prototype; api/disabled disable create/publish/test/pause and hide seed fixtures.
+- [x] `announcements.tsx` preserves chrome; no `NumberedPageList` claim without BE; no campaign transport mounted.
+- [x] Preview CTAs are noninteractive (`role="presentation"`); never submit/publish from preview.
+- [ ] Map backend contract to existing campaign/announcement UI when IMPLEMENT re-opens; no new design.
+- [ ] If capability is activated later: authoritative `NumberedPageList` (`page/pageSize/totalCount/pageCount`).
+- [ ] Replace local seed/timers with queries/mutations (IMPLEMENT).
+- [ ] Preserve draft inputs on conflict/error; no optimistic published status (IMPLEMENT).
+- [ ] Exact notification/campaign cache invalidation (IMPLEMENT).
 
 ### Tests/AC
 
-- Invalid audience/schedule, duplicate publish, pause race, permission/MFA, test rate limit, delivery dedupe/ack.
-- No mock campaign visible in live if backend is disabled.
+- [x] Disposition unit + architecture gate: disabled on api path without BE; mock path ok; route decision_pending.
+- Invalid audience/schedule, duplicate publish, pause race, permission/MFA, test rate limit, delivery dedupe/ack (IMPLEMENT).
+- [x] No mock campaign visible in live if backend is disabled.
 
 ---
 

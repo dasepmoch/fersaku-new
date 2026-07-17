@@ -1,6 +1,6 @@
 /**
  * Store-scoped object upload lifecycle adapters (SEL-230).
- * Product/public assets only — never personal avatar (INT-175).
+ * Product/public assets only — never actor-scoped me/* media (INT-175).
  *
  * Flow: presign → direct PUT to signed URL → complete → poll READY.
  * Signed URLs never enter React Query keys or localStorage.
@@ -104,7 +104,7 @@ export async function createStoreObjectUpload(
 }
 
 /**
- * Direct PUT to presigned URL (not via Next / apiRequest).
+ * Direct PUT to presigned URL (not via Next / transport client).
  * Do not set multipart Content-Type; send declared content type only.
  */
 export async function putToPresignedUrl(

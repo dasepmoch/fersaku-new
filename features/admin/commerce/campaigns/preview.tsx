@@ -32,9 +32,13 @@ export function AnnouncementPreview({
             {message || "Announcement message"}
           </p>
           {ctaLabel && (
-            <button className="mt-3 rounded-lg [background-color:#11182a] bg-current px-3 py-2 text-[7px] font-extrabold text-white">
+            <span
+              role="presentation"
+              aria-hidden="true"
+              className="mt-3 inline-flex cursor-default select-none rounded-lg [background-color:#11182a] bg-current px-3 py-2 text-[7px] font-extrabold text-white opacity-90"
+            >
               {ctaLabel}
-            </button>
+            </span>
           )}
         </div>
       </div>

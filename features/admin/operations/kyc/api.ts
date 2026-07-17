@@ -5,10 +5,7 @@
  */
 
 import type { z } from "zod";
-import {
-  apiBinaryRequest,
-  apiRequest,
-} from "@/shared/api/http-client";
+import { apiBinaryRequest, apiRequest } from "@/shared/api/http-client";
 import {
   adminKycCaseEnvelopeSchema,
   adminKycListEnvelopeSchema,

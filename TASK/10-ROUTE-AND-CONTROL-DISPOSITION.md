@@ -163,7 +163,7 @@ For every seller row, existing `DashboardShell`, seller cards/tables/forms/dialo
 | `/admin/webhooks` | Provider callback and seller-delivery as distinct resources | Replay/retry state distinct; payload redacted | search/detail/replay/retry/force -> ADM-350 |
 | `/admin/audit-logs` | Append-only audit/integrity/export | Integrity warning truthful; export async/redacted | search/detail/verify/export -> ADM-360 |
 | `/admin/providers`, `/admin/system` | Real adapter/queue/health/fee/emergency state | No fake operational status; commands versioned/MFA/reason/audit | refresh/preview/emergency -> ADM-370 |
-| `/admin/campaigns` | No canonical backend at snapshot; existing announcements screen does render `TablePagination` | API flag blocked until implementation or existing controls disabled; if activated, preserve `NumberedPageList`/`TablePagination` exactly, otherwise keep the whole capability `DecisionPending`/disabled | save/publish/pause/list currently `DECISION` -> ADM-380 |
+| `/admin/campaigns` | No canonical backend; launch OUT-OF-SCOPE | **Launch DISABLED:** route `decision_pending` (nav/boundary fail-closed) + `adminWrite` domain-source gate on create/publish/test/pause; no seed fixtures or pagination claim on API/live; mock may keep prototype | save/publish/pause/list **DISABLED** -> ADM-380 |
 
 Every admin mutation uses existing `ControlDialog`/domain modal and `AdminButton` pending semantics where applicable. Hiding an action via permission boundary is supplementary; direct HTTP negative test remains mandatory.
 
@@ -225,8 +225,8 @@ This table calls out controls that are currently mock/no-op/hardcoded or securit
 | Admin inventory reveal | No admin route | Secure admin facade or disabled | ADM-320 |
 | Admin order force/revoke vs fulfillment actions | Order detail exposes resend/provider verification; force/revoke are characterized only in fulfillment composition | Keep order-screen force/revoke disabled; wire retry/force/revoke only in existing fulfillment controls | ADM-300/320 |
 | Admin KYC document | `GET /v1/admin/kyc/{caseId}/documents/{documentId}/content` | Server-auth/decrypt/stream/no-store route | ADM-340 |
-| Admin campaigns | No canonical backend | Implement frozen contract or disable entire command capability | ADM-380 |
-| Campaign preview CTAs | Preview-only buttons can look actionable | Explicit noninteractive preview or disabled existing control; never submit/publish from preview | ADM-380 |
+| Admin campaigns | No canonical backend | **Launch DISABLED / OUT-OF-SCOPE** — route disposition + domain-source command gate; no fake publish/send | ADM-380 |
+| Campaign preview CTAs | Preview-only buttons can look actionable | Noninteractive `role="presentation"` preview chrome; never submit/publish from preview | ADM-380 |
 | Theme toggle, responsive menus, static navigation, print | Genuine client/navigation behavior | `STATIC`; preserve exact existing behavior | UI-090 |
 
 Rule for inventory maintenance: any agent finding an additional active `button`, `form`, `href="#"`, local timer success, local storage mutation, demo authority, or hardcoded live claim must add a row before enabling its surface.

@@ -21,7 +21,6 @@ import type {
   HealthStatusKind,
   ProviderHealthRow,
 } from "@/features/admin/operations/emergency/data";
-import { demoComponentHealth } from "@/features/admin/operations/emergency/mock";
 import { GenericProvider, type ProviderItem } from "./generic-provider";
 
 const ICON_BY_ID: Record<string, LucideIcon> = {
@@ -96,12 +95,10 @@ function toProviderItem(row: ProviderHealthRow): ProviderItem {
 export function ProviderInfrastructure() {
   const isMock = getDomainSource("adminRead") === "mock";
   const query = useAdminProviderInfrastructure();
-  const rows: ProviderHealthRow[] =
-    query.data?.rows?.length
-      ? query.data.rows
-      : isMock
-        ? demoComponentHealth()
-        : [];
+  // Mock fixtures live in hooks/api only (INT-170 presentation boundary).
+  const rows: ProviderHealthRow[] = query.data?.rows?.length
+    ? query.data.rows
+    : [];
 
   const items = useMemo(() => rows.map(toProviderItem), [rows]);
   const [selected, setSelected] = useState<string>("");

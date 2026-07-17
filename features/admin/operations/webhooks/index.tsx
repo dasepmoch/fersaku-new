@@ -36,7 +36,6 @@ import {
   useReplayAdminProviderCallbackMutation,
   useRetryAdminSellerWebhookDeliveryMutation,
 } from "./hooks";
-import { demoAdminWebhooks } from "./mock";
 import { webhookRowKey } from "./mappers";
 
 const sourceStatus = (row: WebhookRow) =>
@@ -62,11 +61,11 @@ export function WebhookOperations() {
   const retryingKeyRef = useRef<string | null>(null);
   const idemRef = useRef<string | null>(null);
 
+  // Mock fixtures live in hooks/api only (INT-170 presentation boundary).
   const baseRows = useMemo(() => {
     if (localRows) return localRows;
-    if (isApi) return consoleQuery.data?.rows ?? [];
-    return consoleQuery.data?.rows ?? demoAdminWebhooks();
-  }, [localRows, isApi, consoleQuery.data?.rows]);
+    return consoleQuery.data?.rows ?? [];
+  }, [localRows, consoleQuery.data?.rows]);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -149,7 +148,7 @@ export function WebhookOperations() {
 
       // Mock path: optimistic local update + client audit.
       setLocalRows((items) => {
-        const current = items ?? demoAdminWebhooks();
+        const current = items ?? consoleQuery.data?.rows ?? [];
         return current.map((item) =>
           webhookRowKey(item) !== key
             ? item
@@ -545,7 +544,7 @@ export function WebhookOperations() {
             onComplete={() => {
               if (!isApi) {
                 setLocalRows((items) => {
-                  const current = items ?? demoAdminWebhooks();
+                  const current = items ?? consoleQuery.data?.rows ?? [];
                   return current.map((item) =>
                     item.id === selected.id
                       ? { ...item, orderStatus: "Fulfilled" }

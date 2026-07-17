@@ -16,8 +16,8 @@ export type AdminPageMeta = {
    */
   permission: PermissionCode | null;
   /**
-   * decision_pending: surface stays unavailable (nav hidden, boundary denied)
-   * until a later task defines route + permission (e.g. ADM-380 campaigns).
+   * decision_pending: surface stays unavailable (nav hidden, boundary denied).
+   * ADM-380 campaigns: launch DISABLED / OUT-OF-SCOPE (no BE route); re-open only as IMPLEMENT.
    */
   disposition: AdminRouteDisposition;
 };
@@ -25,7 +25,7 @@ export type AdminPageMeta = {
 /**
  * Canonical FE↔BE route permission map (ADM-110 drift resolution):
  * - profile: authenticated admin only (no profile.read in BE registry)
- * - campaigns: decision_pending (campaigns.publish alone must not open list UI)
+ * - campaigns: decision_pending / launch DISABLED (ADM-380; campaigns.publish alone must not open list UI)
  * - withdrawals GET: withdrawals.review (combined read/review until separate read code)
  * - kyc GET: kyc.review (combined until separate kyc.read)
  * - providers: payments.read (GET /v1/admin/providers)
