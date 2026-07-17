@@ -45,6 +45,10 @@ import {
   listAuditEvents,
 } from "./overview";
 import { demoInventory, getInventory } from "./inventory";
+import {
+  demoAdminFulfillments,
+  listAdminFulfillments,
+} from "./fulfillments";
 import { demoAdminReviews, listAdminReviews } from "./reviews";
 import { demoMerchants, getMerchant, listMerchants } from "./merchants";
 import {
@@ -465,6 +469,37 @@ export function useAdminInventory(filters: AdminListFilters = {}) {
     enabled,
     placeholderData: mockPlaceholderData("adminRead", demoInventory()),
   });
+}
+
+/** ADM-320 — inventory.reveal gate for privileged reveal control. */
+export function useAdminInventoryRevealEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "inventory.reveal");
+}
+
+/** ADM-320 — fulfillment list (fulfillment.read). */
+export function useAdminFulfillments(filters: AdminListFilters = {}) {
+  const enabled = useAdminReadEnabled("fulfillment.read");
+  const normalized = normalizeAdminListFilters(filters);
+  return useAppQuery({
+    queryKey: queryKeys.admin.fulfillment(normalized),
+    queryFn: (signal) => listAdminFulfillments(filters, signal),
+    surface: "private",
+    keepPrevious: true,
+    enabled,
+    placeholderData: mockPlaceholderData(
+      "adminRead",
+      demoAdminFulfillments(),
+    ),
+  });
+}
+
+/** ADM-320 — force-fulfill / revoke require fulfillment.force on API path. */
+export function useAdminFulfillmentForceEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "fulfillment.force");
 }
 
 export function useAdminReviews(filters: AdminListFilters = {}) {

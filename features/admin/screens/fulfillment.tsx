@@ -19,96 +19,40 @@ import {
   X,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+import {
+  useAdminFulfillmentForceEnabled,
+  useAdminFulfillments,
+  useForceFulfillAdminOrderMutation,
+  useRevokeAdminDeliveryMutation,
+  type AdminFulfillment,
+} from "@/features/admin/data";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
-
-type FulfillmentStatus = "Fulfilled" | "Failed" | "Pending" | "Revoked";
-
-type FulfillmentRow = {
-  id: string;
-  order: string;
-  merchant: string;
-  type: string;
-  target: string;
-  status: FulfillmentStatus;
-  attempts: number;
-  time: string;
-};
 
 type FulfillmentAction = {
   kind: "inspect" | "retry" | "revoke";
   rowId: string;
 };
 
-const initialFulfillmentRows: FulfillmentRow[] = [
-  {
-    id: "dlv_92841",
-    order: "FRS-240712-1842",
-    merchant: "Asep AI Tools",
-    type: "Download",
-    target: "AI Prompt Pack",
-    status: "Fulfilled",
-    attempts: 1,
-    time: "14:33:23",
-  },
-  {
-    id: "dlv_92840",
-    order: "FRS-240712-1839",
-    merchant: "Digital Supply ID",
-    type: "Credentials",
-    target: "Canva Pro Team",
-    status: "Fulfilled",
-    attempts: 1,
-    time: "14:31:18",
-  },
-  {
-    id: "dlv_92836",
-    order: "FRS-240712-1834",
-    merchant: "KodeKita",
-    type: "Stock code",
-    target: "Steam Wallet",
-    status: "Failed",
-    attempts: 3,
-    time: "14:24:01",
-  },
-  {
-    id: "dlv_92831",
-    order: "FRS-240712-1821",
-    merchant: "DesignKit Studio",
-    type: "Protected link",
-    target: "Figma Landing Kit",
-    status: "Pending",
-    attempts: 0,
-    time: "14:18:44",
-  },
-];
-
 function FulfillmentControl() {
-  const [rows, setRows] = useState(initialFulfillmentRows);
+  const isApi = getDomainSource("adminRead") === "api";
+  const canForce = useAdminFulfillmentForceEnabled();
+  const { data } = useAdminFulfillments();
+  const forceMutation = useForceFulfillAdminOrderMutation();
+  const revokeMutation = useRevokeAdminDeliveryMutation();
+  const rows = useMemo(
+    () => (data ?? []) as AdminFulfillment[],
+    [data],
+  );
   const [action, setAction] = useState<FulfillmentAction | null>(null);
   const { pageRows, pagination } = useClientPagination(rows);
   const actionRow = rows.find((row) => row.id === action?.rowId);
-  const confirmAction = () => {
-    if (!action || action.kind === "inspect") return;
-    setRows((current) =>
-      current.map((row) =>
-        row.id !== action.rowId
-          ? row
-          : action.kind === "retry" && row.status === "Failed"
-            ? {
-                ...row,
-                status: "Fulfilled",
-                attempts: row.attempts + 1,
-              }
-            : action.kind === "revoke" && row.status !== "Revoked"
-              ? { ...row, status: "Revoked" }
-              : row,
-      ),
-    );
-  };
+
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
@@ -176,17 +120,24 @@ function FulfillmentControl() {
                     <div className="flex gap-2">
                       {row.status === "Failed" && (
                         <button
+                          type="button"
+                          disabled={!canForce}
                           onClick={() =>
                             setAction({ kind: "retry", rowId: row.id })
                           }
-                          title="Retry fulfillment"
+                          title={
+                            canForce
+                              ? "Retry fulfillment"
+                              : "fulfillment.force permission required"
+                          }
                           aria-label={`Retry fulfillment ${row.id}`}
-                          className="rounded-lg border border-[#dce1e9] p-2"
+                          className="rounded-lg border border-[#dce1e9] p-2 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <RefreshCcw className="size-3" />
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() =>
                           setAction({ kind: "inspect", rowId: row.id })
                         }
@@ -198,12 +149,18 @@ function FulfillmentControl() {
                       </button>
                       {row.status !== "Revoked" && (
                         <button
+                          type="button"
+                          disabled={!canForce}
                           onClick={() =>
                             setAction({ kind: "revoke", rowId: row.id })
                           }
-                          title="Revoke delivery"
+                          title={
+                            canForce
+                              ? "Revoke delivery"
+                              : "fulfillment.force permission required"
+                          }
                           aria-label={`Revoke delivery ${row.id}`}
-                          className="rounded-lg border border-[#efc8c4] p-2 text-[#c6534c]"
+                          className="rounded-lg border border-[#efc8c4] p-2 text-[#c6534c] disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <Ban className="size-3" />
                         </button>
@@ -248,8 +205,22 @@ function FulfillmentControl() {
         <ControlDialog
           title={`${action.kind === "retry" ? "Retry fulfillment" : "Revoke delivery"} ${actionRow.id}`}
           target={actionRow.id}
+          requiresRecentMfa={isApi || getDomainSource("adminWrite") === "api"}
+          auditHandledExternally
           onClose={() => setAction(null)}
-          onConfirm={confirmAction}
+          onConfirm={async (reason) => {
+            if (action.kind === "retry") {
+              await forceMutation.mutateAsync({
+                orderId: actionRow.order,
+                reason,
+              });
+            } else {
+              await revokeMutation.mutateAsync({
+                orderId: actionRow.order,
+                reason,
+              });
+            }
+          }}
           danger={action.kind === "revoke"}
         />
       )}
@@ -267,7 +238,7 @@ function FulfillmentInspectionDialog({
   row,
   onClose,
 }: {
-  row: FulfillmentRow;
+  row: AdminFulfillment;
   onClose: () => void;
 }) {
   return (

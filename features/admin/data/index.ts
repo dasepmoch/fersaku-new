@@ -28,6 +28,9 @@ export type {
   AdminStockItem,
   AdminStockItemSecret,
   AdminStockProduct,
+  AdminFulfillment,
+  AdminFulfillmentCommandResult,
+  AdminFulfillmentStatus,
   AdminUserLookup,
   AdminUserRoleAssignment,
   AdminWithdrawal,
@@ -130,11 +133,28 @@ export {
   type SaveAdminRoleInput,
   type SaveAdminRoleResult,
 } from "./access";
-export { demoInventory, getInventory } from "./inventory";
 export {
+  demoInventory,
+  getInventory,
+  isInventoryRevealApi,
   revealInventoryItem,
   type RevealInventoryItemInput,
 } from "./inventory";
+export {
+  demoAdminFulfillments,
+  getAdminFulfillment,
+  listAdminFulfillments,
+  listAdminFulfillmentsPage,
+} from "./fulfillments";
+export {
+  forceFulfillAdminOrder,
+  isFulfillmentWriteApi,
+  revokeAdminDelivery,
+  useForceFulfillAdminOrderMutation,
+  useRevokeAdminDeliveryMutation,
+  type ForceFulfillAdminOrderInput,
+  type RevokeAdminDeliveryInput,
+} from "./fulfillment-commands";
 export {
   demoAdminReviews,
   listAdminReviews,
@@ -148,6 +168,7 @@ export {
 } from "./mutations";
 export {
   assertNoSecretsInAdminBuyerProjection,
+  assertNoSecretsInAdminInventory,
   formatCountId,
   formatSuccessRateBps,
   humanizeMerchantApiAccess,
@@ -155,6 +176,11 @@ export {
   mapAdminBuyerDto,
   mapAdminBuyerPurchaseDto,
   mapAdminBuyerSessionDto,
+  mapAdminDeliveryGrantCommandResult,
+  mapAdminFulfillmentDto,
+  mapAdminFulfillmentStatusDisplay,
+  mapAdminInventoryRevealDto,
+  mapAdminInventorySnapshotDto,
   mapAdminMaskedCredentialDto,
   mapAdminMerchantDto,
   mapAdminMerchantFinanceSummaryDto,
@@ -198,7 +224,10 @@ export {
   useAdminBuyerSupportWriteEnabled,
   useAdminBuyers,
   useAdminAuditEvents,
+  useAdminFulfillmentForceEnabled,
+  useAdminFulfillments,
   useAdminInventory,
+  useAdminInventoryRevealEnabled,
   useAdminMerchant,
   useAdminMerchantCredentials,
   useAdminMerchantFinance,

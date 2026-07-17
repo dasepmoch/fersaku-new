@@ -319,12 +319,12 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 
 ### Checklist FE
 
-- [ ] Remove `mock-recent-mfa` and body-claimed verification.
-- [ ] Secret component-local TTL; clear on unmount/visibility/logout; no query cache/export.
-- [ ] Split control ownership by actual JSX: `/admin/inventory` wires only its existing reveal action (disabled invalidate/delete remain disabled); `/admin/fulfillment` owns its existing retry/force/revoke composition. Do not add delivery controls to inventory or order screens.
-- [ ] Wire fulfillment rows/actions through hooks; remove initial local seed in API mode.
-- [ ] Preserve exact existing reveal/confirmation/fulfillment control UI.
-- [ ] Refetch exact inventory/fulfillment/order/audit keys after success.
+- [x] Remove `mock-recent-mfa` and body-claimed verification.
+- [x] Secret component-local TTL; clear on unmount/visibility/logout; no query cache/export.
+- [x] Split control ownership by actual JSX: `/admin/inventory` wires only its existing reveal action (disabled invalidate/delete remain disabled); `/admin/fulfillment` owns its existing retry/force/revoke composition. Do not add delivery controls to inventory or order screens.
+- [x] Wire fulfillment rows/actions through hooks; remove initial local seed in API mode.
+- [x] Preserve exact existing reveal/confirmation/fulfillment control UI.
+- [x] Refetch exact inventory/fulfillment/order/audit keys after success.
 
 ### Tests/AC
 

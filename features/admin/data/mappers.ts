@@ -25,13 +25,19 @@ import type {
   AdminUserRoleAssignmentDto,
   AdminWithdrawalDto,
   AdminBoundedListMeta,
+  AdminDeliveryGrantDto,
+  AdminFulfillmentDto,
   AdminInventorySnapshotDto,
+  InventoryRevealDto,
 } from "@/shared/api/schemas";
 import type {
   AdminAuditEvent,
   AdminBuyer,
   AdminBuyerPurchase,
   AdminBuyerSession,
+  AdminFulfillment,
+  AdminFulfillmentCommandResult,
+  AdminFulfillmentStatus,
   AdminMaskedCredential,
   AdminMerchant,
   AdminMerchantApiAccessWire,
@@ -47,6 +53,8 @@ import type {
   AdminRole,
   AdminStaffInvitation,
   AdminStaffMember,
+  AdminStockItem,
+  AdminStockItemSecret,
   AdminUserLookup,
   AdminUserRoleAssignment,
   AdminWithdrawal,
@@ -528,10 +536,128 @@ export function mapAdminReviewDto(dto: AdminReviewDto): AdminReview {
   };
 }
 
+const FULFILLMENT_STATUSES: AdminFulfillmentStatus[] = [
+  "Fulfilled",
+  "Failed",
+  "Pending",
+  "Revoked",
+];
+
+/** Map BE grant/delivery status labels to existing UI tokens. */
+export function mapAdminFulfillmentStatusDisplay(
+  raw: string,
+): AdminFulfillmentStatus {
+  const s = raw.trim();
+  if ((FULFILLMENT_STATUSES as string[]).includes(s)) {
+    return s as AdminFulfillmentStatus;
+  }
+  switch (s.toUpperCase()) {
+    case "ACTIVE":
+    case "FULFILLED":
+      return "Fulfilled";
+    case "DELIVERY_FAILED":
+    case "FAILED":
+    case "EXPIRED":
+      return "Failed";
+    case "PENDING_FULFILLMENT":
+    case "PENDING":
+      return "Pending";
+    case "REVOKED":
+      return "Revoked";
+    default:
+      return "Pending";
+  }
+}
+
+export function mapAdminFulfillmentDto(
+  dto: AdminFulfillmentDto,
+): AdminFulfillment {
+  return {
+    id: dto.id,
+    order: dto.order,
+    merchant: dto.merchant,
+    type: dto.type,
+    target: dto.target,
+    status: mapAdminFulfillmentStatusDisplay(dto.status),
+    attempts: nonNegInt(dto.attempts),
+    time: dto.time,
+  };
+}
+
+export function mapAdminDeliveryGrantCommandResult(
+  dto: AdminDeliveryGrantDto,
+  requestId: string,
+): AdminFulfillmentCommandResult {
+  return {
+    grantId: dto.id,
+    orderId: dto.orderId,
+    status: dto.status,
+    requestId,
+  };
+}
+
+/**
+ * ADM-320 — privileged reveal → component-local secret only.
+ * Never put result in React Query cache.
+ */
+export function mapAdminInventoryRevealDto(
+  dto: InventoryRevealDto,
+  expiresAt?: string,
+): AdminStockItemSecret {
+  return {
+    itemId: dto.itemId,
+    values: { ...dto.secrets },
+    expiresAt:
+      expiresAt ?? new Date(Date.now() + 60_000).toISOString(),
+  };
+}
+
+/** Runtime guard: redacted inventory list must not carry secret bags. */
+export function assertNoSecretsInAdminInventory(
+  snapshot: {
+    products: unknown[];
+    items: AdminStockItem[];
+    schema: unknown[];
+  },
+): void {
+  for (const item of snapshot.items) {
+    const rec = item as unknown as Record<string, unknown>;
+    if ("values" in rec && rec.values != null) {
+      throw new Error(
+        `Admin inventory item ${item.id} must not include values`,
+      );
+    }
+    if ("secrets" in rec && rec.secrets != null) {
+      throw new Error(
+        `Admin inventory item ${item.id} must not include secrets`,
+      );
+    }
+    if ("encryptedPayload" in rec || "encrypted_payload" in rec) {
+      throw new Error(
+        `Admin inventory item ${item.id} must not include ciphertext`,
+      );
+    }
+  }
+  const blob = JSON.stringify(snapshot).toLowerCase();
+  for (const key of [
+    '"secrets"',
+    '"encryptedpayload"',
+    '"encrypted_payload"',
+    "fsk_live_",
+    "fsk_test_",
+  ]) {
+    if (blob.includes(key)) {
+      throw new Error(
+        `Admin inventory snapshot must not include secret material (${key})`,
+      );
+    }
+  }
+}
+
 export function mapAdminInventorySnapshotDto(
   dto: AdminInventorySnapshotDto,
 ) {
-  return {
+  const snapshot = {
     products: dto.products.map((p) => ({
       id: p.id,
       title: p.title,
@@ -562,6 +688,8 @@ export function mapAdminInventorySnapshotDto(
       buyerCopyable: Boolean(f.buyerCopyable),
     })),
   };
+  assertNoSecretsInAdminInventory(snapshot);
+  return snapshot;
 }
 
 export function mapAdminListPage<TDto, TView>(

@@ -2273,6 +2273,53 @@ export const adminInventoryEnvelopeSchema = successEnvelopeSchema(
   adminInventorySnapshotDtoSchema,
 );
 
+/** ADM-320 — admin fulfillment list row (delivery grant projection; no secrets). */
+export const adminFulfillmentDtoSchema = z.object({
+  id: z.string().min(1),
+  order: z.string().min(1),
+  merchant: z.string(),
+  type: z.string(),
+  target: z.string(),
+  status: z.string(),
+  attempts: z.number().int().min(0),
+  time: z.string(),
+});
+
+export const adminFulfillmentListEnvelopeSchema = adminListEnvelopeSchema(
+  adminFulfillmentDtoSchema,
+);
+
+export const adminFulfillmentEnvelopeSchema = successEnvelopeSchema(
+  adminFulfillmentDtoSchema,
+);
+
+/**
+ * ADM-320 — force-fulfill / revoke grant metadata (never secrets).
+ * Matches delivery grantDTO shape from BE.
+ */
+export const adminDeliveryGrantDtoSchema = z.object({
+  id: z.string().min(1),
+  orderId: z.string().min(1),
+  orderItemId: z.string().optional(),
+  storeId: z.string().optional(),
+  productId: z.string().optional(),
+  deliveryKind: z.string().optional(),
+  status: z.string(),
+  fulfillmentEffectKey: z.string().optional(),
+  stockItemId: z.string().optional(),
+  accessCount: z.number().int().min(0).optional(),
+  maxAccesses: z.number().int().min(0).optional(),
+  version: z.number().int().optional(),
+  revokedAt: z.string().optional(),
+});
+
+export const adminDeliveryGrantEnvelopeSchema = successEnvelopeSchema(
+  adminDeliveryGrantDtoSchema,
+);
+
+/** Re-export seller reveal schema for admin facade (same secret bag; no-store). */
+export const adminInventoryRevealEnvelopeSchema = inventoryRevealEnvelopeSchema;
+
 /** Default/max page size for admin bounded list reads (matches BE MaxListLimit). */
 export const ADMIN_LIST_DEFAULT_LIMIT = 50;
 export const ADMIN_LIST_MAX_LIMIT = 100;
@@ -2560,6 +2607,8 @@ export type AdminReviewDto = z.infer<typeof adminReviewDtoSchema>;
 export type AdminInventorySnapshotDto = z.infer<
   typeof adminInventorySnapshotDtoSchema
 >;
+export type AdminFulfillmentDto = z.infer<typeof adminFulfillmentDtoSchema>;
+export type AdminDeliveryGrantDto = z.infer<typeof adminDeliveryGrantDtoSchema>;
 export type AdminBoundedListMeta = z.infer<typeof adminBoundedListMetaSchema>;
 export type AdminMerchantFinanceSummaryDto = z.infer<
   typeof adminMerchantFinanceSummaryDataSchema

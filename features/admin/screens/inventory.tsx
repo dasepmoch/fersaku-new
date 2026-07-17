@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import {
   revealInventoryItem,
   useAdminInventory,
+  useAdminInventoryRevealEnabled,
   type AdminStockItemSecret,
 } from "@/features/admin/data";
 
@@ -26,6 +27,7 @@ import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
 function GlobalInventory() {
   const { data } = useAdminInventory();
+  const canReveal = useAdminInventoryRevealEnabled();
   const [revealedSecret, setRevealedSecret] =
     useState<AdminStockItemSecret | null>(null);
   const [revealTargetId, setRevealTargetId] = useState<string | null>(null);
@@ -43,6 +45,19 @@ function GlobalInventory() {
     const timeout = window.setTimeout(() => setRevealedSecret(null), remaining);
     return () => window.clearTimeout(timeout);
   }, [revealedSecret]);
+  useEffect(() => {
+    const clear = () => setRevealedSecret(null);
+    const onVis = () => {
+      if (document.visibilityState === "hidden") clear();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", clear);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", clear);
+      clear();
+    };
+  }, []);
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
@@ -168,12 +183,18 @@ function GlobalInventory() {
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
+                        disabled={!canReveal && revealedSecret?.itemId !== item.id}
+                        title={
+                          canReveal
+                            ? undefined
+                            : "inventory.reveal permission required"
+                        }
                         onClick={() =>
                           revealedSecret?.itemId === item.id
                             ? setRevealedSecret(null)
                             : setRevealTargetId(item.id)
                         }
-                        className="inline-flex items-center gap-1 text-[8px] font-bold text-[#536fdf]"
+                        className="inline-flex items-center gap-1 text-[8px] font-bold text-[#536fdf] disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         {revealedSecret?.itemId === item.id ? (
                           <EyeOff className="size-3" />
@@ -214,7 +235,7 @@ function GlobalInventory() {
           </div>
         </div>
       </div>
-      {revealTarget && (
+      {revealTarget && canReveal && (
         <ControlDialog
           title={`Reveal stock item ${revealTarget.id}`}
           target={revealTarget.id}
@@ -224,7 +245,6 @@ function GlobalInventory() {
             const secret = await revealInventoryItem({
               itemId: revealTarget.id,
               reason,
-              recentMfaProof: "mock-recent-mfa",
             });
             setRevealedSecret(secret);
           }}

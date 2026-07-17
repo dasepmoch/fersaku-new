@@ -337,3 +337,29 @@ export type AdminStockItemSecret = {
   values: Record<string, string>;
   expiresAt: string;
 };
+
+/** ADM-320 — delivery grant row for /admin/fulfillment (no secrets). */
+export type AdminFulfillmentStatus =
+  | "Fulfilled"
+  | "Failed"
+  | "Pending"
+  | "Revoked";
+
+export type AdminFulfillment = {
+  id: string;
+  order: string;
+  merchant: string;
+  type: string;
+  target: string;
+  status: AdminFulfillmentStatus;
+  attempts: number;
+  time: string;
+};
+
+/** Force-fulfill / revoke acceptance — grant metadata only. */
+export type AdminFulfillmentCommandResult = {
+  grantId: string;
+  orderId: string;
+  status: string;
+  requestId: string;
+};

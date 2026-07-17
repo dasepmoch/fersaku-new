@@ -1,23 +1,30 @@
 /**
- * ADM-120 — admin inventory snapshot read foundation (inventory.read).
- * Reveal remains privileged mutation path.
+ * ADM-320 — admin inventory redacted read + privileged per-item reveal.
+ * List/detail always redacted; reveal is MFA+reason, component-local, no-store.
+ * Never put secrets in query keys, logs, or localStorage.
  */
 
 import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
 import {
   adminInventoryEnvelopeSchema,
-  structuralEnvelopeSchema,
+  adminInventoryRevealEnvelopeSchema,
 } from "@/shared/api/schemas";
-import type { ApiEnvelope } from "@/shared/api/contracts";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type {
   AdminInventoryField,
   AdminStockItem,
   AdminStockItemSecret,
   AdminStockProduct,
 } from "./contracts";
-import { mapAdminInventorySnapshotDto } from "./mappers";
+import {
+  assertNoSecretsInAdminInventory,
+  mapAdminInventoryRevealDto,
+  mapAdminInventorySnapshotDto,
+} from "./mappers";
 import {
   mockInventorySchema,
   mockStockItemSecret,
@@ -27,6 +34,7 @@ import {
 import { appendMockAuditEvent } from "./mock-audit";
 
 type InventoryEnvelope = z.infer<typeof adminInventoryEnvelopeSchema>;
+type RevealEnvelope = z.infer<typeof adminInventoryRevealEnvelopeSchema>;
 
 export type AdminInventorySnapshot = {
   products: AdminStockProduct[];
@@ -35,11 +43,13 @@ export type AdminInventorySnapshot = {
 };
 
 export function demoInventory(): AdminInventorySnapshot {
-  return {
+  const snap = {
     products: mockStockProducts(),
     items: mockStockItems(),
     schema: mockInventorySchema(),
   };
+  assertNoSecretsInAdminInventory(snap);
+  return snap;
 }
 
 export async function getInventory(
@@ -56,7 +66,8 @@ export async function getInventory(
 export type RevealInventoryItemInput = {
   itemId: string;
   reason: string;
-  recentMfaProof: string;
+  /** Optional explicit proof; otherwise requireRecentMfa attaches memory proof. */
+  recentMfaProof?: string;
 };
 
 /** Privileged, individually audited secret reveal; never part of list reads. */
@@ -64,32 +75,43 @@ export async function revealInventoryItem(
   input: RevealInventoryItemInput,
   signal?: AbortSignal,
 ): Promise<AdminStockItemSecret> {
-  if (input.reason.trim().length < 12 || !input.recentMfaProof) {
-    throw new Error("A reason and recent MFA proof are required.");
+  const itemId = input.itemId.trim();
+  const reason = input.reason.trim();
+  if (!itemId) throw new Error("itemId required");
+  if (reason.length < 12) {
+    throw new Error("A reason of at least 12 characters is required.");
   }
-  if (shouldUseMockFixtures("adminRead")) {
-    const secret = mockStockItemSecret(input.itemId);
+
+  if (shouldUseMockFixtures("adminWrite")) {
+    const secret = mockStockItemSecret(itemId);
     if (!secret) throw new Error("Stock item was not found.");
     appendMockAuditEvent({
       actor: "admin@fersaku.id",
       action: "inventory.item.secret.reveal",
-      target: input.itemId,
+      target: itemId,
       ip: "mock-admin-session",
       result: "Success",
-      context: input.reason.trim(),
+      context: reason,
     });
     return secret;
   }
-  const response = await apiRequest<
-    ApiEnvelope<AdminStockItemSecret>,
-    { reason: string }
-  >(`/v1/admin/inventory/items/${encodeURIComponent(input.itemId)}/reveal`, {
-    schema: structuralEnvelopeSchema,
-    method: "POST",
-    body: { reason: input.reason.trim() },
-    signal,
-    auditReason: input.reason.trim(),
-    recentMfaProof: input.recentMfaProof,
-  });
-  return response.data;
+
+  const response = await apiRequest<RevealEnvelope, { reason: string }>(
+    `/v1/admin/inventory/items/${encodeURIComponent(itemId)}/reveal`,
+    {
+      schema: adminInventoryRevealEnvelopeSchema,
+      method: "POST",
+      body: { reason },
+      signal,
+      auditReason: reason,
+      requireRecentMfa: true,
+      recentMfaProof: input.recentMfaProof,
+    },
+  );
+  return mapAdminInventoryRevealDto(response.data);
+}
+
+/** Whether adminWrite domain is live API (for reveal permission gates). */
+export function isInventoryRevealApi(): boolean {
+  return getDomainSource("adminWrite") === "api";
 }
