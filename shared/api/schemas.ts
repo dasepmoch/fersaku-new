@@ -1686,6 +1686,64 @@ export type FinanceLedgerPageDto = z.infer<typeof financeLedgerPageSchema>;
 export type FinanceLedgerTypeDto = z.infer<typeof financeLedgerTypeSchema>;
 export type FinanceSourceWireDto = z.infer<typeof financeSourceWireSchema>;
 
+// --- Seller bank accounts (SEL-340) — store-scoped; masked number only ---
+
+/**
+ * BE bankDTO from withdrawals handler.
+ * Never includes full accountNumber — only accountNumberMasked.
+ */
+export const bankAccountDtoSchema = z.object({
+  id: z.string().min(1),
+  bankCode: z.string().min(1),
+  bankName: z.string().optional(),
+  accountHolderName: z.string().min(1),
+  accountNumberMasked: z.string().min(1),
+  status: z.string().min(1),
+  isPrimary: z.boolean(),
+  version: z.number().int().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+/** GET list → `{ items: BankAccount[] }` */
+export const bankAccountListDataSchema = z.object({
+  items: z.array(bankAccountDtoSchema),
+});
+
+export const bankAccountListEnvelopeSchema = successEnvelopeSchema(
+  bankAccountListDataSchema,
+);
+
+export const bankAccountEnvelopeSchema = successEnvelopeSchema(
+  bankAccountDtoSchema,
+);
+
+/** POST create body — full accountNumber is write-only; never returned. */
+export const bankAccountCreateRequestSchema = z.object({
+  bankCode: z.string().min(1),
+  bankName: z.string().optional(),
+  accountHolderName: z.string().min(1),
+  accountNumber: z.string().min(1),
+  makePrimary: z.boolean().optional(),
+});
+
+/** PATCH update body — expectedVersion required. */
+export const bankAccountUpdateRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  bankCode: z.string().optional(),
+  bankName: z.string().optional(),
+  accountHolderName: z.string().optional(),
+  accountNumber: z.string().optional(),
+});
+
+export type BankAccountDto = z.infer<typeof bankAccountDtoSchema>;
+export type BankAccountListDataDto = z.infer<typeof bankAccountListDataSchema>;
+export type BankAccountCreateRequest = z.infer<
+  typeof bankAccountCreateRequestSchema
+>;
+export type BankAccountUpdateRequest = z.infer<
+  typeof bankAccountUpdateRequestSchema
+>;
+
 // --- Seller inventory (SEL-240) — masked list/detail; reveal is no-store ---
 
 export const inventoryFieldDefSchema = z.object({

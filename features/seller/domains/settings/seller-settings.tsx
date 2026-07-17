@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { cn } from "@/lib/utils";
 import { card, Modal, Preference, SettingsForm } from "./pieces";
@@ -24,52 +24,79 @@ import {
   isImpersonationSessionActive,
   readImpersonationSession,
 } from "@/features/admin/impersonation/session";
-import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 import {
   toMfaConfirmRequest,
   toMfaDisableRequest,
+  toPasswordChangeRequest,
   useMfaConfirmMutation,
   useMfaDisableMutation,
   useMfaEnrollMutation,
+  usePasswordChangeMutation,
 } from "@/features/auth";
 import { useSessionClaims } from "@/shared/auth";
 import { getDomainSource } from "@/shared/data/domain-source";
+import { useSellerStoreId } from "@/shared/seller";
 import {
-  readVersionedStorage,
-  writeVersionedStorage,
-} from "@/shared/storage/versioned-storage";
-import { z } from "zod";
+  displayLabelToLocale,
+  displayTimezoneToWire,
+  isSellerBankApiDomain,
+  isSellerSettingsApiDomain,
+  useArchiveSellerBankAccount,
+  useCreateSellerBankAccount,
+  usePatchSellerNotificationPreferencesMutation,
+  usePatchSellerProfileMutation,
+  useSellerBankAccounts,
+  useSellerProfile,
+  useUpdateSellerBankAccount,
+  type SellerBankAccount,
+  type SellerProfile,
+} from "@/features/seller/settings";
 
-type Bank = { bank: string; number: string; holder: string; verified: boolean };
+const NOTIFICATION_LABELS = [
+  "Penjualan berhasil",
+  "Pembayaran pending",
+  "Stok hampir habis",
+  "Payout berubah",
+  "Login dari perangkat baru",
+  "Ringkasan mingguan",
+] as const;
 
-const sellerProfileStorageKey = "fersaku-seller-profile-settings";
-const sellerProfileSchema = z.object({
-  displayName: z.string(),
-  email: z.string().email(),
-  locale: z.string(),
-  timezone: z.string(),
-});
+type NotifKey =
+  | "saleSuccess"
+  | "paymentPending"
+  | "lowStock"
+  | "payoutChange"
+  | "newDeviceLogin"
+  | "weeklySummary";
 
-type SellerProfile = z.infer<typeof sellerProfileSchema>;
-
-const initialSellerProfile: SellerProfile = {
-  displayName: "Asep Kurnia",
-  email: "asep@ai.tools",
-  locale: "Bahasa Indonesia",
-  timezone: "Asia/Jakarta (GMT+7)",
-};
+const NOTIF_KEY_BY_LABEL: Record<(typeof NOTIFICATION_LABELS)[number], NotifKey> =
+  {
+    "Penjualan berhasil": "saleSuccess",
+    "Pembayaran pending": "paymentPending",
+    "Stok hampir habis": "lowStock",
+    "Payout berubah": "payoutChange",
+    "Login dari perangkat baru": "newDeviceLogin",
+    "Ringkasan mingguan": "weeklySummary",
+  };
 
 function SellerProfileForm({
   profile,
   onChange,
 }: {
-  profile: SellerProfile;
-  onChange: (patch: Partial<SellerProfile>) => void;
+  profile: Pick<
+    SellerProfile,
+    "displayName" | "email" | "localeLabel" | "timezone"
+  >;
+  onChange: (
+    patch: Partial<
+      Pick<SellerProfile, "displayName" | "localeLabel" | "timezone">
+    >,
+  ) => void;
 }) {
   const fields = [
     ["Nama publik", "displayName", profile.displayName, false],
     ["Email", "email", profile.email, true],
-    ["Bahasa", "locale", profile.locale, false],
+    ["Bahasa", "localeLabel", profile.localeLabel, false],
     ["Zona waktu", "timezone", profile.timezone, false],
   ] as const;
   return (
@@ -85,7 +112,20 @@ function SellerProfileForm({
             <input
               value={value}
               readOnly={readOnly}
-              onChange={(event) => onChange({ [field]: event.target.value })}
+              onChange={(event) => {
+                if (readOnly) return;
+                if (field === "displayName") {
+                  onChange({ displayName: event.target.value });
+                  return;
+                }
+                if (field === "localeLabel") {
+                  onChange({ localeLabel: event.target.value });
+                  return;
+                }
+                if (field === "timezone") {
+                  onChange({ timezone: event.target.value });
+                }
+              }}
               className="hairline h-11 rounded-xl border bg-white px-3 text-xs font-normal outline-none"
             />
           </label>
@@ -98,20 +138,25 @@ function SellerProfileForm({
 export function SellerSettingsPro() {
   const [tab, setTab] = useState("Profil");
   const [bankModal, setBankModal] = useState(false);
-  const [editing, setEditing] = useState<number | null>(null);
-  const [banks, setBanks] = useState<Bank[]>([
-    {
-      bank: "BCA",
-      number: "0148924821",
-      holder: "ASEP KURNIA",
-      verified: true,
-    },
-  ]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [mfaModal, setMfaModal] = useState<
     "setup" | "recovery" | "disable" | null
   >(null);
   const claims = useSessionClaims();
   const authIsApi = getDomainSource("auth") === "api";
+  const settingsIsApi = isSellerSettingsApiDomain();
+  const bankIsApi = isSellerBankApiDomain();
+  const storeId = useSellerStoreId() ?? "";
+
+  const { data: serverProfile } = useSellerProfile();
+  const { data: serverBanks } = useSellerBankAccounts(storeId);
+  const patchProfile = usePatchSellerProfileMutation();
+  const patchPrefs = usePatchSellerNotificationPreferencesMutation();
+  const createBank = useCreateSellerBankAccount(storeId);
+  const updateBank = useUpdateSellerBankAccount(storeId);
+  const archiveBank = useArchiveSellerBankAccount(storeId);
+  const changePassword = usePasswordChangeMutation();
+
   /** Local override after enroll/disable; null = follow session claims (API) or mock default. */
   const [mfaOverride, setMfaOverride] = useState<boolean | null>(null);
   const mfa =
@@ -126,7 +171,103 @@ export function SellerSettingsPro() {
   const confirmMutation = useMfaConfirmMutation();
   const disableMutation = useMfaDisableMutation();
   const [saved, setSaved] = useState(false);
-  const [profile, setProfile] = useState(initialSellerProfile);
+
+  /** Draft for profile tab (API or mock). */
+  const [profileDraft, setProfileDraft] = useState<{
+    displayName: string;
+    localeLabel: string;
+    timezone: string;
+  } | null>(null);
+
+  /** Local-only notification draft keys without closed BE events. */
+  const [localNotifDraft, setLocalNotifDraft] = useState<
+    Partial<Record<NotifKey, boolean>>
+  >({});
+
+  const [passwordDraft, setPasswordDraft] = useState({
+    current: "",
+    next: "",
+  });
+
+  /** Mock-only bank list when sellerFinance is mock. */
+  const [mockBanks, setMockBanks] = useState<SellerBankAccount[]>([
+    {
+      id: "bank_bca_demo",
+      bank: "BCA",
+      bankCode: "BCA",
+      numberMasked: "•••• 4821",
+      numberLast4: "4821",
+      holder: "ASEP KURNIA",
+      verified: true,
+      primary: true,
+      revision: 1,
+      status: "VERIFIED",
+    },
+  ]);
+
+  const profile: Pick<
+    SellerProfile,
+    | "displayName"
+    | "email"
+    | "localeLabel"
+    | "timezone"
+    | "revision"
+    | "saleSuccess"
+    | "paymentPending"
+    | "lowStock"
+    | "payoutChange"
+    | "newDeviceLogin"
+    | "weeklySummary"
+  > = useMemo(() => {
+    if (serverProfile) {
+      return {
+        displayName:
+          profileDraft?.displayName ?? serverProfile.displayName,
+        email: serverProfile.email,
+        localeLabel: profileDraft?.localeLabel ?? serverProfile.localeLabel,
+        timezone: profileDraft?.timezone ?? serverProfile.timezone,
+        revision: serverProfile.revision,
+        saleSuccess: serverProfile.saleSuccess,
+        paymentPending:
+          localNotifDraft.paymentPending ?? serverProfile.paymentPending,
+        lowStock: localNotifDraft.lowStock ?? serverProfile.lowStock,
+        payoutChange: serverProfile.payoutChange,
+        newDeviceLogin: serverProfile.newDeviceLogin,
+        weeklySummary: serverProfile.weeklySummary,
+      };
+    }
+    return {
+      displayName: profileDraft?.displayName ?? "Asep Kurnia",
+      email: "asep@ai.tools",
+      localeLabel: profileDraft?.localeLabel ?? "Bahasa Indonesia",
+      timezone: profileDraft?.timezone ?? "Asia/Jakarta (GMT+7)",
+      revision: 1,
+      saleSuccess: localNotifDraft.saleSuccess ?? true,
+      paymentPending: localNotifDraft.paymentPending ?? false,
+      lowStock: localNotifDraft.lowStock ?? true,
+      payoutChange: localNotifDraft.payoutChange ?? true,
+      newDeviceLogin: localNotifDraft.newDeviceLogin ?? true,
+      weeklySummary: localNotifDraft.weeklySummary ?? true,
+    };
+  }, [serverProfile, profileDraft, localNotifDraft]);
+
+  const banks: SellerBankAccount[] = bankIsApi
+    ? (serverBanks ?? [])
+    : mockBanks;
+
+  const notifValues: Record<NotifKey, boolean> = {
+    saleSuccess:
+      localNotifDraft.saleSuccess ?? profile.saleSuccess,
+    paymentPending:
+      localNotifDraft.paymentPending ?? profile.paymentPending,
+    lowStock: localNotifDraft.lowStock ?? profile.lowStock,
+    payoutChange:
+      localNotifDraft.payoutChange ?? profile.payoutChange,
+    newDeviceLogin:
+      localNotifDraft.newDeviceLogin ?? profile.newDeviceLogin,
+    weeklySummary:
+      localNotifDraft.weeklySummary ?? profile.weeklySummary,
+  };
 
   useEffect(() => {
     if (!enrollOtpauth || !qrCanvasRef.current) return;
@@ -198,35 +339,20 @@ export function SellerSettingsPro() {
       return;
     }
     // API mode: only show codes from last confirm/regenerate (component memory).
-    // "View" without a fresh regenerate is not re-fetchable — require regenerate path.
     if (recoveryCodes && recoveryCodes.length > 0) {
       setMfaModal("recovery");
       return;
     }
-    // No cached one-time codes — stay on disable panel (no invented list).
   };
 
   const closeMfaModal = () => {
     setMfaModal(null);
     setToken("");
     setDisableCode("");
-    // Drop enroll secret when modal closes (no storage).
     setEnrollSecret(null);
     setEnrollOtpauth(null);
   };
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setProfile(
-        readVersionedStorage({
-          key: sellerProfileStorageKey,
-          version: 1,
-          schema: sellerProfileSchema,
-          fallback: () => initialSellerProfile,
-        }),
-      );
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+
   const tabs = [
     ["Profil", Pencil],
     ["Bisnis", Banknote],
@@ -234,22 +360,70 @@ export function SellerSettingsPro() {
     ["Keamanan", ShieldCheck],
     ["Notifikasi", BellRing],
   ] as const;
-  const saveBank = (form: FormData) => {
-    const bank = {
-      bank: String(form.get("bank")),
-      number: String(form.get("number")),
-      holder: String(form.get("holder")).toUpperCase(),
+
+  const editingBank =
+    editingId === null
+      ? null
+      : banks.find((b) => b.id === editingId) ?? null;
+
+  const saveBank = async (form: FormData) => {
+    const bankCode = String(form.get("bank"));
+    const number = String(form.get("number")).replace(/\s/g, "");
+    const holder = String(form.get("holder")).toUpperCase();
+
+    if (bankIsApi && storeId) {
+      try {
+        if (editingId && editingBank) {
+          await updateBank.mutateAsync({
+            bankId: editingId,
+            expectedVersion: editingBank.revision,
+            bankCode,
+            bankName: bankCode,
+            accountHolderName: holder,
+            accountNumber: number || undefined,
+          });
+        } else {
+          await createBank.mutateAsync({
+            bankCode,
+            bankName: bankCode,
+            accountHolderName: holder,
+            accountNumber: number,
+            makePrimary: banks.length === 0,
+          });
+        }
+        setBankModal(false);
+        setEditingId(null);
+      } catch {
+        // Keep modal open on validation/conflict; no fake success.
+      }
+      return;
+    }
+
+    const last4 = number.slice(-4) || "0000";
+    const row: SellerBankAccount = {
+      id: editingId ?? `bank_local_${Date.now()}`,
+      bank: bankCode,
+      bankCode,
+      numberMasked: `•••• ${last4}`,
+      numberLast4: last4,
+      holder,
       verified: true,
+      primary: editingId
+        ? Boolean(editingBank?.primary)
+        : mockBanks.length === 0,
+      revision: (editingBank?.revision ?? 0) + 1,
+      status: "VERIFIED",
     };
-    setBanks((old) =>
-      editing === null
-        ? [...old, bank]
-        : old.map((x, i) => (i === editing ? bank : x)),
+    setMockBanks((old) =>
+      editingId === null
+        ? [...old, row]
+        : old.map((x) => (x.id === editingId ? row : x)),
     );
     setBankModal(false);
-    setEditing(null);
+    setEditingId(null);
   };
-  const saveProfile = () => {
+
+  const saveProfile = async (): Promise<boolean> => {
     const session = readImpersonationSession();
     if (
       session &&
@@ -258,38 +432,126 @@ export function SellerSettingsPro() {
     ) {
       return false;
     }
-    const persistedProfile = session
-      ? {
-          ...readVersionedStorage({
-            key: sellerProfileStorageKey,
-            version: 1,
-            schema: sellerProfileSchema,
-            fallback: () => initialSellerProfile,
-          }),
-          displayName: profile.displayName,
-          locale: profile.locale,
-          timezone: profile.timezone,
+
+    if (settingsIsApi && serverProfile) {
+      try {
+        await patchProfile.mutateAsync({
+          expectedVersion: serverProfile.revision,
+          displayName: profile.displayName.trim(),
+          locale: displayLabelToLocale(profile.localeLabel),
+          timezone: displayTimezoneToWire(profile.timezone),
+        });
+
+        const prefPatch: {
+          newDeviceLogin?: boolean;
+          payoutChange?: boolean;
+          weeklySummary?: boolean;
+          saleSuccess?: boolean;
+        } = {};
+        if (
+          localNotifDraft.newDeviceLogin !== undefined &&
+          localNotifDraft.newDeviceLogin !== serverProfile.newDeviceLogin
+        ) {
+          prefPatch.newDeviceLogin = localNotifDraft.newDeviceLogin;
         }
-      : profile;
-    const persisted = writeVersionedStorage({
-      key: sellerProfileStorageKey,
-      version: 1,
-      data: persistedProfile,
-    });
-    if (!persisted) return false;
-    setProfile(persistedProfile);
-    if (session) {
-      appendClientAuditEvent({
-        actor: session.actor,
-        action: IMPERSONATION_COMMANDS.profileSupportUpdate,
-        target: session.targetId,
-        ip: "mock-admin-session",
-        result: "Success",
-        context: session.reason,
-      });
+        if (
+          localNotifDraft.payoutChange !== undefined &&
+          localNotifDraft.payoutChange !== serverProfile.payoutChange
+        ) {
+          prefPatch.payoutChange = localNotifDraft.payoutChange;
+        }
+        if (
+          localNotifDraft.weeklySummary !== undefined &&
+          localNotifDraft.weeklySummary !== serverProfile.weeklySummary
+        ) {
+          prefPatch.weeklySummary = localNotifDraft.weeklySummary;
+        }
+        if (
+          localNotifDraft.saleSuccess !== undefined &&
+          localNotifDraft.saleSuccess !== serverProfile.saleSuccess
+        ) {
+          prefPatch.saleSuccess = localNotifDraft.saleSuccess;
+        }
+        if (Object.keys(prefPatch).length > 0) {
+          await patchPrefs.mutateAsync(prefPatch);
+        }
+        setProfileDraft(null);
+        setLocalNotifDraft({});
+        return true;
+      } catch {
+        // 409/validation: keep draft; no fake success / no localStorage truth.
+        return false;
+      }
     }
+
+    // Mock path: in-memory only (no localStorage source of truth on API path).
+    setProfileDraft(null);
     return true;
   };
+
+  const savePassword = async (): Promise<boolean> => {
+    if (!authIsApi) return true;
+    if (!passwordDraft.current.trim() || passwordDraft.next.trim().length < 12) {
+      return false;
+    }
+    try {
+      const result = await changePassword.mutateAsync(
+        toPasswordChangeRequest({
+          currentPassword: passwordDraft.current,
+          newPassword: passwordDraft.next,
+        }),
+      );
+      if (!result.ok) return false;
+      setPasswordDraft({ current: "", next: "" });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const saveNotifications = async (): Promise<boolean> => {
+    if (!settingsIsApi || !serverProfile) return true;
+    try {
+      const prefPatch: {
+        newDeviceLogin?: boolean;
+        payoutChange?: boolean;
+        weeklySummary?: boolean;
+        saleSuccess?: boolean;
+      } = {};
+      if (notifValues.newDeviceLogin !== serverProfile.newDeviceLogin) {
+        prefPatch.newDeviceLogin = notifValues.newDeviceLogin;
+      }
+      if (notifValues.payoutChange !== serverProfile.payoutChange) {
+        prefPatch.payoutChange = notifValues.payoutChange;
+      }
+      if (notifValues.weeklySummary !== serverProfile.weeklySummary) {
+        prefPatch.weeklySummary = notifValues.weeklySummary;
+      }
+      if (notifValues.saleSuccess !== serverProfile.saleSuccess) {
+        prefPatch.saleSuccess = notifValues.saleSuccess;
+      }
+      if (Object.keys(prefPatch).length > 0) {
+        await patchPrefs.mutateAsync(prefPatch);
+      }
+      setLocalNotifDraft({});
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const onSave = async () => {
+    if (tab === "Profil") {
+      if (!(await saveProfile())) return;
+    } else if (tab === "Keamanan") {
+      if (!(await savePassword())) return;
+    } else if (tab === "Notifikasi") {
+      if (!(await saveNotifications())) return;
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1700);
+  };
+
   return (
     <div className="grid gap-5 xl:grid-cols-[220px_1fr]">
       <nav className={`${card} h-fit p-2`}>
@@ -313,7 +575,21 @@ export function SellerSettingsPro() {
             profile={profile}
             onChange={(patch) => {
               setSaved(false);
-              setProfile((current) => ({ ...current, ...patch }));
+              setProfileDraft((current) => ({
+                displayName:
+                  current?.displayName ??
+                  serverProfile?.displayName ??
+                  profile.displayName,
+                localeLabel:
+                  current?.localeLabel ??
+                  serverProfile?.localeLabel ??
+                  profile.localeLabel,
+                timezone:
+                  current?.timezone ??
+                  serverProfile?.timezone ??
+                  profile.timezone,
+                ...patch,
+              }));
             }}
           />
         )}
@@ -341,7 +617,7 @@ export function SellerSettingsPro() {
               </div>
               <button
                 onClick={() => {
-                  setEditing(null);
+                  setEditingId(null);
                   setBankModal(true);
                 }}
                 className="flex h-10 items-center gap-2 rounded-xl bg-[#173f2c] px-4 text-[9px] font-extrabold text-white"
@@ -350,9 +626,9 @@ export function SellerSettingsPro() {
               </button>
             </div>
             <div className="mt-5 grid gap-3">
-              {banks.map((bank, index) => (
+              {banks.map((bank) => (
                 <div
-                  key={`${bank.number}-${index}`}
+                  key={bank.id}
                   className="hairline flex flex-col gap-3 rounded-2xl border bg-white p-4 sm:flex-row sm:items-center"
                 >
                   <span className="grid size-11 place-items-center rounded-xl bg-[#eaf0fb] text-[10px] font-black text-[#2855a5]">
@@ -360,13 +636,13 @@ export function SellerSettingsPro() {
                   </span>
                   <div>
                     <b className="block text-xs">
-                      {bank.bank} •••• {bank.number.slice(-4)}
+                      {bank.bank} •••• {bank.numberLast4}
                     </b>
                     <span className="text-[9px] text-[#718078]">
                       {bank.holder} • {bank.verified ? "Verified" : "Pending"}
                     </span>
                   </div>
-                  {index === 0 && (
+                  {bank.primary && (
                     <span className="w-fit rounded-full bg-[#e5f5e6] px-2 py-1 text-[8px] font-extrabold text-[#2e714f]">
                       Primary
                     </span>
@@ -374,7 +650,7 @@ export function SellerSettingsPro() {
                   <div className="flex gap-2 sm:ml-auto">
                     <button
                       onClick={() => {
-                        setEditing(index);
+                        setEditingId(bank.id);
                         setBankModal(true);
                       }}
                       className="hairline grid size-9 place-items-center rounded-xl border"
@@ -383,9 +659,15 @@ export function SellerSettingsPro() {
                     </button>
                     {banks.length > 1 && (
                       <button
-                        onClick={() =>
-                          setBanks((old) => old.filter((_, i) => i !== index))
-                        }
+                        onClick={() => {
+                          if (bankIsApi && storeId) {
+                            void archiveBank.mutateAsync(bank.id);
+                            return;
+                          }
+                          setMockBanks((old) =>
+                            old.filter((x) => x.id !== bank.id),
+                          );
+                        }}
                         className="hairline grid size-9 place-items-center rounded-xl border text-[#b2573c]"
                       >
                         <Trash2 className="size-3.5" />
@@ -412,6 +694,22 @@ export function SellerSettingsPro() {
                 "Password saat ini|••••••••••",
                 "Password baru|Minimal 12 karakter",
               ]}
+              values={{
+                "Password saat ini": passwordDraft.current,
+                "Password baru": passwordDraft.next,
+              }}
+              types={{
+                "Password saat ini": "password",
+                "Password baru": "password",
+              }}
+              onChange={(label, value) => {
+                setSaved(false);
+                if (label === "Password saat ini") {
+                  setPasswordDraft((p) => ({ ...p, current: value }));
+                  return;
+                }
+                setPasswordDraft((p) => ({ ...p, next: value }));
+              }}
             />
             <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-[#f5f5f0] p-4 sm:flex-row sm:items-center">
               <span className="grid size-11 place-items-center rounded-xl bg-white">
@@ -450,24 +748,26 @@ export function SellerSettingsPro() {
               Pilih event penting untuk email dan dashboard.
             </p>
             <div className="mt-5 grid gap-2">
-              {[
-                "Penjualan berhasil",
-                "Pembayaran pending",
-                "Stok hampir habis",
-                "Payout berubah",
-                "Login dari perangkat baru",
-                "Ringkasan mingguan",
-              ].map((x, i) => (
-                <Preference key={x} label={x} defaultOn={i !== 1} />
-              ))}
+              {NOTIFICATION_LABELS.map((label) => {
+                const key = NOTIF_KEY_BY_LABEL[label];
+                return (
+                  <Preference
+                    key={label}
+                    label={label}
+                    value={notifValues[key]}
+                    onChange={(next) => {
+                      setSaved(false);
+                      setLocalNotifDraft((d) => ({ ...d, [key]: next }));
+                    }}
+                  />
+                );
+              })}
             </div>
           </>
         )}
         <button
           onClick={() => {
-            if (tab === "Profil" && !saveProfile()) return;
-            setSaved(true);
-            setTimeout(() => setSaved(false), 1700);
+            void onSave();
           }}
           data-impersonation-command={
             tab === "Profil"
@@ -486,20 +786,29 @@ export function SellerSettingsPro() {
       {bankModal && (
         <Modal
           title={
-            editing === null ? "Tambah rekening payout" : "Edit rekening payout"
+            editingId === null ? "Tambah rekening payout" : "Edit rekening payout"
           }
-          description="Kami melakukan mock bank-account lookup sebelum rekening payout dapat dipakai."
+          description={
+            bankIsApi
+              ? "Nomor rekening divalidasi server sebelum dapat dipakai untuk payout."
+              : "Kami melakukan mock bank-account lookup sebelum rekening payout dapat dipakai."
+          }
           onClose={() => {
             setBankModal(false);
-            setEditing(null);
+            setEditingId(null);
           }}
         >
-          <form action={saveBank} className="grid gap-4">
+          <form
+            action={(formData) => {
+              void saveBank(formData);
+            }}
+            className="grid gap-4"
+          >
             <label className="grid gap-2 text-[9px] font-bold">
               Bank
               <select
                 name="bank"
-                defaultValue={editing === null ? "BCA" : banks[editing].bank}
+                defaultValue={editingBank?.bankCode ?? "BCA"}
                 className="hairline h-11 rounded-xl border bg-white px-3"
               >
                 <option>BCA</option>
@@ -514,9 +823,10 @@ export function SellerSettingsPro() {
               Nomor rekening
               <input
                 name="number"
-                required
-                defaultValue={editing === null ? "" : banks[editing].number}
+                required={editingId === null}
+                defaultValue=""
                 placeholder="Masukkan 8–16 digit"
+                autoComplete="off"
                 className="hairline h-11 rounded-xl border bg-white px-3"
               />
             </label>
@@ -525,9 +835,7 @@ export function SellerSettingsPro() {
               <input
                 name="holder"
                 required
-                defaultValue={
-                  editing === null ? "ASEP KURNIA" : banks[editing].holder
-                }
+                defaultValue={editingBank?.holder ?? "ASEP KURNIA"}
                 className="hairline h-11 rounded-xl border bg-white px-3 uppercase"
               />
             </label>

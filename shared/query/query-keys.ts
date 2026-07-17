@@ -65,6 +65,23 @@ export const queryKeys = {
     webhooks: (storeId: string) => ["seller", storeId, "webhooks"] as const,
     apiKeys: (storeId: string) => ["seller", storeId, "api-keys"] as const,
     storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
+    /**
+     * SEL-340: actor-scoped profile/prefs (me endpoints).
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses sellers.
+     */
+    profile: (subjectKey = "anon") =>
+      ["seller", subjectKey, "profile"] as const,
+    notificationPreferences: (subjectKey = "anon") =>
+      ["seller", subjectKey, "notification-preferences"] as const,
+    sessions: (subjectKey = "anon") =>
+      ["seller", subjectKey, "sessions"] as const,
+    /**
+     * SEL-340: store-scoped bank accounts (masked only; never full number in key).
+     */
+    bankAccounts: (storeId: string) =>
+      ["seller", storeId, "bank-accounts"] as const,
+    bankAccount: (storeId: string, bankId: string) =>
+      ["seller", storeId, "bank-accounts", bankId] as const,
   },
   admin: {
     /** ADM-120 overview aggregate (admin.dashboard.read). */

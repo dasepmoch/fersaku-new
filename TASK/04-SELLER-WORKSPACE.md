@@ -497,19 +497,19 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist
 
-- [ ] Map personal/business profile to existing forms; revision/conflict behavior.
-- [ ] Notification preferences server-persisted; theme remains safe local preference.
-- [ ] Password/email/MFA/session flows reuse `AUT-120`/security adapters.
-- [ ] Bank CRUD/verify/make-primary/delete uses server validation/lookup; never trust typed bank label/account owner.
-- [ ] Mask account number; raw values not log/query key; sensitive changes require recent proof and trigger withdrawal lock according to backend policy.
-- [ ] Remove fake audit append/local saved truth on API path.
+- [x] Map personal/business profile to existing forms; revision/conflict behavior.
+- [x] Notification preferences server-persisted; theme remains safe local preference.
+- [x] Password/email/MFA/session flows reuse `AUT-120`/security adapters.
+- [x] Bank CRUD/verify/make-primary/delete uses server validation/lookup; never trust typed bank label/account owner.
+- [x] Mask account number; raw values not log/query key; sensitive changes require recent proof and trigger withdrawal lock according to backend policy.
+- [x] Remove fake audit append/local saved truth on API path.
 - [x] Personal avatar launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Business/store logo remains store-scoped `SEL-230`. Never use store object ownership for personal avatar.
-- [ ] Reuse shared auth/security adapters dari `AUT-120`; task ini hanya bind seller settings screens.
+- [x] Reuse shared auth/security adapters dari `AUT-120`; task ini hanya bind seller settings screens.
 
 ### Tests/AC
 
-- profile conflict, bank invalid/duplicate/verification mismatch/primary/delete, MFA/session change, withdrawal lock consequence.
-- Existing settings tabs/forms/dialogs unchanged.
+- [x] profile conflict, bank invalid/duplicate/verification mismatch/primary/delete, MFA/session change, withdrawal lock consequence.
+- [x] Existing settings tabs/forms/dialogs unchanged.
 
 ---
 

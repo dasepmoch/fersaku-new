@@ -47,10 +47,17 @@ export function SettingsForm({
   title,
   description,
   fields,
+  values,
+  onChange,
+  types,
 }: {
   title: string;
   description: string;
   fields: string[];
+  /** Controlled values keyed by label (SEL-340). */
+  values?: Record<string, string>;
+  onChange?: (label: string, value: string) => void;
+  types?: Record<string, string>;
 }) {
   return (
     <div>
@@ -58,12 +65,21 @@ export function SettingsForm({
       <p className="mt-1 text-[10px] text-[#718078]">{description}</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {fields.map((field) => {
-          const [label, value] = field.split("|");
+          const [label, fallback] = field.split("|");
+          const controlled = values !== undefined;
+          const value = controlled ? (values[label] ?? "") : fallback;
           return (
             <label key={label} className="grid gap-2 text-[9px] font-bold">
               {label}
               <input
-                defaultValue={value}
+                type={types?.[label] ?? "text"}
+                {...(controlled
+                  ? {
+                      value,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                        onChange?.(label, e.target.value),
+                    }
+                  : { defaultValue: fallback })}
                 className="hairline h-11 rounded-xl border bg-white px-3 text-xs font-normal outline-none"
               />
             </label>
@@ -77,16 +93,31 @@ export function SettingsForm({
 export function Preference({
   label,
   defaultOn,
+  value,
+  onChange,
 }: {
   label: string;
   defaultOn?: boolean;
+  /** Controlled value (SEL-340 server prefs). */
+  value?: boolean;
+  onChange?: (next: boolean) => void;
 }) {
-  const [on, setOn] = useState(Boolean(defaultOn));
+  const controlled = value !== undefined;
+  const [internal, setInternal] = useState(Boolean(defaultOn));
+  const on = controlled ? Boolean(value) : internal;
   return (
     <div className="hairline flex items-center justify-between rounded-xl border bg-white p-3">
       <span className="text-[9px] font-bold">{label}</span>
       <button
-        onClick={() => setOn(!on)}
+        type="button"
+        onClick={() => {
+          const next = !on;
+          if (controlled) {
+            onChange?.(next);
+            return;
+          }
+          setInternal(next);
+        }}
         className={cn(
           "relative h-5 w-9 rounded-full",
           on ? "bg-[#173f2c]" : "bg-[#cbd0cb]",
