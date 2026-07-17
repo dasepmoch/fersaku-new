@@ -1,6 +1,10 @@
 import { apiRequest } from "@/shared/api/http-client";
+import {
+  structuralEnvelopeSchema,
+  structuralCursorPageEnvelopeSchema,
+} from "@/shared/api/schemas";
 import type { ApiEnvelope, CursorPage } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { SellerOrder } from "./contracts";
 import { demoOrders } from "./mock";
 
@@ -9,7 +13,7 @@ export async function listSellerOrders(
   cursor?: string,
   signal?: AbortSignal,
 ): Promise<CursorPage<SellerOrder>> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerOperations")) {
     return {
       items: demoOrders(),
       nextCursor: null,
@@ -20,7 +24,8 @@ export async function listSellerOrders(
 
   const response = await apiRequest<ApiEnvelope<CursorPage<SellerOrder>>>(
     `/v1/stores/${storeId}/orders`,
-    { query: { cursor }, signal },
+    {
+    schema: structuralCursorPageEnvelopeSchema, query: { cursor }, signal },
   );
   return response.data;
 }
@@ -30,13 +35,14 @@ export async function getSellerOrder(
   orderId: string,
   signal?: AbortSignal,
 ): Promise<SellerOrder | null> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerOperations")) {
     return demoOrders().find((order) => order.id === orderId) || null;
   }
 
   const response = await apiRequest<ApiEnvelope<SellerOrder>>(
     `/v1/stores/${storeId}/orders/${orderId}`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

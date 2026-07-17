@@ -13,12 +13,27 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Surface } from "./account-controls-data";
+import { useSession } from "@/shared/auth/session-provider";
+import { loginPathForSurface } from "@/shared/auth/return-to";
+import type { SessionSurface } from "@/shared/auth/session-model";
+
+function initialsFromName(name: string | null | undefined, fallback: string) {
+  if (!name?.trim()) return fallback;
+  const parts = name.trim().split(/\s+/);
+  const a = parts[0]?.[0] ?? "";
+  const b = parts[1]?.[0] ?? parts[0]?.[1] ?? "";
+  return (a + b).toUpperCase() || fallback;
+}
 
 export function ProfileMenu({ surface }: { surface: Surface }) {
   const [open, setOpen] = useState(false);
   const [loggedOut, setLoggedOut] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const config = {
+  const { claims, logout, isAuthenticated, ready } = useSession();
+  const sessionSurface = surface as SessionSurface;
+
+  const defaults = {
     seller: {
       initials: "AK",
       name: "Asep Kurnia",
@@ -38,6 +53,24 @@ export function ProfileMenu({ surface }: { surface: Surface }) {
       color: "#ffb69d",
     },
   }[surface];
+
+  // API mode: show session claims; mock keeps prototype labels when no claims yet.
+  const displayName =
+    claims?.surface === sessionSurface && claims.name
+      ? claims.name
+      : defaults.name;
+  const displayEmail =
+    claims?.surface === sessionSurface && claims.email
+      ? claims.email
+      : defaults.email;
+  const displayInitials = initialsFromName(displayName, defaults.initials);
+  const config = {
+    initials: displayInitials,
+    name: displayName,
+    email: displayEmail,
+    color: defaults.color,
+  };
+
   useEffect(() => {
     const close = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node))
@@ -46,16 +79,16 @@ export function ProfileMenu({ surface }: { surface: Surface }) {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
-  if (loggedOut)
+
+  // After local/remote logout: show re-login affordance without redesign.
+  // Wait for bootstrap so we do not flash "Masuk kembali" during loading.
+  const showReLogin =
+    loggedOut || (ready && !isAuthenticated && claims === null);
+
+  if (showReLogin)
     return (
       <Link
-        href={
-          surface === "admin"
-            ? "/admin/login"
-            : surface === "buyer"
-              ? "/account/login"
-              : "/login"
-        }
+        href={loginPathForSurface(sessionSurface)}
         className="hairline rounded-xl border bg-white px-3 py-2 text-[8px] font-extrabold"
       >
         Masuk kembali
@@ -131,9 +164,14 @@ export function ProfileMenu({ surface }: { surface: Surface }) {
           <div className="hairline border-t p-2">
             <button
               data-feedback="off"
+              disabled={loggingOut}
               onClick={() => {
-                setLoggedOut(true);
                 setOpen(false);
+                setLoggingOut(true);
+                void logout(sessionSurface).finally(() => {
+                  setLoggedOut(true);
+                  setLoggingOut(false);
+                });
               }}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[9px] font-bold text-[#c6534c] hover:bg-[#fff0ee]"
             >

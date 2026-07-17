@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { BuilderConfig } from "./types";
 
 export type PublishStorefrontInput = {
@@ -21,7 +22,7 @@ export async function publishStorefrontDraft(
   input: PublishStorefrontInput,
   signal?: AbortSignal,
 ): Promise<PublishStorefrontResult> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerCatalog")) {
     return {
       accepted: true,
       revision: 14,
@@ -33,6 +34,7 @@ export async function publishStorefrontDraft(
     ApiEnvelope<PublishStorefrontResult>,
     PublishStorefrontInput
   >(`/v1/stores/${input.storeId}/storefront/publish`, {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: input,
     signal,

@@ -1,6 +1,6 @@
 "use client";
 
-import { isLiveApi } from "@/shared/data/mode";
+import { mockPlaceholderData } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
 import { useAppMutation } from "@/shared/query/create-mutation";
@@ -19,7 +19,7 @@ export function useBuyerPurchases() {
   return useAppQuery({
     queryKey: queryKeys.buyer.purchases(),
     queryFn: (signal) => listBuyerPurchases(signal),
-    placeholderData: isLiveApi() ? undefined : demoPurchases(),
+    placeholderData: mockPlaceholderData("buyer", demoPurchases()),
   });
 }
 
@@ -28,9 +28,7 @@ export function useBuyerPurchase(orderId: string) {
     queryKey: queryKeys.buyer.purchase(orderId),
     queryFn: (signal) => getBuyerPurchase(orderId, signal),
     enabled: Boolean(orderId),
-    placeholderData: isLiveApi()
-      ? undefined
-      : demoPurchases().find((p) => p.orderId === orderId) || null,
+    placeholderData: mockPlaceholderData("buyer", demoPurchases().find((p) => p.orderId === orderId) || null),
   });
 }
 
@@ -38,7 +36,7 @@ export function useBuyerProfile() {
   return useAppQuery({
     queryKey: queryKeys.buyer.profile(),
     queryFn: (signal) => getBuyerProfile(signal),
-    placeholderData: isLiveApi() ? undefined : demoProfile(),
+    placeholderData: mockPlaceholderData("buyer", demoProfile()),
   });
 }
 
@@ -46,7 +44,7 @@ export function useBuyerSessions() {
   return useAppQuery({
     queryKey: queryKeys.buyer.sessions(),
     queryFn: (signal) => listBuyerSessions(signal),
-    placeholderData: isLiveApi() ? undefined : demoSessions(),
+    placeholderData: mockPlaceholderData("buyer", demoSessions()),
   });
 }
 

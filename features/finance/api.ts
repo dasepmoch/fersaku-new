@@ -1,6 +1,10 @@
 import { apiRequest } from "@/shared/api/http-client";
+import {
+  structuralEnvelopeSchema,
+  structuralCursorPageEnvelopeSchema,
+} from "@/shared/api/schemas";
 import type { ApiEnvelope, CursorPage } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type {
   CreateSellerWithdrawalInput,
   RequestSellerWithdrawalQuoteInput,
@@ -32,10 +36,11 @@ export async function getSellerRevenue(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerRevenuePoint[]> {
-  if (!isLiveApi()) return demoSellerRevenue();
+  if (shouldUseMockFixtures("sellerFinance")) return demoSellerRevenue();
   const response = await apiRequest<ApiEnvelope<SellerRevenuePoint[]>>(
     `/v1/stores/${storeId}/finance/revenue`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -44,11 +49,12 @@ export async function getSellerFinanceSummary(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerFinanceSummary> {
-  if (!isLiveApi()) return demoFinanceSummary(storeId);
+  if (shouldUseMockFixtures("sellerFinance")) return demoFinanceSummary(storeId);
 
   const response = await apiRequest<ApiEnvelope<SellerFinanceSummary>>(
     `/v1/stores/${storeId}/finance/summary`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -58,11 +64,12 @@ export async function listSellerLedger(
   cursor?: string,
   signal?: AbortSignal,
 ): Promise<CursorPage<SellerLedgerItem>> {
-  if (!isLiveApi()) return demoSellerLedger(storeId);
+  if (shouldUseMockFixtures("sellerFinance")) return demoSellerLedger(storeId);
 
   const response = await apiRequest<ApiEnvelope<CursorPage<SellerLedgerItem>>>(
     `/v1/stores/${storeId}/finance/ledger`,
-    { query: { cursor }, signal },
+    {
+    schema: structuralCursorPageEnvelopeSchema, query: { cursor }, signal },
   );
   return response.data;
 }
@@ -71,7 +78,7 @@ export async function listSellerWithdrawals(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal[]> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerFinance")) {
     return [
       ...readMockCreatedWithdrawals(storeId),
       ...demoSellerWithdrawals(storeId),
@@ -80,7 +87,8 @@ export async function listSellerWithdrawals(
 
   const response = await apiRequest<ApiEnvelope<SellerWithdrawal[]>>(
     `/v1/stores/${storeId}/withdrawals`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -89,7 +97,7 @@ export async function requestSellerWithdrawalQuote(
   input: RequestSellerWithdrawalQuoteInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalQuote> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerFinance")) {
     const summary = demoFinanceSummary(input.storeId);
     if (
       !canRequestSellerWithdrawal({
@@ -124,6 +132,7 @@ export async function requestSellerWithdrawalQuote(
     ApiEnvelope<SellerWithdrawalQuote>,
     { amount: number; bankAccountId: string }
   >(`/v1/stores/${encodeURIComponent(input.storeId)}/withdrawal-quotes`, {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: {
       amount: input.amount,
@@ -139,7 +148,7 @@ export async function createSellerWithdrawal(
   input: CreateSellerWithdrawalInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("sellerFinance")) {
     const quote = mockQuotes.get(input.quoteId);
     if (
       !quote ||
@@ -177,6 +186,7 @@ export async function createSellerWithdrawal(
     ApiEnvelope<SellerWithdrawal>,
     { quoteId: string; reauthProof: string }
   >(`/v1/stores/${encodeURIComponent(input.storeId)}/withdrawals`, {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: { quoteId: input.quoteId, reauthProof: input.reauthProof },
     signal,
@@ -189,11 +199,12 @@ export async function getSellerWithdrawalLock(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalLock> {
-  if (!isLiveApi()) return demoWithdrawalLock;
+  if (shouldUseMockFixtures("sellerFinance")) return demoWithdrawalLock;
 
   const response = await apiRequest<ApiEnvelope<SellerWithdrawalLock>>(
     `/v1/stores/${storeId}/withdrawals/lock`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

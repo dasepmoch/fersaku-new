@@ -17,14 +17,16 @@ export DATABASE_URL
 .PHONY: build test tidy vet fmt check-fmt run-api run-worker \
 	compose-up compose-down compose-build compose-deps compose-ps compose-logs \
 	migrate migrate-down migrate-version seed sqlc check-generated \
-	test-integration resilience-drills resilience-drills-dry resilience-drills-full help
+	test-integration test-contract openapi-lint openapi-bundle \
+	resilience-drills resilience-drills-dry resilience-drills-full help
 
 help:
 	@echo "Targets:"
 	@echo "  build test tidy vet fmt check-fmt run-api run-worker"
 	@echo "  compose-up compose-down compose-build compose-deps compose-ps"
 	@echo "  migrate migrate-down migrate-version seed sqlc check-generated"
-	@echo "  test-integration resilience-drills resilience-drills-dry resilience-drills-full"
+	@echo "  test-integration test-contract openapi-lint openapi-bundle"
+	@echo "  resilience-drills resilience-drills-dry resilience-drills-full"
 	@echo "GO=$(GO)"
 	@echo "DATABASE_URL=$(DATABASE_URL)"
 
@@ -37,6 +39,16 @@ test:
 
 test-integration:
 	$(GO) test -tags=integration -count=1 -timeout 120s ./test/integration/...
+
+# INT-000: OpenAPI 3.0.3 lint + router/OpenAPI drift gate
+test-contract:
+	$(GO) test -count=1 ./test/contract/...
+
+openapi-lint:
+	@cd .. && npx --yes @redocly/cli@1.34.3 lint backend/api/openapi.yaml --config=redocly.yaml
+
+openapi-bundle:
+	@cd .. && npx --yes @redocly/cli@1.34.3 bundle backend/api/openapi.yaml -o backend/api/openapi.bundle.yaml
 
 # BE-620 performance/resilience drills (see docs/performance/resilience-drills.md)
 resilience-drills-dry:

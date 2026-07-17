@@ -287,29 +287,17 @@ func TestCSRFStubWhenEnabled(t *testing.T) {
 		d.CSRFSoftDisable = false
 		d.SessionCookieName = "fersaku_session"
 	})
+	// INT-130: stale/unresolved cookie does not enforce CSRF (no SessionMeta).
+	// Anonymous recovery paths (login/logout/magic-link) must not be blocked.
 	req := httptest.NewRequest(http.MethodPost, "/v1/_scaffold/echo", strings.NewReader(`{"message":"hi"}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(middleware.RequestIDHeader, "req_csrf_01")
 	req.AddCookie(&http.Cookie{Name: "fersaku_session", Value: "placeholder"})
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
-	if rr.Code != http.StatusForbidden {
-		t.Fatalf("status %d body %s", rr.Code, rr.Body.String())
+	if rr.Code != http.StatusOK {
+		t.Fatalf("stale cookie should not CSRF-block scaffold: status %d body %s", rr.Code, rr.Body.String())
 	}
-	assertProblem(t, rr, "AUTH_CSRF_INVALID", "req_csrf_01")
-
-	// With header present but no resolved session meta → still invalid (BE-120 fail-closed)
-	req2 := httptest.NewRequest(http.MethodPost, "/v1/_scaffold/echo", strings.NewReader(`{"message":"hi"}`))
-	req2.Header.Set("Content-Type", "application/json")
-	req2.Header.Set(middleware.CSRFHeader, "token")
-	req2.Header.Set(middleware.RequestIDHeader, "req_csrf_02")
-	req2.AddCookie(&http.Cookie{Name: "fersaku_session", Value: "placeholder"})
-	rr2 := httptest.NewRecorder()
-	h.ServeHTTP(rr2, req2)
-	if rr2.Code != http.StatusForbidden {
-		t.Fatalf("status %d body %s", rr2.Code, rr2.Body.String())
-	}
-	assertProblem(t, rr2, "AUTH_CSRF_INVALID", "req_csrf_02")
 
 	// No session cookie → CSRF not enforced; scaffold succeeds
 	req3 := httptest.NewRequest(http.MethodPost, "/v1/_scaffold/echo", strings.NewReader(`{"message":"hi"}`))

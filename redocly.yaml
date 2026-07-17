@@ -1,0 +1,23 @@
+# INT-000 OpenAPI lint (OpenAPI 3.0.3)
+extends:
+  - recommended
+
+apis:
+  fersaku@v1:
+    root: backend/api/openapi.yaml
+
+rules:
+  # Spec must parse and resolve; keep hard errors for structural issues
+  no-unresolved-refs: error
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-summary: warn
+  security-defined: warn
+  tag-description: off
+  info-license: off
+  info-contact: off
+  operation-4xx-response: warn
+  operation-2xx-response: warn
+  no-server-example.com: off
+  no-unused-components: warn
+  path-parameters-defined: error

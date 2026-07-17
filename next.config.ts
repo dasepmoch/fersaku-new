@@ -3,14 +3,47 @@ import type { NextConfig } from "next";
 const isDevelopment = process.env.NODE_ENV !== "production";
 const isLive = process.env.NEXT_PUBLIC_APP_STAGE === "live";
 
-function apiConnectSource() {
-  const raw = process.env.NEXT_PUBLIC_API_URL;
-  if (!raw) return "http://localhost:8080";
+/** Local docker-compose: host 18080 → container 8080 (INT-030). */
+const DEFAULT_API_PROXY_ORIGIN = "http://127.0.0.1:18080";
+
+/**
+ * Rewrite target for same-origin browser `/v1/*` → Go API.
+ * Server-only env: API_INTERNAL_URL (preferred) or API_PROXY_TARGET.
+ * Never use NEXT_PUBLIC_* for the internal proxy destination.
+ */
+function apiProxyOrigin(): string {
+  const raw =
+    process.env.API_INTERNAL_URL?.trim() ||
+    process.env.API_PROXY_TARGET?.trim();
+  if (!raw) return DEFAULT_API_PROXY_ORIGIN;
   try {
     return new URL(raw).origin;
   } catch {
-    return "http://localhost:8080";
+    throw new Error(
+      "API_INTERNAL_URL / API_PROXY_TARGET must be an absolute http(s) URL for /v1 rewrites.",
+    );
   }
+}
+
+/**
+ * CSP connect-src: same-origin topology only needs 'self'.
+ * Deprecated NEXT_PUBLIC_API_URL (absolute/cross-origin) may add an extra origin.
+ */
+function apiConnectSources(): string {
+  const sources = new Set<string>(["'self'"]);
+  const publicApi = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (publicApi) {
+    try {
+      sources.add(new URL(publicApi).origin);
+    } catch {
+      // Invalid public URL is rejected at runtime by env contract.
+    }
+  }
+  if (isDevelopment) {
+    sources.add("ws://localhost:*");
+    sources.add("ws://127.0.0.1:*");
+  }
+  return [...sources].join(" ");
 }
 
 const contentSecurityPolicy = [
@@ -21,7 +54,7 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiConnectSource()}${isDevelopment ? " ws://localhost:* ws://127.0.0.1:*" : ""}`,
+  `connect-src ${apiConnectSources()}`,
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   ...(isLive ? ["upgrade-insecure-requests"] : []),
@@ -46,6 +79,8 @@ const securityHeaders = [
     : []),
 ];
 
+const proxyOrigin = apiProxyOrigin();
+
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
@@ -59,6 +94,16 @@ const nextConfig: NextConfig = {
       {
         source: "/@:storeSlug/:productSlug",
         destination: "/store/:storeSlug/:productSlug",
+      },
+      // INT-030: transparent same-origin proxy browser → Go API.
+      // Next does not implement commerce logic; body/response pass through.
+      {
+        source: "/v1",
+        destination: `${proxyOrigin}/v1`,
+      },
+      {
+        source: "/v1/:path*",
+        destination: `${proxyOrigin}/v1/:path*`,
       },
     ];
   },

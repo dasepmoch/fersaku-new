@@ -1,6 +1,6 @@
 "use client";
 
-import { isLiveApi } from "@/shared/data/mode";
+import { mockPlaceholderData } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
 import { getSellerInventoryProduct, listSellerInventory } from "./api";
@@ -10,7 +10,7 @@ export function useSellerInventory(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.inventory(storeId),
     queryFn: (signal) => listSellerInventory(storeId, signal),
-    placeholderData: isLiveApi() ? undefined : stockProducts,
+    placeholderData: mockPlaceholderData("sellerCatalog", stockProducts),
   });
 }
 
@@ -19,8 +19,6 @@ export function useSellerInventoryProduct(storeId: string, productId: string) {
     queryKey: queryKeys.seller.inventoryProduct(storeId, productId),
     queryFn: (signal) => getSellerInventoryProduct(storeId, productId, signal),
     enabled: Boolean(productId),
-    placeholderData: isLiveApi()
-      ? undefined
-      : getDemoInventoryProduct(productId),
+    placeholderData: mockPlaceholderData("sellerCatalog", getDemoInventoryProduct(productId)),
   });
 }

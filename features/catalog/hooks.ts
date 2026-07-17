@@ -1,6 +1,6 @@
 "use client";
 
-import { isLiveApi } from "@/shared/data/mode";
+import { mockPlaceholderData } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
 import { useAppMutation } from "@/shared/query/create-mutation";
@@ -17,7 +17,7 @@ export function useSellerProducts(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.products(storeId),
     queryFn: (signal) => listSellerProducts(storeId, signal),
-    placeholderData: isLiveApi() ? undefined : demoProducts,
+    placeholderData: mockPlaceholderData("sellerCatalog", demoProducts),
   });
 }
 
@@ -26,9 +26,10 @@ export function useSellerProduct(storeId: string, productId: string) {
     queryKey: queryKeys.seller.product(storeId, productId),
     queryFn: (signal) => getSellerProduct(storeId, productId, signal),
     enabled: Boolean(productId),
-    placeholderData: isLiveApi()
-      ? undefined
-      : demoProducts.find((product) => product.id === productId) || null,
+    placeholderData: mockPlaceholderData(
+      "sellerCatalog",
+      demoProducts.find((product) => product.id === productId) || null,
+    ),
   });
 }
 

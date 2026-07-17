@@ -1,3 +1,5 @@
+# QLT-100 — Frontend quality pipeline (repo root; not frontend/).
+# Full required gates for integration/API e2e: QLT-105.
 name: Frontend quality
 
 on:
@@ -9,21 +11,37 @@ concurrency:
   group: frontend-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Frontend lives at repository root (package.json, package-lock.json, .nvmrc).
 defaults:
   run:
-    working-directory: frontend
+    working-directory: .
 
 jobs:
-  quality:
-    name: Format, lint, typecheck, unit tests
+  frontend-static:
+    name: frontend-static (format, lint, typecheck, unit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version-file: frontend/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
+
+      - name: Assert Node engines band
+        run: |
+          node -e "
+            const eng = require('./package.json').engines.node;
+            const v = process.versions.node;
+            console.log('node', v, 'engines', eng);
+            const [maj, min] = v.split('.').map(Number);
+            if (maj !== 24 || min < 15) {
+              console.error('Node must satisfy engines.node (>=24.15.0 <25)');
+              process.exit(1);
+            }
+          "
+
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0
@@ -31,42 +49,61 @@ jobs:
       - run: npm run test:coverage
       - run: npm audit --audit-level=high
 
-  build:
-    name: Production build
+  frontend-build:
+    name: frontend-build (production + bundle budget)
     runs-on: ubuntu-latest
-    needs: quality
+    needs: frontend-static
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version-file: frontend/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
+
       - run: npm ci
       - run: npm run build
       - run: npm run check:bundle
 
-  e2e:
-    name: Playwright smoke and critical flows
+  frontend-mock-e2e:
+    name: frontend-mock-e2e (Playwright smoke/critical/a11y/visual)
     runs-on: ubuntu-latest
-    needs: quality
-    timeout-minutes: 20
+    needs: frontend-static
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version-file: frontend/.nvmrc
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
+
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      - name: Upload Playwright artifacts
+
+      - name: Upload Playwright artifacts (failure only)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts
           path: |
-            frontend/test-results/
-            frontend/playwright-report/
+            test-results/
+            playwright-report/
           if-no-files-found: ignore
+
+  # Cross-stack API-mode E2E requires QLT-110 seed + QLT-215 harness + QLT-105 activation.
+  # Skeleton only: not a required gate; does not run and does not claim pass.
+  cross-stack-api-e2e:
+    name: "cross-stack-api-e2e (PLACEHOLDER — enable in QLT-105)"
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - name: Deferred to QLT-105
+        run: |
+          echo "Not implemented in QLT-100."
+          echo "Requires: compose deps, migrate, deterministic seed (QLT-110),"
+          echo "Next API-mode Playwright harness (QLT-215), then required-check (QLT-105)."
+          exit 1

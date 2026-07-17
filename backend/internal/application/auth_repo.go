@@ -29,6 +29,8 @@ type IdentityStore interface {
 	RevokeOtherSessions(ctx context.Context, userID, keepID string, now time.Time) (int64, error)
 	RevokeAllSessions(ctx context.Context, userID string, now time.Time) (int64, error)
 	TouchSession(ctx context.Context, sessionID string, lastSeen, idleExpires time.Time) error
+	// UpdateSessionCSRFHash replaces the session CSRF hash (raw token never stored).
+	UpdateSessionCSRFHash(ctx context.Context, sessionID, csrfHash string) error
 	SetSessionMFAVerified(ctx context.Context, sessionID string, at time.Time) error
 
 	InsertChallenge(ctx context.Context, c auth.Challenge) error

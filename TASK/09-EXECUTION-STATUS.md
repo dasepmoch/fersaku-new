@@ -50,30 +50,30 @@ Shared hotspot mempunyai single-writer rule:
 
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[ ]` | `UI-000` | P0 | — | UX | — | G0 baseline, route/component characterization | — |
-| `[ ]` | `UI-010` | P0 | UI-000 | UX | — | Frozen visual scope | — |
-| `[ ]` | `UI-020` | P0 | UI-000 | UX | — | Wiring-only change policy | — |
-| `[ ]` | `UI-030` | P0 | UI-000 | UX | — | Exact component reuse registry | — |
-| `[ ]` | `UI-040` | P0 | UI-000 | UX/FND | — | DTO-to-view parity rule | — |
-| `[ ]` | `UI-050` | P0 | UI-000, UI-030 | UX/FND | — | Existing lifecycle-state mapping | — |
-| `[ ]` | `UI-060` | P0 | UI-000, UI-030 | UX | — | Responsive/a11y/motion invariant | — |
-| `[ ]` | `UI-070` | P0 | UI-000 | UX | — | Visual-risk file register | — |
-| `[ ]` | `UI-080` | P0/decision | UI-000, UI-030 | UX | — | Controlled UI exception only | — |
-| `[ ]` | `UI-090` | Continuous | UI-010..UI-080 | UX/QA | — | Per-PR no-UI-change review | — |
+| `[x]` | `UI-000` | P0 | — | UX | completed @nikki/opencode · 2026-07-17 11:48 WIB · claim released | G0 baseline, route/component characterization | TASK/evidence/UI-000/20260717-1143-nikki.md |
+| `[x]` | `UI-010` | P0 | UI-000 | UX | completed @nikki/opencode · 2026-07-17 11:50 WIB · claim released | Frozen visual scope | TASK/evidence/UI-010/20260717-1150-nikki.md · frozen-scope-checklist.md · frozen-scope.json |
+| `[x]` | `UI-020` | P0 | UI-000 | UX | completed @nikki/opencode · 2026-07-17 11:51 WIB · claim released | Wiring-only change policy | TASK/evidence/UI-020/20260717-1151-nikki.md · wiring-only-policy.md |
+| `[x]` | `UI-030` | P0 | UI-000 | UX | completed @nikki/opencode · 2026-07-17 11:52 WIB · claim released | Exact component reuse registry | TASK/evidence/UI-030/20260717-1152-nikki.md · component-reuse-registry.md |
+| `[x]` | `UI-040` | P0 | UI-000 | UX/FND | completed @nikki/opencode · 2026-07-17 11:53 WIB · claim released | DTO-to-view parity rule | TASK/evidence/UI-040/20260717-1153-nikki.md · dto-view-parity.md |
+| `[x]` | `UI-050` | P0 | UI-000, UI-030 | UX/FND | completed @nikki/opencode · 2026-07-17 11:54 WIB · claim released | Existing lifecycle-state mapping | TASK/evidence/UI-050/20260717-1154-nikki.md · lifecycle-state-map.md |
+| `[x]` | `UI-060` | P0 | UI-000, UI-030 | UX | completed @nikki/opencode · 2026-07-17 11:55 WIB · claim released | Responsive/a11y/motion invariant | TASK/evidence/UI-060/20260717-1155-nikki.md · invariants.md |
+| `[x]` | `UI-070` | P0 | UI-000 | UX | completed @nikki/opencode · 2026-07-17 11:56 WIB · claim released | Visual-risk file register | TASK/evidence/UI-070/20260717-1156-nikki.md · visual-risk-files.md |
+| `[x]` | `UI-080` | P0/decision | UI-000, UI-030 | UX | completed @nikki/opencode · 2026-07-17 11:57 WIB · claim released | Controlled UI exception only | TASK/evidence/UI-080/20260717-1157-nikki.md · exception-register.md (zero approved) |
+| `[x]` | `UI-090` | Continuous | UI-010..UI-080 | UX/QA | completed @nikki/opencode · 2026-07-17 11:58 WIB · claim released | Per-PR no-UI-change review | TASK/evidence/UI-090/20260717-1158-nikki.md · pr-no-ui-change-checklist.md |
 
 ### 3.2 Foundation, identity, tenant, and runtime
 
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[ ]` | `INT-000` | P0 | UI-000 | FND | — | Valid OpenAPI 3.0.3 + router drift gate (G1) | — |
-| `[ ]` | `INT-010` | P0 | INT-000 | FND | — | Generated transport/runtime schemas | — |
-| `[ ]` | `INT-020` | P0 | INT-000 | FND | — | HTTP/error/pagination/version contract | — |
-| `[ ]` | `INT-025` | P0 | INT-000, INT-020 | FND | — | Typed per-domain `mock/api/disabled` registry | — |
-| `[ ]` | `INT-030` | P0 | INT-000 | FND | — | Same-origin browser + server-only topology | — |
-| `[ ]` | `INT-100` | P0 | INT-010, INT-020, INT-030 | FND | — | Hardened browser transport (G2) | — |
-| `[ ]` | `INT-110` | P0 | INT-030, INT-100 | FND | — | Cookie-forwarding private SSR client | — |
-| `[ ]` | `INT-130` | P0 | INT-000, INT-030 | FND | — | Recoverable session-bound CSRF | — |
-| `[ ]` | `INT-120` | P0 | INT-025, INT-100, INT-110, INT-130 | FND | — | Session/bootstrap/claims/guards | — |
+| `[x]` | `INT-000` | P0 | UI-000 | FND | completed @nikki/opencode · 2026-07-17 12:00 WIB · claim released | Valid OpenAPI 3.0.3 + router drift gate (G1) | TASK/evidence/INT-000/20260717-1200-nikki.md |
+| `[x]` | `INT-010` | P0 | INT-000 | FND | completed @nikki/opencode · 2026-07-17 12:05 WIB · claim released | Generated transport/runtime schemas | TASK/evidence/INT-010/20260717-1205-nikki.md · shared/api/generated · shared/api/schemas.ts · features/catalog/mappers.ts |
+| `[x]` | `INT-020` | P0 | INT-000 | FND | completed @nikki/opencode · 2026-07-17 12:07 WIB · claim released | HTTP/error/pagination/version contract | TASK/evidence/INT-020/20260717-1207-nikki.md · shared/api/problem-codes.ts · error-policy.ts · pagination.ts · idempotency.ts · http-semantics.ts · tests/unit/int-020-semantics.test.ts |
+| `[x]` | `INT-025` | P0 | INT-000, INT-020 | FND | completed @nikki/opencode · 2026-07-17 12:15 WIB · claim released | Typed per-domain `mock/api/disabled` registry | TASK/evidence/INT-025/20260717-1215-nikki.md · shared/data/domain-source.ts · shared/data/domain-source-provider.tsx |
+| `[x]` | `INT-030` | P0 | INT-000 | FND | completed @nikki/opencode · 2026-07-17 12:30 WIB · claim released | Same-origin browser + server-only topology | TASK/evidence/INT-030/20260717-1230-nikki.md · topology.md · next.config.ts · shared/config/env.ts · shared/api/http-client.ts |
+| `[x]` | `INT-100` | P0 | INT-010, INT-020, INT-030 | FND | completed @nikki/opencode · 2026-07-17 12:18 WIB · claim released | Hardened browser transport (G2) | TASK/evidence/INT-100/20260717-1218-nikki.md · shared/api/http-client.ts · api-error.ts · schemas.ts · features/**/api.ts · tests/unit/http-client.test.ts · architecture-boundaries.test.ts |
+| `[x]` | `INT-110` | P0 | INT-030, INT-100 | FND | completed @nikki/opencode · 2026-07-17 12:25 WIB · claim released | Cookie-forwarding private SSR client | TASK/evidence/INT-110/20260717-1225-nikki.md · shared/api/server-http-client.ts · server-cookie-forward.ts · SERVER-SSR-POLICY.md · tests/unit/server-*.test.ts |
+| `[x]` | `INT-130` | P0 | INT-000, INT-030 | FND | completed @nikki/opencode · 2026-07-17 12:30 WIB · claim released | Recoverable session-bound CSRF | TASK/evidence/INT-130/20260717-1230-nikki.md · shared/api/csrf.ts · middleware/csrf.go · auth RotateSessionCSRF · tests/unit/csrf.test.ts |
+| `[x]` | `INT-120` | P0 | INT-025, INT-100, INT-110, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:33 WIB · claim released | Session/bootstrap/claims/guards | TASK/evidence/INT-120/20260717-1233-nikki.md |
 | `[ ]` | `INT-140` | P0 | INT-120, INT-130 | FND | — | Pre-MFA global gate + recent proof | — |
 | `[ ]` | `INT-150` | P0 | INT-120 | FND | — | Membership capabilities/current store/tenant guards | — |
 | `[ ]` | `INT-160` | P1 | INT-100, INT-120, INT-150 | FND | — | Safe query/cache/mutation/idempotency policy | — |
@@ -159,7 +159,7 @@ Shared hotspot mempunyai single-writer rule:
 
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[ ]` | `QLT-100` | P0 | — | QA | — | Correct CI paths/toolchain/job skeleton | — |
+| `[x]` | `QLT-100` | P0 | — | QA | completed @nikki/opencode · 2026-07-17 12:24 WIB · claim released | Correct CI paths/toolchain/job skeleton | TASK/evidence/QLT-100/20260717-1224-nikki.md |
 | `[ ]` | `QLT-105` | P0 rollout | QLT-100, INT-000, INT-010, QLT-110, QLT-215; QLT-200/210 framework may co-evolve, capability cells are canary evidence (not parent hard dependencies) | QA | — | Real required CI gates, no no-op jobs | — |
 | `[ ]` | `QLT-110` | P0 | INT-000, INT-030; co-evolve INT-150/domain migrations | QA | — | Single deterministic nonprod seed owner | — |
 | `[ ]` | `QLT-200` | P0/P1 continuous | INT-000, INT-010; domain task co-evolves | QA/domain | — | Unit/mapper/provider-consumer contract tests | — |

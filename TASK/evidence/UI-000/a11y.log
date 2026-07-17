@@ -1,0 +1,28 @@
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+
+Running 14 tests using 2 workers
+
+  ✓   2 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › / has no serious or critical violations (3.7s)
+  ✓   1 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › / has no serious or critical violations (3.8s)
+  ✓   3 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /checkout/prod_01 has no serious or critical violations (1.9s)
+  ✓   4 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /checkout/prod_01 has no serious or critical violations (1.8s)
+  ✓   5 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /account/security has no serious or critical violations (1.8s)
+  ✓   6 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /account/security has no serious or critical violations (2.0s)
+  ✓   7 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /dashboard has no serious or critical violations (3.2s)
+  ✓   8 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /dashboard has no serious or critical violations (3.7s)
+  ✓   9 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /dashboard/storefront has no serious or critical violations (2.4s)
+  ✓  10 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /dashboard/storefront has no serious or critical violations (2.6s)
+  ✓  11 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /admin has no serious or critical violations (3.0s)
+  ✓  12 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /admin has no serious or critical violations (3.1s)
+  ✓  13 [desktop-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /admin/merchants has no serious or critical violations (2.6s)
+  ✓  14 [mobile-chromium] › tests/e2e/accessibility.spec.ts:16:9 › accessibility smoke › /admin/merchants has no serious or critical violations (2.3s)
+
+  14 passed (50.2s)

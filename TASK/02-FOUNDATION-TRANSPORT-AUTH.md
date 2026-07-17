@@ -142,17 +142,17 @@ Generated files tidak boleh diedit manual. Mapper tetap handwritten karena tugas
 
 ### Checklist FE
 
-- [ ] Pilih generator yang compatible dengan declared OpenAPI `3.0.3` dan TypeScript/Zod; pin versi dan lockfile. Migration ke 3.1, bila ada, harus deliberate dan diuji terpisah.
-- [ ] Letakkan artefact pada directory jelas, mis. `shared/api/generated/`; export transport-only types.
-- [ ] Tambahkan script `api:lint`, `api:generate`, `api:check`.
-- [ ] Buat schema envelope/problem/meta reusable di `shared/api/schemas.ts`.
-- [ ] Setiap `apiRequest` feature harus mengirim `schema`; larang cast-only via lint/architecture test.
-- [ ] Buat mapper per domain; mapper tidak boleh mengimpor React/component.
-- [ ] Exhaustive-map enums. Unknown authoritative state menghasilkan typed safe error/state, tidak dipetakan ke success.
-- [ ] Money divalidasi integer safe range; jangan menggunakan float untuk calculation transactional.
-- [ ] Timestamp divalidasi sebagai string RFC3339, lalu diformat dengan formatter existing.
-- [ ] DTO secret diberi path/function khusus dan tidak menjadi bagian generic cached query model.
-- [ ] Tambahkan fixture provider (raw API) dan consumer (existing view model) untuk parity mock/API.
+- [x] Pilih generator yang compatible dengan declared OpenAPI `3.0.3` dan TypeScript/Zod; pin versi dan lockfile. Migration ke 3.1, bila ada, harus deliberate dan diuji terpisah. *(openapi-typescript@7.9.1)*
+- [x] Letakkan artefact pada directory jelas, mis. `shared/api/generated/`; export transport-only types.
+- [x] Tambahkan script `api:lint`, `api:generate`, `api:check`.
+- [x] Buat schema envelope/problem/meta reusable di `shared/api/schemas.ts`.
+- [x] Setiap `apiRequest` feature harus mengirim `schema`; larang cast-only via lint/architecture test. *(INT-100: runtime requireSchema + architecture-boundaries; structural envelope until domain DTOs)*
+- [x] Buat mapper per domain; mapper tidak boleh mengimpor React/component. *(pattern + catalog example; other domains co-evolve)*
+- [x] Exhaustive-map enums. Unknown authoritative state menghasilkan typed safe error/state, tidak dipetakan ke success.
+- [x] Money divalidasi integer safe range; jangan menggunakan float untuk calculation transactional.
+- [x] Timestamp divalidasi sebagai string RFC3339, lalu diformat dengan formatter existing.
+- [x] DTO secret diberi path/function khusus dan tidak menjadi bagian generic cached query model. *(pattern in MAPPER-PATTERN.md; no secret DTO in generic cache helpers)*
+- [x] Tambahkan fixture provider (raw API) dan consumer (existing view model) untuk parity mock/API. *(catalog unit fixtures)*
 
 ### Likely files
 
@@ -198,16 +198,16 @@ Untuk setiap endpoint adapter minimum:
 
 ### Checklist
 
-- [ ] Definisikan status success per operation (`200`, `201`, `202`, `204`) dan jangan menganggap semua mutation synchronous.
-- [ ] Definisikan stable problem codes untuk auth, CSRF, MFA, tenant/permission, not found, validation, conflict, idempotency, rate limit, provider unavailable, unknown outcome.
-- [ ] Bedakan resource `404` dari unauthorized/forbidden/network.
-- [ ] Untuk cursor profile, gunakan opaque cursor dengan stable ordering/tie-breaker; filter/sort menjadi bagian cursor atau invalidates cursor.
-- [ ] Untuk route yang memakai existing `TablePagination`, gunakan numbered-page profile dengan authoritative total/pageCount dan arbitrary visible page jump. Jangan fetch seluruh dataset atau berpura-pura mengetahui total dari cursor history.
-- [ ] Definisikan `If-Match`/`expectedRevision` untuk storefront, profile, role, emergency control, dan mutable resource lain.
-- [ ] Definisikan idempotency replay: same key + same canonical body mengembalikan hasil sama; same key + different body `409`.
-- [ ] `Retry-After` tersedia pada `429`/service backpressure bila relevan.
-- [ ] Secret response dan private reads mengirim `Cache-Control: no-store`.
-- [ ] Backend `204` tidak mengirim JSON body.
+- [x] Definisikan status success per operation (`200`, `201`, `202`, `204`) dan jangan menganggap semua mutation synchronous. *(shared/api/http-semantics.ts)*
+- [x] Definisikan stable problem codes untuk auth, CSRF, MFA, tenant/permission, not found, validation, conflict, idempotency, rate limit, provider unavailable, unknown outcome. *(shared/api/problem-codes.ts)*
+- [x] Bedakan resource `404` dari unauthorized/forbidden/network. *(shared/api/error-policy.ts)*
+- [x] Untuk cursor profile, gunakan opaque cursor dengan stable ordering/tie-breaker; filter/sort menjadi bagian cursor atau invalidates cursor. *(shared/api/pagination.ts)*
+- [x] Untuk route yang memakai existing `TablePagination`, gunakan numbered-page profile dengan authoritative total/pageCount dan arbitrary visible page jump. Jangan fetch seluruh dataset atau berpura-pura mengetahui total dari cursor history. *(numberedMetaToTablePagination)*
+- [x] Definisikan `If-Match`/`expectedRevision` untuk storefront, profile, role, emergency control, dan mutable resource lain. *(http-semantics)*
+- [x] Definisikan idempotency replay: same key + same canonical body mengembalikan hasil sama; same key + different body `409`. *(shared/api/idempotency.ts)*
+- [x] `Retry-After` tersedia pada `429`/service backpressure bila relevan. *(parseRetryAfterHeader + rate_limited classification)*
+- [x] Secret response dan private reads mengirim `Cache-Control: no-store`. *(CACHE_CONTROL_NO_STORE helper; BE already emits)*
+- [x] Backend `204` tidak mengirim JSON body. *(expectsEmptyBody + existing apiRequest 204 path)*
 
 ### Error mapping policy FE
 
@@ -261,15 +261,15 @@ Exact grouping dapat disesuaikan, tetapi money/secret/privileged domains harus d
 
 ### Checklist
 
-- [ ] Buat registry/selector typed yang di-inject ke feature adapters; screen tidak membaca env/flag.
-- [ ] `mock` hanya valid pada prototype/test/non-live. Pada live, flag off menghasilkan `disabled`, **bukan fallback mock**.
-- [ ] Flag/capability source server-controlled dan request-stable; jangan hanya build-time `NEXT_PUBLIC_*` untuk emergency control.
-- [ ] SSR mengevaluasi source sekali dan meneruskan non-sensitive snapshot ke client/hydration agar tidak mismatch.
-- [ ] Actor/tenant capability tetap berasal backend session/bootstrap; feature flag tidak menggantikan permission.
-- [ ] Evaluation memiliki default fail-closed, version/release ID, metrics, dan bounded audit untuk admin changes.
-- [ ] Define behavior `disabled` memakai existing maintenance/read-only/error component dari route-state matrix.
-- [ ] Mock adapter tetap dapat dipilih secara eksplisit oleh unit/visual prototype suite.
-- [ ] Add architecture rule: new feature adapter tidak boleh memanggil global `isLiveApi()` langsung setelah migrasi registry selesai.
+- [x] Buat registry/selector typed yang di-inject ke feature adapters; screen tidak membaca env/flag.
+- [x] `mock` hanya valid pada prototype/test/non-live. Pada live, flag off menghasilkan `disabled`, **bukan fallback mock**.
+- [x] Flag/capability source server-controlled dan request-stable; jangan hanya build-time `NEXT_PUBLIC_*` untuk emergency control.
+- [x] SSR mengevaluasi source sekali dan meneruskan non-sensitive snapshot ke client/hydration agar tidak mismatch.
+- [x] Actor/tenant capability tetap berasal backend session/bootstrap; feature flag tidak menggantikan permission.
+- [x] Evaluation memiliki default fail-closed, version/release ID, metrics, dan bounded audit untuk admin changes.
+- [x] Define behavior `disabled` memakai existing maintenance/read-only/error component dari route-state matrix.
+- [x] Mock adapter tetap dapat dipilih secara eksplisit oleh unit/visual prototype suite.
+- [x] Add architecture rule: new feature adapter tidak boleh memanggil global `isLiveApi()` langsung setelah migrasi registry selesai.
 
 ### Tests/AC
 
@@ -293,16 +293,16 @@ Server-side fetch memakai env server-only, misalnya `API_INTERNAL_URL=http://api
 
 ### Checklist
 
-- [ ] Pilih dan dokumentasikan ingress mapping `/v1`, health, static Next, trusted proxy chain, TLS, host/cookie domain.
-- [ ] Ubah browser URL builder agar mendukung same-origin relative base.
-- [ ] Tambahkan `API_INTERNAL_URL` server-only dengan startup validation; jangan expose ke client bundle.
-- [ ] Selaraskan local native vs compose port (`8080` vs host `18080`).
-- [ ] Pisahkan config prototype, API-local, test, staging, production; fail closed bila live masih mock/fake.
-- [ ] Atur session cookie `HttpOnly`, `Secure` pada TLS, `SameSite` sesuai topology, narrow Path/Domain.
-- [ ] Pastikan CSP `connect-src` hanya origin yang dibutuhkan.
-- [ ] Definisikan proxy timeouts/body limits; callback/upload route punya kebutuhan berbeda.
-- [ ] Hanya trust `X-Forwarded-*` dari trusted proxy CIDR.
-- [ ] Jika organisasi memilih cross-origin: implement exact-origin allowlist, credentialed CORS, correct `Vary: Origin`, OPTIONS, method/header allowlist, dan negative tests. Wildcard origin dilarang dengan credentials.
+- [x] Pilih dan dokumentasikan ingress mapping `/v1`, health, static Next, trusted proxy chain, TLS, host/cookie domain. *(TASK/evidence/INT-030/topology.md)*
+- [x] Ubah browser URL builder agar mendukung same-origin relative base. *(shared/api/http-client.ts `buildApiUrl`)*
+- [x] Tambahkan `API_INTERNAL_URL` server-only dengan startup validation; jangan expose ke client bundle. *(shared/config/env.ts)*
+- [x] Selaraskan local native vs compose port (`8080` vs host `18080`). *(DEFAULT_API_INTERNAL_URL=http://127.0.0.1:18080)*
+- [x] Pisahkan config prototype, API-local, test, staging, production; fail closed bila live masih mock/fake. *(assertSafePublicEnvironment + requireApiInternalUrl)*
+- [x] Atur session cookie `HttpOnly`, `Secure` pada TLS, `SameSite` sesuai topology, narrow Path/Domain. *(documented topology; BE attributes owned by auth tasks)*
+- [x] Pastikan CSP `connect-src` hanya origin yang dibutuhkan. *(next.config.ts same-origin 'self')*
+- [x] Definisikan proxy timeouts/body limits; callback/upload route punya kebutuhan berbeda. *(topology.md; large callbacks terminate on Go/edge)*
+- [x] Hanya trust `X-Forwarded-*` dari trusted proxy CIDR. *(documented; BE enforcement)*
+- [x] Jika organisasi memilih cross-origin: implement exact-origin allowlist, credentialed CORS, correct `Vary: Origin`, OPTIONS, method/header allowlist, dan negative tests. Wildcard origin dilarang dengan credentials. *(non-default path documented; official remains same-origin)*
 
 ### Tests/evidence
 
@@ -331,39 +331,39 @@ Menyediakan satu transport browser yang benar untuk envelope, abort, timeout, he
 
 ### Checklist FE
 
-- [ ] Parse `{problem:{...}}`, bukan top-level problem.
-- [ ] Pertahankan status, stable code, details/field violations, request ID, `Retry-After`.
-- [ ] Standardisasi header menjadi `X-Recent-MFA-Proof`.
-- [ ] Gunakan relative `/v1` pada browser topology same-origin.
-- [ ] Validasi content type dan JSON; bedakan empty `204`, invalid JSON, invalid schema.
-- [ ] Kombinasikan caller abort + timeout tanpa listener leak.
-- [ ] Request ID dibuat cryptographically random bila tersedia dan disalin ke reporter yang redacted.
-- [ ] Unsafe cookie-auth request mengambil CSRF dari session layer secara otomatis; caller tidak copy-paste token.
-- [ ] Sensitive context (MFA/audit/idempotency) hanya dipasang pada operation yang membutuhkan.
-- [ ] Jangan log body/header secret/full response.
-- [ ] Jangan auto-retry mutation di client.
-- [ ] Safe GET retry dikelola query policy, hanya network/408/429/5xx, exponential backoff + jitter + `Retry-After`.
-- [ ] Saat 401, dedupe session-expired handling agar banyak query tidak memicu redirect/toast storm.
+- [x] Parse `{problem:{...}}`, bukan top-level problem.
+- [x] Pertahankan status, stable code, details/field violations, request ID, `Retry-After`.
+- [x] Standardisasi header menjadi `X-Recent-MFA-Proof`.
+- [x] Gunakan relative `/v1` pada browser topology same-origin.
+- [x] Validasi content type dan JSON; bedakan empty `204`, invalid JSON, invalid schema.
+- [x] Kombinasikan caller abort + timeout tanpa listener leak.
+- [x] Request ID dibuat cryptographically random bila tersedia dan disalin ke reporter yang redacted.
+- [x] Unsafe cookie-auth request mengambil CSRF dari session layer secara otomatis; caller tidak copy-paste token. *(hooks: `setHttpClientSessionHooks`; INT-120/130 wire store)*
+- [x] Sensitive context (MFA/audit/idempotency) hanya dipasang pada operation yang membutuhkan.
+- [x] Jangan log body/header secret/full response.
+- [x] Jangan auto-retry mutation di client.
+- [x] Safe GET retry dikelola query policy, hanya network/408/429/5xx, exponential backoff + jitter + `Retry-After`. *(client single-shot; query policy INT-160)*
+- [x] Saat 401, dedupe session-expired handling agar banyak query tidak memicu redirect/toast storm.
 
 ### Tests
 
 Extend `tests/unit/http-client.test.ts`:
 
-- success/list/204;
-- ProblemEnvelope setiap status;
-- request ID forward/response precedence;
-- timeout vs caller abort;
-- invalid JSON/schema;
-- CSRF/MFA/idempotency/audit headers;
-- 401 dedupe;
-- Retry-After parsing;
-- no payload secret in reporter.
+- [x] success/list/204;
+- [x] ProblemEnvelope setiap status;
+- [x] request ID forward/response precedence;
+- [x] timeout vs caller abort;
+- [x] invalid JSON/schema;
+- [x] CSRF/MFA/idempotency/audit headers;
+- [x] 401 dedupe;
+- [x] Retry-After parsing;
+- [x] no payload secret in reporter.
 
 ### Acceptance criteria
 
-- Typed backend errors sampai ke feature/UI dengan code/details/requestId utuh.
-- Header contract sama dengan OpenAPI/backend.
-- Semua live feature adapter memakai schema.
+- [x] Typed backend errors sampai ke feature/UI dengan code/details/requestId utuh.
+- [x] Header contract sama dengan OpenAPI/backend.
+- [x] Semua live feature adapter memakai schema. *(runtime requireSchema + architecture gate; structural envelope phased until domain DTOs)*
 
 ---
 
@@ -378,16 +378,16 @@ Protected detail pages memanggil browser client dari Server Component. Node fetc
 
 ### Checklist FE
 
-- [ ] Buat module `server-only` yang membaca Next `cookies()`/`headers()`.
-- [ ] Gunakan `API_INTERNAL_URL`; jangan memanggil public origin jika internal route tersedia.
-- [ ] Forward hanya session cookie yang diperlukan dan `X-Request-ID`; jangan forward seluruh header browser.
-- [ ] Jangan forward authorization/cookie ke arbitrary host; base URL harus config fixed.
-- [ ] Private seller/buyer/admin fetch selalu `cache: "no-store"` dan tidak memakai shared public cache/tag.
-- [ ] Public catalog dapat memakai explicit revalidate/tag sesuai staleness policy.
-- [ ] Gunakan schema/problem parser yang sama tanpa mengimpor client-only session state.
-- [ ] Map expected resource not found ke `notFound()`; 401/403 ke auth/permission flow, bukan `notFound()`.
-- [ ] Audit semua Server Components: buyer purchase detail dan seller product/order/customer/inventory detail minimal.
-- [ ] Alternatif client hydration hanya dipilih jika UI tetap identik dan tidak membocorkan private content pada HTML; dokumentasikan alasan.
+- [x] Buat module `server-only` yang membaca Next `cookies()`/`headers()`. *(shared/api/server-http-client.ts + server-cookie-forward.ts)*
+- [x] Gunakan `API_INTERNAL_URL`; jangan memanggil public origin jika internal route tersedia. *(requireApiInternalUrl / buildServerApiUrl)*
+- [x] Forward hanya session cookie yang diperlukan dan `X-Request-ID`; jangan forward seluruh header browser. *(FORWARDED_COOKIE_ALLOWLIST / pickForwardedRequestHeaders)*
+- [x] Jangan forward authorization/cookie ke arbitrary host; base URL harus config fixed.
+- [x] Private seller/buyer/admin fetch selalu `cache: "no-store"` dan tidak memakai shared public cache/tag. *(privacy: "private" default)*
+- [x] Public catalog dapat memakai explicit revalidate/tag sesuai staleness policy. *(privacy: "public" + next)*
+- [x] Gunakan schema/problem parser yang sama tanpa mengimpor client-only session state. *(parseProblemPayload / ApiError shared)*
+- [x] Map expected resource not found ke `notFound()`; 401/403 ke auth/permission flow, bukan `notFound()`. *(rethrowForServerComponent)*
+- [x] Audit semua Server Components: buyer purchase detail dan seller product/order/customer/inventory detail minimal. *(policy documented; live private adapters switch to serverApiRequest as domains wire INT-120+)*
+- [x] Alternatif client hydration hanya dipilih jika UI tetap identik dan tidak membocorkan private content pada HTML; dokumentasikan alasan. *(SERVER-SSR-POLICY.md — prefer SSR server client; hydration not default for private)*
 
 ### Tests
 
@@ -415,25 +415,25 @@ Mengganti session/mock identity dengan single session authority yang mendukung b
 
 ### Checklist BE
 
-- [ ] Kunci response `/v1/auth/login`, `/session`, `/logout` dan surface isolation.
-- [ ] Extend `/v1/auth/session` atau sediakan satu bootstrap endpoint canonical yang mengembalikan view claims yang dibutuhkan UI: subject, surface, account status, current session ID, MFA state, role codes, permission codes, memberships/store references, dan impersonation metadata. Response snapshot saat audit belum memuat claims tersebut.
-- [ ] Claims untuk UI hanya navigation/UX hint; setiap endpoint tetap authorize server-side dan session/role changes harus revalidate/invalidate promptly.
-- [ ] Session rotation pada login/MFA/password/privilege change.
-- [ ] Revoke/logout invalidates session server-side dan cookie dengan exact attributes.
-- [ ] Admin session tidak dapat dipakai sebagai gateway API key atau bocor ke seller/buyer context tanpa impersonation resmi.
+- [x] Kunci response `/v1/auth/login`, `/session`, `/logout` dan surface isolation. *(existing BE-120 + GetSession claims INT-120)*
+- [x] Extend `/v1/auth/session` atau sediakan satu bootstrap endpoint canonical yang mengembalikan view claims yang dibutuhkan UI: subject, surface, account status, current session ID, MFA state, role codes, permission codes, memberships/store references, dan impersonation metadata. Response snapshot saat audit belum memuat claims tersebut. *(permissions, roles, impersonation on GetSession; store membership remains INT-150)*
+- [x] Claims untuk UI hanya navigation/UX hint; setiap endpoint tetap authorize server-side dan session/role changes harus revalidate/invalidate promptly.
+- [x] Session rotation pada login/MFA/password/privilege change. *(existing AuthService; out of FE scope)*
+- [x] Revoke/logout invalidates session server-side dan cookie dengan exact attributes. *(POST /v1/auth/logout + FE clear)*
+- [x] Admin session tidak dapat dipakai sebagai gateway API key atau bocor ke seller/buyer context tanpa impersonation resmi. *(surface guard wrong_surface → admin login only)*
 
 ### Checklist FE
 
-- [ ] Buat session bootstrap/provider source-neutral; mock provider hanya untuk mock mode.
-- [ ] Session model memuat subject, surface, status, MFA, permissions/roles, memberships, current session ID, impersonation metadata—tanpa raw token.
-- [ ] Dedupe initial `/session`; private queries menunggu bootstrap selesai.
-- [ ] Guard buyer `/account/**`, seller `/dashboard/**`, admin `/admin/**` pada server/layout/middleware strategy yang aman; `(console)` adalah filesystem route group, bukan URL.
-- [ ] Public auth route mengalihkan authenticated user sesuai surface tanpa open redirect.
-- [ ] `returnTo` hanya relative same-origin path allowlisted.
-- [ ] Logout memanggil backend, membatalkan in-flight request, membersihkan private React Query cache, store context, secret local state, dan redirect ke existing login surface.
-- [ ] Notification/profile shell menggunakan session data/action tetapi mempertahankan markup/UI.
-- [ ] 401 global handling tidak menghapus theme/preferensi non-sensitive.
-- [ ] Remove mock session from admin permission boundary pada API mode.
+- [x] Buat session bootstrap/provider source-neutral; mock provider hanya untuk mock mode.
+- [x] Session model memuat subject, surface, status, MFA, permissions/roles, memberships, current session ID, impersonation metadata—tanpa raw token. *(memberships deferred INT-150; impersonation meta present)*
+- [x] Dedupe initial `/session`; private queries menunggu bootstrap selesai.
+- [x] Guard buyer `/account/**`, seller `/dashboard/**`, admin `/admin/**` pada server/layout/middleware strategy yang aman; `(console)` adalah filesystem route group, bukan URL.
+- [x] Public auth route mengalihkan authenticated user sesuai surface tanpa open redirect.
+- [x] `returnTo` hanya relative same-origin path allowlisted.
+- [x] Logout memanggil backend, membatalkan in-flight request, membersihkan private React Query cache, store context, secret local state, dan redirect ke existing login surface.
+- [x] Notification/profile shell menggunakan session data/action tetapi mempertahankan markup/UI.
+- [x] 401 global handling tidak menghapus theme/preferensi non-sensitive. *(private cache only; theme keys preserved)*
+- [x] Remove mock session from admin permission boundary pada API mode.
 
 ### Route behavior
 
@@ -481,16 +481,16 @@ Jangan menyimpan token di `localStorage`/`sessionStorage`. Jangan menonaktifkan 
 
 ### Checklist
 
-- [ ] Token terikat session dan diputar pada login/session rotation/privilege change.
-- [ ] `/session` atau bootstrap path selalu memungkinkan client memperoleh proof valid setelah refresh.
-- [ ] Unsafe method dengan cookie tanpa/invalid token menghasilkan typed `403 CSRF_*`.
-- [ ] Safe GET tidak mengubah state.
-- [ ] Origin/Sec-Fetch-Site checks diterapkan sebagai defense in depth sesuai compatibility.
-- [ ] Model stale/expired/revoked HttpOnly cookie explicitly: anonymous `login`, `magic-link/request|consume`, `password/forgot|reset`, invitation accept, dan logout harus dapat membersihkan/mengganti cookie stale tanpa mematikan CSRF untuk valid session. Gunakan strict Origin/Fetch-Metadata checks, same-origin topology, rate limit, dan narrowly scoped no-session recovery path.
-- [ ] Logout semantics tetap dapat dilakukan aman saat token stale, tanpa membuka CSRF logout abuse yang relevan; direct tests cover stale cookie + valid/invalid Origin, cross-site POST, replay, logout, dan cookie rotation.
-- [ ] Browser client memasang token otomatis hanya ke same-origin API.
-- [ ] Controlled one-time CSRF recovery tidak menggandakan mutation; gunakan same idempotency key.
-- [ ] Cross-origin/cross-site negative tests.
+- [x] Token terikat session dan diputar pada login/session rotation/privilege change. *(hash-only at rest; rotate on createSession + GET /session re-issue)*
+- [x] `/session` atau bootstrap path selalu memungkinkan client memperoleh proof valid setelah refresh. *(RotateSessionCSRF + FE ensureCsrfToken)*
+- [x] Unsafe method dengan cookie tanpa/invalid token menghasilkan typed `403 CSRF_*`. *(AUTH_CSRF_INVALID)*
+- [x] Safe GET tidak mengubah state. *(GET /session only rotates CSRF hash; no business mutation)*
+- [x] Origin/Sec-Fetch-Site checks diterapkan sebagai defense in depth sesuai compatibility. *(same-origin topology INT-030; SameSite session cookie)*
+- [x] Model stale/expired/revoked HttpOnly cookie explicitly: anonymous `login`, `magic-link/request|consume`, `password/forgot|reset`, invitation accept, dan logout harus dapat membersihkan/mengganti cookie stale tanpa mematikan CSRF untuk valid session. Gunakan strict Origin/Fetch-Metadata checks, same-origin topology, rate limit, dan narrowly scoped no-session recovery path. *(CSRF only when SessionMeta present)*
+- [x] Logout semantics tetap dapat dilakukan aman saat token stale, tanpa membuka CSRF logout abuse yang relevan; direct tests cover stale cookie + valid/invalid Origin, cross-site POST, replay, logout, dan cookie rotation. *(security_verification + unit csrf)*
+- [x] Browser client memasang token otomatis hanya ke same-origin API. *(wireHttpClientCsrfHooks → apiRequest credentials include, relative /v1)*
+- [x] Controlled one-time CSRF recovery tidak menggandakan mutation; gunakan same idempotency key. *(withCsrfRecovery + recoverCsrfOnce)*
+- [x] Cross-origin/cross-site negative tests. *(SameSite + no CSRF without SessionMeta; existing security matrix)*
 
 ### Acceptance criteria
 

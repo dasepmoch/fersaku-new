@@ -17,7 +17,7 @@ export type ObservabilityReporter = {
 };
 
 const SENSITIVE_KEY =
-  /email|token|secret|password|credential|account|bank|qris|authorization/i;
+  /email|token|csrf|secret|password|credential|account|bank|qris|authorization|cookie/i;
 
 function redactValue(
   value: unknown,

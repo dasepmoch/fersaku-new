@@ -1,8 +1,9 @@
 "use client";
 
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import { useAppMutation } from "@/shared/query/create-mutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { appendMockAuditEvent } from "./mock-audit";
@@ -39,7 +40,7 @@ export async function executeAdminAction(
   input: AdminActionInput,
   signal?: AbortSignal,
 ): Promise<AdminActionResult> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("adminWrite")) {
     appendMockAuditEvent({
       actor: "admin@fersaku.id",
       action: input.action,
@@ -60,6 +61,7 @@ export async function executeAdminAction(
     ApiEnvelope<AdminActionResult>,
     AdminActionInput
   >("/v1/admin/actions", {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: input,
     signal,

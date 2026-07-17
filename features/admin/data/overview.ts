@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { AdminAuditEvent } from "./contracts";
 import { mockAuditEvents, mockPlatformVolume } from "./mock";
 import { combineMockAuditChains, readMockAuditEvents } from "./mock-audit";
@@ -16,10 +17,11 @@ export function demoPlatformVolume(): number[] {
 export async function listAuditEvents(
   signal?: AbortSignal,
 ): Promise<AdminAuditEvent[]> {
-  if (!isLiveApi()) return demoAuditEvents();
+  if (shouldUseMockFixtures("adminRead")) return demoAuditEvents();
   const response = await apiRequest<ApiEnvelope<AdminAuditEvent[]>>(
     "/v1/admin/audit-logs",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -27,10 +29,11 @@ export async function listAuditEvents(
 export async function getPlatformVolume(
   signal?: AbortSignal,
 ): Promise<number[]> {
-  if (!isLiveApi()) return demoPlatformVolume();
+  if (shouldUseMockFixtures("adminRead")) return demoPlatformVolume();
   const response = await apiRequest<ApiEnvelope<number[]>>(
     "/v1/admin/overview/platform-volume",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

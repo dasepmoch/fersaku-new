@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type {
   AdminInventoryField,
   AdminStockItem,
@@ -32,10 +33,11 @@ export function demoInventory(): AdminInventorySnapshot {
 export async function getInventory(
   signal?: AbortSignal,
 ): Promise<AdminInventorySnapshot> {
-  if (!isLiveApi()) return demoInventory();
+  if (shouldUseMockFixtures("adminRead")) return demoInventory();
   const response = await apiRequest<ApiEnvelope<AdminInventorySnapshot>>(
     "/v1/admin/inventory",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -54,7 +56,7 @@ export async function revealInventoryItem(
   if (input.reason.trim().length < 12 || !input.recentMfaProof) {
     throw new Error("A reason and recent MFA proof are required.");
   }
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("adminRead")) {
     const secret = mockStockItemSecret(input.itemId);
     if (!secret) throw new Error("Stock item was not found.");
     appendMockAuditEvent({
@@ -71,6 +73,7 @@ export async function revealInventoryItem(
     ApiEnvelope<AdminStockItemSecret>,
     { reason: string }
   >(`/v1/admin/inventory/items/${encodeURIComponent(input.itemId)}/reveal`, {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: { reason: input.reason.trim() },
     signal,

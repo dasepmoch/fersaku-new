@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 
 export type SimulateCheckoutPaymentInput = {
   productId: string;
@@ -23,7 +24,7 @@ export async function simulateCheckoutPayment(
   input: SimulateCheckoutPaymentInput,
   signal?: AbortSignal,
 ): Promise<SimulateCheckoutPaymentResult> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("checkout")) {
     return {
       accepted: true,
       status: "paid",
@@ -36,6 +37,7 @@ export async function simulateCheckoutPayment(
     ApiEnvelope<SimulateCheckoutPaymentResult>,
     SimulateCheckoutPaymentInput
   >("/v1/checkout/simulate-payment", {
+    schema: structuralEnvelopeSchema,
     method: "POST",
     body: input,
     signal,

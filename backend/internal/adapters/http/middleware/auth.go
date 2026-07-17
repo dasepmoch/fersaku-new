@@ -84,7 +84,8 @@ func AuthWith(cfg AuthConfig) func(http.Handler) http.Handler {
 							Surface:       string(sess.Surface),
 							UserID:        sess.UserID,
 						})
-						// Stash raw CSRF is not available; client keeps csrf from login.
+						// Raw CSRF is never loaded from DB (hash-only). Client obtains
+						// raw via login/magic-link/issue body or GET /v1/auth/session rotation (INT-130).
 					}
 				}
 			}

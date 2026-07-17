@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import {
   getDemoInventoryProduct,
   stockProducts,
@@ -11,10 +12,11 @@ export async function listSellerInventory(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<InventoryProduct[]> {
-  if (!isLiveApi()) return stockProducts;
+  if (shouldUseMockFixtures("sellerCatalog")) return stockProducts;
   const response = await apiRequest<ApiEnvelope<InventoryProduct[]>>(
     `/v1/stores/${storeId}/inventory/products`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -24,10 +26,11 @@ export async function getSellerInventoryProduct(
   productId: string,
   signal?: AbortSignal,
 ): Promise<InventoryProduct | null> {
-  if (!isLiveApi()) return getDemoInventoryProduct(productId);
+  if (shouldUseMockFixtures("sellerCatalog")) return getDemoInventoryProduct(productId);
   const response = await apiRequest<ApiEnvelope<InventoryProduct>>(
     `/v1/stores/${storeId}/inventory/products/${productId}`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

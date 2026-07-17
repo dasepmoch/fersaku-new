@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { AdminWithdrawal } from "./contracts";
 import { mockWithdrawals } from "./mock";
 
@@ -24,11 +25,12 @@ export function demoWithdrawals(): AdminWithdrawal[] {
 export async function listWithdrawals(
   signal?: AbortSignal,
 ): Promise<AdminWithdrawal[]> {
-  if (!isLiveApi()) return demoWithdrawals();
+  if (shouldUseMockFixtures("adminRead")) return demoWithdrawals();
 
   const response = await apiRequest<ApiEnvelope<AdminWithdrawal[]>>(
     "/v1/admin/withdrawals",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -37,13 +39,14 @@ export async function getWithdrawal(
   withdrawalId: string,
   signal?: AbortSignal,
 ): Promise<AdminWithdrawal | null> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("adminRead")) {
     return demoWithdrawals().find((w) => w.id === withdrawalId) || null;
   }
 
   const response = await apiRequest<ApiEnvelope<AdminWithdrawal>>(
     `/v1/admin/withdrawals/${withdrawalId}`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

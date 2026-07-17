@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { AdminPermissionGroup, AdminRole } from "./contracts";
 import { mockPermissionGroups, mockRoles } from "./mock";
 import {
@@ -101,7 +102,7 @@ export function saveMockAdminRole(input: {
   description: string;
   permissions: string[];
 }): { role: AdminRole; roles: AdminRole[] } {
-  if (isLiveApi()) {
+  if (!shouldUseMockFixtures("adminRead")) {
     throw new Error("Live role mutation adapter is not connected");
   }
   const current = readMockAdminRoles();
@@ -148,10 +149,11 @@ export function demoPermissionGroups(): AdminPermissionGroup[] {
 export async function listAdminRoles(
   signal?: AbortSignal,
 ): Promise<AdminRole[]> {
-  if (!isLiveApi()) return readMockAdminRoles();
+  if (shouldUseMockFixtures("adminRead")) return readMockAdminRoles();
   const response = await apiRequest<ApiEnvelope<AdminRole[]>>(
     "/v1/admin/roles",
     {
+    schema: structuralEnvelopeSchema,
       signal,
     },
   );
@@ -161,10 +163,11 @@ export async function listAdminRoles(
 export async function listPermissionGroups(
   signal?: AbortSignal,
 ): Promise<AdminPermissionGroup[]> {
-  if (!isLiveApi()) return demoPermissionGroups();
+  if (shouldUseMockFixtures("adminRead")) return demoPermissionGroups();
   const response = await apiRequest<ApiEnvelope<AdminPermissionGroup[]>>(
     "/v1/admin/permissions",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

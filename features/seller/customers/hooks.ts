@@ -1,6 +1,6 @@
 "use client";
 
-import { isLiveApi } from "@/shared/data/mode";
+import { mockPlaceholderData } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
 import { getSellerCustomer, listSellerCustomers } from "./api";
@@ -10,7 +10,7 @@ export function useSellerCustomers(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.customers(storeId),
     queryFn: (signal) => listSellerCustomers(storeId, signal),
-    placeholderData: isLiveApi() ? undefined : demoCustomers(),
+    placeholderData: mockPlaceholderData("sellerOperations", demoCustomers()),
   });
 }
 
@@ -19,8 +19,6 @@ export function useSellerCustomer(storeId: string, customerId: string) {
     queryKey: queryKeys.seller.customers(storeId).concat(customerId),
     queryFn: (signal) => getSellerCustomer(storeId, customerId, signal),
     enabled: Boolean(customerId),
-    placeholderData: isLiveApi()
-      ? undefined
-      : demoCustomers().find((c) => c.id === customerId) || null,
+    placeholderData: mockPlaceholderData("sellerOperations", demoCustomers().find((c) => c.id === customerId) || null),
   });
 }

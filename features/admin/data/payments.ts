@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { AdminPaymentIntent } from "./contracts";
 import { mockPayments } from "./mock";
 
@@ -11,11 +12,12 @@ export function demoPayments(): AdminPaymentIntent[] {
 export async function listPayments(
   signal?: AbortSignal,
 ): Promise<AdminPaymentIntent[]> {
-  if (!isLiveApi()) return demoPayments();
+  if (shouldUseMockFixtures("adminRead")) return demoPayments();
 
   const response = await apiRequest<ApiEnvelope<AdminPaymentIntent[]>>(
     "/v1/admin/payments",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

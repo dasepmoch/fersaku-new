@@ -707,6 +707,22 @@ func (q *Queries) TouchUserLastLogin(ctx context.Context, arg TouchUserLastLogin
 	return err
 }
 
+const updateSessionCSRFHash = `-- name: UpdateSessionCSRFHash :exec
+UPDATE auth_sessions
+SET csrf_token_hash = $2
+WHERE id = $1 AND revoked_at IS NULL
+`
+
+type UpdateSessionCSRFHashParams struct {
+	ID            string `json:"id"`
+	CsrfTokenHash string `json:"csrf_token_hash"`
+}
+
+func (q *Queries) UpdateSessionCSRFHash(ctx context.Context, arg UpdateSessionCSRFHashParams) error {
+	_, err := q.db.Exec(ctx, updateSessionCSRFHash, arg.ID, arg.CsrfTokenHash)
+	return err
+}
+
 const updateUserPassword = `-- name: UpdateUserPassword :exec
 UPDATE users
 SET password_hash = $2, updated_at = $3

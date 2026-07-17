@@ -1,39 +1,121 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { ApiError, apiRequest } from "@/shared/api/http-client";
+import {
+  ApiError,
+  apiRequest,
+  buildApiUrl,
+  clearHttpClientSessionHooks,
+  HTTP_HEADERS,
+  parseProblemPayload,
+  resetSessionExpiredDedupe,
+  setHttpClientSessionHooks,
+} from "@/shared/api/http-client";
+import {
+  setObservabilityReporter,
+  type ObservabilityReporter,
+} from "@/shared/observability/reporter";
+import { successEnvelopeSchema } from "@/shared/api/schemas";
 
-const jsonResponse = (body: unknown, status = 200) =>
+const okSchema = successEnvelopeSchema(z.object({ ok: z.boolean() }));
+const idSchema = successEnvelopeSchema(z.object({ id: z.string() }));
+const listSchema = successEnvelopeSchema(z.array(z.object({ id: z.string() })));
+
+const jsonResponse = (
+  body: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
   });
+
+const envelope = (data: unknown, requestId = "req_meta") => ({
+  data,
+  meta: {
+    requestId,
+    timestamp: "2026-07-17T10:00:00Z",
+  },
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  clearHttpClientSessionHooks();
+  resetSessionExpiredDedupe();
+  setObservabilityReporter({
+    captureError() {},
+    captureMetric() {},
+  });
 });
 
 describe("ApiError", () => {
-  it("exposes structured problem details", () => {
+  it("exposes structured problem details and helpers", () => {
     const error = new ApiError(422, {
       code: "VALIDATION_ERROR",
       message: "Invalid payload",
       requestId: "req_123",
-    });
+      details: { fields: [{ field: "email", code: "INVALID" }] },
+    }, 30);
     expect(error.status).toBe(422);
     expect(error.problem.code).toBe("VALIDATION_ERROR");
     expect(error.message).toBe("Invalid payload");
     expect(error.name).toBe("ApiError");
+    expect(error.code).toBe("VALIDATION_ERROR");
+    expect(error.requestId).toBe("req_123");
+    expect(error.retryAfterSeconds).toBe(30);
+    expect(error.details).toEqual({
+      fields: [{ field: "email", code: "INVALID" }],
+    });
+  });
+});
+
+describe("parseProblemPayload", () => {
+  it("parses nested ProblemEnvelope", () => {
+    expect(
+      parseProblemPayload(
+        {
+          problem: {
+            code: "VALIDATION_FAILED",
+            message: "bad",
+            requestId: "req_nested",
+            details: { fields: [{ field: "x", code: "INVALID" }] },
+          },
+        },
+        "fallback",
+      ),
+    ).toEqual({
+      code: "VALIDATION_FAILED",
+      message: "bad",
+      requestId: "req_nested",
+      details: { fields: [{ field: "x", code: "INVALID" }] },
+    });
+  });
+
+  it("falls back to legacy top-level problem shape", () => {
+    expect(
+      parseProblemPayload(
+        { code: "HTTP_ERROR", message: "legacy", requestId: "req_leg" },
+        "fallback",
+      ),
+    ).toEqual({
+      code: "HTTP_ERROR",
+      message: "legacy",
+      requestId: "req_leg",
+      details: undefined,
+    });
   });
 });
 
 describe("apiRequest", () => {
-  it("serializes query parameters, JSON body, and request headers", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: "p_1" }));
+  it("serializes query parameters, JSON body, and contract headers", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(envelope({ id: "p_1" })));
     vi.stubGlobal("fetch", fetchMock);
 
-    await apiRequest<{ id: string }, { name: string }>("/products", {
+    await apiRequest("/products", {
       method: "POST",
       body: { name: "Prompt pack" },
       query: { page: 2, active: true, omitted: null },
@@ -43,53 +125,99 @@ describe("apiRequest", () => {
       idempotencyKey: "idem_123",
       auditReason: "manual retry",
       recentMfaProof: "mfa_123",
+      ifMatch: '"rev-3"',
+      schema: idSchema,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe(
-      "http://localhost:8080/products?page=2&active=true",
-    );
+    expect(String(url)).toBe("/products?page=2&active=true");
     expect(init).toMatchObject({
       method: "POST",
       credentials: "include",
       body: JSON.stringify({ name: "Prompt pack" }),
     });
     expect(init.headers).toBeInstanceOf(Headers);
-    expect(init.headers.get("Accept")).toBe("application/json");
-    expect(init.headers.get("Content-Type")).toBe("application/json");
-    expect(init.headers.get("X-Request-ID")).toEqual(expect.any(String));
-    expect(init.headers.get("X-CSRF-Token")).toBe("csrf_123");
-    expect(init.headers.get("Idempotency-Key")).toBe("idem_123");
-    expect(init.headers.get("X-Audit-Reason")).toBe("manual retry");
-    expect(init.headers.get("X-Recent-MFA")).toBe("mfa_123");
+    expect(init.headers.get(HTTP_HEADERS.ACCEPT)).toBe("application/json");
+    expect(init.headers.get(HTTP_HEADERS.CONTENT_TYPE)).toBe(
+      "application/json",
+    );
+    expect(init.headers.get(HTTP_HEADERS.REQUEST_ID)).toEqual(
+      expect.any(String),
+    );
+    expect(init.headers.get(HTTP_HEADERS.CSRF)).toBe("csrf_123");
+    expect(init.headers.get(HTTP_HEADERS.IDEMPOTENCY)).toBe("idem_123");
+    expect(init.headers.get(HTTP_HEADERS.AUDIT_REASON)).toBe("manual retry");
+    expect(init.headers.get(HTTP_HEADERS.RECENT_MFA_PROOF)).toBe("mfa_123");
+    expect(init.headers.get(HTTP_HEADERS.IF_MATCH)).toBe('"rev-3"');
+  });
+
+  it("injects CSRF from session hooks for unsafe methods", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(envelope({ ok: true })));
+    vi.stubGlobal("fetch", fetchMock);
+    setHttpClientSessionHooks({
+      getCsrfToken: () => "hook_csrf",
+    });
+
+    await apiRequest("/v1/auth/logout", {
+      method: "POST",
+      schema: okSchema,
+    });
+
+    expect(fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF)).toBe(
+      "hook_csrf",
+    );
+  });
+
+  it("does not inject CSRF for GET", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(envelope({ ok: true })));
+    vi.stubGlobal("fetch", fetchMock);
+    setHttpClientSessionHooks({ getCsrfToken: () => "hook_csrf" });
+
+    await apiRequest("/v1/auth/session", { schema: okSchema });
+
+    expect(fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF)).toBeNull();
   });
 
   it("generates a deterministic fallback request ID when UUID is unavailable", async () => {
-    const response = jsonResponse({ ok: true });
-    const fetchMock = vi.fn().mockResolvedValue(response);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(envelope({ ok: true })));
     vi.stubGlobal("crypto", { randomUUID: undefined });
     vi.stubGlobal("fetch", fetchMock);
 
-    await apiRequest("/health");
+    await apiRequest("/health", { schema: okSchema });
 
     expect(fetchMock.mock.calls[0][1].headers.get("X-Request-ID")).toMatch(
       /^web_req_[a-z0-9]+$/,
     );
   });
 
-  it("returns parsed JSON for successful responses", async () => {
+  it("returns parsed JSON for successful responses (envelope)", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ ok: true })),
+      vi.fn().mockResolvedValue(jsonResponse(envelope({ ok: true }))),
     );
 
-    await expect(apiRequest<{ ok: boolean }>("/health")).resolves.toEqual({
-      ok: true,
-    });
+    await expect(
+      apiRequest("/health", { schema: okSchema }),
+    ).resolves.toEqual(envelope({ ok: true }));
   });
 
-  it("returns undefined for a successful 204 response", async () => {
+  it("returns list envelope data for success/list", async () => {
+    const body = envelope([{ id: "a" }, { id: "b" }]);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body)));
+
+    await expect(
+      apiRequest("/items", { schema: listSchema }),
+    ).resolves.toEqual(body);
+  });
+
+  it("returns undefined for a successful 204 response without schema", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
@@ -103,23 +231,48 @@ describe("apiRequest", () => {
   it("validates a successful response against the supplied schema", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ id: "p_1" })),
+      vi.fn().mockResolvedValue(jsonResponse(envelope({ id: "p_1" }))),
     );
 
     await expect(
-      apiRequest<{ id: string }>("/products/p_1", {
-        schema: z.object({ id: z.string() }),
+      apiRequest("/products/p_1", { schema: idSchema }),
+    ).resolves.toEqual(envelope({ id: "p_1" }));
+  });
+
+  it("fails closed when schema is missing on non-204 success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(envelope({ ok: true }))),
+    );
+
+    await expect(apiRequest("/health")).rejects.toEqual(
+      expect.objectContaining({
+        name: "ApiError",
+        status: 502,
+        problem: expect.objectContaining({ code: "INVALID_API_CONTRACT" }),
       }),
-    ).resolves.toEqual({ id: "p_1" });
+    );
+  });
+
+  it("allows requireSchema:false for transport-only tests", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ raw: true })),
+    );
+
+    await expect(
+      apiRequest("/health", { requireSchema: false }),
+    ).resolves.toEqual({ raw: true });
   });
 
   it("reports an invalid response contract as an ApiError", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ id: 42 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(envelope({ id: 42 }))),
+    );
 
     await expect(
-      apiRequest<{ id: string }>("/products/p_1", {
-        schema: z.object({ id: z.string() }),
-      }),
+      apiRequest("/products/p_1", { schema: idSchema }),
     ).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
@@ -129,32 +282,65 @@ describe("apiRequest", () => {
     );
   });
 
-  it("converts problem JSON into an ApiError", async () => {
+  it("converts nested ProblemEnvelope into an ApiError", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
         jsonResponse(
           {
-            code: "VALIDATION_ERROR",
-            message: "Name is required",
-            requestId: "req_1",
+            problem: {
+              code: "VALIDATION_FAILED",
+              message: "Name is required",
+              requestId: "req_1",
+              details: { fields: [{ field: "name", code: "REQUIRED" }] },
+            },
           },
-          422,
+          400,
         ),
       ),
     );
 
-    await expect(apiRequest("/products", { method: "POST" })).rejects.toEqual(
+    await expect(
+      apiRequest("/products", { method: "POST", requireSchema: false }),
+    ).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
-        status: 422,
+        status: 400,
         problem: {
-          code: "VALIDATION_ERROR",
+          code: "VALIDATION_FAILED",
           message: "Name is required",
           requestId: "req_1",
+          details: { fields: [{ field: "name", code: "REQUIRED" }] },
         },
       }),
     );
+  });
+
+  it("prefers response X-Request-ID when problem omits requestId", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(
+          {
+            problem: {
+              code: "RATE_LIMITED",
+              message: "slow down",
+            },
+          },
+          429,
+          { "X-Request-ID": "resp_rid", "Retry-After": "12" },
+        ),
+      ),
+    );
+
+    const err = await apiRequest("/health", {
+      requireSchema: false,
+      requestId: "client_rid",
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).problem.requestId).toBe("resp_rid");
+    expect((err as ApiError).retryAfterSeconds).toBe(12);
   });
 
   it("uses a generic problem when an error response is not JSON", async () => {
@@ -167,7 +353,9 @@ describe("apiRequest", () => {
         ),
     );
 
-    await expect(apiRequest("/health")).rejects.toEqual(
+    await expect(
+      apiRequest("/health", { requireSchema: false }),
+    ).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
         status: 503,
@@ -180,13 +368,42 @@ describe("apiRequest", () => {
     );
   });
 
+  it("rejects non-JSON content type on success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("not-json", {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+
+    await expect(
+      apiRequest("/health", { requireSchema: false }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        name: "ApiError",
+        status: 502,
+        problem: expect.objectContaining({ code: "INVALID_API_CONTRACT" }),
+      }),
+    );
+  });
+
   it("propagates invalid JSON from an otherwise successful response", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response("not-json", { status: 200 })),
+      vi.fn().mockResolvedValue(
+        new Response("not-json", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
     );
 
-    await expect(apiRequest("/health")).rejects.toEqual(
+    await expect(
+      apiRequest("/health", { requireSchema: false }),
+    ).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
         status: 502,
@@ -207,7 +424,10 @@ describe("apiRequest", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const request = apiRequest("/slow", { timeoutMs: 25 });
+    const request = apiRequest("/slow", {
+      timeoutMs: 25,
+      requireSchema: false,
+    });
     const rejection = expect(request).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
@@ -219,7 +439,7 @@ describe("apiRequest", () => {
     await rejection;
   });
 
-  it("honors an external AbortSignal", async () => {
+  it("honors an external AbortSignal over timeout", async () => {
     const controller = new AbortController();
     let requestSignal: AbortSignal | undefined;
     const fetchMock = vi
@@ -238,7 +458,10 @@ describe("apiRequest", () => {
       });
     vi.stubGlobal("fetch", fetchMock);
 
-    const request = apiRequest("/cancelled", { signal: controller.signal });
+    const request = apiRequest("/cancelled", {
+      signal: controller.signal,
+      requireSchema: false,
+    });
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     expect(requestSignal).not.toBe(controller.signal);
     controller.abort();
@@ -253,16 +476,85 @@ describe("apiRequest", () => {
     expect(requestSignal?.aborted).toBe(true);
   });
 
-  it("propagates network failures without wrapping them", async () => {
+  it("propagates network failures as NETWORK_ERROR", async () => {
     const networkError = new TypeError("Failed to fetch");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(networkError));
 
-    await expect(apiRequest("/offline")).rejects.toEqual(
+    await expect(
+      apiRequest("/offline", { requireSchema: false }),
+    ).rejects.toEqual(
       expect.objectContaining({
         name: "ApiError",
         status: 0,
         problem: expect.objectContaining({ code: "NETWORK_ERROR" }),
       }),
+    );
+  });
+
+  it("dedupes session-expired 401 handler callbacks", async () => {
+    const onSessionExpired = vi.fn();
+    setHttpClientSessionHooks({ onSessionExpired });
+    const problem = {
+      problem: {
+        code: "AUTH_SESSION_EXPIRED",
+        message: "Session expired",
+        requestId: "req_401",
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(problem, 401)),
+    );
+
+    await Promise.all([
+      apiRequest("/a", { requireSchema: false }).catch(() => undefined),
+      apiRequest("/b", { requireSchema: false }).catch(() => undefined),
+      apiRequest("/c", { requireSchema: false }).catch(() => undefined),
+    ]);
+
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not log request body or secrets in the reporter", async () => {
+    const captureError = vi.fn();
+    setObservabilityReporter({
+      captureError,
+      captureMetric() {},
+    } satisfies ObservabilityReporter);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse(
+          {
+            problem: {
+              code: "AUTH_INVALID_CREDENTIALS",
+              message: "nope",
+              requestId: "req_sec",
+            },
+          },
+          401,
+        ),
+      ),
+    );
+
+    await apiRequest("/login", {
+      method: "POST",
+      body: { email: "a@b.c", password: "super-secret" },
+      requireSchema: false,
+    }).catch(() => undefined);
+
+    expect(captureError).toHaveBeenCalled();
+    const report = JSON.stringify(captureError.mock.calls[0][0]);
+    expect(report).not.toMatch(/super-secret/);
+    expect(report).not.toMatch(/password/);
+    expect(report).toMatch(/req_sec|AUTH_INVALID_CREDENTIALS|http-client/);
+  });
+
+  it("builds same-origin relative URLs for browser topology", () => {
+    expect(buildApiUrl("/v1/auth/session")).toBe("/v1/auth/session");
+    expect(buildApiUrl("/v1/catalog", { page: 1 })).toBe(
+      "/v1/catalog?page=1",
     );
   });
 });

@@ -92,6 +92,10 @@ func (s IdentityStore) TouchSession(ctx context.Context, sessionID string, lastS
 	return s.Repo.TouchSession(ctx, sessionID, lastSeen, idleExpires)
 }
 
+func (s IdentityStore) UpdateSessionCSRFHash(ctx context.Context, sessionID, csrfHash string) error {
+	return s.Repo.UpdateSessionCSRFHash(ctx, sessionID, csrfHash)
+}
+
 func (s IdentityStore) SetSessionMFAVerified(ctx context.Context, sessionID string, at time.Time) error {
 	return s.Repo.SetSessionMFAVerified(ctx, s.tx(ctx), sessionID, at)
 }

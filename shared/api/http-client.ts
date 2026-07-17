@@ -1,18 +1,30 @@
-import type { ZodType } from "zod";
-import { requireApiBaseUrl } from "@/shared/config/env";
+import type { ZodTypeAny } from "zod";
+import { getBrowserApiBaseUrl } from "@/shared/config/env";
 import type { ApiProblem } from "./contracts";
+import { ApiError } from "./api-error";
+import {
+  classifyApiError,
+  parseRetryAfterHeader,
+} from "./error-policy";
+import { PROBLEM_CODES } from "./problem-codes";
+import { reportError } from "@/shared/observability/reporter";
+
+export { ApiError } from "./api-error";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly problem: ApiProblem,
-  ) {
-    super(problem.message);
-    this.name = "ApiError";
-  }
-}
+/** Header names aligned with OpenAPI / backend (INT-100). */
+export const HTTP_HEADERS = {
+  REQUEST_ID: "X-Request-ID",
+  CSRF: "X-CSRF-Token",
+  IDEMPOTENCY: "Idempotency-Key",
+  AUDIT_REASON: "X-Audit-Reason",
+  RECENT_MFA_PROOF: "X-Recent-MFA-Proof",
+  IF_MATCH: "If-Match",
+  RETRY_AFTER: "Retry-After",
+  ACCEPT: "Accept",
+  CONTENT_TYPE: "Content-Type",
+} as const;
 
 export type RequestOptions<TBody, TResponse> = Omit<
   RequestInit,
@@ -22,23 +34,81 @@ export type RequestOptions<TBody, TResponse> = Omit<
   query?: Record<string, string | number | boolean | null | undefined>;
   timeoutMs?: number;
   signal?: AbortSignal;
-  schema?: ZodType<TResponse>;
+  /**
+   * Runtime response schema. Required for non-204 success paths in live adapters
+   * (architecture gate + runtime when `requireSchema` is true, default).
+   * Structural schemas (unknown data) are allowed; caller TResponse is asserted after parse.
+   */
+  schema?: ZodTypeAny;
+  /**
+   * When true (default), missing `schema` on non-empty success responses fails closed.
+   * Tests may set false for transport-only cases.
+   */
+  requireSchema?: boolean;
   requestId?: string;
   csrfToken?: string;
   idempotencyKey?: string;
   auditReason?: string;
   recentMfaProof?: string;
+  ifMatch?: string;
+  /** Skip automatic CSRF injection from session hooks (rare). */
+  skipCsrf?: boolean;
 };
 
-function apiBaseUrl() {
-  return requireApiBaseUrl();
+/**
+ * Session-layer hooks (INT-120 / INT-130). Register when session bootstrap is ready.
+ * Until then, callers may still pass `csrfToken` explicitly.
+ */
+export type HttpClientSessionHooks = {
+  /** Return current CSRF token for cookie-auth unsafe methods, or undefined. */
+  getCsrfToken?: () => string | undefined | Promise<string | undefined>;
+  /** Called once per 401 session-expired burst (deduped). */
+  onSessionExpired?: (error: ApiError) => void;
+};
+
+let sessionHooks: HttpClientSessionHooks = {};
+
+export function setHttpClientSessionHooks(hooks: HttpClientSessionHooks): void {
+  sessionHooks = { ...hooks };
 }
 
+export function clearHttpClientSessionHooks(): void {
+  sessionHooks = {};
+}
+
+export function getHttpClientSessionHooks(): Readonly<HttpClientSessionHooks> {
+  return sessionHooks;
+}
+
+/** Unsafe methods that require CSRF for cookie session (INT-130 contract). */
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isUnsafeMethod(method: string | undefined): boolean {
+  return UNSAFE_METHODS.has((method || "GET").toUpperCase());
+}
+
+/**
+ * Browser topology (INT-030): same-origin relative `/v1/...` by default.
+ * Absolute base only when deprecated NEXT_PUBLIC_API_URL is set.
+ */
 export function buildApiUrl(
   pathname: string,
   query?: RequestOptions<never, never>["query"],
-) {
-  const url = new URL(pathname, apiBaseUrl());
+): string | URL {
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const base = getBrowserApiBaseUrl();
+
+  if (!base) {
+    const params = new URLSearchParams();
+    Object.entries(query || {}).forEach(([key, value]) => {
+      if (value !== null && value !== undefined)
+        params.set(key, String(value));
+    });
+    const qs = params.toString();
+    return qs ? `${path}?${qs}` : path;
+  }
+
+  const url = new URL(path, base.endsWith("/") ? base : `${base}/`);
   Object.entries(query || {}).forEach(([key, value]) => {
     if (value !== null && value !== undefined)
       url.searchParams.set(key, String(value));
@@ -82,18 +152,110 @@ function combineAbortSignals(signals: AbortSignal[]) {
   };
 }
 
-async function readJson(response: Response): Promise<unknown> {
+function contentTypeLooksJson(contentType: string | null): boolean {
+  if (!contentType) return false;
+  return /application\/json/i.test(contentType) || /\+json/i.test(contentType);
+}
+
+async function readJson(
+  response: Response,
+  requestId: string,
+): Promise<unknown> {
   const text = await response.text();
   if (!text) return null;
   try {
     return JSON.parse(text) as unknown;
   } catch {
     throw new ApiError(response.ok ? 502 : response.status, {
-      code: "INVALID_JSON_RESPONSE",
+      code: PROBLEM_CODES.INVALID_JSON_RESPONSE,
       message: "The API returned an invalid JSON response.",
-      requestId: response.headers.get("x-request-id") || undefined,
+      requestId: response.headers.get(HTTP_HEADERS.REQUEST_ID) || requestId,
     });
   }
+}
+
+/**
+ * Parse OpenAPI ProblemEnvelope: `{ problem: { code, message, details?, requestId } }`.
+ * Falls back to legacy top-level problem shape only when nested is absent (compat).
+ */
+export function parseProblemPayload(
+  payload: unknown,
+  fallbackRequestId: string,
+  responseRequestId?: string | null,
+): ApiProblem | null {
+  if (!payload || typeof payload !== "object") return null;
+  const root = payload as Record<string, unknown>;
+
+  const nested =
+    root.problem && typeof root.problem === "object"
+      ? (root.problem as Record<string, unknown>)
+      : null;
+
+  const source = nested ?? root;
+  const code = source.code;
+  const message = source.message;
+  if (typeof code !== "string" || !code || typeof message !== "string" || !message) {
+    return null;
+  }
+
+  const requestId =
+    (typeof source.requestId === "string" && source.requestId) ||
+    responseRequestId ||
+    fallbackRequestId;
+
+  const details =
+    source.details && typeof source.details === "object"
+      ? (source.details as Record<string, unknown>)
+      : undefined;
+
+  return { code, message, details, requestId };
+}
+
+// --- 401 session-expired dedupe (INT-100) ---
+let sessionExpiredInFlight = false;
+let sessionExpiredResetTimer: ReturnType<typeof setTimeout> | null = null;
+const SESSION_EXPIRED_DEDUPE_MS = 2_000;
+
+function notifySessionExpired(error: ApiError): void {
+  if (sessionExpiredInFlight) return;
+  sessionExpiredInFlight = true;
+  try {
+    sessionHooks.onSessionExpired?.(error);
+  } catch {
+    // hooks must not break transport
+  }
+  if (sessionExpiredResetTimer) clearTimeout(sessionExpiredResetTimer);
+  sessionExpiredResetTimer = setTimeout(() => {
+    sessionExpiredInFlight = false;
+    sessionExpiredResetTimer = null;
+  }, SESSION_EXPIRED_DEDUPE_MS);
+}
+
+/** Test/reset helper for 401 dedupe state. */
+export function resetSessionExpiredDedupe(): void {
+  sessionExpiredInFlight = false;
+  if (sessionExpiredResetTimer) {
+    clearTimeout(sessionExpiredResetTimer);
+    sessionExpiredResetTimer = null;
+  }
+}
+
+function reportTransportDiagnostic(
+  error: ApiError,
+  context: Record<string, unknown>,
+): void {
+  // Never attach body/headers/secrets — requestId + codes only
+  const classified = classifyApiError(error.status, error.problem, {
+    retryAfterSeconds: error.retryAfterSeconds,
+  });
+  reportError(error, {
+    source: "http-client",
+    status: error.status,
+    code: error.code,
+    requestId: error.requestId,
+    kind: classified.kind,
+    ...context,
+  });
 }
 
 export async function apiRequest<TResponse, TBody = never>(
@@ -105,15 +267,20 @@ export async function apiRequest<TResponse, TBody = never>(
     timeoutMs = DEFAULT_TIMEOUT_MS,
     signal: callerSignal,
     schema,
+    requireSchema = true,
     requestId = createRequestId(),
-    csrfToken,
+    csrfToken: explicitCsrf,
     idempotencyKey,
     auditReason,
     recentMfaProof,
+    ifMatch,
+    skipCsrf = false,
     body,
     headers: requestHeaders,
+    method,
     ...requestInit
   } = options;
+
   const timeoutController = new AbortController();
   let timedOut = false;
   const timeout = setTimeout(() => {
@@ -127,84 +294,199 @@ export async function apiRequest<TResponse, TBody = never>(
       (signal): signal is AbortSignal => Boolean(signal),
     ),
   );
+
   const headers = new Headers(requestHeaders);
-  headers.set("Accept", "application/json");
-  if (body !== undefined) headers.set("Content-Type", "application/json");
-  if (!headers.has("X-Request-ID")) headers.set("X-Request-ID", requestId);
-  if (csrfToken) headers.set("X-CSRF-Token", csrfToken);
-  if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
-  if (auditReason) headers.set("X-Audit-Reason", auditReason);
-  if (recentMfaProof) headers.set("X-Recent-MFA", recentMfaProof);
+  if (!headers.has(HTTP_HEADERS.ACCEPT)) {
+    headers.set(HTTP_HEADERS.ACCEPT, "application/json");
+  }
+  if (body !== undefined && !headers.has(HTTP_HEADERS.CONTENT_TYPE)) {
+    headers.set(HTTP_HEADERS.CONTENT_TYPE, "application/json");
+  }
+  if (!headers.has(HTTP_HEADERS.REQUEST_ID)) {
+    headers.set(HTTP_HEADERS.REQUEST_ID, requestId);
+  }
+
+  // Sensitive context only when caller opts in (per-operation)
+  if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
+  if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
+  if (recentMfaProof) {
+    headers.set(HTTP_HEADERS.RECENT_MFA_PROOF, recentMfaProof);
+  }
+  if (ifMatch) headers.set(HTTP_HEADERS.IF_MATCH, ifMatch);
+
+  // CSRF: explicit option wins; else session-layer hook for unsafe methods
+  let csrfToken = explicitCsrf;
+  if (
+    !csrfToken &&
+    !skipCsrf &&
+    isUnsafeMethod(method) &&
+    sessionHooks.getCsrfToken
+  ) {
+    try {
+      csrfToken = await sessionHooks.getCsrfToken();
+    } catch {
+      csrfToken = undefined;
+    }
+  }
+  if (csrfToken && !headers.has(HTTP_HEADERS.CSRF)) {
+    headers.set(HTTP_HEADERS.CSRF, csrfToken);
+  }
+
+  const effectiveRequestId =
+    headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
 
   try {
     const response = await fetch(buildApiUrl(pathname, query), {
       ...requestInit,
+      method,
       body: body === undefined ? undefined : JSON.stringify(body),
       credentials: "include",
       headers,
       signal: combined.signal,
     });
 
+    const responseRequestId =
+      response.headers.get(HTTP_HEADERS.REQUEST_ID) || effectiveRequestId;
+    const retryAfterSeconds = parseRetryAfterHeader(
+      response.headers.get(HTTP_HEADERS.RETRY_AFTER),
+    );
+
     if (!response.ok) {
-      const payload = await readJson(response).catch((error: unknown) => {
-        if (error instanceof ApiError) return null;
-        throw error;
-      });
-      const problem =
-        payload && typeof payload === "object"
-          ? (payload as Partial<ApiProblem>)
-          : null;
-      throw new ApiError(
-        response.status,
-        problem?.code && problem?.message
-          ? {
-              code: problem.code,
-              message: problem.message,
-              details: problem.details,
-              requestId: problem.requestId || requestId,
-            }
-          : {
-              code: "HTTP_ERROR",
-              message: `Request failed with status ${response.status}`,
-              requestId,
-            },
+      const contentType = response.headers.get(HTTP_HEADERS.CONTENT_TYPE);
+      let payload: unknown = null;
+      if (contentTypeLooksJson(contentType) || !contentType) {
+        payload = await readJson(response, responseRequestId).catch(
+          (error: unknown) => {
+            if (error instanceof ApiError) return null;
+            throw error;
+          },
+        );
+      }
+
+      const problem = parseProblemPayload(
+        payload,
+        effectiveRequestId,
+        responseRequestId,
       );
+
+      const problemBody =
+        problem ?? {
+          code: PROBLEM_CODES.HTTP_ERROR,
+          message: `Request failed with status ${response.status}`,
+          requestId: responseRequestId,
+        };
+      const apiError = new ApiError(
+        response.status,
+        problemBody,
+        retryAfterSeconds,
+      );
+
+      if (
+        classifyApiError(response.status, problemBody, {
+          retryAfterSeconds,
+        }).kind === "session_expired"
+      ) {
+        notifySessionExpired(apiError);
+      }
+
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "http_error",
+      });
+      throw apiError;
     }
-    if (response.status === 204) return undefined as TResponse;
-    const payload = await readJson(response);
-    if (!schema) return payload as TResponse;
+
+    // 204 No Content — empty body, no schema required
+    if (response.status === 204) {
+      return undefined as TResponse;
+    }
+
+    const contentType = response.headers.get(HTTP_HEADERS.CONTENT_TYPE);
+    if (contentType && !contentTypeLooksJson(contentType)) {
+      const apiError = new ApiError(502, {
+        code: PROBLEM_CODES.INVALID_API_CONTRACT,
+        message: "The API returned a non-JSON content type.",
+        requestId: responseRequestId,
+        details: { contentType },
+      });
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "content_type",
+      });
+      throw apiError;
+    }
+
+    const payload = await readJson(response, responseRequestId);
+
+    if (!schema) {
+      if (requireSchema) {
+        const apiError = new ApiError(502, {
+          code: PROBLEM_CODES.INVALID_API_CONTRACT,
+          message:
+            "apiRequest requires a response schema for live adapters (INT-100).",
+          requestId: responseRequestId,
+        });
+        reportTransportDiagnostic(apiError, {
+          path: pathname,
+          phase: "missing_schema",
+        });
+        throw apiError;
+      }
+      return payload as TResponse;
+    }
 
     const parsed = schema.safeParse(payload);
     if (!parsed.success) {
-      throw new ApiError(502, {
-        code: "INVALID_API_CONTRACT",
+      const apiError = new ApiError(502, {
+        code: PROBLEM_CODES.INVALID_API_CONTRACT,
         message: "The API response did not match the expected contract.",
-        details: { issues: parsed.error.issues },
-        requestId,
+        details: {
+          issues: parsed.error.issues.map((issue) => ({
+            path: issue.path.join("."),
+            message: issue.message,
+            code: issue.code,
+          })),
+        },
+        requestId: responseRequestId,
       });
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "schema",
+      });
+      throw apiError;
     }
-    return parsed.data;
+    return parsed.data as TResponse;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (timedOut) {
-      throw new ApiError(408, {
-        code: "REQUEST_TIMEOUT",
+      const apiError = new ApiError(408, {
+        code: PROBLEM_CODES.REQUEST_TIMEOUT,
         message: `The API request exceeded ${timeoutMs}ms.`,
-        requestId,
+        requestId: effectiveRequestId,
       });
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "timeout",
+      });
+      throw apiError;
     }
     if (callerSignal?.aborted) {
       throw new ApiError(499, {
-        code: "REQUEST_ABORTED",
+        code: PROBLEM_CODES.REQUEST_ABORTED,
         message: "The API request was cancelled.",
-        requestId,
+        requestId: effectiveRequestId,
       });
     }
-    throw new ApiError(0, {
-      code: "NETWORK_ERROR",
+    const apiError = new ApiError(0, {
+      code: PROBLEM_CODES.NETWORK_ERROR,
       message: "The API request could not reach the server.",
-      requestId,
+      requestId: effectiveRequestId,
     });
+    reportTransportDiagnostic(apiError, {
+      path: pathname,
+      phase: "network",
+    });
+    throw apiError;
   } finally {
     clearTimeout(timeout);
     combined.cleanup();

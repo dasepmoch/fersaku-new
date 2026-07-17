@@ -211,6 +211,13 @@ func (r *IdentityRepo) TouchSession(ctx context.Context, sessionID string, lastS
 	})
 }
 
+func (r *IdentityRepo) UpdateSessionCSRFHash(ctx context.Context, sessionID, csrfHash string) error {
+	return r.q.UpdateSessionCSRFHash(ctx, gen.UpdateSessionCSRFHashParams{
+		ID:            sessionID,
+		CsrfTokenHash: csrfHash,
+	})
+}
+
 func (r *IdentityRepo) SetSessionMFAVerified(ctx context.Context, tx pgx.Tx, sessionID string, at time.Time) error {
 	return r.queries(tx).SetSessionMFAVerified(ctx, gen.SetSessionMFAVerifiedParams{
 		ID:            sessionID,

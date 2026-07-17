@@ -1,6 +1,7 @@
 import { apiRequest } from "@/shared/api/http-client";
+import { structuralEnvelopeSchema } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { isLiveApi } from "@/shared/data/mode";
+import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { AdminBuyer } from "./contracts";
 import type { AdminBuyerPurchase, AdminBuyerSession } from "./contracts";
 import { mockBuyerPurchases, mockBuyerSessions } from "./mock";
@@ -72,11 +73,12 @@ export function demoBuyers(): AdminBuyer[] {
 }
 
 export async function listBuyers(signal?: AbortSignal): Promise<AdminBuyer[]> {
-  if (!isLiveApi()) return demoBuyers();
+  if (shouldUseMockFixtures("adminRead")) return demoBuyers();
 
   const response = await apiRequest<ApiEnvelope<AdminBuyer[]>>(
     "/v1/admin/buyers",
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -85,13 +87,14 @@ export async function getBuyer(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyer | null> {
-  if (!isLiveApi()) {
+  if (shouldUseMockFixtures("adminRead")) {
     return demoBuyers().find((b) => b.id === buyerId) || null;
   }
 
   const response = await apiRequest<ApiEnvelope<AdminBuyer>>(
     `/v1/admin/buyers/${buyerId}`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -109,10 +112,11 @@ export async function listBuyerPurchases(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyerPurchase[]> {
-  if (!isLiveApi()) return demoBuyerPurchases();
+  if (shouldUseMockFixtures("adminRead")) return demoBuyerPurchases();
   const response = await apiRequest<ApiEnvelope<AdminBuyerPurchase[]>>(
     `/v1/admin/buyers/${buyerId}/purchases`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }
@@ -121,10 +125,11 @@ export async function listBuyerSessions(
   buyerId: string,
   signal?: AbortSignal,
 ): Promise<AdminBuyerSession[]> {
-  if (!isLiveApi()) return demoBuyerSessions();
+  if (shouldUseMockFixtures("adminRead")) return demoBuyerSessions();
   const response = await apiRequest<ApiEnvelope<AdminBuyerSession[]>>(
     `/v1/admin/buyers/${buyerId}/sessions`,
-    { signal },
+    {
+    schema: structuralEnvelopeSchema, signal },
   );
   return response.data;
 }

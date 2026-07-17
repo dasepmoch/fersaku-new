@@ -1,5 +1,12 @@
-export type AppSurface = "public" | "buyer" | "seller" | "admin";
+import type { SessionClaims, AppSurface } from "./session-model";
+import { createMockClaims } from "./session-model";
 
+export type { AppSurface };
+
+/**
+ * @deprecated Prefer SessionClaims from session-model (INT-120).
+ * Kept for gradual migration of prototype callers.
+ */
 export type FrontendSession = {
   subjectId: string;
   surface: AppSurface;
@@ -9,27 +16,38 @@ export type FrontendSession = {
   mode: "mock" | "api";
 };
 
-export function hasPermission(session: FrontendSession, permission: string) {
+export function hasPermission(
+  session: FrontendSession | SessionClaims | null | undefined,
+  permission: string,
+) {
+  if (!session) return false;
+  const perms =
+    "permissions" in session ? session.permissions : ([] as readonly string[]);
+  const authenticated =
+    "authenticated" in session
+      ? Boolean(session.authenticated)
+      : Boolean((session as SessionClaims).subjectId);
   return (
-    session.authenticated &&
-    (session.permissions.includes("*") ||
-      session.permissions.includes(permission))
+    authenticated && (perms.includes("*") || perms.includes(permission))
   );
 }
 
+export function toFrontendSession(claims: SessionClaims): FrontendSession {
+  return {
+    subjectId: claims.subjectId,
+    surface: claims.surface,
+    authenticated: true,
+    permissions: claims.permissions,
+    mfaVerifiedAt: claims.mfaVerified ? "1970-01-01T00:00:00.000Z" : null,
+    mode: claims.mode,
+  };
+}
+
 /**
- * Prototype-only session. The Go API remains authoritative for every protected
- * read and mutation; this object only drives mock UI characterization.
+ * Prototype-only session. API mode must use bootstrapSession (never hardcode identity).
  */
 export function createMockSession(
   surface: Exclude<AppSurface, "public">,
 ): FrontendSession {
-  return {
-    subjectId: `mock_${surface}`,
-    surface,
-    authenticated: true,
-    permissions: surface === "admin" ? ["*"] : [`${surface}.*`],
-    mfaVerifiedAt: surface === "admin" ? "2026-07-16T11:55:00+07:00" : null,
-    mode: "mock",
-  };
+  return toFrontendSession(createMockClaims(surface));
 }

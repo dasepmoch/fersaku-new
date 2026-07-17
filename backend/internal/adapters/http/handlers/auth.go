@@ -244,7 +244,14 @@ func (h *AuthHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		presenters.WriteAppError(w, r, auth.ErrUnauthenticated)
 		return
 	}
-	presenters.WriteData(w, r, http.StatusOK, map[string]any{
+	// INT-130: re-issue CSRF on bootstrap (raw never at rest). Hard refresh recovery.
+	csrfToken, err := h.Auth.RotateSessionCSRF(r.Context(), p.SessionID)
+	if err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	// INT-120: bootstrap claims for UI navigation only; every endpoint still authorizes server-side.
+	data := map[string]any{
 		"userId":        p.SubjectID,
 		"sessionId":     p.SessionID,
 		"surface":       p.Surface,
@@ -254,8 +261,26 @@ func (h *AuthHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		"mfaVerified":   p.MFAVerified,
 		"emailVerified": p.EmailVerified,
 		"status":        p.Status,
-		"csrfToken":     p.CSRFToken,
-	})
+		"csrfToken":     csrfToken,
+		"permissions":   p.Permissions,
+		"roles":         p.RoleCodes,
+	}
+	if p.Permissions == nil {
+		data["permissions"] = []string{}
+	}
+	if p.RoleCodes == nil {
+		data["roles"] = []string{}
+	}
+	if p.Impersonating {
+		data["impersonation"] = map[string]any{
+			"active":    true,
+			"id":        p.ImpersonationID,
+			"scope":     p.ImpersonationScope,
+			"actorId":   p.ImpersonationActor,
+			"expiresAt": p.ImpersonationExpiry,
+		}
+	}
+	presenters.WriteData(w, r, http.StatusOK, data)
 }
 
 func (h *AuthHandler) ListSessions(w http.ResponseWriter, r *http.Request) {

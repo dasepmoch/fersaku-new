@@ -111,4 +111,4 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome npm run test:e2e
 
 `NEXT_TEST_WASM=1` is included in the dev/build scripts for compatibility with the local execution environment.
 
-The default prototype is deterministic mock mode. Copy `.env.example` to `.env.local` to select an explicit scenario or connect a compatible API; live deployments must use `NEXT_PUBLIC_DATA_SOURCE=api`, `NEXT_PUBLIC_APP_STAGE=live`, and an absolute `NEXT_PUBLIC_API_URL`.
+The default prototype is deterministic mock mode. Copy `.env.example` to `.env.local` to select an explicit scenario or connect a compatible API. Browser traffic uses same-origin relative `/v1` (Next rewrites → Go). Live deployments must use `NEXT_PUBLIC_DATA_SOURCE=api`, `NEXT_PUBLIC_APP_STAGE=live`, and server-only `API_INTERNAL_URL` (never `NEXT_PUBLIC_*` for the internal host).

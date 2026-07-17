@@ -1,5 +1,5 @@
-# Backend PR pipeline scaffold (BE-002 / §14.1).
-# Expand later: integration tests, sqlc dirty-diff, SBOM, trivy, govulncheck.
+# QLT-100 — Backend PR pipeline skeleton.
+# Integration suite required-check activation: QLT-105 / QLT-210.
 name: Backend CI
 
 on:
@@ -7,10 +7,16 @@ on:
     branches: [main, master]
     paths:
       - "backend/**"
+      - "package.json"
+      - "package-lock.json"
+      - "redocly.yaml"
       - ".github/workflows/backend-ci.yml"
   pull_request:
     paths:
       - "backend/**"
+      - "package.json"
+      - "package-lock.json"
+      - "redocly.yaml"
       - ".github/workflows/backend-ci.yml"
 
 concurrency:
@@ -22,15 +28,18 @@ defaults:
     working-directory: backend
 
 jobs:
-  test:
-    name: fmt, vet, test
+  backend-unit:
+    name: backend-unit (fmt, vet, test, check-generated)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.x"
+          # Exact toolchain from backend/go.mod (currently go 1.25.12).
+          go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
       - name: go fmt check
         run: |
           unformatted=$(gofmt -l .)
@@ -39,33 +48,87 @@ jobs:
             echo "$unformatted"
             exit 1
           fi
+
       - name: go vet
         run: go vet ./...
+
       - name: go test
         run: go test ./...
-      - name: check-generated placeholder
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0
+
+      - name: check-generated
         run: sh scripts/check-generated.sh
 
-  race:
-    name: go test -race
+  backend-race:
+    name: backend-race (go test -race)
     runs-on: ubuntu-latest
-    needs: test
+    needs: backend-unit
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.x"
+          go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
       - name: go test -race
         run: go test -race ./...
 
-  docker:
-    name: docker build api
+  backend-docker:
+    name: backend-docker (api + worker images)
     runs-on: ubuntu-latest
-    needs: test
+    needs: backend-unit
     steps:
       - uses: actions/checkout@v4
+
       - name: Build API image
         run: docker build --target api -t fersaku-api:ci .
+
       - name: Build worker image
         run: docker build --target worker -t fersaku-worker:ci .
+
+  # INT-000 / INT-010: OpenAPI lint + router/operation contract tests exist.
+  openapi-contract:
+    name: openapi-contract (lint + go test ./test/contract)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: npm ci (redocly / openapi tooling)
+        working-directory: .
+        run: npm ci
+
+      - name: OpenAPI lint (redocly)
+        working-directory: .
+        run: npm run api:lint
+
+      - name: Contract tests (router inventory / OpenAPI drift)
+        run: go test -count=1 ./test/contract/...
+
+  # Tagged integration needs disposable Postgres/Redis/MinIO + QLT-210 framework.
+  # Skeleton only: not a required gate; does not run and does not claim pass.
+  backend-integration:
+    name: "backend-integration (PLACEHOLDER — enable in QLT-105/QLT-210)"
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - name: Deferred to QLT-105 / QLT-210
+        run: |
+          echo "Not implemented in QLT-100."
+          echo "Requires: disposable Postgres/Redis/MinIO/Mailpit, migrations,"
+          echo "go test -tags=integration, migration integrity (QLT-210),"
+          echo "then required-check activation (QLT-105)."
+          exit 1

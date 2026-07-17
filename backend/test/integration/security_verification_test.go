@@ -263,6 +263,76 @@ func TestSecurity_CSRFOnUnsafeCookieMethods(t *testing.T) {
 	}
 }
 
+// TestSecurity_CSRFSessionBootstrapReissuesToken covers hard-refresh recovery (INT-130).
+func TestSecurity_CSRFSessionBootstrapReissuesToken(t *testing.T) {
+	h, _, _, _, capture, _ := newSecurityStack(t, false, observability.FixedClock{})
+	email := fmt.Sprintf("csrf-boot-%d@example.com", time.Now().UnixNano())
+	cookie, loginCSRF := loginWithCSRF(t, h, capture, email, "password123", "SELLER")
+
+	// GET /session re-issues CSRF (rotation); no X-CSRF-Token required on safe GET.
+	rr := secJSON(t, h, http.MethodGet, "/v1/auth/session", cookie, "", nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("session bootstrap want 200 got %d %s", rr.Code, rr.Body.String())
+	}
+	var env struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &env); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	newCSRF, _ := env.Data["csrfToken"].(string)
+	if newCSRF == "" {
+		t.Fatal("expected rotated csrfToken on GET /session")
+	}
+	if newCSRF == loginCSRF {
+		// Rotation should mint a new raw; extremely unlikely to collide.
+		t.Log("note: rotated token equal to login token (rare); continuing")
+	}
+
+	// Old login CSRF must no longer validate after rotation.
+	rr = secJSON(t, h, http.MethodPost, "/v1/auth/logout", cookie, loginCSRF, map[string]any{})
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("stale csrf after rotate want 403 got %d %s", rr.Code, rr.Body.String())
+	}
+	if code := problemCode(t, rr); code != "AUTH_CSRF_INVALID" {
+		t.Fatalf("code=%s", code)
+	}
+
+	// New token works.
+	rr = secJSON(t, h, http.MethodPost, "/v1/auth/logout", cookie, newCSRF, map[string]any{})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("rotated csrf logout want 200 got %d %s", rr.Code, rr.Body.String())
+	}
+}
+
+// TestSecurity_StaleCookieAllowsAnonymousLogin ensures unresolved cookie does not CSRF-block login.
+func TestSecurity_StaleCookieAllowsAnonymousLogin(t *testing.T) {
+	h, _, _, _, capture, _ := newSecurityStack(t, false, observability.FixedClock{})
+	email := fmt.Sprintf("csrf-stale-%d@example.com", time.Now().UnixNano())
+	// Create verified user, then attempt login with garbage session cookie + no CSRF.
+	rr := jsonPOST(t, h, "/v1/auth/register", map[string]any{
+		"email": email, "password": "password123", "name": "Stale", "surface": "SELLER",
+	}, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("register %d %s", rr.Code, rr.Body.String())
+	}
+	tok := extractTokenFromMail(t, capture)
+	rr = jsonPOST(t, h, "/v1/auth/verify-email", map[string]any{"token": tok}, nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("verify %d %s", rr.Code, rr.Body.String())
+	}
+
+	stale := &http.Cookie{Name: "fersaku_session", Value: "not-a-real-session-token"}
+	body := map[string]any{
+		"email": email, "password": "password123", "surface": "SELLER",
+	}
+	// No CSRF header; stale cookie must not force AUTH_CSRF_INVALID on login.
+	rr = secJSON(t, h, http.MethodPost, "/v1/auth/login", stale, "", body)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("login with stale cookie want 200 got %d %s", rr.Code, rr.Body.String())
+	}
+}
+
 // TestSecurity_SessionExpiry rejects sessions past expires_at / absolute expiry.
 func TestSecurity_SessionExpiry(t *testing.T) {
 	start := time.Now().UTC().Add(-time.Minute)

@@ -452,6 +452,23 @@ func (s *AuthService) ValidateCSRF(sess auth.Session, headerToken string) bool {
 	return auth.EqualHash(sess.CSRFTokenHash, s.hashTok(headerToken))
 }
 
+// RotateSessionCSRF mints a new raw CSRF token for an authenticated session,
+// stores only its hash, and returns the raw token once for client memory (INT-130).
+// Used by GET /v1/auth/session bootstrap after hard refresh; does not rotate the session cookie.
+func (s *AuthService) RotateSessionCSRF(ctx context.Context, sessionID string) (string, error) {
+	if sessionID == "" {
+		return "", auth.ErrUnauthenticated
+	}
+	csrfRaw, err := auth.GenerateToken(32)
+	if err != nil {
+		return "", apperr.Internal(apperr.CodeInternalError, "CSRF rotation failed")
+	}
+	if err := s.Store.UpdateSessionCSRFHash(ctx, sessionID, s.hashTok(csrfRaw)); err != nil {
+		return "", apperr.Internal(apperr.CodeInternalError, "CSRF rotation failed")
+	}
+	return csrfRaw, nil
+}
+
 type SessionView struct {
 	ID          string    `json:"id"`
 	Surface     string    `json:"surface"`

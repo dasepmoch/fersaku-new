@@ -70,7 +70,7 @@ type Principal struct {
 	MFAEnabled    bool
 	MFAVerified   bool
 	EmailVerified bool
-	CSRFToken     string // raw CSRF for GET /session response only (not re-read from DB)
+	CSRFToken     string // unused: raw CSRF never on principal; GET /session rotates via AuthService
 	// Permissions is the effective permission set loaded at session resolve (BE-130).
 	Permissions []string
 	RoleCodes   []string

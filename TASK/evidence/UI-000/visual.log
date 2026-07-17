@@ -1,0 +1,1707 @@
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+[WebServer] ⚠ experimental.useWasmBinary is not an option for supported platform linux/x64 and will be ignored.
+
+Running 28 tests using 2 workers
+
+  ✘   2 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing (3.4s)
+  ✘   3 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools (4.0s)
+  ✘   1 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / (11.4s)
+  ✘   4 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack (3.2s)
+  ✘   5 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 (2.3s)
+  ✘   6 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases (2.9s)
+  ✘   7 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 (2.6s)
+  ✘   8 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security (2.1s)
+  ✘  10 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products (2.9s)
+  ✘   9 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard (5.0s)
+  ✘  11 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders (2.5s)
+  ✘  13 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin (3.3s)
+  ✘  12 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront (5.7s)
+  ✘  14 [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants (3.3s)
+  ✘  16 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing (2.2s)
+  ✘  15 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / (7.1s)
+  ✘  17 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools (3.3s)
+  ✘  18 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack (2.4s)
+  ✘  19 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 (1.9s)
+  ✘  20 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases (2.4s)
+  ✘  21 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 (2.0s)
+  ✘  22 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security (1.9s)
+  ✘  23 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard (3.9s)
+  ✘  24 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products (2.8s)
+  ✘  25 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders (2.1s)
+  ✘  26 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront (3.3s)
+  ✘  27 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin (2.5s)
+  ✘  28 [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants (2.0s)
+
+
+  1) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / ──────
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      71967 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: home.png
+
+    Call log:
+      - Expect "toHaveScreenshot(home.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 71967 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 71967 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: home (image/png) ────────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/home.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/home-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/home-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      22625 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: pricing.png
+
+    Call log:
+      - Expect "toHaveScreenshot(pricing.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 22625 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 22625 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: pricing (image/png) ─────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/pricing.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/pricing-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/pricing-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14479 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: asep-ai-tools.png
+
+    Call log:
+      - Expect "toHaveScreenshot(asep-ai-tools.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14479 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14479 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: asep-ai-tools (image/png) ───────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/asep-ai-tools.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/asep-ai-tools-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/asep-ai-tools-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      14493 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: asep-ai-tools-ai-prompt-pack.png
+
+    Call log:
+      - Expect "toHaveScreenshot(asep-ai-tools-ai-prompt-pack.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 14493 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 14493 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: asep-ai-tools-ai-prompt-pack (image/png) ────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/asep-ai-tools-ai-prompt-pack.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/asep-ai-tools-ai-prompt-pack-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/asep-ai-tools-ai-prompt-pack-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      6883 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: checkout-prod-01.png
+
+    Call log:
+      - Expect "toHaveScreenshot(checkout-prod-01.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 6883 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 6883 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: checkout-prod-01 (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/checkout-prod-01.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/checkout-prod-01-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/checkout-prod-01-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      7682 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: account-purchases.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-purchases.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 7682 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 7682 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-purchases (image/png) ───────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/account-purchases.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/account-purchases-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/account-purchases-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      9779 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: account-purchases-FRS-240712-1842.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-purchases-FRS-240712-1842.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 9779 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 9779 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-purchases-FRS-240712-1842 (image/png) ───────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/account-purchases-FRS-240712-1842.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/account-purchases-FRS-240712-1842-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/account-purchases-FRS-240712-1842-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      7452 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: account-security.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-security.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 7452 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 7452 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-security (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/account-security.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/account-security-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/account-security-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      18193 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 18243 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 50 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 250ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 18193 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard (image/png) ───────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/dashboard.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/dashboard-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/dashboard-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      7650 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard-products.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-products.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 7650 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 7650 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-products (image/png) ──────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/dashboard-products.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/dashboard-products-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/dashboard-products-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      8062 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard-orders.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-orders.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 8062 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 8062 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-orders (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/dashboard-orders.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/dashboard-orders-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/dashboard-orders-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      13739 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard-storefront.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-storefront.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 13739 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 13739 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-storefront (image/png) ────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/dashboard-storefront.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/dashboard-storefront-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/dashboard-storefront-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      11258 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: admin.png
+
+    Call log:
+      - Expect "toHaveScreenshot(admin.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 11258 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 11258 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: admin (image/png) ───────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/admin.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/admin-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/admin-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      10553 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: admin-merchants.png
+
+    Call log:
+      - Expect "toHaveScreenshot(admin-merchants.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 10553 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 10553 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: admin-merchants (image/png) ─────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/desktop-chromium/admin-merchants.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/admin-merchants-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/admin-merchants-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / ──────
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      67364 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: home.png
+
+    Call log:
+      - Expect "toHaveScreenshot(home.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 67364 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 67364 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: home (image/png) ────────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/home.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/home-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/home-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline--mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      20465 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: pricing.png
+
+    Call log:
+      - Expect "toHaveScreenshot(pricing.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 20465 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 20465 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: pricing (image/png) ─────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/pricing.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/pricing-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/pricing-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-pricing-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      Expected an image 412px by 4249px, received 412px by 4229px. 23358 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: asep-ai-tools.png
+
+    Call log:
+      - Expect "toHaveScreenshot(asep-ai-tools.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - Expected an image 412px by 4249px, received 412px by 4229px. 23358 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - Expected an image 412px by 4249px, received 412px by 4229px. 23358 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: asep-ai-tools (image/png) ───────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/asep-ai-tools.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/asep-ai-tools-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/asep-ai-tools-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-asep-ai-tools-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      13636 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: asep-ai-tools-ai-prompt-pack.png
+
+    Call log:
+      - Expect "toHaveScreenshot(asep-ai-tools-ai-prompt-pack.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 13636 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 13636 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: asep-ai-tools-ai-prompt-pack (image/png) ────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/asep-ai-tools-ai-prompt-pack.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/asep-ai-tools-ai-prompt-pack-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/asep-ai-tools-ai-prompt-pack-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-dded7-sep-ai-tools-ai-prompt-pack-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      7502 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: checkout-prod-01.png
+
+    Call log:
+      - Expect "toHaveScreenshot(checkout-prod-01.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 7502 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 7502 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: checkout-prod-01 (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/checkout-prod-01.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/checkout-prod-01-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/checkout-prod-01-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-checkout-prod-01-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      5866 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: account-purchases.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-purchases.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 5866 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 5866 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-purchases (image/png) ───────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/account-purchases.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/account-purchases-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/account-purchases-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-purchases-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      9026 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: account-purchases-FRS-240712-1842.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-purchases-FRS-240712-1842.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 9026 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 9026 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-purchases-FRS-240712-1842 (image/png) ───────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/account-purchases-FRS-240712-1842.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/account-purchases-FRS-240712-1842-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/account-purchases-FRS-240712-1842-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characteriza-b572c-t-purchases-FRS-240712-1842-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      6317 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: account-security.png
+
+    Call log:
+      - Expect "toHaveScreenshot(account-security.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 6317 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 6317 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: account-security (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/account-security.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/account-security-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/account-security-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-account-security-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      12388 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 12413 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 25 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 250ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 12388 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard (image/png) ───────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/dashboard.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/dashboard-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/dashboard-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      5455 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard-products.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-products.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 5455 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 5455 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-products (image/png) ──────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/dashboard-products.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/dashboard-products-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/dashboard-products-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-products-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      4135 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: dashboard-orders.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-orders.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 4135 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 4135 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-orders (image/png) ────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/dashboard-orders.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/dashboard-orders-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/dashboard-orders-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-orders-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      10976 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: dashboard-storefront.png
+
+    Call log:
+      - Expect "toHaveScreenshot(dashboard-storefront.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 10976 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 10976 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: dashboard-storefront (image/png) ────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/dashboard-storefront.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/dashboard-storefront-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/dashboard-storefront-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-dashboard-storefront-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin ─
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      8633 pixels (ratio 0.01 of all image pixels) are different.
+
+      Snapshot: admin.png
+
+    Call log:
+      - Expect "toHaveScreenshot(admin.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 8633 pixels (ratio 0.01 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 8633 pixels (ratio 0.01 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: admin (image/png) ───────────────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/admin.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/admin-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/admin-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants 
+
+    Error: expect(page).toHaveScreenshot(expected) failed
+
+      5828 pixels (ratio 0.02 of all image pixels) are different.
+
+      Snapshot: admin-merchants.png
+
+    Call log:
+      - Expect "toHaveScreenshot(admin-merchants.png)" with timeout 10000ms
+        - verifying given screenshot expectation
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - 5828 pixels (ratio 0.02 of all image pixels) are different.
+      - waiting 100ms before taking screenshot
+      - taking page screenshot
+        - disabled all CSS animations
+      - waiting for fonts to load...
+      - fonts loaded
+      - captured a stable screenshot
+      - 5828 pixels (ratio 0.02 of all image pixels) are different.
+
+
+       8 |     test(route, async ({ page }) => {
+       9 |       await page.goto(route, { waitUntil: "networkidle" });
+    > 10 |       await expect(page).toHaveScreenshot(
+         |                          ^
+      11 |         `${route.replaceAll(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") || "home"}.png`,
+      12 |         {
+      13 |           fullPage: true,
+        at /var/www/fersaku-new/tests/e2e/visual.spec.ts:10:26
+
+    attachment #1: admin-merchants (image/png) ─────────────────────────────────────────────────────
+    Expected: tests/e2e/__screenshots__/mobile-chromium/admin-merchants.png
+    Received: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/admin-merchants-actual.png
+    Diff:     TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/admin-merchants-diff.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace TASK/evidence/UI-000/artefacts/test-results/visual-visual-characterization-baseline-admin-merchants-mobile-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28 failed
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / ───────
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront 
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin ──
+    [desktop-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › / ────────
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /pricing ─
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /@asep-ai-tools/ai-prompt-pack 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /checkout/prod_01 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/purchases/FRS-240712-1842 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /account/security 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/products 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/orders 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /dashboard/storefront 
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin ───
+    [mobile-chromium] › tests/e2e/visual.spec.ts:8:9 › visual characterization baseline › /admin/merchants 
