@@ -11,13 +11,20 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
+  hasForbiddenTokenInLocation,
+  parseAuthFragmentToken,
+  scrubUrlFragment,
+  toMfaVerifyRequest,
+  toPasswordResetRequest,
   toSellerForgotPasswordRequest,
   toSellerLoginRequest,
   toSellerRegisterRequest,
+  useMfaVerifyMutation,
+  usePasswordResetMutation,
   useSellerForgotPasswordMutation,
   useSellerLoginMutation,
   useSellerRegisterMutation,
@@ -32,6 +39,12 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
+type Ceremony =
+  | { kind: "idle" }
+  | { kind: "mfa_pending" }
+  | { kind: "reset"; token: string }
+  | { kind: "reset_done" };
+
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +53,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetEmail, setResetEmail] = useState("asep@email.com");
+  const [ceremony, setCeremony] = useState<Ceremony>({ kind: "idle" });
+  const [mfaCode, setMfaCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resetFieldError, setResetFieldError] = useState<string | null>(null);
+  const [mfaFieldError, setMfaFieldError] = useState<string | null>(null);
+  const fragmentBootstrapped = useRef(false);
   const {
     register,
     handleSubmit,
@@ -50,12 +69,42 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const registerMutation = useSellerRegisterMutation();
   const loginMutation = useSellerLoginMutation();
   const forgotMutation = useSellerForgotPasswordMutation();
+  const mfaVerifyMutation = useMfaVerifyMutation();
+  const passwordResetMutation = usePasswordResetMutation();
+
+  // AUT-120: password-reset fragment on /login — scrub then typed POST exchange.
+  useEffect(() => {
+    if (mode !== "login" || fragmentBootstrapped.current) return;
+    fragmentBootstrapped.current = true;
+    if (typeof window === "undefined") return;
+
+    if (
+      hasForbiddenTokenInLocation({
+        search: window.location.search,
+        pathname: window.location.pathname,
+      })
+    ) {
+      scrubUrlFragment();
+      return;
+    }
+
+    const token = parseAuthFragmentToken(window.location.hash);
+    scrubUrlFragment();
+    if (token) {
+      queueMicrotask(() => {
+        setCeremony({ kind: "reset", token });
+        setResetOpen(false);
+      });
+    }
+  }, [mode]);
 
   const pending =
     isSubmitting ||
     registerMutation.isPending ||
     loginMutation.isPending ||
-    forgotMutation.isPending;
+    forgotMutation.isPending ||
+    mfaVerifyMutation.isPending ||
+    passwordResetMutation.isPending;
 
   const applyFieldErrors = (
     fields: Array<{ field: SellerAuthField; message: string }>,
@@ -101,10 +150,62 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       return;
     }
     if (result.kind === "mfa_pending") {
-      // MFA_PENDING must not access dashboard; stay on login (no MFA UI surface yet).
+      // MFA_PENDING: stay on login; collect code via existing Field geometry.
+      setCeremony({ kind: "mfa_pending" });
+      setMfaCode("");
+      setMfaFieldError(null);
       return;
     }
     router.push(result.redirectTo);
+  };
+
+  const submitMfa = async () => {
+    const code = mfaCode.trim();
+    if (!code) return;
+    setMfaFieldError(null);
+    const result = await mfaVerifyMutation.mutateAsync({
+      ...toMfaVerifyRequest({ code }),
+      returnTo,
+      surface: "seller",
+    });
+    if (!result.ok) {
+      if (result.kind === "invalid_code") {
+        setMfaFieldError("Kode tidak valid. Coba lagi.");
+      }
+      // blocked: stay without inventing panels (UXE-011).
+      return;
+    }
+    if (result.redirectTo) {
+      router.push(result.redirectTo);
+    }
+  };
+
+  const submitPasswordReset = async () => {
+    if (ceremony.kind !== "reset") return;
+    if (newPassword.length < 8) {
+      setResetFieldError("Minimal 8 karakter");
+      return;
+    }
+    setResetFieldError(null);
+    const result = await passwordResetMutation.mutateAsync(
+      toPasswordResetRequest({
+        token: ceremony.token,
+        newPassword,
+      }),
+    );
+    if (!result.ok) {
+      if (result.kind === "field_errors" && result.fields[0]) {
+        setResetFieldError(result.fields[0].message);
+        return;
+      }
+      if (result.kind === "invalid_token") {
+        setResetFieldError("Link tidak valid atau sudah kedaluwarsa.");
+        return;
+      }
+      return;
+    }
+    setCeremony({ kind: "reset_done" });
+    setNewPassword("");
   };
 
   const sendReset = async () => {
@@ -122,6 +223,100 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       setResetEmail(resetEmail);
     }
   };
+
+  if (ceremony.kind === "reset" || ceremony.kind === "reset_done") {
+    return (
+      <div className="mt-8 grid gap-4">
+        {ceremony.kind === "reset_done" ? (
+          <div className="py-2 text-center">
+            <span className="mx-auto grid size-14 place-items-center rounded-full bg-[#e7f6ec] text-[#238150]">
+              <CheckCircle2 className="size-6" />
+            </span>
+            <h2 className="mt-5 text-lg font-extrabold">Password diperbarui.</h2>
+            <p className="mt-2 text-[10px] leading-5 text-[#718078]">
+              Silakan masuk dengan password baru.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCeremony({ kind: "idle" })}
+              className="mt-6 h-12 w-full rounded-xl bg-[#173f2c] text-sm font-extrabold text-white"
+            >
+              Kembali ke login
+            </button>
+          </div>
+        ) : (
+          <>
+            <Field label="Password baru" error={resetFieldError ?? undefined}>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimal 8 karakter"
+                className="ring-focus hairline h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none"
+                autoComplete="new-password"
+              />
+            </Field>
+            <button
+              type="button"
+              disabled={pending || newPassword.length < 8}
+              onClick={() => {
+                void submitPasswordReset();
+              }}
+              className="mt-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white transition hover:bg-[#0e3020] disabled:opacity-60"
+            >
+              {pending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <>
+                  Simpan password baru
+                  <ArrowRight className="size-4" />
+                </>
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (ceremony.kind === "mfa_pending") {
+    return (
+      <div className="mt-8 grid gap-4">
+        <Field
+          label="Kode autentikator"
+          error={mfaFieldError ?? undefined}
+        >
+          <input
+            value={mfaCode}
+            onChange={(e) =>
+              setMfaCode(e.target.value.replace(/\s/g, "").slice(0, 12))
+            }
+            placeholder="000000"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className="ring-focus hairline h-12 w-full rounded-xl border bg-white px-4 text-sm outline-none"
+          />
+        </Field>
+        <button
+          type="button"
+          disabled={pending || mfaCode.trim().length < 6}
+          onClick={() => {
+            void submitMfa();
+          }}
+          className="mt-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white transition hover:bg-[#0e3020] disabled:opacity-60"
+        >
+          {pending ? (
+            <LoaderCircle className="size-4 animate-spin" />
+          ) : (
+            <>
+              Verifikasi MFA
+              <ArrowRight className="size-4" />
+            </>
+          )}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>

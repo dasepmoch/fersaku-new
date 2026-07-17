@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import QRCode from "qrcode";
 import { cn } from "@/lib/utils";
 import { card, Modal, Preference, SettingsForm } from "./pieces";
 import { IMPERSONATION_COMMANDS } from "@/features/admin/impersonation/policy";
@@ -24,6 +25,15 @@ import {
   readImpersonationSession,
 } from "@/features/admin/impersonation/session";
 import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
+import {
+  toMfaConfirmRequest,
+  toMfaDisableRequest,
+  useMfaConfirmMutation,
+  useMfaDisableMutation,
+  useMfaEnrollMutation,
+} from "@/features/auth";
+import { useSessionClaims } from "@/shared/auth";
+import { getDomainSource } from "@/shared/data/domain-source";
 import {
   readVersionedStorage,
   writeVersionedStorage,
@@ -100,10 +110,110 @@ export function SellerSettingsPro() {
   const [mfaModal, setMfaModal] = useState<
     "setup" | "recovery" | "disable" | null
   >(null);
-  const [mfa, setMfa] = useState(true);
+  const claims = useSessionClaims();
+  const authIsApi = getDomainSource("auth") === "api";
+  /** Local override after enroll/disable; null = follow session claims (API) or mock default. */
+  const [mfaOverride, setMfaOverride] = useState<boolean | null>(null);
+  const mfa =
+    mfaOverride ?? (authIsApi ? Boolean(claims?.mfaEnabled) : true);
   const [token, setToken] = useState("");
+  const [disableCode, setDisableCode] = useState("");
+  const [enrollSecret, setEnrollSecret] = useState<string | null>(null);
+  const [enrollOtpauth, setEnrollOtpauth] = useState<string | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const enrollMutation = useMfaEnrollMutation();
+  const confirmMutation = useMfaConfirmMutation();
+  const disableMutation = useMfaDisableMutation();
   const [saved, setSaved] = useState(false);
   const [profile, setProfile] = useState(initialSellerProfile);
+
+  useEffect(() => {
+    if (!enrollOtpauth || !qrCanvasRef.current) return;
+    void QRCode.toCanvas(qrCanvasRef.current, enrollOtpauth, {
+      width: 160,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#17231d", light: "#ffffff" },
+    }).catch(() => {
+      // Fail closed: keep chrome; never invent fake QR success.
+    });
+  }, [enrollOtpauth]);
+
+  const openMfaSetup = async () => {
+    if (!authIsApi) {
+      setMfaModal("setup");
+      return;
+    }
+    setEnrollSecret(null);
+    setEnrollOtpauth(null);
+    setToken("");
+    setMfaModal("setup");
+    const result = await enrollMutation.mutateAsync();
+    if (!result.ok) {
+      setMfaModal(null);
+      return;
+    }
+    setEnrollSecret(result.secret);
+    setEnrollOtpauth(result.otpauthUrl);
+  };
+
+  const confirmMfaSetup = async () => {
+    if (!authIsApi) {
+      setMfaOverride(true);
+      setMfaModal("recovery");
+      return;
+    }
+    const result = await confirmMutation.mutateAsync(
+      toMfaConfirmRequest({ code: token }),
+    );
+    if (!result.ok) return;
+    setEnrollSecret(null);
+    setEnrollOtpauth(null);
+    setMfaOverride(true);
+    setRecoveryCodes(result.recoveryCodes);
+    setMfaModal("recovery");
+  };
+
+  const disableMfaAction = async () => {
+    if (!authIsApi) {
+      setMfaOverride(false);
+      setMfaModal(null);
+      return;
+    }
+    if (!disableCode.trim()) return;
+    const result = await disableMutation.mutateAsync(
+      toMfaDisableRequest({ code: disableCode }),
+    );
+    if (!result.ok) return;
+    setMfaOverride(false);
+    setDisableCode("");
+    setRecoveryCodes(null);
+    setMfaModal(null);
+  };
+
+  const viewRecoveryCodes = async () => {
+    if (!authIsApi) {
+      setMfaModal("recovery");
+      return;
+    }
+    // API mode: only show codes from last confirm/regenerate (component memory).
+    // "View" without a fresh regenerate is not re-fetchable — require regenerate path.
+    if (recoveryCodes && recoveryCodes.length > 0) {
+      setMfaModal("recovery");
+      return;
+    }
+    // No cached one-time codes — stay on disable panel (no invented list).
+  };
+
+  const closeMfaModal = () => {
+    setMfaModal(null);
+    setToken("");
+    setDisableCode("");
+    // Drop enroll secret when modal closes (no storage).
+    setEnrollSecret(null);
+    setEnrollOtpauth(null);
+  };
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setProfile(
@@ -316,7 +426,13 @@ export function SellerSettingsPro() {
                 </span>
               </div>
               <button
-                onClick={() => setMfaModal(mfa ? "disable" : "setup")}
+                onClick={() => {
+                  if (mfa) {
+                    setMfaModal("disable");
+                    return;
+                  }
+                  void openMfaSetup();
+                }}
                 className={cn(
                   "h-10 rounded-xl px-4 text-[9px] font-extrabold sm:ml-auto",
                   mfa ? "hairline border bg-white" : "bg-[#173f2c] text-white",
@@ -436,22 +552,44 @@ export function SellerSettingsPro() {
                 : "Aktifkan authenticator MFA"
           }
           description="Tindakan keamanan ini akan dicatat dan seluruh sesi sensitif direvalidasi."
-          onClose={() => setMfaModal(null)}
+          onClose={closeMfaModal}
         >
           {mfaModal === "disable" ? (
             <div className="grid gap-3">
               <button
-                onClick={() => setMfaModal("recovery")}
+                type="button"
+                onClick={() => {
+                  void viewRecoveryCodes();
+                }}
                 className="hairline h-11 rounded-xl border bg-white text-[10px] font-bold"
               >
                 View recovery codes
               </button>
+              {authIsApi ? (
+                <label className="grid gap-2 text-[9px] font-bold">
+                  Kode autentikator
+                  <input
+                    value={disableCode}
+                    onChange={(e) =>
+                      setDisableCode(
+                        e.target.value.replace(/\s/g, "").slice(0, 12),
+                      )
+                    }
+                    placeholder="000000"
+                    className="hairline h-11 rounded-xl border bg-white px-3 text-center font-mono text-sm tracking-[.3em]"
+                  />
+                </label>
+              ) : null}
               <button
+                type="button"
+                disabled={
+                  authIsApi &&
+                  (disableMutation.isPending || disableCode.trim().length < 6)
+                }
                 onClick={() => {
-                  setMfa(false);
-                  setMfaModal(null);
+                  void disableMfaAction();
                 }}
-                className="h-11 rounded-xl bg-[#b64e38] text-[10px] font-extrabold text-white"
+                className="h-11 rounded-xl bg-[#b64e38] text-[10px] font-extrabold text-white disabled:opacity-40"
               >
                 Disable MFA after confirmation
               </button>
@@ -459,28 +597,61 @@ export function SellerSettingsPro() {
           ) : mfaModal === "recovery" ? (
             <div>
               <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#111a16] p-4 font-mono text-[10px] text-[#d7ff64]">
-                {[
-                  "FRSK-A92K",
-                  "FRSK-J71P",
-                  "FRSK-Q04X",
-                  "FRSK-M88D",
-                  "FRSK-W31C",
-                  "FRSK-L52N",
-                ].map((x) => (
+                {(recoveryCodes ??
+                  (authIsApi
+                    ? []
+                    : [
+                        "FRSK-A92K",
+                        "FRSK-J71P",
+                        "FRSK-Q04X",
+                        "FRSK-M88D",
+                        "FRSK-W31C",
+                        "FRSK-L52N",
+                      ])
+                ).map((x) => (
                   <span key={x}>{x}</span>
                 ))}
               </div>
-              <button className="hairline mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border bg-white text-[9px] font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  const codes =
+                    recoveryCodes ??
+                    (authIsApi
+                      ? []
+                      : [
+                          "FRSK-A92K",
+                          "FRSK-J71P",
+                          "FRSK-Q04X",
+                          "FRSK-M88D",
+                          "FRSK-W31C",
+                          "FRSK-L52N",
+                        ]);
+                  if (codes.length === 0) return;
+                  void navigator.clipboard?.writeText(codes.join("\n"));
+                }}
+                className="hairline mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border bg-white text-[9px] font-bold"
+              >
                 <Copy className="size-4" /> Copy recovery codes
               </button>
             </div>
           ) : (
             <div className="grid gap-4">
               <div className="hairline mx-auto grid size-40 place-items-center rounded-2xl border bg-white">
-                <QrCode className="size-32" strokeWidth={1.2} />
+                {authIsApi && enrollOtpauth ? (
+                  <canvas ref={qrCanvasRef} width={160} height={160} />
+                ) : authIsApi ? (
+                  <span className="text-[9px] text-[#718078]">
+                    {enrollMutation.isPending ? "Memuat…" : "—"}
+                  </span>
+                ) : (
+                  <QrCode className="size-32" strokeWidth={1.2} />
+                )}
               </div>
               <div className="rounded-xl bg-[#eef3e9] p-3 text-center font-mono text-[10px]">
-                FRSK A4M8 Q2JP 7ZLE
+                {authIsApi
+                  ? (enrollSecret ?? "—")
+                  : "FRSK A4M8 Q2JP 7ZLE"}
               </div>
               <label className="grid gap-2 text-center text-[9px] font-bold">
                 Masukkan token 6 digit
@@ -494,10 +665,13 @@ export function SellerSettingsPro() {
                 />
               </label>
               <button
-                disabled={token.length !== 6}
+                type="button"
+                disabled={
+                  token.length !== 6 ||
+                  (authIsApi && confirmMutation.isPending)
+                }
                 onClick={() => {
-                  setMfa(true);
-                  setMfaModal("recovery");
+                  void confirmMfaSetup();
                 }}
                 className="h-12 rounded-xl bg-[#173f2c] text-[10px] font-extrabold text-white disabled:opacity-40"
               >

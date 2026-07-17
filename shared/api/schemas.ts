@@ -375,6 +375,71 @@ export const authMessageDataSchema = z.object({
 export const authMessageEnvelopeSchema =
   successEnvelopeSchema(authMessageDataSchema);
 
+/** AUT-120 — password change may rotate session CSRF. */
+export const authPasswordChangeDataSchema = z.object({
+  message: z.string().min(1).optional(),
+  csrfToken: z.string().optional(),
+  sessionId: z.string().optional(),
+});
+
+export const authPasswordChangeEnvelopeSchema = successEnvelopeSchema(
+  authPasswordChangeDataSchema,
+);
+
+/** AUT-120 — MFA enroll secret once (component memory only). */
+export const authMfaEnrollDataSchema = z.object({
+  secret: z.string().min(1),
+  otpauthUrl: z.string().min(1),
+  factorId: z.string().optional(),
+});
+
+export const authMfaEnrollEnvelopeSchema = successEnvelopeSchema(
+  authMfaEnrollDataSchema,
+);
+
+/** AUT-120 — recovery codes one-time view. */
+export const authMfaRecoveryDataSchema = z.object({
+  recoveryCodes: z.array(z.string().min(1)).min(1),
+});
+
+export const authMfaRecoveryEnvelopeSchema = successEnvelopeSchema(
+  authMfaRecoveryDataSchema,
+);
+
+/** AUT-120 — MFA verify / step-up (optional recent proof mint). */
+export const authMfaVerifyDataSchema = z.object({
+  mfaVerified: z.boolean(),
+  recentMfaProof: z.string().optional(),
+  purpose: z.string().optional(),
+  expiresAt: z.string().optional(),
+  factor: z.string().optional(),
+});
+
+export const authMfaVerifyEnvelopeSchema = successEnvelopeSchema(
+  authMfaVerifyDataSchema,
+);
+
+/** AUT-120 — dual-confirm email change partial/complete. */
+export const authEmailChangeConfirmDataSchema = z.object({
+  message: z.string().min(1).optional(),
+  complete: z.boolean(),
+  newEmail: z.string().optional(),
+});
+
+export const authEmailChangeConfirmEnvelopeSchema = successEnvelopeSchema(
+  authEmailChangeConfirmDataSchema,
+);
+
+export type AuthPasswordChangeDataDto = z.infer<
+  typeof authPasswordChangeDataSchema
+>;
+export type AuthMfaEnrollDataDto = z.infer<typeof authMfaEnrollDataSchema>;
+export type AuthMfaRecoveryDataDto = z.infer<typeof authMfaRecoveryDataSchema>;
+export type AuthMfaVerifyDataDto = z.infer<typeof authMfaVerifyDataSchema>;
+export type AuthEmailChangeConfirmDataDto = z.infer<
+  typeof authEmailChangeConfirmDataSchema
+>;
+
 export type Meta = z.infer<typeof metaSchema>;
 export type CursorListMeta = z.infer<typeof cursorListMetaSchema>;
 export type NumberedPageListMeta = z.infer<typeof numberedPageListMetaSchema>;

@@ -157,7 +157,7 @@ export function BuyerProfile() {
         <button
           type="button"
           disabled
-          title="Email change is out of scope until AUT-120 dual-confirm ceremony"
+          title="Email change disabled until UI-080 dual-confirm composition (AUT-120 adapters ready)"
           className="hairline mt-4 h-10 w-full rounded-xl border text-[9px] font-bold disabled:cursor-not-allowed disabled:opacity-60"
         >
           Mulai perubahan email

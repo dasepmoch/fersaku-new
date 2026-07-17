@@ -20,6 +20,25 @@ import type {
   BuyerMagicLinkConsumeResult,
   BuyerMagicLinkRequest,
   BuyerMagicLinkRequestResult,
+  EmailChangeConfirmRequest,
+  EmailChangeConfirmResult,
+  EmailChangeRequest,
+  EmailChangeRequestResult,
+  MfaConfirmRequest,
+  MfaConfirmResult,
+  MfaDisableRequest,
+  MfaDisableResult,
+  MfaEnrollResult,
+  MfaRegenerateRecoveryRequest,
+  MfaRegenerateRecoveryResult,
+  MfaStepUpRequest,
+  MfaStepUpResult,
+  MfaVerifyRequest,
+  MfaVerifyResult,
+  PasswordChangeRequest,
+  PasswordChangeResult,
+  PasswordResetRequest,
+  PasswordResetResult,
   SellerAuthField,
   SellerAuthFieldError,
   SellerForgotPasswordRequest,
@@ -28,7 +47,16 @@ import type {
   SellerRegisterRequest,
   SellerRegisterResult,
   SellerForgotPasswordResult,
+  VerifyEmailRequest,
+  VerifyEmailResult,
 } from "./contracts";
+import type {
+  AuthEmailChangeConfirmDataDto,
+  AuthMfaEnrollDataDto,
+  AuthMfaRecoveryDataDto,
+  AuthMfaVerifyDataDto,
+  AuthPasswordChangeDataDto,
+} from "@/shared/api/schemas";
 
 const GENERIC_INVALID =
   "Email atau password tidak valid. Periksa kembali dan coba lagi.";
@@ -40,6 +68,16 @@ const GENERIC_FORGOT_OK =
   "If an account exists for that email, a reset message has been sent";
 const GENERIC_MAGIC_LINK_OK =
   "If an account exists for that email, a sign-in link has been sent";
+const GENERIC_RESET_OK = "Password has been updated. Sign in with your new password.";
+const GENERIC_PASSWORD_CHANGED = "Password updated";
+const GENERIC_EMAIL_CHANGE_OK =
+  "If the request is valid, confirmation messages have been sent";
+const GENERIC_EMAIL_CONFIRMED = "Email change confirmed";
+const GENERIC_VERIFY_EMAIL_OK = "Email verified";
+const GENERIC_MFA_DISABLED = "MFA disabled";
+const GENERIC_INVALID_CODE = "Kode tidak valid. Coba lagi.";
+const GENERIC_INVALID_TOKEN =
+  "Link tidak valid atau sudah kedaluwarsa. Minta ulang bila perlu.";
 
 const FIELD_ALIASES: Record<string, SellerAuthField> = {
   name: "name",
@@ -599,3 +637,394 @@ export function objectContainsPasswordLeak(value: unknown): boolean {
   };
   return walk(value);
 }
+
+// --- AUT-120 builders ---
+
+export function toPasswordResetRequest(input: {
+  token: string;
+  newPassword: string;
+}): PasswordResetRequest {
+  return {
+    token: input.token.trim(),
+    newPassword: input.newPassword,
+  };
+}
+
+export function toPasswordChangeRequest(input: {
+  currentPassword: string;
+  newPassword: string;
+  mfaCode?: string;
+}): PasswordChangeRequest {
+  const body: PasswordChangeRequest = {
+    currentPassword: input.currentPassword,
+    newPassword: input.newPassword,
+  };
+  const code = input.mfaCode?.trim();
+  if (code) body.mfaCode = code;
+  return body;
+}
+
+export function toEmailChangeRequest(input: {
+  newEmail: string;
+}): EmailChangeRequest {
+  return { newEmail: input.newEmail.trim().toLowerCase() };
+}
+
+export function toEmailChangeConfirmRequest(input: {
+  token: string;
+}): EmailChangeConfirmRequest {
+  return { token: input.token.trim() };
+}
+
+export function toMfaVerifyRequest(input: {
+  code: string;
+  purpose?: string;
+}): MfaVerifyRequest {
+  const body: MfaVerifyRequest = { code: input.code.trim() };
+  const purpose = input.purpose?.trim();
+  if (purpose) body.purpose = purpose;
+  return body;
+}
+
+export function toMfaStepUpRequest(input: {
+  code: string;
+  purpose: string;
+}): MfaStepUpRequest {
+  return {
+    code: input.code.trim(),
+    purpose: input.purpose.trim(),
+  };
+}
+
+export function toMfaConfirmRequest(input: { code: string }): MfaConfirmRequest {
+  return { code: input.code.trim() };
+}
+
+export function toMfaDisableRequest(input: { code: string }): MfaDisableRequest {
+  return { code: input.code.trim() };
+}
+
+export function toMfaRegenerateRecoveryRequest(input: {
+  code: string;
+}): MfaRegenerateRecoveryRequest {
+  return { code: input.code.trim() };
+}
+
+export function toVerifyEmailRequest(input: {
+  token: string;
+}): VerifyEmailRequest {
+  return { token: input.token.trim() };
+}
+
+/**
+ * Alias for bootstrap tokens (reset / email-confirm / verify-email / invite).
+ * Same fragment `#token=` contract as AUT-110 magic-link.
+ */
+export const parseAuthFragmentToken = parseMagicLinkFragmentToken;
+
+export function resetSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_RESET_OK;
+}
+
+export function passwordChangeSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_PASSWORD_CHANGED;
+}
+
+export function emailChangeRequestSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_EMAIL_CHANGE_OK;
+}
+
+export function emailChangeConfirmSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_EMAIL_CONFIRMED;
+}
+
+export function verifyEmailSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_VERIFY_EMAIL_OK;
+}
+
+export function mfaDisableSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_MFA_DISABLED;
+}
+
+function isRateOrUnavailable(
+  error: ApiError,
+  classified: ReturnType<typeof classifyThrown>,
+): boolean {
+  const code = error.code;
+  return (
+    classified.kind === "rate_limited" ||
+    classified.kind === "retry_safe_get" ||
+    classified.kind === "transport_failure" ||
+    classified.kind === "mutation_unknown" ||
+    code === PROBLEM_CODES.RATE_LIMITED ||
+    code === PROBLEM_CODES.SERVICE_UNAVAILABLE ||
+    code === PROBLEM_CODES.PROVIDER_UNAVAILABLE
+  );
+}
+
+export function mapPasswordResetThrown(error: unknown): PasswordResetResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    if (
+      code === PROBLEM_CODES.VALIDATION_FAILED ||
+      classified.kind === "form_field_violations"
+    ) {
+      const fields = mapFieldViolationsToAuthFields(classified.fieldViolations);
+      if (fields.length > 0) {
+        return { ok: false, kind: "field_errors", fields };
+      }
+    }
+    return { ok: false, kind: "invalid_token", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapPasswordChangeThrown(error: unknown): PasswordChangeResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    if (
+      code === PROBLEM_CODES.VALIDATION_FAILED ||
+      classified.kind === "form_field_violations"
+    ) {
+      const fields = mapFieldViolationsToAuthFields(classified.fieldViolations);
+      if (fields.length > 0) {
+        return { ok: false, kind: "field_errors", fields };
+      }
+    }
+    if (
+      code === PROBLEM_CODES.AUTH_INVALID_CREDENTIALS ||
+      code === PROBLEM_CODES.AUTH_MFA_REQUIRED ||
+      code === PROBLEM_CODES.AUTH_MFA_PROOF_INVALID ||
+      error.status === 401
+    ) {
+      return {
+        ok: false,
+        kind: "field_errors",
+        fields: [
+          {
+            field: "password",
+            message: GENERIC_INVALID,
+          },
+        ],
+      };
+    }
+    return {
+      ok: false,
+      kind: "generic",
+      message: GENERIC_INVALID,
+      code,
+    };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapPasswordChangeData(
+  data: AuthPasswordChangeDataDto,
+): Extract<PasswordChangeResult, { ok: true }> {
+  return {
+    ok: true,
+    kind: "changed",
+    message: passwordChangeSuccessMessage(data.message),
+    csrfToken: data.csrfToken,
+  };
+}
+
+export function mapEmailChangeRequestThrown(
+  error: unknown,
+): EmailChangeRequestResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    if (code === PROBLEM_CODES.CONFLICT || error.status === 409) {
+      return { ok: false, kind: "conflict", code };
+    }
+    return { ok: false, kind: "blocked", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapEmailChangeConfirmThrown(
+  error: unknown,
+): EmailChangeConfirmResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_token", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapEmailChangeConfirmData(
+  data: AuthEmailChangeConfirmDataDto,
+): Extract<EmailChangeConfirmResult, { ok: true }> {
+  return {
+    ok: true,
+    kind: "confirmed",
+    complete: Boolean(data.complete),
+    message: emailChangeConfirmSuccessMessage(data.message),
+    newEmail: data.newEmail,
+  };
+}
+
+export function mapMfaVerifyThrown(error: unknown): MfaVerifyResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_code", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMfaVerifyData(
+  data: AuthMfaVerifyDataDto,
+  options?: { returnTo?: string | null; surface?: "seller" | "admin" },
+): Extract<MfaVerifyResult, { ok: true }> {
+  const surface = options?.surface ?? "seller";
+  const redirectTo =
+    surface === "admin"
+      ? resolveAdminPostAuthPath({ returnTo: options?.returnTo })
+      : resolveSellerPostAuthPath({ returnTo: options?.returnTo });
+  return {
+    ok: true,
+    kind: "verified",
+    recentMfaProof: data.recentMfaProof,
+    purpose: data.purpose,
+    expiresAt: data.expiresAt,
+    factor: data.factor,
+    redirectTo,
+  };
+}
+
+export function mapMfaStepUpThrown(error: unknown): MfaStepUpResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_code", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMfaStepUpData(
+  data: AuthMfaVerifyDataDto,
+): Extract<MfaStepUpResult, { ok: true }> | Extract<MfaStepUpResult, { ok: false }> {
+  const proof = data.recentMfaProof?.trim();
+  if (!proof) {
+    return { ok: false, kind: "blocked", code: "AUTH_MFA_PROOF_INVALID" };
+  }
+  return {
+    ok: true,
+    kind: "proof",
+    recentMfaProof: proof,
+    purpose: data.purpose?.trim() || "",
+    expiresAt: data.expiresAt,
+    factor: data.factor,
+  };
+}
+
+export function mapMfaEnrollData(
+  data: AuthMfaEnrollDataDto,
+): Extract<MfaEnrollResult, { ok: true }> {
+  return {
+    ok: true,
+    kind: "enrolled",
+    secret: data.secret,
+    otpauthUrl: data.otpauthUrl,
+    factorId: data.factorId,
+  };
+}
+
+export function mapMfaEnrollThrown(error: unknown): MfaEnrollResult {
+  if (error instanceof ApiError) {
+    return { ok: false, kind: "blocked", code: error.code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMfaConfirmThrown(error: unknown): MfaConfirmResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_code", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMfaRecoveryData(
+  data: AuthMfaRecoveryDataDto,
+): { recoveryCodes: string[] } {
+  return { recoveryCodes: [...data.recoveryCodes] };
+}
+
+export function mapMfaDisableThrown(error: unknown): MfaDisableResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_code", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMfaRegenerateThrown(
+  error: unknown,
+): MfaRegenerateRecoveryResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_code", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapVerifyEmailThrown(error: unknown): VerifyEmailResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (isRateOrUnavailable(error, classified)) {
+      return { ok: false, kind: "blocked", code };
+    }
+    return { ok: false, kind: "invalid_token", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+/**
+ * Guard: recovery codes / TOTP secret must not leak into mutation keys or logs.
+ */
+export function objectContainsMfaSecretLeak(
+  value: unknown,
+  rawSecret: string,
+): boolean {
+  if (!rawSecret || rawSecret.length < 4) return false;
+  return objectContainsMagicTokenLeak(value, rawSecret);
+}
+
+export { GENERIC_INVALID_CODE, GENERIC_INVALID_TOKEN };

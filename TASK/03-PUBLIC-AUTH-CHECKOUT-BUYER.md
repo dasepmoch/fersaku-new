@@ -109,21 +109,21 @@ https://app.example/account/verify#token=<opaque>
 
 ### Checklist
 
-- [ ] Gunakan route ownership default UI freeze: seller verify/reset/merchant invite/seller MFA di `/login`; admin invite/MFA di `/admin/login`; buyer magic di `/account/verify`. Token purpose berasal fragment dan langsung di-scrub. Route baru memerlukan `UI-080` exception.
-- [ ] Password reset/verify/invite token menggunakan fragment -> immediate scrub -> typed POST exchange seperti `AUT-110`.
-- [ ] Password change membutuhkan current password/recent auth sesuai policy; rotates/revokes sessions appropriately.
-- [ ] Dual-confirm email change menjaga generic mail response dan account recovery safety. Visible buyer button “Mulai perubahan email” belum memiliki handler/modal/form; keep it `DISABLED/OUT-OF-SCOPE` sampai dapat memakai exact approved auth composition atau `UI-080`—jangan menambah modal di wiring.
-- [ ] MFA enroll QR/secret hanya muncul dari backend once, component-memory, `no-store`; fake QR dilarang API mode.
-- [ ] First-time seller/admin enrollment uses an invite/pre-enrollment ticket allowed before full MFA session. It is purpose-bound, short-lived, replay-safe, and cannot call business routes; do not create a second unrestricted auth session.
-- [ ] MFA confirm required sebelum enabled; recovery codes one-time view/download/print existing behavior, tidak cache/storage/log.
-- [ ] Regenerate/disable MFA memerlukan recent proof; invalidates old codes/proofs.
-- [ ] Session/security UI menggunakan actual server state tetapi exact existing controls/dialogs.
+- [x] Gunakan route ownership default UI freeze: seller verify/reset/merchant invite/seller MFA di `/login`; admin invite/MFA di `/admin/login`; buyer magic di `/account/verify`. Token purpose berasal fragment dan langsung di-scrub. Route baru memerlukan `UI-080` exception.
+- [x] Password reset/verify/invite token menggunakan fragment -> immediate scrub -> typed POST exchange seperti `AUT-110`.
+- [x] Password change membutuhkan current password/recent auth sesuai policy; rotates/revokes sessions appropriately. *(shared adapter; seller settings form bind remains SEL-340)*
+- [x] Dual-confirm email change menjaga generic mail response dan account recovery safety. Visible buyer button “Mulai perubahan email” belum memiliki handler/modal/form; keep it `DISABLED/OUT-OF-SCOPE` sampai dapat memakai exact approved auth composition atau `UI-080`—jangan menambah modal di wiring. *(adapters complete; buyer button stays disabled)*
+- [x] MFA enroll QR/secret hanya muncul dari backend once, component-memory, `no-store`; fake QR dilarang API mode.
+- [ ] First-time seller/admin enrollment uses an invite/pre-enrollment ticket allowed before full MFA session. It is purpose-bound, short-lived, replay-safe, and cannot call business routes; do not create a second unrestricted auth session. *(deferred ADM-100/INT-140 pre-enrollment ticket)*
+- [x] MFA confirm required sebelum enabled; recovery codes one-time view/download/print existing behavior, tidak cache/storage/log.
+- [x] Regenerate/disable MFA memerlukan recent proof; invalidates old codes/proofs. *(adapters + seller disable wired; admin regen bind ADM-230)*
+- [x] Session/security UI menggunakan actual server state tetapi exact existing controls/dialogs. *(seller MFA from session claims when auth=api)*
 
 ### Tests/AC
 
-- Token purpose/replay/expiry; password rotation; email dual-confirm edge cases.
-- MFA enroll/confirm/login/recovery/regenerate/disable.
-- Raw seed/recovery codes tidak muncul setelah unmount/refresh dan tidak masuk telemetry.
+- [x] Token purpose/replay/expiry; password rotation; email dual-confirm edge cases. *(unit: reset/MFA/anti-enumeration; dual-confirm adapter + disposition)*
+- [x] MFA enroll/confirm/login/recovery/regenerate/disable. *(unit + seller settings API wire)*
+- [x] Raw seed/recovery codes tidak muncul setelah unmount/refresh dan tidak masuk telemetry.
 
 ### Ownership boundary
 

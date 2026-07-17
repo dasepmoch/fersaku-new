@@ -32,7 +32,9 @@ import { MockInteractionBoundary } from "@/components/mock-interaction-boundary"
 import { ThemeToggle } from "@/components/theme-provider";
 import {
   toAdminLoginRequest,
+  toMfaVerifyRequest,
   useAdminLoginMutation,
+  useMfaVerifyMutation,
 } from "@/features/auth";
 import { canAccessAdminNavHref } from "@/features/admin/config/routes";
 import { cn } from "@/lib/utils";
@@ -240,6 +242,7 @@ export function AdminLogin() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
   const loginMutation = useAdminLoginMutation();
+  const mfaVerifyMutation = useMfaVerifyMutation();
   const isMock = isAuthMockDomain();
   // Mock path keeps snapshot defaults for visual parity; API never ships credentials.
   const [email, setEmail] = useState(() =>
@@ -248,10 +251,24 @@ export function AdminLogin() {
   const [password, setPassword] = useState(() =>
     isAuthMockDomain() ? "password123" : "",
   );
+  const [mfaPending, setMfaPending] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     // API path: never treat empty as success; no new error markup (UXE-011).
+    if (mfaPending) {
+      const code = mfaCode.trim();
+      if (!code) return;
+      const result = await mfaVerifyMutation.mutateAsync({
+        ...toMfaVerifyRequest({ code }),
+        returnTo,
+        surface: "admin",
+      });
+      if (!result.ok) return;
+      if (result.redirectTo) router.push(result.redirectTo);
+      return;
+    }
     if (!email.trim() || !password) return;
 
     const dto = toAdminLoginRequest({ email, password });
@@ -264,7 +281,9 @@ export function AdminLogin() {
       return;
     }
     if (result.kind === "mfa_pending") {
-      // MFA_PENDING is not console-ready; stay on /admin/login (INT-140 guard).
+      // MFA_PENDING is not console-ready; collect code on same shell (AUT-120).
+      setMfaPending(true);
+      setMfaCode("");
       return;
     }
     router.push(result.redirectTo);
@@ -334,38 +353,59 @@ export function AdminLogin() {
             Use your approved Fersaku operations account.
           </p>
           <form onSubmit={submit} className="mt-8 grid gap-4">
-            <label className="grid gap-2 text-[11px] font-extrabold">
-              Work email
-              <input
-                type="email"
-                name="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
-              />
-            </label>
-            <label className="grid gap-2 text-[11px] font-extrabold">
-              Password
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-[10px] text-[#68728a]">
-              <input type="checkbox" defaultChecked /> Keep this trusted device
-              active for 8 hours
-            </label>
+            {!mfaPending ? (
+              <>
+                <label className="grid gap-2 text-[11px] font-extrabold">
+                  Work email
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
+                  />
+                </label>
+                <label className="grid gap-2 text-[11px] font-extrabold">
+                  Password
+                  <input
+                    type="password"
+                    name="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-[10px] text-[#68728a]">
+                  <input type="checkbox" defaultChecked /> Keep this trusted device
+                  active for 8 hours
+                </label>
+              </>
+            ) : (
+              <label className="grid gap-2 text-[11px] font-extrabold">
+                Authenticator code
+                <input
+                  type="text"
+                  name="mfaCode"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  value={mfaCode}
+                  onChange={(e) =>
+                    setMfaCode(e.target.value.replace(/\s/g, "").slice(0, 12))
+                  }
+                  className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
+                />
+              </label>
+            )}
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={
+                loginMutation.isPending || mfaVerifyMutation.isPending
+              }
               className="mt-2 flex h-12 items-center justify-center rounded-xl bg-[#11182a] text-xs font-extrabold text-white transition hover:bg-[#202b48]"
             >
-              Continue securely
+              {mfaPending ? "Verify MFA" : "Continue securely"}
             </button>
           </form>
           {isMock ? (
