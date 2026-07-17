@@ -2788,6 +2788,38 @@ export const adminDeliveryResendEnvelopeSchema = successEnvelopeSchema(
 export const adminWithdrawalEnvelopeSchema = successEnvelopeSchema(
   adminWithdrawalDtoSchema,
 );
+
+/**
+ * ADM-310 — POST /v1/admin/withdrawals/{id}/review response.
+ * Prefer FE-shaped AdminWithdrawal when AdminRead is projected; accept domain
+ * DTO fields (status wire + amountDebited) without inventing fee/net.
+ */
+export const adminWithdrawalReviewResultSchema = z
+  .object({
+    id: z.string().min(1),
+    status: z.string().min(1),
+    merchant: z.string().optional(),
+    owner: z.string().optional(),
+    amount: moneyIdrSchema.optional(),
+    amountDebited: moneyIdrSchema.optional(),
+    bank: z.string().optional(),
+    account: z.string().optional(),
+    risk: z.string().optional(),
+    requested: z.string().optional(),
+    source: z.string().optional(),
+    providerProcessingFee: moneyIdrSchema.nullable().optional(),
+    providerFeeStatus: z.string().optional(),
+    providerFeeReference: z.string().optional(),
+    platformFee: moneyIdrSchema.optional(),
+    netDisbursement: moneyIdrSchema.optional(),
+    providerReference: z.string().optional(),
+  })
+  .passthrough();
+
+export const adminWithdrawalReviewEnvelopeSchema = successEnvelopeSchema(
+  adminWithdrawalReviewResultSchema,
+);
+
 export const adminInventoryEnvelopeSchema = successEnvelopeSchema(
   adminInventorySnapshotDtoSchema,
 );

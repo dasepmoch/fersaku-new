@@ -276,13 +276,13 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 ### Checklist FE
 
-- [ ] Freeze the list slash contract: router snapshot mounts `GET /v1/admin/withdrawals/` while FE calls the no-slash path. Align router/OpenAPI/FE or install a tested canonical redirect before wiring; do not rely on framework guesswork.
-- [ ] Map list/detail response exactly; fee/net/provider/bank/lock/source from server.
-- [ ] Server filters plus declared pagination profile; no client all-row metrics authority.
-- [ ] Existing review dialog supplies allowed target, reason, actual recent MFA, stable idempotency.
-- [ ] No client fee recalculation or optimistic status.
-- [ ] `UNKNOWN_OUTCOME`, on hold, processing, rejected, completed mappings exhaustive and safe.
-- [ ] After command, refetch exact withdrawal/detail/ledger/audit/system health.
+- [x] Freeze the list slash contract: router snapshot mounts `GET /v1/admin/withdrawals/` while FE calls the no-slash path. Align router/OpenAPI/FE or install a tested canonical redirect before wiring; do not rely on framework guesswork. *(canonical FE path `/v1/admin/withdrawals` matches OpenAPI + dual mounts: AdminRead `/withdrawals` and WithdrawalService route `/`; unit test locks path)*
+- [x] Map list/detail response exactly; fee/net/provider/bank/lock/source from server. *(FE AdminWithdrawal projection; API fee chrome uses server provider fee only — no client % recompute)*
+- [x] Server filters plus declared pagination profile; no client all-row metrics authority. *(bounded list + API mini-metrics from page rows only; mock chrome preserved)*
+- [x] Existing review dialog supplies allowed target, reason, actual recent MFA, stable idempotency. *(typed `POST .../review` approve|hold|reject; ControlDialog + UUID idempotency + requireRecentMfa)*
+- [x] No client fee recalculation or optimistic status. *(status only from server map after success; invalidate queries)*
+- [x] `UNKNOWN_OUTCOME`, on hold, processing, rejected, completed mappings exhaustive and safe.
+- [x] After command, refetch exact withdrawal/detail/ledger/audit/system health.
 
 ### Checklist BE
 

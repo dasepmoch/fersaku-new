@@ -1,6 +1,6 @@
 /**
- * ADM-120 — admin withdrawal list/detail read foundation (withdrawals.review).
- * Review commands remain ADM-310.
+ * ADM-120/ADM-310 — admin withdrawal list/detail (withdrawals.review).
+ * Review commands: withdrawal-commands.ts.
  */
 
 import type { z } from "zod";
@@ -10,7 +10,10 @@ import {
   adminWithdrawalEnvelopeSchema,
   adminWithdrawalListEnvelopeSchema,
 } from "@/shared/api/schemas";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type {
   AdminBoundedList,
   AdminListFilters,
@@ -29,17 +32,34 @@ type DetailEnvelope = z.infer<typeof adminWithdrawalEnvelopeSchema>;
 
 const MOCK_AS_OF = "2026-07-17T00:00:00Z";
 
+/**
+ * Canonical list path (OpenAPI `GET /v1/admin/withdrawals`, no trailing slash).
+ * Dual mounts: AdminRead under `/v1/admin` + WithdrawalService route `/` both serve list.
+ */
+const ADMIN_WITHDRAWALS_LIST_PATH = "/v1/admin/withdrawals";
+
 export type WithdrawalReviewTarget = "Processing" | "On hold" | "Rejected";
 
+/**
+ * Client UX gate only — server CanTransition remains authoritative.
+ * Pending → approve (Processing) / hold / reject.
+ * On hold → approve / reject (BE HELD → UNDER_REVIEW then approve, or reject).
+ * Processing / Completed / Failed / Rejected → no review commands.
+ */
 export function canReviewWithdrawal(
-  current: AdminWithdrawal["status"],
+  current: AdminWithdrawal["status"] | string,
   target: WithdrawalReviewTarget,
 ) {
-  if (current === "Pending") return true;
-  if (current === "On hold") {
+  const status = String(current ?? "").trim();
+  if (status === "Pending") return true;
+  if (status === "On hold") {
     return target === "Processing" || target === "Rejected";
   }
   return false;
+}
+
+export function isAdminWithdrawalsReadApi(): boolean {
+  return getDomainSource("adminRead") === "api";
 }
 
 export function demoWithdrawals(): AdminWithdrawal[] {
@@ -57,6 +77,10 @@ function mockWithdrawalPage(
   if (filters.status?.trim()) {
     const status = filters.status.trim().toLowerCase();
     rows = rows.filter((w) => w.status.toLowerCase() === status);
+  }
+  if (filters.source?.trim()) {
+    const source = filters.source.trim().toUpperCase();
+    rows = rows.filter((w) => w.source === source);
   }
   return {
     items: rows.slice(0, limit),
@@ -82,7 +106,7 @@ export async function listWithdrawalsPage(
   if (shouldUseMockFixtures("adminRead")) return mockWithdrawalPage(filters);
 
   const normalized = normalizeAdminListFilters(filters);
-  const response = await apiRequest<ListEnvelope>("/v1/admin/withdrawals", {
+  const response = await apiRequest<ListEnvelope>(ADMIN_WITHDRAWALS_LIST_PATH, {
     schema: adminWithdrawalListEnvelopeSchema,
     query: {
       ...adminListQueryParams(filters),

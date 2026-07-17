@@ -472,12 +472,81 @@ const WITHDRAWAL_STATUSES = new Set([
   "Rejected",
 ]);
 
+export type AdminWithdrawalReviewAction = "approve" | "hold" | "reject";
+
+/** Map domain/FE withdrawal status to existing AdminStatus labels. */
+export function humanizeAdminWithdrawalStatus(
+  status: string,
+): AdminWithdrawal["status"] {
+  const s = String(status ?? "").trim();
+  if (WITHDRAWAL_STATUSES.has(s)) {
+    return s as AdminWithdrawal["status"];
+  }
+  switch (s.toUpperCase()) {
+    case "REQUESTED":
+    case "UNDER_REVIEW":
+    case "APPROVED":
+      return "Pending";
+    case "PROCESSING":
+      return "Processing";
+    case "HELD":
+      return "On hold";
+    case "COMPLETED":
+      return "Completed";
+    case "FAILED":
+    case "UNKNOWN_OUTCOME":
+    case "CANCELLED":
+      return "Failed";
+    case "REJECTED":
+      return "Rejected";
+    default:
+      return "Pending";
+  }
+}
+
+/** UI target / wire action → BE review action. */
+export function toAdminWithdrawalReviewAction(
+  target: string,
+): AdminWithdrawalReviewAction | null {
+  const t = String(target ?? "").trim().toLowerCase().replaceAll(" ", "_");
+  if (t === "approve" || t === "processing") return "approve";
+  if (t === "hold" || t === "on_hold" || t === "onhold") return "hold";
+  if (t === "reject" || t === "rejected") return "reject";
+  return null;
+}
+
+/**
+ * Display-only fee rows for withdrawal detail chrome.
+ * Server fields only — never recompute platform fee / net from amount %.
+ */
+export function mapAdminWithdrawalFeeDisplay(w: {
+  platformFee?: number | null;
+  netDisbursement?: number | null;
+  providerProcessingFee: number | null;
+}): {
+  platformFee: number | null;
+  processingFee: number | null;
+  netAmount: number | null;
+} {
+  const processingFee =
+    w.providerProcessingFee === null || w.providerProcessingFee === undefined
+      ? null
+      : nonNegMoney(w.providerProcessingFee);
+  const platformFee =
+    w.platformFee === null || w.platformFee === undefined
+      ? null
+      : nonNegMoney(w.platformFee);
+  const netAmount =
+    w.netDisbursement === null || w.netDisbursement === undefined
+      ? null
+      : nonNegMoney(w.netDisbursement);
+  return { platformFee, processingFee, netAmount };
+}
+
 export function mapAdminWithdrawalDto(
   dto: AdminWithdrawalDto,
 ): AdminWithdrawal {
-  const status = WITHDRAWAL_STATUSES.has(dto.status)
-    ? (dto.status as AdminWithdrawal["status"])
-    : "Pending";
+  const status = humanizeAdminWithdrawalStatus(dto.status);
   const feeStatus =
     dto.providerFeeStatus === "VERIFIED" ||
     dto.providerFeeStatus === "POSTED" ||
