@@ -455,6 +455,7 @@ export type PublicReviewSummaryDto = z.infer<
   typeof publicReviewSummaryDtoSchema
 >;
 export type FeePolicyDto = z.infer<typeof feePolicySchema>;
+export type StatusDataDto = z.infer<typeof statusDataSchema>;
 export type AuthLoginDataDto = z.infer<typeof authLoginDataSchema>;
 export type AuthSessionDataDto = z.infer<typeof authSessionDataSchema>;
 

@@ -274,14 +274,14 @@ Homepage dan pricing page memiliki fee/minimum hardcoded. Checkout tetap server-
 
 ### Checklist
 
-- [ ] Decide whether page is static product content or claims live operational status. If live, wire sanitized public status/incident aggregate; raw `/metrics` and internal dependency details remain private.
-- [ ] Public response/cache and incident update cadence documented.
-- [ ] Do not display fake “operational” during outage; use existing card/status visual.
-- [ ] Health endpoint alone is not full product incident history; add backend/status provider dependency if UI claims more.
+- [x] Decide whether page is static product content or claims live operational status. If live, wire sanitized public status/incident aggregate; raw `/metrics` and internal dependency details remain private. *(Launch: **non-live informational** page. Wire sanitized `GET /v1/status` process identity only; no multi-service operational aggregate, no fake uptime/incidents. `/metrics` and internal topology remain private.)*
+- [x] Public response/cache and incident update cadence documented. *(`PUBLIC_STATUS_REVALIDATE_SECONDS = 60`; no public incident feed cadence — incidents empty until a status provider exists.)*
+- [x] Do not display fake “operational” during outage; use existing card/status visual. *(Unavailable → neutral banner + “Unavailable” rows; never green default.)*
+- [x] Health endpoint alone is not full product incident history; add backend/status provider dependency if UI claims more. *(Only API process row may show Reachable; other service names stay Not reported; incident accordion empty/static.)*
 
 ### Tests/AC
 
-- Operational/degraded/outage/stale data states; no internal topology/secret leakage.
+- [x] Operational/degraded/outage/stale data states; no internal topology/secret leakage. *(informational + unavailable unit tests; only `/v1/status`; no `/metrics`/admin health.)*
 
 ---
 

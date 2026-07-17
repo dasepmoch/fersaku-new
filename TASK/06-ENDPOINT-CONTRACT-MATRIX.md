@@ -69,7 +69,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Fee read | no full seam | `GET /v1/platform/fees` | U | Read-only active policy for public/preview mapping; checkout server quote remains authority. | PUB-110/CHK-100 |
 | Marketing fee copy | home/pricing | `GET /v1/platform/fees` | U | Versioned public policy maps to frozen fee UI; prevent drift. | PUB-110 |
 | Contact submission | contact form | no route mounted | D | **Launch DISABLED/OUT-OF-SCOPE (PUB-200):** API mode disables submit; mock may prototype. Add exact public contact op only if re-opened IMPLEMENT; fake local success forbidden in API/live. | PUB-200 |
-| Public status | status page | `GET /v1/status` | U | Decide live operational aggregate vs static content; no fake operational claim. | PUB-220 |
+| Public status | status page | `GET /v1/status` | M | **Launch informational:** process identity only (service/version/appEnv/uptimeSeconds). No multi-service aggregate, uptime SLA %, or incident feed. No fake operational claim. | PUB-220 |
 | Checkout quote | checkout screen | `POST /v1/checkout/quote` | U | Server price/discount, identifiers only. | CHK-100 |
 | Checkout coupon | checkout screen | `POST /v1/checkout/apply-coupon`, `POST /v1/checkout/coupon-reservations` | D | Current checkout screen has no coupon input/error/discount region; implement exact existing control only after UI-080, otherwise disabled/out-of-scope. | CHK-100/UI-080 |
 | Create intent | checkout API must replace simulator | `POST /v1/checkout/intents` | U | Exact body, idempotency, scoped capability, QR/expiry. | CHK-110 |
