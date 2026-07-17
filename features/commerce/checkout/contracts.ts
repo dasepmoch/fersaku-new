@@ -1,5 +1,5 @@
 /**
- * Checkout view models (CHK-100).
+ * Checkout view models (CHK-100/110).
  * Money fields are integer IDR; browser totals are never authority.
  */
 
@@ -36,20 +36,81 @@ export type CheckoutQuote = {
   couponCode?: string;
 };
 
+/** Buyer identity fields for intent create (no secrets). */
+export type CheckoutBuyerIdentity = {
+  name: string;
+  email: string;
+};
+
 /**
- * Frozen QR / wallet / pay control semantics for CHK-100 (wire later in CHK-110).
+ * Inputs for POST /v1/checkout/intents (CHK-110).
+ * Identifiers + selections only; never browser total as authority.
+ */
+export type CreateCheckoutIntentInput = {
+  storeId: string;
+  productId: string;
+  buyer: CheckoutBuyerIdentity;
+  /** Opaque UUID; required; same key for retry/timeout recovery. */
+  idempotencyKey: string;
+  /** PWYW override when product allows; omit for catalog price. */
+  payWhatYouWant?: number;
+  tip?: number;
+  /** Same-store published product ids when upsell selected. */
+  upsellProductIds?: string[];
+  couponCode?: string;
+};
+
+export type CheckoutIntentStatus =
+  | "REQUIRES_PAYMENT"
+  | "PENDING"
+  | "CANCEL_PENDING"
+  | "EXPIRE_PENDING"
+  | "UNKNOWN_OUTCOME"
+  | "PAID"
+  | "FAILED"
+  | "EXPIRED"
+  | "CANCELLED";
+
+/**
+ * Non-secret intent identity held in memory after create (CHK-110).
+ * No secrets in query URL/storage; publicToken is purpose-bound capability.
+ */
+export type CheckoutIntent = {
+  paymentIntentId: string;
+  orderId: string;
+  orderNumber?: string;
+  status: CheckoutIntentStatus;
+  amount: number;
+  gross: number;
+  tip: number;
+  discount: number;
+  fee: number;
+  expiresAt?: string;
+  qrString?: string | null;
+  qrImageUrl?: string | null;
+  /** Purpose-bound; memory only — never query/storage. */
+  publicToken?: string;
+  replayed: boolean;
+  paymentMode?: string;
+  provider?: string;
+};
+
+/**
+ * Frozen QR / wallet / pay control semantics (CHK-100 freeze; CHK-110 wires pay).
  * Do not invent new QR-copy buttons without UI-080.
  */
 export const CHECKOUT_QR_WALLET_SEMANTICS = {
   continueButton:
     "PRESENTATIONAL_STEP — advances details → qris UI only; does NOT create payment intent (CHK-110).",
   payButton:
-    "MOCK_OR_CHK110 — mock/local may simulate; live must call createCheckoutIntent (CHK-110), never browser total.",
+    "CREATE_INTENT — mock/local may simulate; api domain calls createCheckoutIntent with opaque Idempotency-Key; never browser total.",
   walletPicker:
     "PRESENTATIONAL — existing e-wallet chips are visual preference only until provider deep-link contract freezes.",
   qrDisplay:
-    "PRESENTATIONAL_UNTIL_INTENT — static QR chrome only; no copy control exists → no copy button without UI-080.",
+    "PRESENTATIONAL_UNTIL_INTENT — static QR chrome until create succeeds; no copy control exists → no copy button without UI-080.",
   couponControl: "DISABLED/OUT-OF-SCOPE — no coupon input/error region on details-step; UI-080 required.",
   stockReservations:
     "INTERNAL_ONLY — browser must NOT call POST /v1/checkout/stock-reservations; create-intent owns reservation.",
+  unknownNetworkOutcome:
+    "LOOKUP_RECOVERY — keep same idempotency key; do not auto-mint new intent; CHK-120 polls GET intent.",
 } as const;

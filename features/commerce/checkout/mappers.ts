@@ -1,13 +1,34 @@
 /**
- * Checkout price DTO → view model (CHK-100). Pure; no React.
+ * Checkout price/intent DTO → view model (CHK-100/110). Pure; no React.
  */
 
-import type { CheckoutPriceDto } from "@/shared/api/schemas";
+import type {
+  CheckoutIntentDto,
+  CheckoutPriceDto,
+} from "@/shared/api/schemas";
 import {
   invalidApiContract,
   requireSafeMoneyIdr,
 } from "@/shared/api/mappers";
-import type { CheckoutQuote, CheckoutQuoteSelection } from "./contracts";
+import type {
+  CheckoutIntent,
+  CheckoutIntentStatus,
+  CheckoutQuote,
+  CheckoutQuoteSelection,
+  CreateCheckoutIntentInput,
+} from "./contracts";
+
+const INTENT_STATUSES = new Set<CheckoutIntentStatus>([
+  "REQUIRES_PAYMENT",
+  "PENDING",
+  "CANCEL_PENDING",
+  "EXPIRE_PENDING",
+  "UNKNOWN_OUTCOME",
+  "PAID",
+  "FAILED",
+  "EXPIRED",
+  "CANCELLED",
+]);
 
 /**
  * Build wire body for POST /v1/checkout/quote.
@@ -123,4 +144,89 @@ export function clampIntegerIdr(value: number, min: number): number {
   if (n < min) return min;
   if (!Number.isSafeInteger(n)) return min;
   return n;
+}
+
+/**
+ * Build wire body for POST /v1/checkout/intents.
+ * Never includes authoritative total/gross. Client money fields omitted.
+ */
+export function toCreateCheckoutIntentRequestBody(
+  input: CreateCheckoutIntentInput,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    storeId: input.storeId,
+    productId: input.productId,
+    buyerEmail: input.buyer.email.trim(),
+    buyerName: input.buyer.name.trim(),
+  };
+  if (input.payWhatYouWant !== undefined && input.payWhatYouWant > 0) {
+    body.payWhatYouWant = requireSafeMoneyIdr(
+      input.payWhatYouWant,
+      "payWhatYouWant",
+    );
+  }
+  if (input.tip !== undefined && input.tip > 0) {
+    body.tip = requireSafeMoneyIdr(input.tip, "tip");
+  }
+  if (input.upsellProductIds && input.upsellProductIds.length > 0) {
+    body.upsellProductIds = input.upsellProductIds.filter(
+      (id) => typeof id === "string" && id.trim() !== "",
+    );
+  }
+  if (input.couponCode !== undefined && input.couponCode.trim() !== "") {
+    body.couponCode = input.couponCode.trim();
+  }
+  return body;
+}
+
+function mapIntentStatus(raw: string): CheckoutIntentStatus {
+  if (INTENT_STATUSES.has(raw as CheckoutIntentStatus)) {
+    return raw as CheckoutIntentStatus;
+  }
+  return invalidApiContract("Unknown checkout intent status", {
+    issues: [{ path: "status", message: `unsupported: ${raw}` }],
+  });
+}
+
+/** Map server CheckoutIntent DTO to in-memory view model. Fail-closed on money. */
+export function mapCheckoutIntentDto(dto: CheckoutIntentDto): CheckoutIntent {
+  const amount = requireSafeMoneyIdr(dto.amount, "amount");
+  const gross =
+    dto.gross !== undefined
+      ? requireSafeMoneyIdr(dto.gross, "gross")
+      : amount;
+  const tip =
+    dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
+  const discount =
+    dto.discount !== undefined
+      ? requireSafeMoneyIdr(dto.discount, "discount")
+      : 0;
+  const fee =
+    dto.fee !== undefined ? requireSafeMoneyIdr(dto.fee, "fee") : 0;
+
+  if (amount < 0 || gross < 0) {
+    return invalidApiContract("Checkout intent money out of range", {
+      issues: [{ path: "amount", message: "must be non-negative safe integer" }],
+    });
+  }
+
+  const intent: CheckoutIntent = {
+    paymentIntentId: dto.paymentIntentId,
+    orderId: dto.orderId,
+    status: mapIntentStatus(dto.status),
+    amount,
+    gross,
+    tip,
+    discount,
+    fee,
+    replayed: dto.replayed === true,
+  };
+  if (dto.orderNumber) intent.orderNumber = dto.orderNumber;
+  if (dto.expiresAt) intent.expiresAt = dto.expiresAt;
+  if (dto.qrString !== undefined) intent.qrString = dto.qrString;
+  if (dto.qrImageUrl !== undefined) intent.qrImageUrl = dto.qrImageUrl;
+  if (dto.publicToken) intent.publicToken = dto.publicToken;
+  if (dto.paymentMode) intent.paymentMode = dto.paymentMode;
+  if (dto.provider) intent.provider = dto.provider;
+  return intent;
 }

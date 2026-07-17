@@ -356,13 +356,13 @@ Harga, upsell, tip, total, produk, dan order ID sebagian hardcoded/client-calcul
 
 ### Checklist FE
 
-- [ ] Ganti `simulateCheckoutPayment` live branch dengan explicit `createCheckoutIntent`; simulator tetap mock/local-test only.
-- [ ] Request mapper mengikuti strict JSON backend; jangan mengirim view model/customer total mentah.
-- [ ] Buat opaque UUID idempotency key saat user pertama kali menekan bayar; same key untuk timeout/retry/recovery.
-- [ ] Disable existing CTA selama in-flight dan dedupe double-click/touch.
-- [ ] Simpan only non-secret intent identity/capability sesuai secure contract di memory; jika refresh recovery perlu, gunakan server-issued HttpOnly/session-bound mechanism atau purpose-bound capability yang tidak masuk query URL/storage.
-- [ ] Mutation result wajib dipakai; jangan lanjut ke QR/success bila create gagal.
-- [ ] Unknown network outcome melakukan lookup/recovery, bukan membuat intent baru otomatis.
+- [x] Ganti `simulateCheckoutPayment` live branch dengan explicit `createCheckoutIntent`; simulator tetap mock/local-test only.
+- [x] Request mapper mengikuti strict JSON backend; jangan mengirim view model/customer total mentah.
+- [x] Buat opaque UUID idempotency key saat user pertama kali menekan bayar; same key untuk timeout/retry/recovery.
+- [x] Disable existing CTA selama in-flight dan dedupe double-click/touch.
+- [x] Simpan only non-secret intent identity/capability sesuai secure contract di memory; jika refresh recovery perlu, gunakan server-issued HttpOnly/session-bound mechanism atau purpose-bound capability yang tidak masuk query URL/storage.
+- [x] Mutation result wajib dipakai; jangan lanjut ke QR/success bila create gagal.
+- [x] Unknown network outcome melakukan lookup/recovery, bukan membuat intent baru otomatis.
 
 ### Checklist BE
 

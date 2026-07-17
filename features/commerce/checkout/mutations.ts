@@ -2,11 +2,15 @@
 
 import { useAppMutation } from "@/shared/query/create-mutation";
 import {
+  createCheckoutIntent,
   requestCheckoutQuote,
   simulateCheckoutPayment,
   type SimulateCheckoutPaymentInput,
 } from "./api";
-import type { CheckoutQuoteSelection } from "./contracts";
+import type {
+  CheckoutQuoteSelection,
+  CreateCheckoutIntentInput,
+} from "./contracts";
 
 /** CHK-100 quote mutation (manual re-quote). Prefer useCheckoutQuote for debounced path. */
 export function useCheckoutQuoteMutation() {
@@ -30,7 +34,16 @@ export function useCheckoutQuoteMutation() {
   });
 }
 
-/** Mock/local simulate only — live create intent is CHK-110. */
+/** CHK-110: create payment intent (api domain). No auto-retry. */
+export function useCreateCheckoutIntentMutation() {
+  return useAppMutation({
+    mutationKey: ["checkout", "intent", "create"],
+    mutationFn: (input: CreateCheckoutIntentInput, signal) =>
+      createCheckoutIntent(input, signal),
+  });
+}
+
+/** Mock/local simulate only — never live (CHK-110). */
 export function useSimulateCheckoutPaymentMutation() {
   return useAppMutation({
     mutationKey: ["checkout", "payment", "simulate"],

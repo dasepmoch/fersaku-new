@@ -388,6 +388,77 @@ export const checkoutPriceEnvelopeSchema = successEnvelopeSchema(
 export type CheckoutQuoteRequestDto = z.infer<typeof checkoutQuoteRequestSchema>;
 export type CheckoutPriceDto = z.infer<typeof checkoutPriceDtoSchema>;
 
+// --- Checkout intent create (CHK-110) — POST /v1/checkout/intents ---
+
+/** Wire body for create intent. No authoritative total/gross. */
+export const createCheckoutIntentRequestSchema = z.object({
+  storeId: z.string().min(1),
+  productId: z.string().min(1),
+  payWhatYouWant: moneyIdrSchema.optional(),
+  tip: moneyIdrSchema.optional(),
+  upsellProductIds: z.array(z.string().min(1)).optional(),
+  couponCode: z.string().optional(),
+  buyerEmail: z.string().optional(),
+  buyerName: z.string().optional(),
+  buyerSessionId: z.string().optional(),
+  buyerIdentityHash: z.string().optional(),
+  /** Ignored by server; optional proof-only fields — never authority. */
+  unitPrice: moneyIdrSchema.optional(),
+  total: moneyIdrSchema.optional(),
+  discount: moneyIdrSchema.optional(),
+});
+
+export const checkoutIntentStatusSchema = z.enum([
+  "REQUIRES_PAYMENT",
+  "PENDING",
+  "CANCEL_PENDING",
+  "EXPIRE_PENDING",
+  "UNKNOWN_OUTCOME",
+  "PAID",
+  "FAILED",
+  "EXPIRED",
+  "CANCELLED",
+]);
+
+export const checkoutIntentDtoSchema = z.object({
+  paymentIntentId: z.string().min(1),
+  orderId: z.string().min(1),
+  orderNumber: z.string().optional(),
+  status: checkoutIntentStatusSchema,
+  orderStatus: z.string().optional(),
+  paymentStatus: z.string().optional(),
+  source: z.literal("STOREFRONT").or(z.string().min(1)),
+  paymentMode: z.enum(["SANDBOX", "LIVE"]).or(z.string().min(1)),
+  currency: z.literal("IDR").or(z.string().min(1)),
+  amount: moneyIdrSchema,
+  subtotal: moneyIdrSchema.optional(),
+  discount: moneyIdrSchema.optional(),
+  tip: moneyIdrSchema.optional(),
+  fee: moneyIdrSchema.optional(),
+  merchantNet: moneyIdrSchema.optional(),
+  gross: moneyIdrSchema.optional(),
+  expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  provider: z.string().optional(),
+  accountScope: z.string().optional(),
+  providerReference: z.string().nullable().optional(),
+  qrString: z.string().nullable().optional(),
+  qrImageUrl: z.string().nullable().optional(),
+  feeSnapshotId: z.string().nullable().optional(),
+  publicToken: z.string().optional(),
+  replayed: z.boolean().optional(),
+  paidLate: z.boolean().optional(),
+});
+
+export const checkoutIntentEnvelopeSchema = successEnvelopeSchema(
+  checkoutIntentDtoSchema,
+);
+
+export type CreateCheckoutIntentRequestDto = z.infer<
+  typeof createCheckoutIntentRequestSchema
+>;
+export type CheckoutIntentDto = z.infer<typeof checkoutIntentDtoSchema>;
+export type CheckoutIntentStatusDto = z.infer<typeof checkoutIntentStatusSchema>;
+
 // --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
 
 /** Launch bounded page size; PurchaseLibrary has no paging control (BoundedNoPaging). */

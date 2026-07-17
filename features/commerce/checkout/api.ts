@@ -1,22 +1,31 @@
 import { apiRequest } from "@/shared/api/http-client";
 import {
+  checkoutIntentEnvelopeSchema,
   checkoutPriceEnvelopeSchema,
-  structuralEnvelopeSchema,
 } from "@/shared/api/schemas";
-import type { ApiEnvelope } from "@/shared/api/contracts";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
-import type { CheckoutQuote, CheckoutQuoteSelection } from "./contracts";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
+import type {
+  CheckoutIntent,
+  CheckoutQuote,
+  CheckoutQuoteSelection,
+  CreateCheckoutIntentInput,
+} from "./contracts";
 import {
   buildMockCheckoutQuote,
+  mapCheckoutIntentDto,
   mapCheckoutPriceDto,
   toCheckoutQuoteRequestBody,
+  toCreateCheckoutIntentRequestBody,
 } from "./mappers";
 
 export type SimulateCheckoutPaymentInput = {
   productId: string;
   storeSlug: string;
   customer: { name: string; email: string };
-  /** Display-only in mock; live path must not treat as authority (CHK-110). */
+  /** Display-only in mock; never server authority. */
   total: number;
   tip: number;
   upsell: boolean;
@@ -75,31 +84,59 @@ export async function requestCheckoutQuote(
 }
 
 /**
- * Mock/local simulate payment only. Live intent create is CHK-110.
- * Do not treat input.total as server authority.
+ * Create hosted checkout payment intent (CHK-110).
+ * Live/api only — mock callers must use simulateCheckoutPayment.
+ * Idempotency-Key is required; same key for retry/timeout recovery.
+ */
+export async function createCheckoutIntent(
+  input: CreateCheckoutIntentInput,
+  signal?: AbortSignal,
+): Promise<CheckoutIntent> {
+  if (shouldUseMockFixtures("checkout")) {
+    throw new Error(
+      "createCheckoutIntent is api-only; use simulateCheckoutPayment in mock",
+    );
+  }
+
+  const body = toCreateCheckoutIntentRequestBody(input);
+  const response = await apiRequest<
+    { data: Parameters<typeof mapCheckoutIntentDto>[0] },
+    typeof body
+  >("/v1/checkout/intents", {
+    schema: checkoutIntentEnvelopeSchema,
+    method: "POST",
+    body,
+    signal,
+    idempotencyKey: input.idempotencyKey,
+  });
+  return mapCheckoutIntentDto(response.data);
+}
+
+/**
+ * Mock/local simulate payment only (CHK-110).
+ * Never calls live simulate-payment or create-intent.
+ * Live path must use createCheckoutIntent.
  */
 export async function simulateCheckoutPayment(
   input: SimulateCheckoutPaymentInput,
   signal?: AbortSignal,
 ): Promise<SimulateCheckoutPaymentResult> {
-  if (shouldUseMockFixtures("checkout")) {
-    return {
-      accepted: true,
-      status: "paid",
-      orderId: "FRS-240712-1848",
-      requestId: `mock_checkout_${input.productId}`,
-    };
+  void signal;
+  if (!shouldUseMockFixtures("checkout")) {
+    throw new Error(
+      "simulateCheckoutPayment is mock-only; use createCheckoutIntent for api checkout",
+    );
   }
 
-  const response = await apiRequest<
-    ApiEnvelope<SimulateCheckoutPaymentResult>,
-    SimulateCheckoutPaymentInput
-  >("/v1/checkout/simulate-payment", {
-    schema: structuralEnvelopeSchema,
-    method: "POST",
-    body: input,
-    signal,
-    idempotencyKey: input.idempotencyKey,
-  });
-  return response.data;
+  return {
+    accepted: true,
+    status: "paid",
+    orderId: "FRS-240712-1848",
+    requestId: `mock_checkout_${input.productId}`,
+  };
+}
+
+/** True when checkout domain is wired to live API (not mock/disabled). */
+export function isCheckoutApiDomain(): boolean {
+  return getDomainSource("checkout") === "api";
 }

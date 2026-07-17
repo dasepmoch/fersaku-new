@@ -8,13 +8,19 @@ import type {
   CatalogProduct,
   PublicStorefront,
 } from "@/features/catalog/contracts";
+import { classifyThrown } from "@/shared/api/error-policy";
 import {
   createIdempotencyIntentHolder,
   createPendingDedupe,
 } from "@/shared/query/create-mutation";
+import { isCheckoutApiDomain } from "./api";
+import type { CheckoutIntent } from "./contracts";
 import { CheckoutDetailsStep } from "./details-step";
 import { useCheckoutQuote } from "./hooks";
-import { useSimulateCheckoutPaymentMutation } from "./mutations";
+import {
+  useCreateCheckoutIntentMutation,
+  useSimulateCheckoutPaymentMutation,
+} from "./mutations";
 import { CheckoutOrderSummary } from "./order-summary";
 import { clampIntegerIdr } from "./mappers";
 import type { CheckoutStep } from "./pieces";
@@ -28,7 +34,9 @@ export function CheckoutExperience({
   store: PublicStorefront;
 }) {
   const router = useRouter();
-  const paymentMutation = useSimulateCheckoutPaymentMutation();
+  const apiCheckout = isCheckoutApiDomain();
+  const simulateMutation = useSimulateCheckoutPaymentMutation();
+  const createIntentMutation = useCreateCheckoutIntentMutation();
   const [step, setStep] = useState<CheckoutStep>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +51,8 @@ export function CheckoutExperience({
   /** One opaque key per logical pay intent; double-click reuses the same key. */
   const idempotencyRef = useRef(createIdempotencyIntentHolder());
   const pendingDedupeRef = useRef(createPendingDedupe());
+  /** Non-secret intent identity in memory only (CHK-110); never query/storage. */
+  const createdIntentRef = useRef<CheckoutIntent | null>(null);
   const upsellProduct = store.products.find(
     (p) => p.slug === "cursor-rules-kit",
   );
@@ -103,15 +113,18 @@ export function CheckoutExperience({
     const timer = setTimeout(callback, delay);
     timers.current.push(timer);
   };
+
   const time = `${Math.floor(seconds / 60)
     .toString()
     .padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
-  const simulate = () => {
+
+  /** Mock/local only — existing simulator success path. */
+  const payMock = () => {
     if (!pendingDedupeRef.current.tryBegin()) return;
     setPaying(true);
     setNotification(false);
     const idempotencyKey = idempotencyRef.current.getKey();
-    void paymentMutation
+    void simulateMutation
       .mutateAsync({
         productId: product.id,
         storeSlug: store.slug,
@@ -141,6 +154,65 @@ export function CheckoutExperience({
       3000,
     );
   };
+
+  /**
+   * Api domain: createCheckoutIntent with opaque key.
+   * Success → memory intent only; no fake paid/success.
+   * Failure → stay on qris, no paid step.
+   * Unknown network → keep same key (lookup/recovery later); no new key.
+   */
+  const payApi = () => {
+    if (!pendingDedupeRef.current.tryBegin()) return;
+    if (!storeId) {
+      pendingDedupeRef.current.end();
+      return;
+    }
+    setPaying(true);
+    setNotification(false);
+    const idempotencyKey = idempotencyRef.current.getKey();
+    const body = {
+      storeId,
+      productId: product.id,
+      buyer: { name: name.trim(), email: email.trim() },
+      idempotencyKey,
+      payWhatYouWant: product.allowPayWhatYouWant
+        ? pwywMerchandise
+        : undefined,
+      tip: displayTip > 0 ? displayTip : undefined,
+      upsellProductIds:
+        upsell && upsellProduct?.id ? [upsellProduct.id] : undefined,
+    };
+    idempotencyRef.current.bindBody({
+      storeId: body.storeId,
+      productId: body.productId,
+      payWhatYouWant: body.payWhatYouWant,
+      tip: body.tip,
+      upsellProductIds: body.upsellProductIds,
+      buyerEmail: body.buyer.email,
+    });
+
+    void createIntentMutation
+      .mutateAsync(body)
+      .then((intent) => {
+        createdIntentRef.current = intent;
+        setPaying(false);
+        pendingDedupeRef.current.end();
+        // Keep idempotency key for replay/recovery; do not auto-paid (CHK-120).
+      })
+      .catch((err: unknown) => {
+        setPaying(false);
+        pendingDedupeRef.current.end();
+        // Failure: no paid/success. Unknown network: keep same key (no auto-create).
+        void classifyThrown(err);
+      });
+  };
+
+  const onPay = () => {
+    if (paying || pendingDedupeRef.current.isPending()) return;
+    if (apiCheckout) payApi();
+    else payMock();
+  };
+
   return (
     <main className="min-h-screen bg-[#f3f2ec]">
       <header className="mx-auto flex h-20 max-w-[1160px] items-center justify-between px-5">
@@ -195,7 +267,7 @@ export function CheckoutExperience({
               notification={notification}
               setNotification={setNotification}
               paying={paying}
-              onPay={simulate}
+              onPay={onPay}
               onBack={() => setStep("details")}
             />
           )}
