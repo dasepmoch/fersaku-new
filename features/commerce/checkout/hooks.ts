@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CheckoutQuote, CheckoutQuoteSelection } from "./contracts";
-import { requestCheckoutQuote } from "./api";
+import { ApiError } from "@/shared/api/api-error";
+import type {
+  CheckoutIntent,
+  CheckoutQuote,
+  CheckoutQuoteSelection,
+} from "./contracts";
+import { getCheckoutIntent, requestCheckoutQuote } from "./api";
+import {
+  createCheckoutIntentPollController,
+  formatCountdownMmSs,
+  remainingSecondsUntil,
+} from "./poll";
 
 const DEFAULT_DEBOUNCE_MS = 280;
 
@@ -115,4 +125,115 @@ export function useCheckoutQuote(
   );
 
   return { quote, quoting, quoteError };
+}
+
+export type UseCheckoutIntentPollOptions = {
+  /** When false, poll is stopped. */
+  enabled?: boolean;
+  onPaid?: (intent: CheckoutIntent) => void;
+  onTerminalNonPaid?: (intent: CheckoutIntent) => void;
+};
+
+export type UseCheckoutIntentPollState = {
+  intent: CheckoutIntent | null;
+  /** Server-calibrated mm:ss when expiresAt present; null when N/A. */
+  countdown: string | null;
+  remainingSeconds: number | null;
+  polling: boolean;
+};
+
+/**
+ * Bounded poll of GET /v1/checkout/intents/{id} until terminal (CHK-120).
+ * Abort on unmount / intent change / terminal. No auto-create on failure.
+ * Only backend PAID invokes onPaid.
+ */
+export function useCheckoutIntentPoll(
+  intentId: string | null | undefined,
+  options?: UseCheckoutIntentPollOptions,
+): UseCheckoutIntentPollState {
+  const [intent, setIntent] = useState<CheckoutIntent | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const expiresAtRef = useRef<string | undefined>(undefined);
+  const onPaidRef = useRef(options?.onPaid);
+  const onTerminalRef = useRef(options?.onTerminalNonPaid);
+  const enabled = options?.enabled !== false && Boolean(intentId);
+  const polling = enabled;
+
+  useEffect(() => {
+    onPaidRef.current = options?.onPaid;
+    onTerminalRef.current = options?.onTerminalNonPaid;
+  }, [options?.onPaid, options?.onTerminalNonPaid]);
+
+  useEffect(() => {
+    if (!enabled || !intentId) {
+      return;
+    }
+
+    const controller = createCheckoutIntentPollController<CheckoutIntent>({
+      fetchIntent: async (id, signal) => getCheckoutIntent(id, signal),
+      mapResult: (raw) => raw as CheckoutIntent,
+      getStatus: (i) => i.status,
+      onUpdate: (next) => {
+        setIntent(next);
+        expiresAtRef.current = next.expiresAt;
+        setRemainingSeconds(remainingSecondsUntil(next.expiresAt));
+      },
+      onPaid: (next) => {
+        setIntent(next);
+        onPaidRef.current?.(next);
+      },
+      onTerminalNonPaid: (next) => {
+        setIntent(next);
+        onTerminalRef.current?.(next);
+      },
+      retryAfterFromError: (err) => {
+        if (err instanceof ApiError && err.retryAfterSeconds != null) {
+          return err.retryAfterSeconds;
+        }
+        return undefined;
+      },
+    });
+
+    controller.start(intentId, { immediate: true });
+
+    const onVisible = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        controller.refreshNow();
+      }
+    };
+    const onOnline = () => controller.refreshNow();
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisible);
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", onOnline);
+    }
+
+    return () => {
+      controller.stop();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisible);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", onOnline);
+      }
+    };
+  }, [enabled, intentId]);
+
+  // Server expiresAt countdown (1s tick); never authority for paid.
+  useEffect(() => {
+    if (!enabled) return;
+    const id = setInterval(() => {
+      setRemainingSeconds(remainingSecondsUntil(expiresAtRef.current));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [enabled, intent?.expiresAt]);
+
+  const countdown =
+    remainingSeconds != null ? formatCountdownMmSs(remainingSeconds) : null;
+
+  return { intent, countdown, remainingSeconds, polling };
 }

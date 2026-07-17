@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { Check, LoaderCircle, QrCode, Smartphone } from "lucide-react";
+import QRCode from "qrcode";
 import { rupiah } from "@/lib/utils";
 import { wallets } from "./pieces";
 
@@ -12,6 +16,9 @@ export function CheckoutQrisStep({
   paying,
   onPay,
   onBack,
+  /** Live QR string from server intent (CHK-120); never logged. */
+  qrString,
+  qrImageUrl,
 }: {
   total: number;
   time: string;
@@ -22,7 +29,23 @@ export function CheckoutQrisStep({
   paying: boolean;
   onPay: () => void;
   onBack: () => void;
+  qrString?: string | null;
+  qrImageUrl?: string | null;
 }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!qrString || !canvasRef.current) return;
+    void QRCode.toCanvas(canvasRef.current, qrString, {
+      width: 160,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#17231d", light: "#ffffff" },
+    }).catch(() => {
+      // Fail closed: keep chrome; do not invent success.
+    });
+  }, [qrString]);
+
   return (
     <div className="text-center">
       <p className="text-[10px] font-extrabold tracking-[.15em] text-[#718078] uppercase">
@@ -33,10 +56,30 @@ export function CheckoutQrisStep({
         <div>
           <div className="hairline shadow-card mx-auto grid aspect-square max-w-56 place-items-center rounded-[28px] border bg-white">
             <div className="relative">
-              <QrCode className="size-40 text-[#17231d]" strokeWidth={1.2} />
-              <span className="absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-xl bg-[#173f2c] text-xs font-black text-[#d7ff64]">
-                F
-              </span>
+              {qrImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- provider QR URL; no next/image domain allowlist
+                <img
+                  src={qrImageUrl}
+                  alt=""
+                  width={160}
+                  height={160}
+                  className="size-40 object-contain"
+                />
+              ) : qrString ? (
+                <canvas
+                  ref={canvasRef}
+                  className="size-40"
+                  width={160}
+                  height={160}
+                />
+              ) : (
+                <>
+                  <QrCode className="size-40 text-[#17231d]" strokeWidth={1.2} />
+                  <span className="absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-xl bg-[#173f2c] text-xs font-black text-[#d7ff64]">
+                    F
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <p className="mt-4 text-2xl font-extrabold">{rupiah(total)}</p>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CatalogProduct,
   PublicStorefront,
@@ -16,7 +16,7 @@ import {
 import { isCheckoutApiDomain } from "./api";
 import type { CheckoutIntent } from "./contracts";
 import { CheckoutDetailsStep } from "./details-step";
-import { useCheckoutQuote } from "./hooks";
+import { useCheckoutIntentPoll, useCheckoutQuote } from "./hooks";
 import {
   useCreateCheckoutIntentMutation,
   useSimulateCheckoutPaymentMutation,
@@ -47,6 +47,12 @@ export function CheckoutExperience({
   const [seconds, setSeconds] = useState(895);
   const [paying, setPaying] = useState(false);
   const [notification, setNotification] = useState(false);
+  /** Live intent identity for poll (memory only; never query URL). */
+  const [pollIntentId, setPollIntentId] = useState<string | null>(null);
+  /** Create-response snapshot until poll overwrites (memory only). */
+  const [createdSnapshot, setCreatedSnapshot] = useState<CheckoutIntent | null>(
+    null,
+  );
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   /** One opaque key per logical pay intent; double-click reuses the same key. */
   const idempotencyRef = useRef(createIdempotencyIntentHolder());
@@ -94,14 +100,67 @@ export function CheckoutExperience({
   const base = merchandise;
   const valid = name.trim().length > 2 && /.+@.+\..+/.test(email);
 
+  const schedule = useCallback((callback: () => void, delay: number) => {
+    const timer = setTimeout(callback, delay);
+    timers.current.push(timer);
+  }, []);
+
+  const onPollPaid = useCallback(
+    (intent: CheckoutIntent) => {
+      createdIntentRef.current = intent;
+      setCreatedSnapshot(intent);
+      setNotification(true);
+      setStep("paid");
+      setPaying(false);
+      pendingDedupeRef.current.end();
+      idempotencyRef.current.reset();
+      const orderRef = intent.orderNumber || intent.orderId;
+      const tipAmt = intent.tip;
+      schedule(
+        () =>
+          router.push(
+            `/orders/${encodeURIComponent(orderRef)}/success?total=${intent.gross}&tip=${tipAmt}&upsell=${upsell ? 1 : 0}`,
+          ),
+        1200,
+      );
+    },
+    [router, schedule, upsell],
+  );
+
+  const onPollTerminalNonPaid = useCallback((intent: CheckoutIntent) => {
+    createdIntentRef.current = intent;
+    setCreatedSnapshot(intent);
+    setPaying(false);
+    pendingDedupeRef.current.end();
+    // Stay on qris; no paid step / no mock success (snapshot has no failure card).
+  }, []);
+
+  const { intent: polledIntent, countdown: serverCountdown } =
+    useCheckoutIntentPoll(apiCheckout ? pollIntentId : null, {
+      enabled: apiCheckout && step === "qris" && Boolean(pollIntentId),
+      onPaid: onPollPaid,
+      onTerminalNonPaid: onPollTerminalNonPaid,
+    });
+
+  // Keep recovery ref aligned with latest poll snapshot (callback path).
+  useEffect(() => {
+    if (!polledIntent) return;
+    createdIntentRef.current = polledIntent;
+  }, [polledIntent]);
+
+  const liveIntent = polledIntent ?? createdSnapshot;
+
+  // Mock path keeps local countdown; api uses server expiresAt when available.
   useEffect(() => {
     if (step !== "qris") return;
+    if (apiCheckout && serverCountdown != null) return;
     const interval = setInterval(
       () => setSeconds((s) => Math.max(0, s - 1)),
       1000,
     );
     return () => clearInterval(interval);
-  }, [step]);
+  }, [step, apiCheckout, serverCountdown]);
+
   useEffect(
     () => () => {
       timers.current.forEach(clearTimeout);
@@ -109,14 +168,15 @@ export function CheckoutExperience({
     },
     [],
   );
-  const schedule = (callback: () => void, delay: number) => {
-    const timer = setTimeout(callback, delay);
-    timers.current.push(timer);
-  };
 
-  const time = `${Math.floor(seconds / 60)
+  const localTime = `${Math.floor(seconds / 60)
     .toString()
     .padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
+  const time =
+    apiCheckout && serverCountdown != null ? serverCountdown : localTime;
+
+  const displayTotal =
+    apiCheckout && liveIntent?.gross != null ? liveIntent.gross : total;
 
   /** Mock/local only — existing simulator success path. */
   const payMock = () => {
@@ -157,13 +217,21 @@ export function CheckoutExperience({
 
   /**
    * Api domain: createCheckoutIntent with opaque key.
-   * Success → memory intent only; no fake paid/success.
+   * Success → memory intent + start poll (CHK-120); no fake paid.
    * Failure → stay on qris, no paid step.
-   * Unknown network → keep same key (lookup/recovery later); no new key.
+   * Unknown network → keep same key; no auto-create.
    */
   const payApi = () => {
     if (!pendingDedupeRef.current.tryBegin()) return;
     if (!storeId) {
+      pendingDedupeRef.current.end();
+      return;
+    }
+    // Already have intent: recovery is poll-only, never auto-mint new intent.
+    if (createdIntentRef.current?.paymentIntentId) {
+      setPollIntentId(createdIntentRef.current.paymentIntentId);
+      setCreatedSnapshot(createdIntentRef.current);
+      setPaying(false);
       pendingDedupeRef.current.end();
       return;
     }
@@ -195,9 +263,11 @@ export function CheckoutExperience({
       .mutateAsync(body)
       .then((intent) => {
         createdIntentRef.current = intent;
+        setCreatedSnapshot(intent);
+        setPollIntentId(intent.paymentIntentId);
         setPaying(false);
         pendingDedupeRef.current.end();
-        // Keep idempotency key for replay/recovery; do not auto-paid (CHK-120).
+        // Keep idempotency key until PAID; poll is authority (CHK-120).
       })
       .catch((err: unknown) => {
         setPaying(false);
@@ -235,7 +305,7 @@ export function CheckoutExperience({
           upsell={upsell && displayUpsell > 0}
           upsellProduct={upsellProduct}
           upsellPrice={displayUpsell > 0 ? displayUpsell : upsellPrice}
-          total={total}
+          total={displayTotal}
         />
         <section className="hairline shadow-float rounded-[32px] border bg-[#fbfaf7] p-5 sm:p-8">
           {step === "details" && (
@@ -260,7 +330,7 @@ export function CheckoutExperience({
           )}
           {step === "qris" && (
             <CheckoutQrisStep
-              total={total}
+              total={displayTotal}
               time={time}
               wallet={wallet}
               setWallet={setWallet}
@@ -269,6 +339,8 @@ export function CheckoutExperience({
               paying={paying}
               onPay={onPay}
               onBack={() => setStep("details")}
+              qrString={apiCheckout ? liveIntent?.qrString : undefined}
+              qrImageUrl={apiCheckout ? liveIntent?.qrImageUrl : undefined}
             />
           )}
           {step === "paid" && <CheckoutPaidStep />}

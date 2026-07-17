@@ -113,6 +113,35 @@ export async function createCheckoutIntent(
 }
 
 /**
+ * Authoritative intent status poll (CHK-120).
+ * Safe GET only — never creates intents; never marks paid from client timer.
+ * Live/api only.
+ */
+export async function getCheckoutIntent(
+  intentId: string,
+  signal?: AbortSignal,
+): Promise<CheckoutIntent> {
+  if (shouldUseMockFixtures("checkout")) {
+    throw new Error(
+      "getCheckoutIntent is api-only; mock checkout does not poll intents",
+    );
+  }
+  const id = intentId.trim();
+  if (!id) {
+    throw new Error("getCheckoutIntent requires intentId");
+  }
+
+  const response = await apiRequest<{
+    data: Parameters<typeof mapCheckoutIntentDto>[0];
+  }>(`/v1/checkout/intents/${encodeURIComponent(id)}`, {
+    schema: checkoutIntentEnvelopeSchema,
+    method: "GET",
+    signal,
+  });
+  return mapCheckoutIntentDto(response.data);
+}
+
+/**
  * Mock/local simulate payment only (CHK-110).
  * Never calls live simulate-payment or create-intent.
  * Live path must use createCheckoutIntent.

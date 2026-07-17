@@ -399,17 +399,17 @@ Backend enum exact may differ; mapper must be exhaustive.
 
 ### Checklist FE
 
-- [ ] Render backend QR payload pada QR container existing; do not log/cache raw QR.
-- [ ] Expiry countdown memakai server `expiresAt` + calibrated server/client time, bukan arbitrary timer.
-- [ ] Poll safe GET dengan bounded exponential backoff + jitter; faster initially, slower in background.
-- [ ] Pause/reduce polling saat document hidden; immediate refresh on visible/online.
-- [ ] Abort poll/timer on unmount/terminal state/new intent.
-- [ ] Respect `Retry-After`; no overlapping polls.
-- [ ] Only backend `PAID` transition displays existing “Pembayaran berhasil!” state.
-- [ ] URL/status/client timer/provider wallet choice cannot mark paid.
-- [ ] Refresh/reconnect resumes exact intent securely and does not create duplicate.
-- [ ] Expired/failed/pending/unknown tidak pernah menjadi paid atau mock success; gunakan hanya checkout feedback/inline state yang benar-benar ada, dan bila snapshot tidak punya composition maka block/disable capability melalui `UXE-003/UI-080`.
-- [ ] Snapshot audit menemukan QR step tidak memiliki copy-QR control dan wallet/pay button masih simulator-bound; preserve existing composition only after provider semantics are frozen, or block/disable command via `UXE-003`.
+- [x] Render backend QR payload pada QR container existing; do not log/cache raw QR.
+- [x] Expiry countdown memakai server `expiresAt` + calibrated server/client time, bukan arbitrary timer.
+- [x] Poll safe GET dengan bounded exponential backoff + jitter; faster initially, slower in background.
+- [x] Pause/reduce polling saat document hidden; immediate refresh on visible/online.
+- [x] Abort poll/timer on unmount/terminal state/new intent.
+- [x] Respect `Retry-After`; no overlapping polls.
+- [x] Only backend `PAID` transition displays existing “Pembayaran berhasil!” state.
+- [x] URL/status/client timer/provider wallet choice cannot mark paid.
+- [x] Refresh/reconnect resumes exact intent securely and does not create duplicate. *(same-session memory intent id + poll; no secrets in URL/storage; hard-refresh guest capability = CHK-130)*
+- [x] Expired/failed/pending/unknown tidak pernah menjadi paid atau mock success; gunakan hanya checkout feedback/inline state yang benar-benar ada, dan bila snapshot tidak punya composition maka block/disable capability melalui `UXE-003/UI-080`. *(stay on qris; no new failure card)*
+- [x] Snapshot audit menemukan QR step tidak memiliki copy-QR control dan wallet/pay button masih simulator-bound; preserve existing composition only after provider semantics are frozen, or block/disable command via `UXE-003`. *(no copy-QR; pay = create-or-resume poll; mock simulator retained)*
 
 ### Checklist BE
 

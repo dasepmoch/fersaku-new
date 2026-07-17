@@ -107,10 +107,14 @@ export const CHECKOUT_QR_WALLET_SEMANTICS = {
   walletPicker:
     "PRESENTATIONAL — existing e-wallet chips are visual preference only until provider deep-link contract freezes.",
   qrDisplay:
-    "PRESENTATIONAL_UNTIL_INTENT — static QR chrome until create succeeds; no copy control exists → no copy button without UI-080.",
+    "LIVE_AFTER_CREATE — render server qrString/qrImageUrl in existing container; no copy control without UI-080; never log/cache raw QR.",
   couponControl: "DISABLED/OUT-OF-SCOPE — no coupon input/error region on details-step; UI-080 required.",
   stockReservations:
     "INTERNAL_ONLY — browser must NOT call POST /v1/checkout/stock-reservations; create-intent owns reservation.",
   unknownNetworkOutcome:
     "LOOKUP_RECOVERY — keep same idempotency key; do not auto-mint new intent; CHK-120 polls GET intent.",
+  poll:
+    "GET /v1/checkout/intents/{id} only; bounded backoff + jitter; pause when hidden; abort on unmount/terminal; only PAID → success UI.",
+  expiryCountdown:
+    "Server expiresAt calibrated to client clock; never authority for paid.",
 } as const;
