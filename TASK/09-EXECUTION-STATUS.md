@@ -160,7 +160,7 @@ Shared hotspot mempunyai single-writer rule:
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `QLT-100` | P0 | — | QA | completed @nikki/opencode · 2026-07-17 12:24 WIB · claim released | Correct CI paths/toolchain/job skeleton | TASK/evidence/QLT-100/20260717-1224-nikki.md |
-| `[ ]` | `QLT-105` | P0 rollout | QLT-100, INT-000, INT-010, QLT-110, QLT-215; QLT-200/210 framework may co-evolve, capability cells are canary evidence (not parent hard dependencies) | QA | — | Real required CI gates, no no-op jobs | — |
+| `[x]` | `QLT-105` | P0 rollout | QLT-100, INT-000, INT-010, QLT-110, QLT-215; QLT-200/210 framework may co-evolve, capability cells are canary evidence (not parent hard dependencies) | QA | completed @nikki/opencode · main · 2026-07-17 18:50 WIB · claim released | Real required CI gates, no no-op jobs | TASK/evidence/QLT-105/20260717-1850-nikki.md · docs/CI-BRANCH-PROTECTION.md · .github/workflows/{ci,backend-ci}.yml · scripts/ci-assert-* |
 | `[x]` | `QLT-110` | P0 | INT-000, INT-030; co-evolve INT-150/domain migrations | QA | completed @nikki/opencode · 2026-07-17 · claim released | Single deterministic nonprod seed owner | TASK/evidence/QLT-110/20260717-qlt110-nikki.md · seed-ids.json · backend/internal/seed · backend/cmd/seed |
 | `[ ]` | `QLT-200` | P0/P1 continuous | INT-000, INT-010; domain task co-evolves | QA/domain | — | Unit/mapper/provider-consumer contract tests | — |
 | `[ ]` | `QLT-210` | P0 continuous | QLT-100; tested migration/domain co-evolves | QA/domain | — | Real DB/concurrency/integration suite | — |
@@ -181,7 +181,7 @@ Rows `QLT-105/200/210/220/230/300/310/320/400/410` di atas adalah parent/framewo
 
 | Capability instance | Domain implementation scope | QLT-105 CI required | QLT-200 contract | QLT-210 DB/integration | QLT-220 API E2E | QLT-230 visual/a11y | QLT-300 security | QLT-310 performance | QLT-320 observability | QLT-400 flag | QLT-410 rollback |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `foundation-pilot` | INT-000..INT-190 + public/auth pilot | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` |
+| `foundation-pilot` | INT-000..INT-190 + public/auth pilot | `[x]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` |
 | `public-catalog` | PUB-100/110/210/220/230 | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` |
 | `seller-auth` | AUT-100/120/130 + ADM-100 entry ceremony | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` |
 | `buyer-auth-account` | AUT-110 + BUY-100..140 | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` | `[ ]` |

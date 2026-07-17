@@ -32,6 +32,7 @@ POST /v1/admin/invitations/staff
 POST /v1/admin/invitations/staff/{invitationId}/revoke
 GET /v1/admin/kyc/
 GET /v1/admin/kyc/{caseId}
+GET /v1/admin/kyc/{caseId}/documents/{documentId}/content
 POST /v1/admin/kyc/{caseId}/transition
 POST /v1/admin/merchant-invitations
 GET /v1/admin/merchants
@@ -250,6 +251,9 @@ PATCH /v1/stores/{storeId}/coupons/{couponId}
 POST /v1/stores/{storeId}/coupons/{couponId}/activate
 POST /v1/stores/{storeId}/coupons/{couponId}/archive
 POST /v1/stores/{storeId}/coupons/{couponId}/pause
+GET /v1/stores/{storeId}/customers
+GET /v1/stores/{storeId}/customers/{customerId}
+PUT /v1/stores/{storeId}/customers/{customerId}/notes
 GET /v1/stores/{storeId}/domains/
 POST /v1/stores/{storeId}/domains/
 DELETE /v1/stores/{storeId}/domains/{domainId}
@@ -283,6 +287,10 @@ GET /v1/stores/{storeId}/products/{productId}
 PATCH /v1/stores/{storeId}/products/{productId}
 POST /v1/stores/{storeId}/products/{productId}/archive
 POST /v1/stores/{storeId}/products/{productId}/publish
+GET /v1/stores/{storeId}/reviews
+GET /v1/stores/{storeId}/reviews/summary
+POST /v1/stores/{storeId}/reviews/{reviewId}/report
+PUT /v1/stores/{storeId}/reviews/{reviewId}/reply
 GET /v1/stores/{storeId}/storefront
 PUT /v1/stores/{storeId}/storefront/draft
 POST /v1/stores/{storeId}/storefront/publish

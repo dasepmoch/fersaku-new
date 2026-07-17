@@ -57,3 +57,4 @@ next-env.d.ts
 # backend build / evidence artifacts
 backend/bin/
 backend/tmp/
+backend/api/openapi.bundle.yaml

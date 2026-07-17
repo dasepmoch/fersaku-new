@@ -26,6 +26,10 @@ func databaseURL(t *testing.T) string {
 	t.Helper()
 	u := os.Getenv("DATABASE_URL")
 	if u == "" {
+		// QLT-105: required CI gates must not skip-pass when Postgres is absent.
+		if os.Getenv("CI") != "" || os.Getenv("QLT_REQUIRE_INTEGRATION") == "1" {
+			t.Fatal("DATABASE_URL required for integration tests (CI/QLT-105)")
+		}
 		t.Skip("DATABASE_URL not set; integration tests require Postgres")
 	}
 	return u

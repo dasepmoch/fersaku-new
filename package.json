@@ -23,6 +23,11 @@
     "api:bundle": "npx --yes @redocly/cli@1.34.3 bundle backend/api/openapi.yaml -o backend/api/openapi.bundle.yaml",
     "api:generate": "openapi-typescript backend/api/openapi.yaml -o shared/api/generated/openapi.ts --root-types --export-type -c /dev/null",
     "api:check": "openapi-typescript backend/api/openapi.yaml -o shared/api/generated/openapi.ts --root-types --export-type -c /dev/null --check",
+    "ci:assert:openapi": "node scripts/ci-assert-suite.mjs openapi-contract",
+    "ci:assert:integration": "node scripts/ci-assert-suite.mjs backend-integration",
+    "ci:assert:mock-e2e": "node scripts/ci-assert-suite.mjs frontend-mock-e2e",
+    "ci:assert:api-e2e": "node scripts/ci-assert-suite.mjs cross-stack-api-e2e",
+    "ci:assert:security": "node scripts/ci-assert-suite.mjs security-negative",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "npm run format:check && npm run lint -- --max-warnings=0 && npm run typecheck && npm run test:run && npm run build"

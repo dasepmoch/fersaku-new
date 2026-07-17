@@ -1,5 +1,5 @@
-# QLT-100 — Frontend quality pipeline (repo root; not frontend/).
-# Full required gates for integration/API e2e: QLT-105.
+# QLT-105 — Frontend + cross-stack required gates (no no-op jobs).
+# Skeleton/path fixes: QLT-100. Activation of all real checks: this file.
 name: Frontend quality
 
 on:
@@ -11,14 +11,13 @@ concurrency:
   group: frontend-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Frontend lives at repository root (package.json, package-lock.json, .nvmrc).
 defaults:
   run:
     working-directory: .
 
 jobs:
   frontend-static:
-    name: frontend-static (format, lint, typecheck, unit)
+    name: frontend-static (format, lint, typecheck, unit, security-negative)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +42,21 @@ jobs:
           "
 
       - run: npm ci
+
+      - name: Assert unit + security-negative suites are non-empty
+        run: |
+          node scripts/ci-assert-suite.mjs frontend-unit
+          node scripts/ci-assert-suite.mjs security-negative
+
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
-      - run: npm run test:coverage
+
+      # Required security/contract/tenant/idempotency negative coverage (unit).
+      # Not continue-on-error — empty or failing suite fails the job.
+      - name: Unit + coverage (includes security/contract/tenant/idempotency)
+        run: npm run test:coverage
+
       - run: npm audit --audit-level=high
 
   frontend-build:
@@ -67,10 +77,10 @@ jobs:
       - run: npm run check:bundle
 
   frontend-mock-e2e:
-    name: frontend-mock-e2e (Playwright smoke/critical/a11y/visual)
+    name: frontend-mock-e2e (smoke/critical/a11y/visual)
     runs-on: ubuntu-latest
     needs: frontend-static
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -81,29 +91,84 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - run: npm ci
+
+      - name: Assert mock e2e suite + visual baselines present
+        run: node scripts/ci-assert-suite.mjs frontend-mock-e2e
+
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+
+      # Full mock matrix: smoke + critical + a11y + visual (desktop/mobile projects).
+      - name: Playwright mock e2e
+        run: npm run test:e2e
+        env:
+          CI: "true"
 
       - name: Upload Playwright artifacts (failure only)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: playwright-mock-artifacts
           path: |
             test-results/
             playwright-report/
           if-no-files-found: ignore
 
-  # Cross-stack API-mode E2E requires QLT-110 seed + QLT-215 harness + QLT-105 activation.
-  # Skeleton only: not a required gate; does not run and does not claim pass.
+  # QLT-105: required API-mode harness (QLT-215) + INT-190 vertical slice.
+  # Fails if stack cannot start, seed missing, or tests empty/skipped-only.
   cross-stack-api-e2e:
-    name: "cross-stack-api-e2e (PLACEHOLDER — enable in QLT-105)"
+    name: cross-stack-api-e2e (API stack + harness + INT-190)
     runs-on: ubuntu-latest
-    if: false
+    needs: frontend-static
+    timeout-minutes: 60
     steps:
-      - name: Deferred to QLT-105
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - run: npm ci
+
+      - name: Assert API e2e suite non-empty
+        run: node scripts/ci-assert-suite.mjs cross-stack-api-e2e
+
+      - name: Bring up disposable API stack (deps, migrate, seed, api, worker)
         run: |
-          echo "Not implemented in QLT-100."
-          echo "Requires: compose deps, migrate, deterministic seed (QLT-110),"
-          echo "Next API-mode Playwright harness (QLT-215), then required-check (QLT-105)."
-          exit 1
+          chmod +x scripts/e2e-api-stack.sh
+          E2E_API_TEARDOWN=0 bash scripts/e2e-api-stack.sh
+        env:
+          APP_ENV: local
+          CI: "true"
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Playwright API-mode harness + INT-190
+        run: npm run test:e2e:api
+        env:
+          CI: "true"
+          NEXT_PUBLIC_DATA_SOURCE: api
+          API_INTERNAL_URL: http://127.0.0.1:18080
+          MAILPIT_URL: http://127.0.0.1:8025
+          APP_ENV: local
+
+      - name: Upload API Playwright artifacts (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-api-artifacts
+          path: |
+            test-results/api/
+            playwright-report/
+          if-no-files-found: ignore
+
+      - name: Teardown compose
+        if: always()
+        run: |
+          cd backend && docker compose -f docker-compose.yml down -v || true

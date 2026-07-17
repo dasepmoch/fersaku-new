@@ -71,7 +71,7 @@ Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memer
 - [ ] Cancel superseded PR runs, but never cancel migration/release job mid-critical step without safe handling.
 - [ ] Upload Playwright traces/screenshots only on failure and scrub secret flows.
 - [ ] Visual baseline update requires explicit separate review label/approval; integration PR cannot silently change it.
-- [ ] Required checks branch protection; no “continue-on-error” for P0 gates.
+- [x] Required checks branch protection; no “continue-on-error” for P0 gates. *(QLT-105: `docs/CI-BRANCH-PROTECTION.md` + active workflows)*
 
 ### Acceptance criteria
 
@@ -88,12 +88,12 @@ Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memer
 
 ### Checklist
 
-- [ ] Aktifkan OpenAPI lint/bundle/codegen dirty-diff/router coverage setelah `INT-000/010`.
-- [ ] Aktifkan backend tagged integration setelah `QLT-210` framework/environment stabil dan instance capability terkait siap.
-- [ ] Aktifkan API-mode Playwright harness setelah `QLT-110/215`; tambahkan project/test dan required-check instance **sebelum** capability canary, bukan setelah rollout.
-- [ ] Aktifkan mock smoke/critical/a11y/visual dan API visual/a11y yang relevan.
-- [ ] Jadikan security/contract/tenant/idempotency negative tests required, bukan optional/continue-on-error.
-- [ ] Branch protection mengharuskan gate yang relevan untuk changed domain; full matrix required untuk release branch/cutover.
+- [x] Aktifkan OpenAPI lint/bundle/codegen dirty-diff/router coverage setelah `INT-000/010`.
+- [x] Aktifkan backend tagged integration setelah `QLT-210` framework/environment stabil dan instance capability terkait siap. *(parent gate: Postgres service + `go test -tags=integration` required in CI; domain cells still expand coverage under QLT-210)*
+- [x] Aktifkan API-mode Playwright harness setelah `QLT-110/215`; tambahkan project/test dan required-check instance **sebelum** capability canary, bukan setelah rollout.
+- [x] Aktifkan mock smoke/critical/a11y/visual dan API visual/a11y yang relevan. *(mock matrix required; API a11y/visual remain domain QLT-230 cells)*
+- [x] Jadikan security/contract/tenant/idempotency negative tests required, bukan optional/continue-on-error.
+- [x] Branch protection mengharuskan gate yang relevan untuk changed domain; full matrix required untuk release branch/cutover. *(operator checklist: `docs/CI-BRANCH-PROTECTION.md`)*
 
 ### Acceptance criteria
 

@@ -4002,6 +4002,30 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/kyc/{caseId}/documents/{documentId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Server-decrypted KYC document stream (kyc.review + recent MFA)
+         * @description Authenticated reviewer-only decrypt stream. Private R2 holds AEAD ciphertext only;
+         *     direct presigned URLs must never be used as a viewer. Requires X-Recent-MFA-Proof
+         *     purpose kyc.document.view and X-Audit-Reason (≥12 chars). Response is raw bytes with
+         *     Cache-Control no-store, private; never JSON envelope with plaintext body.
+         *
+         */
+        get: operations["adminGetKYCDocumentContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/credentials": {
         parameters: {
             query?: never;
@@ -12701,6 +12725,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemEnvelope"];
                 };
             };
+            /** @description Note version conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
         };
     };
     listStoreReviews: {
@@ -13917,6 +13950,58 @@ export interface operations {
             };
             /** @description KYC_REASON_REQUIRED when reject/clarify without reason */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminGetKYCDocumentContent: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Audit-Reason": string;
+                "X-Recent-MFA-Proof": string;
+            };
+            path: {
+                caseId: string;
+                documentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Decrypted document bytes (no-store) */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "X-Content-Type-Options"?: string;
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                    "application/pdf": string;
+                };
+            };
+            /** @description MFA proof missing/invalid */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing kyc.review */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Case/document not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
