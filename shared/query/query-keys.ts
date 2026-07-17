@@ -1,7 +1,16 @@
 export const queryKeys = {
   seller: {
     finance: (storeId: string) => ["seller", storeId, "finance"] as const,
-    revenue: (storeId: string) => ["seller", storeId, "revenue"] as const,
+    revenue: (storeId: string, filters: Record<string, unknown> = {}) =>
+      ["seller", storeId, "revenue", filters] as const,
+    analyticsOverview: (
+      storeId: string,
+      filters: Record<string, unknown> = {},
+    ) => ["seller", storeId, "analytics", "overview", filters] as const,
+    analyticsTraffic: (
+      storeId: string,
+      filters: Record<string, unknown> = {},
+    ) => ["seller", storeId, "analytics", "traffic", filters] as const,
     inventory: (storeId: string) => ["seller", storeId, "inventory"] as const,
     inventoryProduct: (storeId: string, productId: string) =>
       ["seller", storeId, "inventory", productId] as const,

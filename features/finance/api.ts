@@ -35,12 +35,17 @@ const mockQuotes = new Map<string, SellerWithdrawalQuote>();
 export async function getSellerRevenue(
   storeId: string,
   signal?: AbortSignal,
+  days = 7,
 ): Promise<SellerRevenuePoint[]> {
   if (shouldUseMockFixtures("sellerFinance")) return demoSellerRevenue();
+  const safeDays = Math.min(90, Math.max(1, Math.trunc(days) || 7));
   const response = await apiRequest<ApiEnvelope<SellerRevenuePoint[]>>(
-    `/v1/stores/${storeId}/finance/revenue`,
+    `/v1/stores/${encodeURIComponent(storeId)}/finance/revenue`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: structuralEnvelopeSchema,
+      query: { days: safeDays },
+      signal,
+    },
   );
   return response.data;
 }

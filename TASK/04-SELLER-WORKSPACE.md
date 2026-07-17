@@ -83,13 +83,13 @@ Sebagian query ada, tetapi metrics/traffic/chart filters masih hardcoded dan sel
 
 ### Checklist
 
-- [ ] Define one bounded overview read model atau parallel queries dengan consistent `asOf` timestamp; jangan calculate financial truth dari UI rows.
-- [ ] Map product count, order count/status, gross/net/revenue, conversion/traffic/source series ke existing cards/chart.
-- [ ] Range/channel filter masuk query key dan server query; keep previous chart while refetch.
-- [ ] Revenue/fee/net berasal ledger/read model, bukan client assumptions.
-- [ ] Partial query failure memakai existing error surface without fabricating zeros.
-- [ ] Background refresh tidak blank/shift layout.
-- [ ] Analytics export bila existing control aktif: server job/stream, bounded dates, permission, audit, signed short URL.
+- [x] Define one bounded overview read model atau parallel queries dengan consistent `asOf` timestamp; jangan calculate financial truth dari UI rows.
+- [x] Map product count, order count/status, gross/net/revenue, conversion/traffic/source series ke existing cards/chart.
+- [x] Range/channel filter masuk query key dan server query; keep previous chart while refetch.
+- [x] Revenue/fee/net berasal ledger/read model, bukan client assumptions.
+- [x] Partial query failure memakai existing error surface without fabricating zeros.
+- [x] Background refresh tidak blank/shift layout.
+- [x] Analytics export bila existing control aktif: server job/stream, bounded dates, permission, audit, signed short URL.
 
 ### Tests/AC
 

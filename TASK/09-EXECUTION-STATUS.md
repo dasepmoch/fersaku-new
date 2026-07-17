@@ -115,7 +115,7 @@ Shared hotspot mempunyai single-writer rule:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `SEL-100` | P0 pilot | INT-120, INT-140, INT-150, INT-160; co-evolve INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 13:30 WIB · claim released | Merchant/current store bootstrap | TASK/evidence/SEL-100/20260717-1330-nikki.md · shared/seller · tests/unit/sel-100-seller-bootstrap.test.ts |
 | `[x]` | `SEL-110` | P0/P1 | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 14:21 WIB · claim released | Resumable onboarding | TASK/evidence/SEL-110/20260717-1421-nikki.md · features/seller/onboarding · tests/unit/sel-110-onboarding.test.ts |
-| `[ ]` | `SEL-200` | P1 | SEL-100, INT-190 | SEL | — | Overview/analytics read model | — |
+| `[x]` | `SEL-200` | P1 | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 14:40 WIB · claim released | Overview/analytics read model | TASK/evidence/SEL-200/20260717-1440-nikki.md · features/seller/analytics · tests/unit/sel-200-seller-overview-analytics.test.ts |
 | `[ ]` | `SEL-210` | P1 | SEL-100, INT-190 | SEL | — | Bounded server product list/search (no new page control; `UI-080` for expansion) | — |
 | `[ ]` | `SEL-220` | P1 | SEL-210 | SEL | — | Product command lifecycle | — |
 | `[ ]` | `SEL-230` | P1 | SEL-100; INT-180/185 **if scan lifecycle active** | SEL/RTM | — | Store/public asset safe upload/scan | — |

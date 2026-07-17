@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   CircleDollarSign,
   MoreHorizontal,
@@ -13,10 +14,21 @@ import { ProductArt } from "@/components/product-art";
 import { RevenueChart } from "@/components/revenue-chart";
 import { RotatingQuote } from "@/components/rotating-quote";
 import { TrafficAnalytics } from "@/features/seller/components/traffic-analytics";
+import {
+  formatConversionBps,
+  formatCountId,
+  rangeDaysFromOverviewLabel,
+  type OverviewRangeLabel,
+} from "@/features/seller/analytics";
+import { useSellerAnalyticsOverview } from "@/features/seller/analytics/hooks";
 import { useSellerProducts } from "@/features/catalog/hooks";
 import { useSellerOrders } from "@/features/orders/hooks";
-import { useSellerRevenue } from "@/features/finance/hooks";
+import {
+  useSellerFinanceSummary,
+  useSellerRevenue,
+} from "@/features/finance/hooks";
 import { compactRupiah, rupiah } from "@/lib/utils";
+import { isDomainMock } from "@/shared/data/domain-source";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 import { SectionHead } from "@/shared/ui/section-head";
 import { StatusBadge } from "@/shared/ui/status-badge";
@@ -32,43 +44,144 @@ type Metric = {
   color: string;
 };
 
-const metrics: Metric[] = [
+/** Mock-only delta notes preserve prototype card copy; API never invents deltas. */
+const MOCK_METRIC_NOTES: Record<string, string> = {
+  "Total pendapatan": "+18,2%",
+  "Pesanan dibayar": "+12,4%",
+  "Conversion rate": "+1,6%",
+  "Saldo tersedia": "Siap ditarik",
+};
+
+const METRIC_SHELL: Array<{
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  apiNote: string;
+}> = [
   {
     label: "Total pendapatan",
-    value: "Rp24,86jt",
-    note: "+18,2%",
     icon: CircleDollarSign,
     color: "#d7ff64",
+    apiNote: "—",
   },
   {
     label: "Pesanan dibayar",
-    value: "312",
-    note: "+12,4%",
     icon: ShoppingBag,
     color: "#bdf8d0",
+    apiNote: "—",
   },
   {
     label: "Conversion rate",
-    value: "8,4%",
-    note: "+1,6%",
     icon: TrendingUp,
     color: "#c9defd",
+    apiNote: "—",
   },
   {
     label: "Saldo tersedia",
-    value: "Rp18,24jt",
-    note: "Siap ditarik",
     icon: WalletCards,
     color: "#ffdfd1",
+    apiNote: "Siap ditarik",
   },
 ];
 
 function Overview() {
   const storeId = useSellerStoreId();
+  const [revenueRange, setRevenueRange] =
+    useState<OverviewRangeLabel>("7 hari");
+  const revenueDays = rangeDaysFromOverviewLabel(revenueRange);
+
+  const analyticsQuery = useSellerAnalyticsOverview(storeId, revenueRange);
+  const financeQuery = useSellerFinanceSummary(storeId);
+  const revenueQuery = useSellerRevenue(storeId, revenueDays);
   const { data: products = [] } = useSellerProducts(storeId);
   const { data: orderPage } = useSellerOrders(storeId);
-  const { data: revenue = [] } = useSellerRevenue(storeId);
   const orders = orderPage?.items ?? [];
+
+  const overview = analyticsQuery.data;
+  const finance = financeQuery.data;
+  const revenue = revenueQuery.data ?? [];
+  const mockNotes = isDomainMock("sellerOperations");
+
+  // Partial failure: do not fabricate zeros for failed surfaces.
+  const analyticsFailed = analyticsQuery.isError && !overview;
+  const financeFailed = financeQuery.isError && !finance;
+
+  const metricNote = (label: string, apiNote: string) =>
+    mockNotes ? (MOCK_METRIC_NOTES[label] ?? apiNote) : apiNote;
+
+  const metrics: Metric[] = METRIC_SHELL.map((shell) => {
+    if (shell.label === "Total pendapatan") {
+      if (analyticsFailed) {
+        return {
+          ...shell,
+          value: "—",
+          note: "Gagal memuat",
+        };
+      }
+      if (!overview) {
+        return {
+          ...shell,
+          value: "—",
+          note: metricNote(shell.label, shell.apiNote),
+        };
+      }
+      return {
+        ...shell,
+        value: compactRupiah(overview.grossIdr),
+        note: metricNote(shell.label, shell.apiNote),
+      };
+    }
+    if (shell.label === "Pesanan dibayar") {
+      if (analyticsFailed) {
+        return { ...shell, value: "—", note: "Gagal memuat" };
+      }
+      if (!overview) {
+        return {
+          ...shell,
+          value: "—",
+          note: metricNote(shell.label, shell.apiNote),
+        };
+      }
+      return {
+        ...shell,
+        value: formatCountId(overview.orders),
+        note: metricNote(shell.label, shell.apiNote),
+      };
+    }
+    if (shell.label === "Conversion rate") {
+      if (analyticsFailed) {
+        return { ...shell, value: "—", note: "Gagal memuat" };
+      }
+      if (!overview) {
+        return {
+          ...shell,
+          value: "—",
+          note: metricNote(shell.label, shell.apiNote),
+        };
+      }
+      return {
+        ...shell,
+        value: formatConversionBps(overview.conversionRateBps),
+        note: metricNote(shell.label, shell.apiNote),
+      };
+    }
+    // Saldo tersedia — finance ledger summary, not analytics gross.
+    if (financeFailed) {
+      return { ...shell, value: "—", note: "Gagal memuat" };
+    }
+    if (!finance) {
+      return {
+        ...shell,
+        value: "—",
+        note: metricNote(shell.label, shell.apiNote),
+      };
+    }
+    return {
+      ...shell,
+      value: compactRupiah(finance.availableAmount),
+      note: metricNote(shell.label, shell.apiNote),
+    };
+  });
 
   return (
     <>
@@ -104,18 +217,32 @@ function Overview() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-extrabold">Pendapatan</h2>
-              <p className="mt-1 text-[10px] text-[#7b8780]">7 hari terakhir</p>
+              <p className="mt-1 text-[10px] text-[#7b8780]">
+                {revenueRange === "30 hari"
+                  ? "30 hari terakhir"
+                  : "7 hari terakhir"}
+              </p>
             </div>
             <select
               aria-label="Rentang pendapatan"
               className="hairline rounded-lg border bg-white px-3 py-2 text-[10px] font-bold"
+              value={revenueRange}
+              onChange={(event) =>
+                setRevenueRange(event.target.value as OverviewRangeLabel)
+              }
             >
-              <option>7 hari</option>
-              <option>30 hari</option>
+              <option value="7 hari">7 hari</option>
+              <option value="30 hari">30 hari</option>
             </select>
           </div>
           <div className="mt-3">
-            <RevenueChart data={revenue} />
+            {revenueQuery.isError && revenue.length === 0 ? (
+              <div className="grid h-[245px] place-items-center text-[11px] font-semibold text-[#7b8780]">
+                Gagal memuat pendapatan
+              </div>
+            ) : (
+              <RevenueChart data={revenue} />
+            )}
           </div>
         </section>
         <section className={`${surfaceCard} overflow-hidden`}>

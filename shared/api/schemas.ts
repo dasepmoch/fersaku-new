@@ -569,3 +569,83 @@ export type OnboardingStoreSummaryDto = z.infer<
   typeof onboardingStoreSummarySchema
 >;
 export type SlugAvailabilityDto = z.infer<typeof slugAvailabilityDataSchema>;
+
+/** SEL-200 — store analytics overview + traffic aggregates. */
+export const analyticsTimezoneSchema = z.enum([
+  "Asia/Jakarta",
+  "Asia/Makassar",
+  "Asia/Jayapura",
+  "UTC",
+]);
+
+export const analyticsChannelSchema = z.enum([
+  "all",
+  "direct",
+  "organic",
+  "referral",
+  "utm",
+  "social",
+  "email",
+  "paid",
+  "other",
+]);
+
+export const analyticsChannelBreakdownSchema = z.object({
+  channel: z.string().optional(),
+  sessions: z.number().int().optional(),
+  orders: z.number().int().optional(),
+  grossIdr: moneyIdrSchema.optional(),
+});
+
+export const analyticsOverviewDataSchema = z.object({
+  storeId: z.string().min(1),
+  timezone: z.string().min(1),
+  from: z.string().min(1),
+  to: z.string().min(1),
+  sessions: z.number().int(),
+  pageViews: z.number().int(),
+  checkouts: z.number().int(),
+  orders: z.number().int(),
+  grossIdr: moneyIdrSchema,
+  conversionRateBps: z.number().int(),
+  channels: z.array(analyticsChannelBreakdownSchema),
+  policyVersionId: z.string().optional(),
+  aggregationVersion: z.string().optional(),
+});
+
+export const analyticsOverviewEnvelopeSchema = successEnvelopeSchema(
+  analyticsOverviewDataSchema,
+);
+
+export const analyticsTrafficRowSchema = z.object({
+  day: z.string().min(1),
+  channel: z.string().min(1),
+  productId: z.string().optional(),
+  sessions: z.number().int(),
+  pageViews: z.number().int(),
+  checkouts: z.number().int(),
+  orders: z.number().int(),
+  grossIdr: moneyIdrSchema,
+});
+
+export const analyticsTrafficPageSchema = z.object({
+  items: z.array(analyticsTrafficRowSchema),
+  nextCursor: z.string().nullable().optional(),
+  hasMore: z.boolean(),
+  timezone: z.string().min(1),
+  from: z.string().min(1),
+  to: z.string().min(1),
+});
+
+export const analyticsTrafficEnvelopeSchema = successEnvelopeSchema(
+  analyticsTrafficPageSchema,
+);
+
+export type AnalyticsTimezoneDto = z.infer<typeof analyticsTimezoneSchema>;
+export type AnalyticsChannelDto = z.infer<typeof analyticsChannelSchema>;
+export type AnalyticsOverviewDto = z.infer<typeof analyticsOverviewDataSchema>;
+export type AnalyticsChannelBreakdownDto = z.infer<
+  typeof analyticsChannelBreakdownSchema
+>;
+export type AnalyticsTrafficRowDto = z.infer<typeof analyticsTrafficRowSchema>;
+export type AnalyticsTrafficPageDto = z.infer<typeof analyticsTrafficPageSchema>;

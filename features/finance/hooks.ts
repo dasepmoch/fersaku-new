@@ -35,11 +35,14 @@ export function useSellerFinanceSummary(storeId: string) {
   });
 }
 
-export function useSellerRevenue(storeId: string) {
+export function useSellerRevenue(storeId: string, days = 7) {
+  const safeDays = Math.min(90, Math.max(1, Math.trunc(days) || 7));
   return useAppQuery({
-    queryKey: queryKeys.seller.revenue(storeId),
-    queryFn: (signal) => getSellerRevenue(storeId, signal),
+    queryKey: queryKeys.seller.revenue(storeId, { days: safeDays }),
+    queryFn: (signal) => getSellerRevenue(storeId, signal, safeDays),
     enabled: Boolean(storeId),
+    surface: "finance",
+    keepPrevious: true,
     placeholderData: mockPlaceholderData("sellerFinance", demoSellerRevenue()),
   });
 }
