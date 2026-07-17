@@ -2049,6 +2049,106 @@ export type SellerWebhookDeliveryDto = z.infer<
   typeof sellerWebhookDeliveryDtoSchema
 >;
 
+// --- Seller custom domains (SEL-310) — list / create / verify / delete ---
+
+/** Domain lifecycle statuses (BE-240 / OpenAPI StoreDomain). */
+export const storeDomainStatusSchema = z.enum([
+  "PENDING_DNS",
+  "VERIFYING",
+  "ACTIVE",
+  "FAILED",
+  "SUSPENDED",
+  "REMOVING",
+  "TOMBSTONED",
+]);
+
+export const storeDomainTlsStatusSchema = z.enum([
+  "NONE",
+  "PENDING",
+  "ACTIVE",
+  "FAILED",
+  "REMOVING",
+  "REMOVED",
+]);
+
+/**
+ * StoreDomain DTO. verificationToken only on create (one-time).
+ * Never includes verification_token_hash.
+ */
+export const storeDomainDtoSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().min(1),
+  merchantId: z.string().min(1).optional(),
+  hostname: z.string().min(1),
+  hostnameNormalized: z.string().min(1).optional(),
+  status: storeDomainStatusSchema.or(z.string().min(1)),
+  tlsStatus: storeDomainTlsStatusSchema.or(z.string().min(1)),
+  version: z.number().int(),
+  expectedDnsName: z.string().optional(),
+  /** Present only on create response (one-time). */
+  verificationToken: z.string().min(1).optional(),
+  failureCode: z.string().optional(),
+  lastCheckedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  verifiedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  cooldownUntil: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+/** List envelope: data is array (handler WriteData(items)). */
+export const storeDomainListEnvelopeSchema = successEnvelopeSchema(
+  z.array(storeDomainDtoSchema),
+);
+
+export const storeDomainEnvelopeSchema = successEnvelopeSchema(
+  storeDomainDtoSchema,
+);
+
+export const storeDomainCreateRequestSchema = z.object({
+  hostname: z.string().min(1).max(253),
+});
+
+export const storeDomainVerifyRequestSchema = z.object({
+  verificationToken: z.string().min(1),
+  expectedVersion: z.number().int().optional(),
+});
+
+export const storeDomainDeleteRequestSchema = z.object({
+  expectedVersion: z.number().int().optional(),
+});
+
+/** Public host resolve — never private store state beyond public slug/name. */
+export const hostResolveDtoSchema = z.object({
+  hostname: z.string().min(1),
+  storeId: z.string().min(1),
+  merchantId: z.string().min(1).optional(),
+  domainId: z.string().min(1).optional(),
+  slug: z.string().optional(),
+  storeName: z.string().optional(),
+});
+
+export const hostResolveEnvelopeSchema = successEnvelopeSchema(
+  hostResolveDtoSchema,
+);
+
+export type StoreDomainDto = z.infer<typeof storeDomainDtoSchema>;
+export type StoreDomainCreateRequest = z.infer<
+  typeof storeDomainCreateRequestSchema
+>;
+export type StoreDomainVerifyRequest = z.infer<
+  typeof storeDomainVerifyRequestSchema
+>;
+export type StoreDomainDeleteRequest = z.infer<
+  typeof storeDomainDeleteRequestSchema
+>;
+export type HostResolveDto = z.infer<typeof hostResolveDtoSchema>;
+
 // --- Seller storefront studio (SEL-300) — draft / revision / publish ---
 
 /** Opaque JSON object for storefront builder config (BE validates object only). */

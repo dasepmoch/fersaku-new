@@ -81,6 +81,13 @@ export const queryKeys = {
     kyc: (subjectKey = "anon") => ["seller", subjectKey, "kyc"] as const,
     storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
     /**
+     * SEL-310: store-scoped custom domains (no verificationToken in keys).
+     * One-time token stays component-local after create.
+     */
+    domains: (storeId: string) => ["seller", storeId, "domains"] as const,
+    domain: (storeId: string, domainId: string) =>
+      ["seller", storeId, "domains", domainId] as const,
+    /**
      * SEL-340: actor-scoped profile/prefs (me endpoints).
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses sellers.
      */

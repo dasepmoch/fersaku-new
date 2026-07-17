@@ -111,7 +111,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Onboarding state | onboarding screen | `GET /v1/onboarding/` | U | Resume server step. | SEL-110 |
 | Create/patch/complete | onboarding screen | `POST /v1/onboarding/store`, `PATCH /v1/onboarding/store`, `POST /v1/onboarding/complete` | U | Idempotency/revision/route guard. | SEL-110 |
 | Slug availability | onboarding/product | `GET /v1/stores/slug-availability` | U | Debounce/cancel; advisory only. | SEL-110 |
-| Store presentation patch | settings/storefront | `PATCH /v1/stores/{storeId}/` | U | Strict DTO/revision. | SEL-310 |
+| Store presentation patch | settings/storefront | `PATCH /v1/stores/{storeId}/` | M | Support-impersonation name/description only; seller storefront SEO/name via SEL-300 draft. | SEL-310/SEL-300 |
 
 ## 6. Seller catalog, objects, inventory
 
@@ -158,7 +158,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Publish storefront | storefront API | `POST /v1/stores/{storeId}/storefront/publish` | M | Strict body + revision/idempotency; unknown root fields rejected. | SEL-300 |
 | Analytics overview/traffic | overview/traffic component | `GET /v1/stores/{storeId}/analytics/overview`, `GET /v1/stores/{storeId}/analytics/traffic` | U | Range/source/filter, server aggregates. | SEL-200 |
 | Traffic export | analytics control | `GET /v1/stores/{storeId}/analytics/traffic/export` | U | Bounded/audited/signed output. | SEL-200 |
-| Domains CRUD/verify | settings | `GET /v1/stores/{storeId}/domains/`, `POST /v1/stores/{storeId}/domains/`, `GET /v1/stores/{storeId}/domains/{domainId}`, `POST /v1/stores/{storeId}/domains/{domainId}/verify`, `DELETE /v1/stores/{storeId}/domains/{domainId}` | M | Router/handler use `{domainId}`; freeze slash policy; real DNS/edge runtime, ownership/TLS. | SEL-310/INT-180/INT-000 |
+| Domains CRUD/verify | storefront Links & SEO | `GET /v1/stores/{storeId}/domains`, `POST /v1/stores/{storeId}/domains`, `GET /v1/stores/{storeId}/domains/{domainId}`, `POST /v1/stores/{storeId}/domains/{domainId}/verify`, `DELETE /v1/stores/{storeId}/domains/{domainId}` | M | FE adapters + card wired SEL-310; BE DNS/edge still Fake — do not roll out live custom domain. | SEL-310/INT-180/INT-000 |
 | Seller webhook endpoints | webhooks screen | `GET /v1/stores/{storeId}/webhooks/`, `POST /v1/stores/{storeId}/webhooks/`, `PATCH /v1/stores/{storeId}/webhooks/{id}` | M | Router/handler use `{id}`; freeze slash policy; SSRF protection, schema. FE wired SEL-320. | SEL-320/INT-000 |
 | Delivery history/test | webhooks screen | `GET /v1/stores/{storeId}/webhooks/deliveries`, `POST /v1/stores/{storeId}/webhooks/{id}/test` | M | Router/handler use `{id}`; bounded list; test idempotency. FE wired SEL-320. | SEL-320/INT-000 |
 | Secret rotate/claim | webhooks screen | `POST /v1/stores/{storeId}/webhooks/{id}/secret-rotation-requests`, `POST /v1/stores/{storeId}/webhooks/{id}/secret-claims/{claimId}/exchange` | M | Router/handler use `{id}`; one-time component memory; never query cache. FE wired SEL-320. | SEL-320/INT-000 |

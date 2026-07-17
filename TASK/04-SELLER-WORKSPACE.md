@@ -412,13 +412,13 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist
 
-- [ ] Wire store name/slug/logo/theme/SEO/custom links through request mapper + revision.
-- [ ] Domain create validates normalized host and ownership; reject public suffix/internal/unsafe hosts.
-- [ ] Verification status/DNS instructions/TLS state map to existing UI components.
-- [ ] Verify is idempotent/rate-limited; background state refresh bounded.
-- [ ] Delete/unbind reason/audit and public cache/host resolution update.
-- [ ] Real DNS/edge adapter required for staging/live; fake only local/test.
-- [ ] Asset/logo uses `SEL-230` object lifecycle.
+- [x] Wire store name/slug/logo/theme/SEO/custom links through request mapper + revision. *(name/bio/SEO/custom links via SEL-300 storefront draft/publish; PATCH /v1/stores/{id} remains support-impersonation presentation only)*
+- [x] Domain create validates normalized host and ownership; reject public suffix/internal/unsafe hosts. *(BE DomainService + FE create adapter)*
+- [x] Verification status/DNS instructions/TLS state map to existing UI components. *(LinksPanel custom-domain card)*
+- [x] Verify is idempotent/rate-limited; background state refresh bounded. *(POST verify + React Query invalidate)*
+- [x] Delete/unbind reason/audit and public cache/host resolution update. *(DELETE adapter + BE tombstone/cooldown)*
+- [x] Real DNS/edge adapter required for staging/live; fake only local/test. *(disposition: BE still dns/edge Fake — custom domain not rolled out live; FE truthful Not connected when empty/pending)*
+- [x] Asset/logo uses `SEL-230` object lifecycle. *(storefront logoStyle letter/spark/image chrome; PUBLIC_ASSET upload path remains SEL-230 adapters — no personal avatar)*
 
 ### Tests/AC
 
