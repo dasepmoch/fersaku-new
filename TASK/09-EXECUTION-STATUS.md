@@ -124,7 +124,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `SEL-260` | P1 gap | SEL-100, SEL-250 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Tenant customer read model/notes | TASK/evidence/SEL-260/20260717-sel260-nikki.md · features/seller/customers · tests/unit/sel-260-seller-customers.test.ts |
 | `[x]` | `SEL-270` | P1 gap | SEL-100, BUY-110 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller review read/reply/report | TASK/evidence/SEL-270/20260717-sel270-nikki.md · features/seller/reviews · tests/unit/sel-270-seller-reviews.test.ts |
 | `[x]` | `SEL-280` | P1 | SEL-100, CHK-100 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Coupon lifecycle/redemption | TASK/evidence/SEL-280/20260717-sel280-nikki.md · features/seller/coupons · tests/unit/sel-280-seller-coupons.test.ts |
-| `[ ]` | `SEL-300` | P1 | SEL-100, INT-160 | SEL | — | Storefront draft/autosave/publish | — |
+| `[x]` | `SEL-300` | P1 | SEL-100, INT-160 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Storefront draft/autosave/publish | TASK/evidence/SEL-300/20260717-sel300-nikki.md · features/seller/storefront · tests/unit/sel-300-seller-storefront.test.ts |
 | `[ ]` | `SEL-310` | P1/P2 | SEL-100, SEL-230; INT-180 **if custom-domain/provider active** | SEL/RTM | — | Store settings/domain/SEO | — |
 | `[ ]` | `SEL-320` | P1 | SEL-100; INT-180/185 **if webhook delivery active** | SEL/RTM | — | Seller outbound webhooks/secret claims | — |
 | `[ ]` | `SEL-330` | P1 | SEL-100, INT-140; INT-180/185 **if credential/KYC runtime active** | SEL/RTM | — | API credentials + seller KYC capability | — |

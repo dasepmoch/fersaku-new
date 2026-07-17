@@ -327,10 +327,12 @@ func (h *CatalogHandler) PublishStorefront(w http.ResponseWriter, r *http.Reques
 		ExpectedETag     string          `json:"expectedETag"`
 		Revision         *int32          `json:"revision"` // alias
 	}
-	if r.ContentLength > 0 {
+	// SEL-300: strict decode when body present; empty body still publishes current draft.
+	// Unknown root fields fail validation (DisallowUnknownFields) — no silent swallow.
+	if r.ContentLength != 0 {
 		if err := decode.DecodeJSON(r, &body); err != nil {
-			// tolerate empty / partial
-			_ = err
+			presenters.WriteAppError(w, r, err)
+			return
 		}
 	}
 	if body.ExpectedRevision == nil && body.Revision != nil {

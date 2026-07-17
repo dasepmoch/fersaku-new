@@ -1,12 +1,7 @@
 "use client";
 
-import { useAppMutation } from "@/shared/query/create-mutation";
-import { publishStorefrontDraft, type PublishStorefrontInput } from "./api";
-
-export function usePublishStorefrontMutation() {
-  return useAppMutation({
-    mutationKey: ["seller", "storefront", "publish"],
-    mutationFn: (input: PublishStorefrontInput, signal) =>
-      publishStorefrontDraft(input, signal),
-  });
-}
+/**
+ * SEL-300 — re-export publish mutation (store-scoped hooks live in hooks.ts).
+ * Existing import path `./mutations` kept for compatibility.
+ */
+export { usePublishStorefrontMutation } from "./hooks";

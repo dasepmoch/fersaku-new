@@ -153,9 +153,9 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 
 | Operation/UI | FE seam | Backend route | Status | Required mapping/gap | Task/evidence |
 | --- | --- | --- | --- | --- | --- |
-| Storefront studio GET | builder | `GET /v1/stores/{storeId}/storefront` | U | Map draft/revision/config. | SEL-300 |
-| Save draft | builder | `PUT /v1/stores/{storeId}/storefront/draft` | U | Debounce + expected revision. | SEL-300 |
-| Publish storefront | storefront API | `POST /v1/stores/{storeId}/storefront/publish` | M | FE body unknown fields; backend swallowed decode; add strict revision/idempotency. | SEL-300 |
+| Storefront studio GET | builder | `GET /v1/stores/{storeId}/storefront` | M | Map draft/revision/config. | SEL-300 |
+| Save draft | builder | `PUT /v1/stores/{storeId}/storefront/draft` | M | Debounce + expected revision. | SEL-300 |
+| Publish storefront | storefront API | `POST /v1/stores/{storeId}/storefront/publish` | M | Strict body + revision/idempotency; unknown root fields rejected. | SEL-300 |
 | Analytics overview/traffic | overview/traffic component | `GET /v1/stores/{storeId}/analytics/overview`, `GET /v1/stores/{storeId}/analytics/traffic` | U | Range/source/filter, server aggregates. | SEL-200 |
 | Traffic export | analytics control | `GET /v1/stores/{storeId}/analytics/traffic/export` | U | Bounded/audited/signed output. | SEL-200 |
 | Domains CRUD/verify | settings | `GET /v1/stores/{storeId}/domains/`, `POST /v1/stores/{storeId}/domains/`, `GET /v1/stores/{storeId}/domains/{domainId}`, `POST /v1/stores/{storeId}/domains/{domainId}/verify`, `DELETE /v1/stores/{storeId}/domains/{domainId}` | M | Router/handler use `{domainId}`; freeze slash policy; real DNS/edge runtime, ownership/TLS. | SEL-310/INT-180/INT-000 |

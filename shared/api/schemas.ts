@@ -1646,3 +1646,71 @@ export type CouponDto = z.infer<typeof couponDtoSchema>;
 export type CouponCreateRequest = z.infer<typeof couponCreateRequestSchema>;
 export type CouponPatchRequest = z.infer<typeof couponPatchRequestSchema>;
 
+// --- Seller storefront studio (SEL-300) — draft / revision / publish ---
+
+/** Opaque JSON object for storefront builder config (BE validates object only). */
+export const storefrontConfigDtoSchema = z.record(z.string(), z.unknown());
+
+export const storefrontRevisionDtoSchema = z.object({
+  revision: z.number().int(),
+  etag: z.string().min(1),
+  status: z.enum(["draft", "published"]).optional(),
+  config: storefrontConfigDtoSchema.optional(),
+});
+
+export const storefrontRevisionEnvelopeSchema = successEnvelopeSchema(
+  storefrontRevisionDtoSchema,
+);
+
+export const storefrontStudioDtoSchema = z.object({
+  storeId: z.string().min(1),
+  draftRevision: z.number().int(),
+  draftETag: z.string().min(1),
+  draftConfig: storefrontConfigDtoSchema.optional(),
+  publishedRevision: z.number().int().optional(),
+  storefrontRevision: z.number().int().optional(),
+  publishedETag: z.string().optional(),
+  publishedConfig: storefrontConfigDtoSchema.optional(),
+  publishedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+});
+
+export const storefrontStudioEnvelopeSchema = successEnvelopeSchema(
+  storefrontStudioDtoSchema,
+);
+
+export const storefrontDraftRequestSchema = z.object({
+  config: storefrontConfigDtoSchema,
+  expectedRevision: z.number().int().optional(),
+  expectedETag: z.string().optional(),
+});
+
+export const storefrontPublishRequestSchema = z.object({
+  config: storefrontConfigDtoSchema.optional(),
+  expectedRevision: z.number().int().optional(),
+  expectedETag: z.string().optional(),
+  revision: z.number().int().optional(),
+});
+
+export const storefrontPublishDtoSchema = z.object({
+  accepted: z.boolean(),
+  revision: z.number().int(),
+  etag: z.string().optional(),
+  requestId: z.string().min(1),
+  storeId: z.string().optional(),
+});
+
+export const storefrontPublishEnvelopeSchema = successEnvelopeSchema(
+  storefrontPublishDtoSchema,
+);
+
+export type StorefrontConfigDto = z.infer<typeof storefrontConfigDtoSchema>;
+export type StorefrontRevisionDto = z.infer<typeof storefrontRevisionDtoSchema>;
+export type StorefrontStudioDto = z.infer<typeof storefrontStudioDtoSchema>;
+export type StorefrontDraftRequest = z.infer<typeof storefrontDraftRequestSchema>;
+export type StorefrontPublishRequest = z.infer<
+  typeof storefrontPublishRequestSchema
+>;
+export type StorefrontPublishDto = z.infer<typeof storefrontPublishDtoSchema>;
+

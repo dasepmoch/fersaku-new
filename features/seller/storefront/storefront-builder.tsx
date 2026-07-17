@@ -16,9 +16,15 @@ import {
   Sparkles,
   Undo2,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getStorefrontBuilderPreviewProducts } from "@/features/catalog/api";
+import { useSellerProducts } from "@/features/catalog/hooks";
+import { createIdempotencyKey } from "@/shared/query/mutation-policy";
+import { useCurrentStore } from "@/shared/seller/current-store";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { storefrontTemplates as templates } from "./config";
+import { isSellerStorefrontApiDomain } from "./api";
 import { readStorefrontDraft, writeStorefrontDraft } from "./draft";
 import {
   pushHistory,
@@ -26,14 +32,24 @@ import {
   reorderSectionsList,
   undoState,
 } from "./history";
+import {
+  usePublishStorefrontMutation,
+  useSaveStorefrontDraftMutation,
+  useStorefrontStudio,
+} from "./hooks";
+import {
+  formatStudioStatusLine,
+  isStorefrontRevisionConflict,
+  parseStorefrontConflict,
+} from "./mappers";
 import { BrandPanel } from "./panels/brand-panel";
 import { LayoutPanel } from "./panels/layout-panel";
 import { LinksPanel } from "./panels/links-panel";
 import { SectionsPanel } from "./panels/sections-panel";
 import { TemplatePanel } from "./panels/template-panel";
 import { StorePreview } from "./preview/store-preview";
-import { usePublishStorefrontMutation } from "./mutations";
 import type { BuilderConfig, BuilderTab } from "./types";
+import type { LogoStyle } from "./contracts";
 import { IMPERSONATION_COMMANDS } from "@/features/admin/impersonation/policy";
 import {
   isImpersonationSessionActive,
@@ -49,41 +65,128 @@ const tabs: Array<{ label: BuilderTab; icon: typeof Palette }> = [
   { label: "Links & SEO", icon: Globe2 },
 ];
 
+const AUTOSAVE_MS = 800;
+
+function sellerCatalogIsApi(): boolean {
+  try {
+    return getDomainSource("sellerCatalog") === "api";
+  } catch {
+    return false;
+  }
+}
+
 export function StorefrontBuilder() {
-  const draft = useMemo(() => readStorefrontDraft(), []);
-  const publishMutation = usePublishStorefrontMutation();
-  const [config, setConfig] = useState(draft.config);
+  const apiMode = sellerCatalogIsApi() && isSellerStorefrontApiDomain();
+  const { storeId: contextStoreId, bootstrap } = useCurrentStore();
+  const storeId = apiMode
+    ? (contextStoreId ?? "")
+    : (contextStoreId ?? "store_demo_asep");
+
+  const localDraft = useMemo(() => readStorefrontDraft(), []);
+  const studioQuery = useStorefrontStudio(apiMode ? storeId : null);
+  const productsQuery = useSellerProducts(apiMode ? storeId : "");
+  const previewProducts = useMemo(() => {
+    if (apiMode) return productsQuery.data ?? [];
+    return getStorefrontBuilderPreviewProducts();
+  }, [apiMode, productsQuery.data]);
+
+  const [config, setConfig] = useState(localDraft.config);
   const [history, setHistory] = useState<BuilderConfig[]>([]);
   const [future, setFuture] = useState<BuilderConfig[]>([]);
   const [tab, setTab] = useState<BuilderTab>("Templates");
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [saved, setSaved] = useState(false);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const [logoStyle, setLogoStyle] = useState<"letter" | "spark" | "image">(
-    draft.logoStyle,
+  const [logoStyle, setLogoStyle] = useState<LogoStyle>(localDraft.logoStyle);
+  const [revision, setRevision] = useState(14);
+  const [etag, setEtag] = useState('W/"mock_storefront_draft_14"');
+  const [dirty, setDirty] = useState(false);
+  const [conflict, setConflict] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(
+    apiMode ? null : Date.now(),
   );
+  const [hydrated, setHydrated] = useState(!apiMode);
+
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveAbort = useRef<AbortController | null>(null);
+  const revisionRef = useRef(revision);
+  const etagRef = useRef(etag);
+  const configRef = useRef(config);
+  const logoStyleRef = useRef(logoStyle);
+  const hydratedFromServer = useRef(false);
+
+  revisionRef.current = revision;
+  etagRef.current = etag;
+  configRef.current = config;
+  logoStyleRef.current = logoStyle;
+
+  const saveMutation = useSaveStorefrontDraftMutation(storeId);
+  const publishMutation = usePublishStorefrontMutation(storeId);
+  const saveDraft = saveMutation.mutateAsync;
+  const isSaving = saveMutation.isPending;
+
   useEffect(
     () => () => {
       timers.current.forEach(clearTimeout);
       timers.current = [];
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveAbort.current?.abort();
     },
     [],
   );
 
-  const commit = (next: BuilderConfig) => {
-    setHistory((items) => pushHistory(items, config));
+  // Hydrate from server studio once per store (API mode).
+  useEffect(() => {
+    if (!apiMode || !storeId || !studioQuery.data) return;
+    if (hydratedFromServer.current) return;
+    const studio = studioQuery.data;
+    hydratedFromServer.current = true;
+    setConfig(studio.config);
+    setLogoStyle(studio.logoStyle);
+    setRevision(studio.draftRevision);
+    setEtag(studio.draftETag);
+    setHistory([]);
+    setFuture([]);
+    setDirty(false);
+    setConflict(false);
+    setHydrated(true);
+    setLastSavedAt(Date.now());
+  }, [apiMode, storeId, studioQuery.data]);
+
+  // Reset hydrate flag when store changes.
+  useEffect(() => {
+    hydratedFromServer.current = false;
+    setHydrated(!apiMode);
+  }, [storeId, apiMode]);
+
+  const commit = useCallback((next: BuilderConfig) => {
+    setHistory((items) => pushHistory(items, configRef.current));
     setFuture([]);
     setConfig(next);
-  };
+    setDirty(true);
+    setConflict(false);
+    setSaved(false);
+  }, []);
+
   const update = (patch: Partial<BuilderConfig>) => {
     commit({ ...config, ...patch });
   };
+
+  const setLogoStyleTracked = (next: LogoStyle) => {
+    setLogoStyle(next);
+    setDirty(true);
+    setConflict(false);
+    setSaved(false);
+  };
+
   const undo = () => {
     const next = undoState(history, config, future);
     if (!next) return;
     setFuture(next.future);
     setConfig(next.config);
     setHistory(next.history);
+    setDirty(true);
+    setConflict(false);
   };
   const redo = () => {
     const next = redoState(history, config, future);
@@ -91,6 +194,8 @@ export function StorefrontBuilder() {
     setHistory(next.history);
     setConfig(next.config);
     setFuture(next.future);
+    setDirty(true);
+    setConflict(false);
   };
   const applyTemplate = (template: (typeof templates)[number]) => {
     update({ ...template.config, template: template.name });
@@ -107,6 +212,82 @@ export function StorefrontBuilder() {
     () => config.sections.filter((item) => item.visible),
     [config.sections],
   );
+
+  const persistMockDraft = useCallback(
+    (nextConfig: BuilderConfig, nextLogo: LogoStyle) => {
+      writeStorefrontDraft(nextConfig, nextLogo);
+      setLastSavedAt(Date.now());
+      setDirty(false);
+    },
+    [],
+  );
+
+  // Debounced autosave — mock writes localStorage; API PUT draft with revision.
+  useEffect(() => {
+    if (!dirty || !hydrated) return;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+
+    autosaveTimer.current = setTimeout(() => {
+      const nextConfig = configRef.current;
+      const nextLogo = logoStyleRef.current;
+
+      if (!apiMode) {
+        persistMockDraft(nextConfig, nextLogo);
+        return;
+      }
+      if (!storeId) return;
+
+      autosaveAbort.current?.abort();
+      const controller = new AbortController();
+      autosaveAbort.current = controller;
+
+      void saveDraft({
+        storeId,
+        config: nextConfig,
+        logoStyle: nextLogo,
+        expectedRevision: revisionRef.current,
+        expectedETag: etagRef.current,
+      })
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          setRevision(result.revision);
+          setEtag(result.etag);
+          setDirty(false);
+          setConflict(false);
+          setLastSavedAt(Date.now());
+        })
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+          if (isStorefrontRevisionConflict(error)) {
+            const details = parseStorefrontConflict(error);
+            setConflict(true);
+            if (details?.currentRevision != null) {
+              setRevision(details.currentRevision);
+            }
+            if (details?.currentETag) {
+              setEtag(details.currentETag);
+            }
+            // Keep local draft (config) — do not overwrite with server.
+            return;
+          }
+          // Network/other: retain in-memory edits; leave dirty true.
+        });
+    }, AUTOSAVE_MS);
+
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [
+    dirty,
+    hydrated,
+    apiMode,
+    storeId,
+    config,
+    logoStyle,
+    persistMockDraft,
+    saveDraft,
+  ]);
+
   const publishStorefront = async () => {
     const impersonationSession = readImpersonationSession();
     if (
@@ -121,26 +302,89 @@ export function StorefrontBuilder() {
       impersonationSession?.scope === "support-write"
         ? impersonationSession
         : null;
-    const publishConfig = supportSession
+    const baseConfig = supportSession
       ? {
-          ...draft.config,
+          ...config,
           name: config.name,
           bio: config.bio,
         }
       : config;
-    const publishLogoStyle = supportSession ? draft.logoStyle : logoStyle;
+    // Support-write: only name/bio from current; other fields stay as last loaded draft baseline.
+    const publishConfig = supportSession
+      ? {
+          ...(apiMode && studioQuery.data
+            ? studioQuery.data.config
+            : localDraft.config),
+          name: config.name,
+          bio: config.bio,
+        }
+      : baseConfig;
+    const publishLogoStyle = supportSession
+      ? apiMode && studioQuery.data
+        ? studioQuery.data.logoStyle
+        : localDraft.logoStyle
+      : logoStyle;
+
     setSaved(false);
+    setConflict(false);
+
     try {
-      await publishMutation.mutateAsync({
-        storeId: "store_demo_asep",
-        config: publishConfig,
-        logoStyle: publishLogoStyle,
-        reason: supportSession?.reason ?? "seller_storefront_publish",
-        idempotencyKey: `storefront_${publishConfig.name}_${Date.now()}`,
-      });
-      if (!writeStorefrontDraft(publishConfig, publishLogoStyle)) {
-        throw new Error("Unable to persist storefront draft");
+      if (apiMode) {
+        if (!storeId) return;
+        // Flush pending draft first so publish hits matching revision.
+        if (dirty) {
+          const flushed = await saveDraft({
+            storeId,
+            config: publishConfig,
+            logoStyle: publishLogoStyle,
+            expectedRevision: revisionRef.current,
+            expectedETag: etagRef.current,
+          });
+          setRevision(flushed.revision);
+          setEtag(flushed.etag);
+          revisionRef.current = flushed.revision;
+          etagRef.current = flushed.etag;
+          setDirty(false);
+        }
+
+        const result = await publishMutation.mutateAsync({
+          storeId,
+          config: publishConfig,
+          logoStyle: publishLogoStyle,
+          expectedRevision: revisionRef.current,
+          expectedETag: etagRef.current,
+          reason: supportSession?.reason ?? "seller_storefront_publish",
+          idempotencyKey: createIdempotencyKey(),
+        });
+        if (!result.accepted) {
+          setSaved(false);
+          return;
+        }
+        // After publish BE creates next draft shell at revision+1 — refetch studio.
+        const refreshed = await studioQuery.refetch();
+        if (refreshed.data) {
+          setRevision(refreshed.data.draftRevision);
+          setEtag(refreshed.data.draftETag);
+          revisionRef.current = refreshed.data.draftRevision;
+          etagRef.current = refreshed.data.draftETag;
+        } else if (result.etag) {
+          setEtag(result.etag);
+        }
+      } else {
+        await publishMutation.mutateAsync({
+          storeId: storeId || "store_demo_asep",
+          config: publishConfig,
+          logoStyle: publishLogoStyle,
+          expectedRevision: revision,
+          expectedETag: etag,
+          reason: supportSession?.reason ?? "seller_storefront_publish",
+          idempotencyKey: createIdempotencyKey(),
+        });
+        if (!writeStorefrontDraft(publishConfig, publishLogoStyle)) {
+          throw new Error("Unable to persist storefront draft");
+        }
       }
+
       if (supportSession) {
         appendClientAuditEvent({
           actor: supportSession.actor,
@@ -156,12 +400,35 @@ export function StorefrontBuilder() {
         setFuture([]);
       }
       setSaved(true);
+      setDirty(false);
+      setLastSavedAt(Date.now());
       const timer = setTimeout(() => setSaved(false), 1800);
       timers.current.push(timer);
-    } catch {
+    } catch (error) {
       setSaved(false);
+      if (isStorefrontRevisionConflict(error)) {
+        const details = parseStorefrontConflict(error);
+        setConflict(true);
+        if (details?.currentRevision != null) {
+          setRevision(details.currentRevision);
+        }
+        if (details?.currentETag) {
+          setEtag(details.currentETag);
+        }
+      }
     }
   };
+
+  const statusLine = formatStudioStatusLine({
+    revision,
+    savedAt: lastSavedAt,
+    conflict,
+    saving: isSaving,
+    dirty,
+  });
+
+  const storeSlug = bootstrap?.stores?.find((s) => s.storeId === storeId)?.slug;
+  const liveHref = storeSlug ? `/@${storeSlug}` : "/@asep-ai-tools";
 
   return (
     <div className="-mt-2">
@@ -172,9 +439,7 @@ export function StorefrontBuilder() {
           </span>
           <div className="min-w-0">
             <b className="block truncate text-xs">Storefront Studio</b>
-            <span className="text-[8px] text-[#718078]">
-              Draft autosaved just now • revision 14
-            </span>
+            <span className="text-[8px] text-[#718078]">{statusLine}</span>
           </div>
         </div>
         <div className="flex overflow-x-auto lg:ml-4">
@@ -214,14 +479,14 @@ export function StorefrontBuilder() {
             <Redo2 className="size-4" />
           </button>
           <Link
-            href="/@asep-ai-tools"
+            href={liveHref}
             className="hairline hidden h-10 items-center gap-2 rounded-xl border bg-white px-3 text-[9px] font-bold sm:flex"
           >
             <Eye className="size-3.5" /> Live store
           </Link>
           <button
             type="button"
-            disabled={publishMutation.isPending}
+            disabled={publishMutation.isPending || saveMutation.isPending}
             data-impersonation-command={
               IMPERSONATION_COMMANDS.storePresentationSupportUpdate
             }
@@ -245,7 +510,7 @@ export function StorefrontBuilder() {
               config={config}
               update={update}
               logoStyle={logoStyle}
-              setLogoStyle={setLogoStyle}
+              setLogoStyle={setLogoStyleTracked}
             />
           )}
           {tab === "Layout" && <LayoutPanel config={config} update={update} />}
@@ -255,6 +520,7 @@ export function StorefrontBuilder() {
               update={update}
               moveSection={moveSection}
               reorderSections={reorderSections}
+              products={previewProducts}
             />
           )}
           {tab === "Links & SEO" && (
@@ -309,6 +575,7 @@ export function StorefrontBuilder() {
                 device={device}
                 logoStyle={logoStyle}
                 visibleSections={visibleSections}
+                products={previewProducts}
               />
             </div>
           </div>

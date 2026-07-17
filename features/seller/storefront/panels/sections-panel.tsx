@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState, type DragEvent } from "react";
-import { getStorefrontBuilderPreviewProducts } from "@/features/catalog/api";
+import type { CatalogProduct } from "@/features/catalog/contracts";
 import { cn, rupiah } from "@/lib/utils";
 import type { BuilderConfig } from "../types";
 import { PanelTitle } from "../controls/panel-title";
@@ -19,11 +19,13 @@ export function SectionsPanel({
   update,
   moveSection,
   reorderSections,
+  products = [],
 }: {
   config: BuilderConfig;
   update: (patch: Partial<BuilderConfig>) => void;
   moveSection: (index: number, direction: number) => void;
   reorderSections: (from: number, to: number) => void;
+  products?: CatalogProduct[];
 }) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -145,7 +147,7 @@ export function SectionsPanel({
           Choose products promoted at the top of the collection.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {getStorefrontBuilderPreviewProducts().slice(0, 6).map((product) => (
+          {products.slice(0, 6).map((product) => (
             <button
               key={product.id}
               onClick={() => toggleFeatured(product.id)}

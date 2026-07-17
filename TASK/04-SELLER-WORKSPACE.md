@@ -382,21 +382,21 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist FE
 
-- [ ] GET studio/draft/revision on load; map to existing `BuilderConfig` without changing builder UI.
-- [ ] Local undo/redo remains client-only presentation history; authoritative draft is backend.
-- [ ] Debounced/cancellable PUT draft with `expectedRevision`/`If-Match`; do not autosave every keystroke without coalescing.
-- [ ] Offline/network failure retains local in-memory edits and existing saved/error indicator; no permanent local authority.
-- [ ] 409 conflict preserves both local draft and server revision; use existing panel/dialog path per UI freeze.
-- [ ] POST publish exact revision/config contract, stable idempotency, reason header if needed.
-- [ ] Stop sending unknown view fields; fix backend swallowed decode error to fail strict.
-- [ ] Preview products from current seller catalog, not demo imports on API path.
-- [ ] Public cache/tag invalidation after publish.
+- [x] GET studio/draft/revision on load; map to existing `BuilderConfig` without changing builder UI.
+- [x] Local undo/redo remains client-only presentation history; authoritative draft is backend.
+- [x] Debounced/cancellable PUT draft with `expectedRevision`/`If-Match`; do not autosave every keystroke without coalescing.
+- [x] Offline/network failure retains local in-memory edits and existing saved/error indicator; no permanent local authority.
+- [x] 409 conflict preserves both local draft and server revision; use existing panel/dialog path per UI freeze.
+- [x] POST publish exact revision/config contract, stable idempotency, reason header if needed.
+- [x] Stop sending unknown view fields; fix backend swallowed decode error to fail strict.
+- [x] Preview products from current seller catalog, not demo imports on API path.
+- [x] Public cache/tag invalidation after publish.
 
 ### Checklist BE
 
-- [ ] Strict decode and revision/ETag conflict.
-- [ ] Draft/published immutable revision semantics.
-- [ ] Tenant guard and atomic publish/outbox/cache invalidation.
+- [x] Strict decode and revision/ETag conflict.
+- [x] Draft/published immutable revision semantics.
+- [x] Tenant guard and atomic publish/outbox/cache invalidation.
 
 ### Tests/AC
 

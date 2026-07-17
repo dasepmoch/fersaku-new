@@ -6,7 +6,7 @@ import {
   Link2,
   Search,
 } from "lucide-react";
-import { getStorefrontBuilderPreviewProducts } from "@/features/catalog/api";
+import type { CatalogProduct } from "@/features/catalog/contracts";
 import { cn } from "@/lib/utils";
 import type { BuilderConfig } from "../types";
 import {
@@ -22,11 +22,14 @@ export function StorePreview({
   device,
   logoStyle,
   visibleSections,
+  products = [],
 }: {
   config: BuilderConfig;
   device: "desktop" | "mobile";
   logoStyle: string;
   visibleSections: BuilderConfig["sections"];
+  /** Seller catalog products for preview (API) or demo fixtures (mock). */
+  products?: CatalogProduct[];
 }) {
   const radius =
     config.radius === "round"
@@ -43,7 +46,6 @@ export function StorePreview({
           ? "font-sans tracking-normal"
           : "font-sans tracking-[-.03em]";
   const limit = device === "mobile" ? 4 : 6;
-  const products = getStorefrontBuilderPreviewProducts();
   const allProducts = products.slice(0, limit);
   const featuredProducts = (
     config.featuredIds.length
