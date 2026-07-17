@@ -1,6 +1,6 @@
 /**
- * AUT-100 — map auth transport/errors to AuthForm field regions (no new UI).
- * Password must never appear in mapped diagnostics or returned structures.
+ * AUT-100/AUT-110 — map auth transport/errors to existing form regions (no new UI).
+ * Password/magic tokens must never appear in mapped diagnostics or returned structures.
  */
 
 import { ApiError } from "@/shared/api/api-error";
@@ -12,6 +12,10 @@ import {
   sanitizeReturnToForSurface,
 } from "@/shared/auth/return-to";
 import type {
+  BuyerMagicLinkConsumeRequest,
+  BuyerMagicLinkConsumeResult,
+  BuyerMagicLinkRequest,
+  BuyerMagicLinkRequestResult,
   SellerAuthField,
   SellerAuthFieldError,
   SellerForgotPasswordRequest,
@@ -30,6 +34,8 @@ const GENERIC_REGISTER_OK =
   "If the email is eligible, a verification message has been sent";
 const GENERIC_FORGOT_OK =
   "If an account exists for that email, a reset message has been sent";
+const GENERIC_MAGIC_LINK_OK =
+  "If an account exists for that email, a sign-in link has been sent";
 
 const FIELD_ALIASES: Record<string, SellerAuthField> = {
   name: "name",
@@ -75,6 +81,98 @@ export function toSellerForgotPasswordRequest(input: {
   return { email: input.email.trim().toLowerCase() };
 }
 
+/** Build exact magic-link request DTO (buyer). */
+export function toBuyerMagicLinkRequest(input: {
+  email: string;
+}): BuyerMagicLinkRequest {
+  return { email: input.email.trim().toLowerCase() };
+}
+
+/**
+ * Build consume DTO from opaque token only (never from query/path helpers).
+ * Caller must obtain token from URL fragment and scrub before POST.
+ */
+export function toBuyerMagicLinkConsumeRequest(input: {
+  token: string;
+}): BuyerMagicLinkConsumeRequest {
+  return { token: input.token.trim() };
+}
+
+/**
+ * Parse `#token=<opaque>` from location.hash (or raw hash string).
+ * Returns null when missing/empty — never reads query/path.
+ */
+export function parseMagicLinkFragmentToken(
+  hash: string | null | undefined,
+): string | null {
+  if (hash == null) return null;
+  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (!raw) return null;
+  // Prefer URLSearchParams so `#token=a&x=b` and order variants work.
+  try {
+    const params = new URLSearchParams(raw);
+    const fromParams = params.get("token");
+    if (fromParams != null && fromParams.trim().length > 0) {
+      return fromParams.trim();
+    }
+  } catch {
+    // fall through
+  }
+  // Fallback: first `token=` segment without decoding secrets into logs.
+  const match = /(?:^|&)token=([^&]*)/.exec(raw);
+  if (!match?.[1]) return null;
+  try {
+    const decoded = decodeURIComponent(match[1].replace(/\+/g, " ")).trim();
+    return decoded.length > 0 ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Strip hash from the current browser URL immediately (before any network).
+ * Safe no-op on server / when history API unavailable.
+ */
+export function scrubUrlFragment(): void {
+  if (typeof window === "undefined") return;
+  const { pathname, search } = window.location;
+  const next = `${pathname}${search}`;
+  if (window.location.hash) {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      next || pathname || "/",
+    );
+  }
+}
+
+/**
+ * True when a bootstrap token appears in query/path (forbidden for AUT-110).
+ * Fragment-only delivery is required.
+ */
+export function hasForbiddenTokenInLocation(input: {
+  search?: string | null;
+  pathname?: string | null;
+}): boolean {
+  const search = input.search ?? "";
+  const pathname = input.pathname ?? "";
+  const q = search.startsWith("?") ? search.slice(1) : search;
+  if (q) {
+    try {
+      const params = new URLSearchParams(q);
+      const t = params.get("token");
+      if (t != null && t.length > 0) return true;
+    } catch {
+      if (/(?:^|&)token=/i.test(q)) return true;
+    }
+  }
+  // Path segment that looks like a long-lived opaque bootstrap (not /account/verify itself).
+  if (/\/token\//i.test(pathname) || /\/magic-link\//i.test(pathname)) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Safe post-login path: allowlisted returnTo under /dashboard, else home.
  * Prefer onboarding when caller signals first-store path (register mock only).
@@ -87,6 +185,13 @@ export function resolveSellerPostAuthPath(options?: {
   if (safe) return safe;
   if (options?.preferOnboarding) return "/dashboard/onboarding";
   return resolvePostLoginPath("seller", null);
+}
+
+/** Safe buyer post-magic-link path: allowlisted /account/*, else purchases. */
+export function resolveBuyerPostAuthPath(options?: {
+  returnTo?: string | null;
+}): string {
+  return resolvePostLoginPath("buyer", options?.returnTo ?? null);
 }
 
 export function mapLoginDataToResult(
@@ -264,12 +369,108 @@ export function mapForgotThrown(error: unknown): SellerForgotPasswordResult {
   return { ok: false, kind: "blocked", code: mapped.code };
 }
 
+/**
+ * Magic-link request: generic success preferred; hard failures blocked (no new UI).
+ * Never distinguishes unknown email (anti-enumeration).
+ */
+export function mapMagicLinkRequestThrown(
+  error: unknown,
+): BuyerMagicLinkRequestResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (
+      classified.kind === "rate_limited" ||
+      classified.kind === "retry_safe_get" ||
+      classified.kind === "transport_failure" ||
+      classified.kind === "mutation_unknown" ||
+      code === PROBLEM_CODES.RATE_LIMITED ||
+      code === PROBLEM_CODES.SERVICE_UNAVAILABLE ||
+      code === PROBLEM_CODES.PROVIDER_UNAVAILABLE
+    ) {
+      return { ok: false, kind: "blocked", code };
+    }
+    // Unexpected 4xx still must not enumerate — treat as blocked (no sent state).
+    return { ok: false, kind: "blocked", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+/**
+ * Consume failures: invalid/expired/replay → invalid_token (NotFound path).
+ * Rate-limit/transport → blocked (no fake success).
+ * Never include token in message/code payload beyond problem code.
+ */
+export function mapMagicLinkConsumeThrown(
+  error: unknown,
+): BuyerMagicLinkConsumeResult {
+  if (error instanceof ApiError) {
+    const code = error.code;
+    const classified = classifyThrown(error);
+    if (
+      classified.kind === "rate_limited" ||
+      classified.kind === "retry_safe_get" ||
+      classified.kind === "transport_failure" ||
+      classified.kind === "mutation_unknown" ||
+      code === PROBLEM_CODES.RATE_LIMITED ||
+      code === PROBLEM_CODES.SERVICE_UNAVAILABLE ||
+      code === PROBLEM_CODES.PROVIDER_UNAVAILABLE
+    ) {
+      return { ok: false, kind: "blocked", code };
+    }
+    // 401/403/404 and auth invalid → generic invalid token (no account existence leak).
+    return { ok: false, kind: "invalid_token", code };
+  }
+  return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
+}
+
+export function mapMagicLinkConsumeData(
+  data: AuthLoginDataDto,
+  returnTo?: string | null,
+): Extract<BuyerMagicLinkConsumeResult, { ok: true }> {
+  return {
+    ok: true,
+    kind: "authenticated",
+    csrfToken: data.csrfToken,
+    redirectTo: resolveBuyerPostAuthPath({ returnTo }),
+  };
+}
+
 export function registerSuccessMessage(message?: string): string {
   return message?.trim() || GENERIC_REGISTER_OK;
 }
 
 export function forgotSuccessMessage(message?: string): string {
   return message?.trim() || GENERIC_FORGOT_OK;
+}
+
+export function magicLinkRequestSuccessMessage(message?: string): string {
+  return message?.trim() || GENERIC_MAGIC_LINK_OK;
+}
+
+/**
+ * Guard: mapped results / diagnostics must never embed raw magic-link token values.
+ */
+export function objectContainsMagicTokenLeak(
+  value: unknown,
+  rawToken: string,
+): boolean {
+  if (!rawToken || rawToken.length < 4) return false;
+  const needle = rawToken;
+  const seen = new Set<unknown>();
+  const walk = (node: unknown): boolean => {
+    if (node == null) return false;
+    if (typeof node === "string") return node.includes(needle);
+    if (typeof node !== "object") return false;
+    if (seen.has(node)) return false;
+    seen.add(node);
+    if (Array.isArray(node)) return node.some(walk);
+    for (const v of Object.values(node as Record<string, unknown>)) {
+      if (walk(v)) return true;
+    }
+    return false;
+  };
+  return walk(value);
 }
 
 /**

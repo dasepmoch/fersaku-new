@@ -88,7 +88,7 @@ Shared hotspot mempunyai single-writer rule:
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `AUT-100` | P0 | INT-010, INT-020, INT-025, INT-100, INT-110, INT-120, INT-130, INT-140; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:19 WIB · claim released | Seller register/login/session/logout | TASK/evidence/AUT-100/20260717-1319-nikki.md · features/auth · components/auth-form.tsx · tests/unit/aut-100-seller-auth.test.ts |
-| `[ ]` | `AUT-110` | P0 | INT-010, INT-020, INT-025, INT-100, INT-120, INT-130; INT-180 **if live mail** | PUB | — | Buyer magic-link session | — |
+| `[x]` | `AUT-110` | P0 | INT-010, INT-020, INT-025, INT-100, INT-120, INT-130; INT-180 **if live mail** | PUB | completed @nikki/opencode · main · 2026-07-17 13:36 WIB · claim released | Buyer magic-link session | TASK/evidence/AUT-110/20260717-1336-nikki.md · features/auth · components/buyer-login.tsx · components/buyer-verify.tsx · tests/unit/aut-110-buyer-magic-link.test.ts |
 | `[ ]` | `AUT-120` | P1 | AUT-100, AUT-110, INT-140 | PUB/FND | — | Shared reset/email/MFA/recovery ceremony | — |
 | `[ ]` | `AUT-130` | P1 decision | INT-025, INT-120, INT-130 | PUB | — | OAuth implemented or authoritatively disabled | — |
 | `[x]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:28 WIB · claim released | Featured/store/product/review reads | TASK/evidence/PUB-100/20260717-1328-nikki.md · features/catalog · features/seller/reviews · tests/unit/pub-100-public-catalog.test.ts |

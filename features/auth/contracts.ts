@@ -62,3 +62,27 @@ export type SellerForgotPasswordResult =
   | { ok: false; kind: "blocked"; code: string | null };
 
 export type SellerLogoutResult = { ok: true; loginHref: string };
+
+/** Exact POST /v1/auth/magic-link/request body. */
+export type BuyerMagicLinkRequest = {
+  email: string;
+};
+
+/** Exact POST /v1/auth/magic-link/consume body (token from URL fragment only). */
+export type BuyerMagicLinkConsumeRequest = {
+  token: string;
+};
+
+export type BuyerMagicLinkRequestResult =
+  | { ok: true; kind: "generic_sent"; message: string }
+  | { ok: false; kind: "blocked"; code: string | null };
+
+export type BuyerMagicLinkConsumeResult =
+  | {
+      ok: true;
+      kind: "authenticated";
+      csrfToken: string | undefined;
+      redirectTo: string;
+    }
+  | { ok: false; kind: "invalid_token"; code: string | null }
+  | { ok: false; kind: "blocked"; code: string | null };

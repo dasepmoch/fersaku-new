@@ -1,4 +1,8 @@
 export type {
+  BuyerMagicLinkConsumeRequest,
+  BuyerMagicLinkConsumeResult,
+  BuyerMagicLinkRequest,
+  BuyerMagicLinkRequestResult,
   SellerAuthField,
   SellerAuthFieldError,
   SellerAuthSurface,
@@ -12,30 +16,46 @@ export type {
 } from "./contracts";
 
 export {
+  consumeBuyerMagicLink,
   forgotSellerPassword,
   loginSeller,
   logoutSeller,
   registerSeller,
+  requestBuyerMagicLink,
 } from "./api";
 
 export {
   assertAuthMutationKeySafe,
   forgotSuccessMessage,
+  hasForbiddenTokenInLocation,
+  magicLinkRequestSuccessMessage,
   mapFieldViolationsToAuthFields,
   mapLoginDataToResult,
   mapLoginThrown,
+  mapMagicLinkConsumeData,
+  mapMagicLinkConsumeThrown,
+  mapMagicLinkRequestThrown,
   mapRegisterThrown,
   mapSellerAuthThrown,
+  objectContainsMagicTokenLeak,
   objectContainsPasswordLeak,
+  parseMagicLinkFragmentToken,
   registerSuccessMessage,
+  resolveBuyerPostAuthPath,
   resolveSellerPostAuthPath,
+  scrubUrlFragment,
+  toBuyerMagicLinkConsumeRequest,
+  toBuyerMagicLinkRequest,
   toSellerForgotPasswordRequest,
   toSellerLoginRequest,
   toSellerRegisterRequest,
 } from "./mappers";
 
 export {
+  BUYER_AUTH_MUTATION_KEYS,
   SELLER_AUTH_MUTATION_KEYS,
+  useBuyerMagicLinkConsumeMutation,
+  useBuyerMagicLinkRequestMutation,
   useSellerForgotPasswordMutation,
   useSellerLoginMutation,
   useSellerLogoutMutation,

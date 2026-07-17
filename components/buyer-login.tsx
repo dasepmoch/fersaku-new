@@ -9,19 +9,36 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  toBuyerMagicLinkRequest,
+  useBuyerMagicLinkRequestMutation,
+} from "@/features/auth";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { Logo } from "./brand";
 import { ThemeToggle } from "./theme-provider";
 
 export function BuyerLogin() {
   const [email, setEmail] = useState("nadia@studio.id");
-  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const submit = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+  const requestMutation = useBuyerMagicLinkRequestMutation();
+  const loading = requestMutation.isPending;
+  const authSource = (() => {
+    try {
+      return getDomainSource("auth");
+    } catch {
+      return "mock";
+    }
+  })();
+  const submit = async () => {
+    if (loading) return;
+    const result = await requestMutation.mutateAsync(
+      toBuyerMagicLinkRequest({ email }),
+    );
+    if (result.ok) {
       setSent(true);
-    }, 700);
+      return;
+    }
+    // blocked / rate-limit / unavailable: no new surface (UXE-011); stay on form.
   };
   return (
     <main className="grid min-h-screen bg-[#f8f7f2] lg:grid-cols-[.9fr_1.1fr]">
@@ -43,12 +60,14 @@ export function BuyerLogin() {
                 Jika <b>{email}</b> memiliki pembelian, kami telah mengirim
                 magic link yang berlaku selama 15 menit.
               </p>
-              <Link
-                href="/account/verify?token=mock_buyer_token"
-                className="mt-7 flex h-12 items-center justify-center rounded-xl bg-[#173f2c] text-xs font-extrabold text-white"
-              >
-                Buka magic link mock <ArrowRight className="ml-2 size-4" />
-              </Link>
+              {authSource === "mock" ? (
+                <Link
+                  href="/account/verify#token=mock_buyer_token"
+                  className="mt-7 flex h-12 items-center justify-center rounded-xl bg-[#173f2c] text-xs font-extrabold text-white"
+                >
+                  Buka magic link mock <ArrowRight className="ml-2 size-4" />
+                </Link>
+              ) : null}
               <button
                 onClick={() => setSent(false)}
                 className="mt-5 text-[10px] font-extrabold text-[#315d47]"
@@ -78,7 +97,7 @@ export function BuyerLogin() {
                 />
               </label>
               <button
-                onClick={submit}
+                onClick={() => void submit()}
                 disabled={loading}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-xs font-extrabold text-white disabled:opacity-60"
               >

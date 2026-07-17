@@ -1,6 +1,7 @@
 /**
- * AUT-100 — seller auth transport (register/login/forgot/logout).
+ * AUT-100/AUT-110 — seller + buyer auth transport.
  * Mock only when domain auth is mock; API never invents session identity.
+ * Magic-link token only in POST body (never query/path/storage).
  */
 
 import { apiRequest } from "@/shared/api/http-client";
@@ -21,6 +22,10 @@ import {
   refreshSessionAfterLogin,
 } from "@/shared/auth";
 import type {
+  BuyerMagicLinkConsumeRequest,
+  BuyerMagicLinkConsumeResult,
+  BuyerMagicLinkRequest,
+  BuyerMagicLinkRequestResult,
   SellerForgotPasswordRequest,
   SellerForgotPasswordResult,
   SellerLoginRequest,
@@ -31,9 +36,13 @@ import type {
 } from "./contracts";
 import {
   forgotSuccessMessage,
+  magicLinkRequestSuccessMessage,
   mapForgotThrown,
   mapLoginDataToResult,
   mapLoginThrown,
+  mapMagicLinkConsumeData,
+  mapMagicLinkConsumeThrown,
+  mapMagicLinkRequestThrown,
   mapRegisterThrown,
   registerSuccessMessage,
   resolveSellerPostAuthPath,
@@ -196,6 +205,97 @@ export async function logoutSeller(): Promise<SellerLogoutResult> {
     redirect: true,
   });
   return { ok: true, loginHref };
+}
+
+/**
+ * POST /v1/auth/magic-link/request — always generic success (anti-enumeration).
+ * Does not create a session; does not reveal whether email exists.
+ */
+export async function requestBuyerMagicLink(
+  input: BuyerMagicLinkRequest,
+  signal?: AbortSignal,
+): Promise<BuyerMagicLinkRequestResult> {
+  assertAuthEnabled();
+  try {
+    if (shouldUseMockFixtures("auth")) {
+      await delay(200, signal);
+      return {
+        ok: true,
+        kind: "generic_sent",
+        message: magicLinkRequestSuccessMessage(),
+      };
+    }
+    const response = await apiRequest<
+      ApiEnvelope<{ message: string }>,
+      BuyerMagicLinkRequest
+    >("/v1/auth/magic-link/request", {
+      method: "POST",
+      body: { email: input.email },
+      schema: authMessageEnvelopeSchema,
+      skipCsrf: true,
+      signal,
+    });
+    return {
+      ok: true,
+      kind: "generic_sent",
+      message: magicLinkRequestSuccessMessage(response.data.message),
+    };
+  } catch (error) {
+    if (error instanceof DomainDisabledError) {
+      return { ok: false, kind: "blocked", code: "DOMAIN_DISABLED" };
+    }
+    return mapMagicLinkRequestThrown(error);
+  }
+}
+
+/**
+ * POST /v1/auth/magic-link/consume — one-time token in body only.
+ * On success: apply CSRF + buyer session bootstrap, then safe returnTo.
+ * Token must already be scrubbed from the URL by the caller.
+ */
+export async function consumeBuyerMagicLink(
+  input: BuyerMagicLinkConsumeRequest,
+  options?: { returnTo?: string | null; signal?: AbortSignal },
+): Promise<BuyerMagicLinkConsumeResult> {
+  assertAuthEnabled();
+  const token = input.token.trim();
+  if (!token) {
+    return { ok: false, kind: "invalid_token", code: "AUTH_INVALID_TOKEN" };
+  }
+  try {
+    if (shouldUseMockFixtures("auth")) {
+      await delay(200, options?.signal);
+      applyLoginCsrf(undefined);
+      await refreshSessionAfterLogin("buyer");
+      return {
+        ok: true,
+        kind: "authenticated",
+        csrfToken: undefined,
+        redirectTo: mapMagicLinkConsumeData({}, options?.returnTo).redirectTo,
+      };
+    }
+
+    const response = await apiRequest<
+      ApiEnvelope<AuthLoginDataDto>,
+      BuyerMagicLinkConsumeRequest
+    >("/v1/auth/magic-link/consume", {
+      method: "POST",
+      body: { token },
+      schema: authLoginEnvelopeSchema,
+      skipCsrf: true,
+      signal: options?.signal,
+    });
+
+    const mapped = mapMagicLinkConsumeData(response.data, options?.returnTo);
+    applyLoginCsrf(mapped.csrfToken);
+    await refreshSessionAfterLogin("buyer");
+    return mapped;
+  } catch (error) {
+    if (error instanceof DomainDisabledError) {
+      return { ok: false, kind: "blocked", code: "DOMAIN_DISABLED" };
+    }
+    return mapMagicLinkConsumeThrown(error);
+  }
 }
 
 function delay(ms: number, signal?: AbortSignal): Promise<void> {

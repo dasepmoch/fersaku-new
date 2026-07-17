@@ -81,16 +81,16 @@ https://app.example/account/verify#token=<opaque>
 
 ### Checklist
 
-- [ ] Pertahankan `components/buyer-login.tsx` visual; ganti timer/mock link dengan mutation.
-- [ ] Request selalu memberikan generic success, termasuk email tidak ada.
-- [ ] Mail link memakai fragment; email scanner GET tidak mengonsumsi token.
-- [ ] Verify page membaca fragment client-side, segera memanggil `history.replaceState` untuk membersihkan URL sebelum third-party request/navigation.
-- [ ] Token dikirim sekali pada POST body; tidak masuk query cache/storage/analytics/error context.
-- [ ] Consume atomically single-use, purpose/surface-bound, short TTL, rate-limited.
-- [ ] Success bootstrap session/CSRF lalu redirect safe `returnTo`/purchases.
-- [ ] Snapshot `/account/verify` hanya static success. Expired/reused/invalid token harus memakai existing safe `NotFound` (atau composition yang sudah disetujui melalui `UXE-011/UI-080`) tanpa membedakan account existence; jangan render success atau menambah ad-hoc error card.
-- [ ] `BuyerLogin` hanya punya loading/sent state. Jika request gagal/rate-limited/unavailable dan tidak dapat dipetakan secara aman tanpa markup baru, keep API/live command disabled dan selesaikan `UXE-011` sebelum canary.
-- [ ] Hapus current mock query parameter behavior dan architecture-test larangan token query.
+- [x] Pertahankan `components/buyer-login.tsx` visual; ganti timer/mock link dengan mutation.
+- [x] Request selalu memberikan generic success, termasuk email tidak ada.
+- [x] Mail link memakai fragment; email scanner GET tidak mengonsumsi token. *(FE: fragment-only consume; BE single-use POST)*
+- [x] Verify page membaca fragment client-side, segera memanggil `history.replaceState` untuk membersihkan URL sebelum third-party request/navigation.
+- [x] Token dikirim sekali pada POST body; tidak masuk query cache/storage/analytics/error context.
+- [x] Consume atomically single-use, purpose/surface-bound, short TTL, rate-limited. *(BE contract; FE posts body once)*
+- [x] Success bootstrap session/CSRF lalu redirect safe `returnTo`/purchases.
+- [x] Snapshot `/account/verify` hanya static success. Expired/reused/invalid token harus memakai existing safe `NotFound` (atau composition yang sudah disetujui melalui `UXE-011/UI-080`) tanpa membedakan account existence; jangan render success atau menambah ad-hoc error card.
+- [x] `BuyerLogin` hanya punya loading/sent state. Jika request gagal/rate-limited/unavailable dan tidak dapat dipetakan secara aman tanpa markup baru, keep API/live command disabled dan selesaikan `UXE-011` sebelum canary. *(blocked → stay form, no fake sent)*
+- [x] Hapus current mock query parameter behavior dan architecture-test larangan token query.
 
 ### Tests/AC
 
