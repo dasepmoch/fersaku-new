@@ -123,7 +123,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `SEL-250` | P0 gap/P1 wire | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller order read models/delivery commands | TASK/evidence/SEL-250/20260717-1522-nikki.md · features/orders · tests/unit/sel-250-seller-orders.test.ts |
 | `[x]` | `SEL-260` | P1 gap | SEL-100, SEL-250 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Tenant customer read model/notes | TASK/evidence/SEL-260/20260717-sel260-nikki.md · features/seller/customers · tests/unit/sel-260-seller-customers.test.ts |
 | `[x]` | `SEL-270` | P1 gap | SEL-100, BUY-110 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller review read/reply/report | TASK/evidence/SEL-270/20260717-sel270-nikki.md · features/seller/reviews · tests/unit/sel-270-seller-reviews.test.ts |
-| `[ ]` | `SEL-280` | P1 | SEL-100, CHK-100 | SEL | — | Coupon lifecycle/redemption | — |
+| `[x]` | `SEL-280` | P1 | SEL-100, CHK-100 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Coupon lifecycle/redemption | TASK/evidence/SEL-280/20260717-sel280-nikki.md · features/seller/coupons · tests/unit/sel-280-seller-coupons.test.ts |
 | `[ ]` | `SEL-300` | P1 | SEL-100, INT-160 | SEL | — | Storefront draft/autosave/publish | — |
 | `[ ]` | `SEL-310` | P1/P2 | SEL-100, SEL-230; INT-180 **if custom-domain/provider active** | SEL/RTM | — | Store settings/domain/SEO | — |
 | `[ ]` | `SEL-320` | P1 | SEL-100; INT-180/185 **if webhook delivery active** | SEL/RTM | — | Seller outbound webhooks/secret claims | — |

@@ -145,9 +145,9 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Seller reviews list | seller reviews API | `GET /v1/stores/{storeId}/reviews` | M | Joined store read model; BoundedNoPaging first result (limit 50); no cursor UI. | SEL-270 |
 | Seller review summary | reviews API | `GET /v1/stores/{storeId}/reviews/summary` | M | Store published aggregate → total/average/distribution. | SEL-270 |
 | Reply/report review | reviews screen | `PUT /v1/stores/{storeId}/reviews/{reviewId}/reply`, `POST /v1/stores/{storeId}/reviews/{reviewId}/report` | M | Versioned reply; report reason/dedupe; no moderation status change. | SEL-270 |
-| Coupon list/create | coupon screens | `GET /v1/stores/{storeId}/coupons/`, `POST /v1/stores/{storeId}/coupons/` | M | Router currently uses trailing slash; freeze one canonical slash policy, schema/filter/pagination/idempotency. | SEL-280/INT-000 |
-| Coupon detail/patch | coupon UI | `GET /v1/stores/{storeId}/coupons/{couponId}`, `PATCH /v1/stores/{storeId}/coupons/{couponId}` | U | Revision/validation. | SEL-280 |
-| Coupon activate/pause/archive | coupon UI | `POST /v1/stores/{storeId}/coupons/{couponId}/activate`, `POST /v1/stores/{storeId}/coupons/{couponId}/pause`, `POST /v1/stores/{storeId}/coupons/{couponId}/archive` | U | State transitions/concurrency. | SEL-280 |
+| Coupon list/create | coupon screens | `GET /v1/stores/{storeId}/coupons`, `POST /v1/stores/{storeId}/coupons` | M | OpenAPI non-slash canon; chi mounts trailing-slash list/create; FE uses non-slash (matches other seller resources). Schemas + create idempotency wired SEL-280. | SEL-280 |
+| Coupon detail/patch | coupon UI | `GET /v1/stores/{storeId}/coupons/{couponId}`, `PATCH /v1/stores/{storeId}/coupons/{couponId}` | M | expectedVersion concurrency; validation server-side. | SEL-280 |
+| Coupon activate/pause/archive | coupon UI | `POST /v1/stores/{storeId}/coupons/{couponId}/activate`, `POST /v1/stores/{storeId}/coupons/{couponId}/pause`, `POST /v1/stores/{storeId}/coupons/{couponId}/archive` | M | Explicit transitions only; no status patch. | SEL-280 |
 
 ## 8. Seller storefront, analytics, domain, webhooks, credentials
 

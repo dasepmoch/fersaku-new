@@ -121,14 +121,27 @@ export function Input({
 export function Select({
   label,
   options,
+  value,
+  onChange,
 }: {
   label: string;
   options: string[];
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
+  const controlled = typeof onChange === "function";
   return (
     <label className="grid gap-2 text-xs font-bold">
       {label}
-      <select className="hairline h-12 rounded-xl border bg-white px-4 text-sm font-normal outline-none">
+      <select
+        className="hairline h-12 rounded-xl border bg-white px-4 text-sm font-normal outline-none"
+        {...(controlled
+          ? {
+              value: value ?? options[0] ?? "",
+              onChange: (e) => onChange(e.target.value),
+            }
+          : {})}
+      >
         {options.map((x) => (
           <option key={x}>{x}</option>
         ))}

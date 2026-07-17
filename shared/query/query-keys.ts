@@ -52,7 +52,13 @@ export const queryKeys = {
     ) => ["seller", storeId, "customers", filters] as const,
     customer: (storeId: string, customerId: string) =>
       ["seller", storeId, "customers", customerId] as const,
+    /**
+     * SEL-280: store-scoped coupon list. Client TablePagination over full list
+     * until BE exposes NumberedPageList meta (snapshot keeps TablePagination).
+     */
     coupons: (storeId: string) => ["seller", storeId, "coupons"] as const,
+    coupon: (storeId: string, couponId: string) =>
+      ["seller", storeId, "coupons", couponId] as const,
     reviews: (storeId: string) => ["seller", storeId, "reviews"] as const,
     reviewsSummary: (storeId: string) =>
       ["seller", storeId, "reviews", "summary"] as const,

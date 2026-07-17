@@ -354,18 +354,18 @@ Screen memanggil query tetapi menginisialisasi/merender demo state; backend tida
 
 ### Checklist
 
-- [ ] Define schemas/mappers for list/detail/create/patch/activate/pause/archive and usage metrics.
-- [ ] Wire existing form/list/toggle/actions; remove local-only source in API mode.
-- [ ] Server validation: code normalization/unique, date range/timezone, type/value bounds, min spend, max discount, products, total/per-buyer limits.
-- [ ] Status transition explicit; no arbitrary status patch.
-- [ ] Optimistic concurrency on edit; stable idempotency create/status actions.
-- [ ] Checkout uses server reservation/redemption transaction; UI never decrements usage as authority.
-- [ ] Search/filter and declared pagination profile if dataset grows; query keys store scoped.
-- [ ] Exact invalidation list/detail/checkout quote where relevant.
+- [x] Define schemas/mappers for list/detail/create/patch/activate/pause/archive and usage metrics.
+- [x] Wire existing form/list/toggle/actions; remove local-only source in API mode.
+- [x] Server validation: code normalization/unique, date range/timezone, type/value bounds, min spend, max discount, products, total/per-buyer limits. *(BE CouponService; FE maps integers only)*
+- [x] Status transition explicit; no arbitrary status patch.
+- [x] Optimistic concurrency on edit; stable idempotency create/status actions.
+- [x] Checkout uses server reservation/redemption transaction; UI never decrements usage as authority. *(checkout coupon UI remains DISABLED/OUT-OF-SCOPE per CHK-100; quote/reserve BE path unchanged)*
+- [x] Search/filter and declared pagination profile if dataset grows; query keys store scoped. *(BE full list + client TablePagination; NumberedPageList when BE meta lands)*
+- [x] Exact invalidation list/detail/checkout quote where relevant. *(list+detail invalidate; checkout quote N/A without coupon UI)*
 
 ### Tests/AC
 
-- Concurrent last-use, expired/not-started/paused/product mismatch/minimum, duplicate code, stale edit.
+- Concurrent last-use, expired/not-started/paused/product mismatch/minimum, duplicate code, stale edit. *(unit: lifecycle, foreign 404, mock path, stale patch; BE integration remains coupons_test.go)*
 - UI list/form unchanged.
 
 ---

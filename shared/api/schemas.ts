@@ -1539,3 +1539,75 @@ export type InventoryStockItemMaskedDto = z.infer<
 >;
 export type InventoryRevealDto = z.infer<typeof inventoryRevealDataSchema>;
 
+// --- Seller coupons (SEL-280) — store-scoped lifecycle ---
+
+/** BE Coupon DTO: integer IDR/bps only; state transitions via activate/pause/archive. */
+export const couponDtoSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().min(1),
+  merchantId: z.string().optional(),
+  code: z.string().min(1),
+  discountKind: z.enum(["PERCENT", "FIXED_IDR"]),
+  discountValue: moneyIdrSchema,
+  discountPercent: z.number().int().optional(),
+  minMerchandise: moneyIdrSchema.optional(),
+  maxTotalUses: z.number().int().min(0).optional(),
+  maxPerCustomerUses: z.number().int().min(0).optional(),
+  startsAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  endsAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  state: z.enum(["DRAFT", "ACTIVE", "PAUSED", "EXPIRED", "ARCHIVED"]),
+  scope: z.enum(["ALL_PRODUCTS", "SELECTED_PRODUCTS"]),
+  version: z.number().int().min(1),
+  policyVersion: z.number().int().min(1),
+  reservedCount: z.number().int().min(0).optional(),
+  redeemedCount: z.number().int().min(0).optional(),
+  usageCount: z.number().int().min(0).optional(),
+  productIds: z.array(z.string()).optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const couponEnvelopeSchema = successEnvelopeSchema(couponDtoSchema);
+
+/** List is SuccessEnvelope of array (no NumberedPageList meta yet on BE). */
+export const couponListEnvelopeSchema = successEnvelopeSchema(
+  z.array(couponDtoSchema),
+);
+
+export const couponCreateRequestSchema = z.object({
+  code: z.string().min(1).max(64),
+  discountKind: z.enum(["PERCENT", "FIXED_IDR", "percentage", "fixed"]),
+  discountValue: moneyIdrSchema,
+  percentIsBps: z.boolean().optional(),
+  minMerchandise: moneyIdrSchema.optional(),
+  maxTotalUses: z.number().int().min(1).optional(),
+  maxPerCustomerUses: z.number().int().min(1).optional(),
+  startsAt: z.string().optional(),
+  endsAt: z.string().optional(),
+  scope: z.string().optional(),
+  productIds: z.array(z.string()).optional(),
+});
+
+export const couponPatchRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  code: z.string().min(1).max(64).optional(),
+  discountKind: z.string().optional(),
+  discountValue: moneyIdrSchema.optional(),
+  percentIsBps: z.boolean().optional(),
+  minMerchandise: moneyIdrSchema.optional(),
+  maxTotalUses: z.number().int().min(1).optional(),
+  clearMaxTotalUses: z.boolean().optional(),
+  maxPerCustomerUses: z.number().int().min(1).optional(),
+  clearMaxPerCustomerUses: z.boolean().optional(),
+  startsAt: z.string().optional(),
+  clearStartsAt: z.boolean().optional(),
+  endsAt: z.string().optional(),
+  clearEndsAt: z.boolean().optional(),
+  scope: z.string().optional(),
+  productIds: z.array(z.string()).optional(),
+});
+
+export type CouponDto = z.infer<typeof couponDtoSchema>;
+export type CouponCreateRequest = z.infer<typeof couponCreateRequestSchema>;
+export type CouponPatchRequest = z.infer<typeof couponPatchRequestSchema>;
+
