@@ -968,6 +968,120 @@ switch (suite) {
     break;
   }
 
+  case "qlt-420-cutover": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-420 continuous).
+    minLines(join(root, "docs/QLT-420-CUTOVER-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-420-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-420-CUTOVER-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "G0..G8 master gates",
+      "Health / readiness / synthetic",
+      "Flags / canary / rollback commands",
+      "Architecture mock ban",
+      "Mock only nonprod",
+      "Global DATA_SOURCE deprecation",
+      "qlt-420-cutover",
+      "same PR",
+      "Do not invent",
+      "observation window",
+      "post-cutover",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-420 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const samples = [
+      "backend/docs/launch/readiness-checklist.md",
+      "backend/docs/launch/canary-rollback.md",
+      "backend/docs/launch/e2e-acceptance.md",
+      "tests/unit/architecture-boundaries.test.ts",
+      "shared/data/domain-source.ts",
+      "tests/unit/domain-source.test.ts",
+      "tests/unit/qlt-420-parent-framework.test.ts",
+    ];
+    for (const f of samples) minLines(join(root, f), 30);
+
+    const readiness = readFileSync(
+      join(root, "backend/docs/launch/readiness-checklist.md"),
+      "utf8",
+    );
+    for (const needle of ["Owner-sign", "Secrets", "Alerts", "Migrations"]) {
+      if (!readiness.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`readiness-checklist.md missing parent marker: ${needle}`);
+      }
+    }
+
+    const canary = readFileSync(
+      join(root, "backend/docs/launch/canary-rollback.md"),
+      "utf8",
+    );
+    for (const needle of ["canary", "Rollback", "immutable", "callback"]) {
+      if (!canary.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`canary-rollback.md missing parent marker: ${needle}`);
+      }
+    }
+
+    const e2e = readFileSync(
+      join(root, "backend/docs/launch/e2e-acceptance.md"),
+      "utf8",
+    );
+    for (const needle of ["Gate commands", "synthetic", "integration"]) {
+      if (!e2e.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`e2e-acceptance.md missing parent marker: ${needle}`);
+      }
+    }
+
+    const domainSource = readFileSync(
+      join(root, "shared/data/domain-source.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "assertProductionDomainSources",
+      "rejectMock",
+      'DomainSource = "mock" | "api" | "disabled"',
+    ]) {
+      if (!domainSource.includes(needle)) {
+        fail(`domain-source.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const arch = readFileSync(
+      join(root, "tests/unit/architecture-boundaries.test.ts"),
+      "utf8",
+    );
+    if (!arch.toLowerCase().includes("mock") || arch.length < 500) {
+      fail("architecture-boundaries.test.ts missing mock-boundary sample");
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-420-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-420",
+      "CUTOVER_CATEGORIES",
+      "CLEANUP_RULES",
+      "Architecture mock ban",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-420-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-420 parent harness + cutover/cleanup + samples=${samples.length} + readiness/canary/e2e/architecture/domain-source + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

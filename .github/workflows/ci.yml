@@ -52,6 +52,7 @@ jobs:
           node scripts/ci-assert-suite.mjs qlt-320-observability
           node scripts/ci-assert-suite.mjs qlt-400-flags
           node scripts/ci-assert-suite.mjs qlt-410-deploy
+          node scripts/ci-assert-suite.mjs qlt-420-cutover
 
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0

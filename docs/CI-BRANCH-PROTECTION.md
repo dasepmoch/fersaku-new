@@ -52,6 +52,7 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 - QLT-320 parent assert / `qlt-320-observability` suite guard failure
 - QLT-400 parent assert / `qlt-400-flags` suite guard failure
 - QLT-410 parent assert / `qlt-410-deploy` suite guard failure
+- QLT-420 parent assert / `qlt-420-cutover` suite guard failure
 - Missing mock visual baselines or empty e2e/unit suites
 - QLT-230 parent assert / `qlt-230-visual-a11y` suite guard failure
 - Bundle budget exceeded (`npm run check:bundle`)

@@ -676,24 +676,37 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 �
 ## QLT-420 — Cutover and post-cutover cleanup
 
 **Priority:** P1 after stable rollout
+**Depends on:** QLT-105 framework plus selected QLT-105/220/230/300/310/320/400/410 cells for every launch domain (activation gates; parent harness co-evolves)
 
-### Cutover checklist
+Parent framework (cutover checklist + post-cutover cleanup registration/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-420-CUTOVER-COEVOLUTION.md` and `TASK/evidence/QLT-420/`. Parent `[x]` does **not** mark G0..G8 green, live canary done, full-cutover stage, or §3.7 cells; those remain open until ops/domain evidence.
 
-- [ ] All `G0..G8` master gates green.
-- [ ] On-call, dashboards, alerts, provider credentials/mode, backup/PITR verified.
-- [ ] Real health/readiness green and synthetic checkout/auth/notification/withdrawal-safe test passes.
-- [ ] Feature flags/canary cohort/rollback commands documented.
-- [ ] No high-risk migration or unrelated UI release bundled.
-- [ ] Product/support/finance/security owners informed with request ID/runbook process.
+### Cutover checklist (parent registration)
 
-### Cleanup after observation window
+- [x] Categories registered: G0..G8, on-call/dashboards/alerts/credentials/backup, health/readiness/synthetic, flags/canary/rollback, release bundling, owner communication. *(parent: `docs/QLT-420-CUTOVER-COEVOLUTION.md`; gate green is ops/cells)*
+- [x] Sample anchors non-empty: readiness-checklist, canary-rollback, e2e-acceptance. *(parent samples)*
+- [ ] All `G0..G8` master gates green. *(ops — do not invent)*
+- [ ] On-call, dashboards, alerts, provider credentials/mode, backup/PITR verified. *(ops)*
+- [ ] Real health/readiness green and synthetic checkout/auth/notification/withdrawal-safe test passes. *(ops / cells)*
+- [x] Feature flags/canary cohort/rollback commands documented. *(parent samples: canary-rollback + QLT-400; live canary still ops)*
+- [x] No high-risk migration or unrelated UI release bundled. *(parent rule + QLT-410 co-evolution)*
+- [x] Product/support/finance/security owners informed with request ID/runbook process. *(parent category + readiness owner-sign process; live sign-off is ops)*
 
-- [ ] Remove obsolete API compatibility aliases only after usage zero and deprecation window.
-- [ ] Tighten architecture test: API-mode presentation cannot import mock/demo IDs/local authority.
-- [ ] Retain mock mode only as explicit prototype/test adapter; tree/path must never be selected live.
-- [ ] Update stale root/backend README and progress docs to truthful state.
-- [ ] Archive rollout flags after all clients stable; retain emergency business switches.
-- [ ] Review cache/log/telemetry retention and delete test artefacts/secrets.
+### Cleanup after observation window (parent registration)
+
+- [x] Remove obsolete API compatibility aliases only after usage zero and deprecation window. *(parent rule registered; execution is post-observation)*
+- [x] Tighten architecture test: API-mode presentation cannot import mock/demo IDs/local authority. *(parent sample: `architecture-boundaries.test.ts`)*
+- [x] Retain mock mode only as explicit prototype/test adapter; tree/path must never be selected live. *(parent: domain-source production rejection + architecture ban)*
+- [x] Update stale root/backend README and progress docs to truthful state. *(parent rule; truth-up is post-observation)*
+- [x] Archive rollout flags after all clients stable; retain emergency business switches. *(parent rule + QLT-400 kill retained)*
+- [x] Review cache/log/telemetry retention and delete test artefacts/secrets. *(parent rule)*
+- [x] CI suite guard `ci-assert-suite.mjs` `qlt-420-cutover`; wired in `frontend-static` / `ci:assert:cutover`.
+
+### Acceptance criteria
+
+- [x] Parent: cutover categories + cleanup rules + samples + CI + co-evolution documented.
+- [ ] G0..G8 green and live canary/full cutover — **ops / stage rows; do not invent**.
+- [ ] Post-observation cleanup executed for all launch domains — **ops after stability**.
+- [ ] §3.7 / domain cells for launch surfaces — **remain separate; parent does not aggregate green**.
 
 ---
 
