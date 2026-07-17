@@ -399,46 +399,58 @@ Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QL
 ## QLT-300 — Security/privacy verification matrix
 
 **Priority:** P0
+**Depends on:** INT-120, INT-130, INT-140, INT-150, INT-170; INT-180 **if live provider/security integration**; capability cells co-evolve
 
-### Identity/session
+Parent framework (category registration/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-300-SECURITY-COEVOLUTION.md` and `TASK/evidence/QLT-300/`. Parent `[x]` does **not** mark every identity/authz/money/secret/abuse bullet or §3.7 capability cell complete; cells co-evolve with domain security-sensitive slices.
+
+### Parent framework (done)
+
+- [x] Five matrix categories registered: Identity/session, Authorization, Money/state, Secret/data, Abuse/resilience.
+- [x] Required non-empty FE unit samples (CSRF, MFA, session, boundaries, redaction, idempotency/checkout).
+- [x] Required non-empty BE integration sample (`security_verification_test.go` + MFA/RBAC anchors).
+- [x] Parent assert suite `tests/unit/qlt-300-parent-framework.test.ts`.
+- [x] CI suite guard `ci-assert-suite.mjs` `qlt-300-security` (+ existing `security-negative`); wired in `frontend-static` / `ci:assert:security`.
+- [x] Continuous co-evolution rule documented — domain slices expand negatives in same PR as security-sensitive changes.
+
+### Identity/session (capability cells / domain co-evolution — not claimed by parent alone)
 
 - session fixation/rotation/logout/revoke;
 - cookie flags/domain/path/same-site;
 - surface confusion buyer/seller/admin;
-- CSRF missing/invalid/cross-session/cross-origin/refetch;
-- stale/expired/revoked HttpOnly cookie must not permanently block login, magic/reset/invite consume, or logout; verify narrowly scoped recovery still rejects cross-site unsafe requests;
-- MFA missing/expired/replay/wrong purpose;
+- CSRF missing/invalid/cross-session/cross-origin/refetch; *(parent sample: FE csrf + BE TestSecurity_CSRF*)*
+- stale/expired/revoked HttpOnly cookie must not permanently block login, magic/reset/invite consume, or logout; verify narrowly scoped recovery still rejects cross-site unsafe requests; *(parent sample: TestSecurity_StaleCookie*)*
+- MFA missing/expired/replay/wrong purpose; *(parent sample: int-140-mfa + mfa_pending_int140)*
 - pre-enrollment ticket for invited/admin user and recent-proof mint/exchange purpose/TTL/replay;
-- safe returnTo/open redirect;
+- safe returnTo/open redirect; *(parent sample: session-int-120)*
 - magic/reset/invite fragment scrub/replay/scanner.
 
-### Authorization
+### Authorization (capability cells / domain co-evolution — not claimed by parent alone)
 
-- owner/member/foreign store for every store resource;
+- owner/member/foreign store for every store resource; *(parent sample: TestSecurity_CrossTenant404 / rbac)*
 - buyer owner/non-owner;
 - admin direct route/action with/without permission;
 - permission changes/stale session;
-- impersonation scope/TTL/termination/no chaining;
+- impersonation scope/TTL/termination/no chaining; *(parent sample: TestSecurity_ImpersonationDefaultDeny)*
 - object/invoice/order enumeration.
 
-### Money/state
+### Money/state (capability cells / domain co-evolution — not claimed by parent alone)
 
 - tampered price/fee/amount/status;
 - integer/fractional/overflow boundaries;
-- duplicate idempotency/same key different body;
+- duplicate idempotency/same key different body; *(parent FE sample: int-160 / chk-110)*
 - concurrent stock/coupon/withdrawal;
 - callback forged/replayed/out-of-order/account-mode mismatch;
 - unknown provider outcome/no duplicate charge/release.
 
-### Secret/data
+### Secret/data (capability cells / domain co-evolution — not claimed by parent alone)
 
-- API/webhook/inventory/delivery/MFA/KYC/signed URL never in URL, browser persistent storage, query cache, logs, traces, analytics, screenshots;
+- API/webhook/inventory/delivery/MFA/KYC/signed URL never in URL, browser persistent storage, query cache, logs, traces, analytics, screenshots; *(parent samples: int-170, architecture-boundaries, TestSecurity_RawCredential*)*
 - explicit reveal/claim one-time/TTL/wrong user;
 - SSR/CDN/private cache bleed;
 - PII redaction/export scope/notification target;
-- upload MIME spoof/malware/checksum/SSRF.
+- upload MIME spoof/malware/checksum/SSRF. *(parent sample: TestSecurity_SSRF*)*
 
-### Abuse/resilience
+### Abuse/resilience (capability cells / domain co-evolution — not claimed by parent alone)
 
 - distributed rate limits login/MFA/checkout/reveal/admin/callback/upload/export;
 - request/body/upload bounds;
@@ -448,7 +460,9 @@ Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QL
 
 ### Acceptance criteria
 
-- P0 security suite automated where possible; manual penetration checklist/evidence for browser/provider flows.
+- [x] Parent: P0 security suite harness automated (categories + samples + CI guards); continuous co-evolution documented.
+- [ ] Full matrix bullets / §3.7 cells — domain co-evolution before canary.
+- Manual penetration checklist/evidence for browser/provider flows remains cell/ops work when claimed — do not invent results.
 - No known high/critical issue accepted without explicit owner, expiry, compensating control, and go-live approval.
 
 ---

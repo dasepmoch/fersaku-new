@@ -484,6 +484,91 @@ switch (suite) {
     break;
   }
 
+  case "qlt-300-security": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-300 continuous).
+    minLines(join(root, "docs/QLT-300-SECURITY-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-300-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-300-SECURITY-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "Identity/session",
+      "Authorization",
+      "Money/state",
+      "Secret/data",
+      "Abuse/resilience",
+      "qlt-300-security",
+      "security_verification_test.go",
+      "same PR",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-300 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const feSamples = [
+      "tests/unit/csrf.test.ts",
+      "tests/unit/int-140-mfa.test.ts",
+      "tests/unit/session-int-120.test.ts",
+      "tests/unit/architecture-boundaries.test.ts",
+      "tests/unit/int-170-error-mock-observability.test.ts",
+      "tests/unit/int-160-query-mutation.test.ts",
+      "tests/unit/chk-110-checkout-intent.test.ts",
+      "tests/unit/qlt-300-parent-framework.test.ts",
+    ];
+    for (const f of feSamples) minLines(join(root, f), 40);
+
+    const beSecurity = join(
+      root,
+      "backend/test/integration/security_verification_test.go",
+    );
+    minLines(beSecurity, 100);
+    const beSrc = readFileSync(beSecurity, "utf8");
+    for (const needle of [
+      "TestSecurity_CSRFOnUnsafeCookieMethods",
+      "TestSecurity_StaleCookieAllowsAnonymousLogin",
+      "TestSecurity_CrossTenant404",
+      "TestSecurity_RawCredentialNeverInList",
+      "TestSecurity_ImpersonationDefaultDeny",
+      "TestSecurity_SSRFPrivateURLReject",
+    ]) {
+      if (!beSrc.includes(needle)) {
+        fail(`security_verification_test.go missing parent marker: ${needle}`);
+      }
+    }
+
+    minLines(
+      join(root, "backend/test/integration/mfa_pending_int140_test.go"),
+      20,
+    );
+    minLines(join(root, "backend/test/integration/rbac_test.go"), 50);
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-300-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-300",
+      "MATRIX_CATEGORIES",
+      "Identity/session",
+      "security_verification_test.go",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-300-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-300 parent harness + 5 categories + FE samples=${feSamples.length} + BE security matrix + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

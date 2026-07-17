@@ -10,7 +10,7 @@ Configure repository **Settings → Branches → Branch protection** (or Ruleset
 
 | Job name (exact) | Purpose |
 | --- | --- |
-| `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives |
+| `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives + QLT-300 parent |
 | `frontend-build (production + bundle budget)` | Production build + bundle budget |
 | `frontend-mock-e2e (smoke/critical/a11y/visual)` | Mock Playwright smoke, critical, a11y, visual + QLT-230 parent harness |
 | `cross-stack-api-e2e (API stack + harness + INT-190 + QLT-220)` | Disposable stack + API harness + INT-190 + QLT-220 parent |
@@ -47,6 +47,7 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 - Dirty `shared/api/generated/openapi.ts` after codegen check
 - Dirty sqlc `gen/`
 - Cross-tenant / CSRF / idempotency negative test failures
+- QLT-300 parent assert / `qlt-300-security` suite guard failure
 - Missing mock visual baselines or empty e2e/unit suites
 - QLT-230 parent assert / `qlt-230-visual-a11y` suite guard failure
 - API stack fail (migrate/seed/health) or harness/INT-190/QLT-220 parent failure
