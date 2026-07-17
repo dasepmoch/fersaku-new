@@ -7,12 +7,17 @@ import type {
   BuyerPurchaseDetailDto,
   BuyerPurchaseItemDto,
   BuyerPurchaseSummaryDto,
+  BuyerReviewDto,
 } from "@/shared/api/schemas";
 import {
   invalidApiContract,
   requireSafeMoneyIdr,
 } from "@/shared/api/mappers";
-import type { BuyerPurchase, BuyerPurchaseDeliveryType } from "./contracts";
+import type {
+  BuyerPurchase,
+  BuyerPurchaseDeliveryType,
+  BuyerReview,
+} from "./contracts";
 
 const DISPLAY_PALETTE = "#eef3e9";
 const DISPLAY_GLYPH = "•";
@@ -124,6 +129,7 @@ export function mapBuyerPurchaseDetailDto(
   const base: BuyerPurchase = {
     orderId: dto.orderNumber || dto.orderId,
     internalOrderId: dto.orderId,
+    orderItemId: item.orderItemId,
     productId: item.productId,
     product: item.productTitle,
     seller: dto.storeName || "Seller",
@@ -180,6 +186,27 @@ export function mapBuyerPurchaseDetailDto(
     };
   }
   return base;
+}
+
+/** Map BE buyer ReviewView → UI review (no status invent / no optimistic publish). */
+export function mapBuyerReviewDto(dto: BuyerReviewDto): BuyerReview {
+  const rating = Math.trunc(dto.rating);
+  if (rating < 1 || rating > 5) {
+    return invalidApiContract("Buyer review rating out of range", {
+      issues: [{ path: "rating", message: String(dto.rating) }],
+    });
+  }
+  return {
+    id: dto.id,
+    orderItemId: dto.orderItemId || undefined,
+    productId: dto.productId,
+    rating,
+    title: dto.title ?? "",
+    body: dto.body ?? "",
+    status: dto.status,
+    verifiedPurchase: Boolean(dto.verifiedPurchase),
+    contentVersion: Math.max(1, Math.trunc(dto.contentVersion)),
+  };
 }
 
 /** Assert a purchase view model has no raw secret-like fields in list path. */

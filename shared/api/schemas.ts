@@ -779,6 +779,56 @@ export type BuyerPurchaseDetailDto = z.infer<
   typeof buyerPurchaseDetailDtoSchema
 >;
 
+// --- Buyer reviews (BUY-110) — session-bound; ownership on order item ---
+
+/** BE ReviewView for buyer create/patch (includes owner order ids). */
+export const buyerReviewDtoSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().min(1),
+  productId: z.string().min(1),
+  orderId: z.string().optional(),
+  orderItemId: z.string().optional(),
+  rating: z.number().int().min(1).max(5),
+  title: z.string(),
+  body: z.string(),
+  status: z.string().min(1),
+  verifiedPurchase: z.boolean().optional(),
+  contentVersion: z.number().int().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  sellerReply: z.string().nullable().optional(),
+});
+
+export const buyerReviewEnvelopeSchema = successEnvelopeSchema(
+  buyerReviewDtoSchema,
+);
+
+/** Create: exact rating/title/body; optional productId/storeId as mismatch guards only. */
+export const buyerCreateReviewRequestSchema = z.object({
+  orderItemId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  title: z.string().optional(),
+  body: z.string().optional(),
+  productId: z.string().min(1).optional(),
+  storeId: z.string().min(1).optional(),
+});
+
+/** Patch: versioned content only — no rebinding, no status. */
+export const buyerPatchReviewRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  rating: z.number().int().min(1).max(5).optional(),
+  title: z.string().optional(),
+  body: z.string().optional(),
+});
+
+export type BuyerReviewDto = z.infer<typeof buyerReviewDtoSchema>;
+export type BuyerCreateReviewRequest = z.infer<
+  typeof buyerCreateReviewRequestSchema
+>;
+export type BuyerPatchReviewRequest = z.infer<
+  typeof buyerPatchReviewRequestSchema
+>;
+
 // --- Seller orders (SEL-250) — store-scoped; no delivery secrets ---
 
 /** Default/max page size for seller order NumberedPageList. */

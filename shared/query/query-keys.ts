@@ -100,7 +100,21 @@ export const queryKeys = {
     ) => ["buyer", subjectKey, "purchases", "bounded", filters] as const,
     purchase: (subjectKey: string, orderId: string) =>
       ["buyer", subjectKey, "purchases", orderId] as const,
+    /**
+     * BUY-110: buyer-owned review by order item (session-bound).
+     */
+    review: (subjectKey: string, orderItemId: string) =>
+      ["buyer", subjectKey, "reviews", orderItemId] as const,
     profile: () => ["buyer", "profile"] as const,
     sessions: () => ["buyer", "sessions"] as const,
+  },
+  /**
+   * Public product review list/summary — invalidated after buyer review success.
+   */
+  public: {
+    productReviews: (productId: string) =>
+      ["public", "products", productId, "reviews"] as const,
+    productReviewSummary: (productId: string) =>
+      ["public", "products", productId, "reviews", "summary"] as const,
   },
 };

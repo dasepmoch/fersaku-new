@@ -46,7 +46,14 @@ export function PurchaseDetail({ purchase }: { purchase: BuyerPurchase }) {
   const orderBoundary = `${purchase.internalOrderId ?? ""}:${purchase.orderId}`;
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState("");
+  /**
+   * BUY-110 version-update disposition: DISABLED until canonical BE command.
+   * Mock may still toggle local display; api never setUpdated(true) as success.
+   */
   const [updated, setUpdated] = useState(false);
+  const versionUpdateEnabled =
+    getDomainSource("buyer") === "mock" &&
+    Boolean(purchase.updateAvailable && purchase.sellerUpdatesEnabled);
   const [accessBusy, setAccessBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const [accessError, setAccessError] = useState(false);
@@ -354,8 +361,14 @@ export function PurchaseDetail({ purchase }: { purchase: BuyerPurchase }) {
                 </p>
               </div>
               <button
-                onClick={() => setUpdated(true)}
-                className="ml-auto shrink-0 rounded-lg bg-[#173f2c] px-3 py-2 text-[8px] font-extrabold text-white"
+                type="button"
+                disabled={!versionUpdateEnabled || updated}
+                onClick={() => {
+                  // Api: DISABLED (no BE version-entitlement command). Mock only.
+                  if (!versionUpdateEnabled) return;
+                  setUpdated(true);
+                }}
+                className="ml-auto shrink-0 rounded-lg bg-[#173f2c] px-3 py-2 text-[8px] font-extrabold text-white disabled:opacity-60"
               >
                 {updated ? "Sudah diperbarui" : "Gunakan versi baru"}
               </button>
@@ -571,7 +584,13 @@ export function PurchaseDetail({ purchase }: { purchase: BuyerPurchase }) {
             <Download className="size-3.5" /> Unduh Invoice PDF Resmi
           </Link>
         </div>
-        <BuyerReviewCard product={purchase.product} />
+        <BuyerReviewCard
+          product={purchase.product}
+          orderItemId={purchase.orderItemId}
+          productId={purchase.productId}
+          orderId={purchase.orderId}
+          existingReview={purchase.review}
+        />
       </section>
       <aside className="grid content-start gap-4">
         <section className={`${card} p-5`}>

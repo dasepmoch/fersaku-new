@@ -2,27 +2,40 @@ import type { z } from "zod";
 import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   BUYER_PURCHASE_LIST_LIMIT,
+  buyerCreateReviewRequestSchema,
+  buyerPatchReviewRequestSchema,
   buyerPurchaseDetailEnvelopeSchema,
   buyerPurchaseListEnvelopeSchema,
+  buyerReviewEnvelopeSchema,
   structuralEnvelopeSchema,
+  type BuyerCreateReviewRequest,
+  type BuyerPatchReviewRequest,
 } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
 import { classifyApiError } from "@/shared/api/error-policy";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type {
   BuyerProfile,
   BuyerPurchase,
   BuyerPurchaseListFilters,
+  BuyerReview,
   BuyerSession,
+  CreateBuyerReviewInput,
+  PatchBuyerReviewInput,
 } from "./contracts";
 import {
   mapBuyerPurchaseDetailDto,
   mapBuyerPurchaseSummaryListDto,
+  mapBuyerReviewDto,
 } from "./mappers";
 import { demoProfile, demoPurchases, demoSessions } from "./mock";
 
 type PurchaseListEnvelope = z.infer<typeof buyerPurchaseListEnvelopeSchema>;
 type PurchaseDetailEnvelope = z.infer<typeof buyerPurchaseDetailEnvelopeSchema>;
+type BuyerReviewEnvelope = z.infer<typeof buyerReviewEnvelopeSchema>;
 
 export type RevokeBuyerSessionInput = {
   sessionId: string;
@@ -173,4 +186,123 @@ export async function listBuyerSessions(
     },
   );
   return response.data;
+}
+
+/** Domain gate: buyer review mutations only when buyer domain is api. */
+export function isBuyerReviewApiDomain(): boolean {
+  return getDomainSource("buyer") === "api";
+}
+
+function mockBuyerReview(
+  input: CreateBuyerReviewInput | (PatchBuyerReviewInput & { orderItemId?: string }),
+  existing?: BuyerReview,
+): BuyerReview {
+  if ("reviewId" in input) {
+    return {
+      id: input.reviewId,
+      orderItemId: existing?.orderItemId,
+      productId: existing?.productId ?? "",
+      rating: input.rating ?? existing?.rating ?? 5,
+      title: input.title ?? existing?.title ?? "",
+      body: input.body ?? existing?.body ?? "",
+      status: existing?.status ?? "PUBLISHED",
+      verifiedPurchase: existing?.verifiedPurchase ?? true,
+      contentVersion: (existing?.contentVersion ?? input.expectedVersion) + 1,
+    };
+  }
+  return {
+    id: `rev_mock_${input.orderItemId}`,
+    orderItemId: input.orderItemId,
+    productId: input.productId ?? "",
+    rating: input.rating,
+    title: input.title ?? "",
+    body: input.body ?? "",
+    status: "PUBLISHED",
+    verifiedPurchase: true,
+    contentVersion: 1,
+  };
+}
+
+/**
+ * Create verified purchase review.
+ * POST /v1/buyer/reviews — eligibility/ownership server-authoritative.
+ * Does not invent status; maps server ReviewView only.
+ */
+export async function createBuyerReview(
+  input: CreateBuyerReviewInput,
+  signal?: AbortSignal,
+): Promise<BuyerReview> {
+  const orderItemId = input.orderItemId.trim();
+  if (!orderItemId) {
+    throw new Error("orderItemId required");
+  }
+  const rating = Math.trunc(input.rating);
+  if (rating < 1 || rating > 5) {
+    throw new Error("rating must be 1..5");
+  }
+
+  if (shouldUseMockFixtures("buyer")) {
+    return mockBuyerReview({ ...input, orderItemId, rating });
+  }
+
+  const body: BuyerCreateReviewRequest = buyerCreateReviewRequestSchema.parse({
+    orderItemId,
+    rating,
+    title: input.title,
+    body: input.body,
+    productId: input.productId,
+    storeId: input.storeId,
+  });
+
+  const response = await apiRequest<BuyerReviewEnvelope, BuyerCreateReviewRequest>(
+    "/v1/buyer/reviews",
+    {
+      schema: buyerReviewEnvelopeSchema,
+      method: "POST",
+      body,
+      signal,
+    },
+  );
+  return mapBuyerReviewDto(response.data);
+}
+
+/**
+ * Patch own review content (versioned).
+ * PATCH /v1/buyer/reviews/{reviewId}
+ * 409 version conflict rethrows — caller keeps typed text and refetches.
+ * Non-owner → resource_not_found (safe).
+ */
+export async function patchBuyerReview(
+  input: PatchBuyerReviewInput,
+  signal?: AbortSignal,
+): Promise<BuyerReview> {
+  const reviewId = input.reviewId.trim();
+  if (!reviewId) {
+    throw new Error("reviewId required");
+  }
+  if (input.expectedVersion < 1) {
+    throw new Error("expectedVersion required");
+  }
+
+  if (shouldUseMockFixtures("buyer")) {
+    return mockBuyerReview(input);
+  }
+
+  const body: BuyerPatchReviewRequest = buyerPatchReviewRequestSchema.parse({
+    expectedVersion: input.expectedVersion,
+    rating: input.rating,
+    title: input.title,
+    body: input.body,
+  });
+
+  const response = await apiRequest<BuyerReviewEnvelope, BuyerPatchReviewRequest>(
+    `/v1/buyer/reviews/${encodeURIComponent(reviewId)}`,
+    {
+      schema: buyerReviewEnvelopeSchema,
+      method: "PATCH",
+      body,
+      signal,
+    },
+  );
+  return mapBuyerReviewDto(response.data);
 }

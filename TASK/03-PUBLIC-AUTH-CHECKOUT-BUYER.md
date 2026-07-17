@@ -550,14 +550,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist
 
-- [ ] Wire existing review card/form to create/update adapters.
-- [ ] Eligibility, verified purchase, edit window, moderation status server-authoritative.
-- [ ] Request exact rating/title/body/version; no arbitrary status.
-- [ ] 409 version conflict preserves typed text and refetches authoritative review.
-- [ ] Invalidate exact purchase/review/public summary keys after success.
-- [ ] Do not optimistic-publish moderated review.
-- [ ] Wire resend/download/invoice buttons to explicit task adapters; remove fake success.
-- [ ] Treat “Gunakan versi baru” as a separate unresolved command: freeze whether it selects an already-entitled revision or requests a latest-version delivery read. It must check ownership/eligibility/revision, use idempotency if mutating, refresh delivery metadata, and never be satisfied by `setUpdated(true)`; otherwise disable the existing control.
+- [x] Wire existing review card/form to create/update adapters.
+- [x] Eligibility, verified purchase, edit window, moderation status server-authoritative.
+- [x] Request exact rating/title/body/version; no arbitrary status.
+- [x] 409 version conflict preserves typed text and refetches authoritative review.
+- [x] Invalidate exact purchase/review/public summary keys after success.
+- [x] Do not optimistic-publish moderated review.
+- [x] Wire resend/download/invoice buttons to explicit task adapters; remove fake success. *(resend/download/invoice already CHK-140/CHK-150; BUY-110 keeps them)*
+- [x] Treat “Gunakan versi baru” as a separate unresolved command: freeze whether it selects an already-entitled revision or requests a latest-version delivery read. It must check ownership/eligibility/revision, use idempotency if mutating, refresh delivery metadata, and never be satisfied by `setUpdated(true)`; otherwise disable the existing control. *(DISABLED in api mode — no canonical BE operation; mock-only local toggle retained)*
 
 ### Tests/AC
 

@@ -4,6 +4,20 @@ export type BuyerPurchaseDeliveryType =
   | "credentials"
   | "code";
 
+/** Buyer review view model (create/update response → UI). */
+export type BuyerReview = {
+  id: string;
+  orderItemId?: string;
+  productId: string;
+  rating: number;
+  title: string;
+  body: string;
+  /** Server status (e.g. PUBLISHED / pending moderation). */
+  status: string;
+  verifiedPurchase: boolean;
+  contentVersion: number;
+};
+
 /**
  * Buyer purchase view model (existing UI geometry).
  * Base list/detail from API carries redacted delivery metadata only —
@@ -14,6 +28,8 @@ export type BuyerPurchase = {
   orderId: string;
   /** Backend order ULID when distinct from display orderId. */
   internalOrderId?: string;
+  /** Primary line order item id — required for BUY-110 review create. */
+  orderItemId?: string;
   productId: string;
   product: string;
   seller: string;
@@ -27,6 +43,11 @@ export type BuyerPurchase = {
   version?: string;
   updateAvailable?: string;
   sellerUpdatesEnabled: boolean;
+  /**
+   * BUY-110: buyer-owned review snapshot when known (create/patch result).
+   * Never optimistic-publish moderated status — status is server-authoritative.
+   */
+  review?: BuyerReview;
   /** Redacted download metadata — no signed URL / object key. */
   downloads?: {
     used: number;
@@ -74,4 +95,24 @@ export type BuyerProfile = {
 export type BuyerPurchaseListFilters = {
   q?: string;
   filter?: "Semua" | "File" | "Akses & kode" | "Update tersedia";
+};
+
+/** BUY-110 create review input (exact fields only). */
+export type CreateBuyerReviewInput = {
+  orderItemId: string;
+  rating: number;
+  title?: string;
+  body?: string;
+  /** Optional mismatch guards — rejected by BE if they disagree with order item. */
+  productId?: string;
+  storeId?: string;
+};
+
+/** BUY-110 patch review input (versioned content only). */
+export type PatchBuyerReviewInput = {
+  reviewId: string;
+  expectedVersion: number;
+  rating?: number;
+  title?: string;
+  body?: string;
 };

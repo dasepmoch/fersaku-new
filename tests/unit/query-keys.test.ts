@@ -96,5 +96,24 @@ describe("queryKeys", () => {
     ]);
     expect(queryKeys.buyer.profile()).toEqual(["buyer", "profile"]);
     expect(queryKeys.buyer.sessions()).toEqual(["buyer", "sessions"]);
+    expect(queryKeys.buyer.review("usr_a:ses_1", "oi_1")).toEqual([
+      "buyer",
+      "usr_a:ses_1",
+      "reviews",
+      "oi_1",
+    ]);
+    expect(queryKeys.public.productReviews("prod_01")).toEqual([
+      "public",
+      "products",
+      "prod_01",
+      "reviews",
+    ]);
+    expect(queryKeys.public.productReviewSummary("prod_01")).toEqual([
+      "public",
+      "products",
+      "prod_01",
+      "reviews",
+      "summary",
+    ]);
   });
 });
