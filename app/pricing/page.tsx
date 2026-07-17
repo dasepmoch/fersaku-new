@@ -1,12 +1,11 @@
 import { Check, Minus } from "lucide-react";
 import { MarketingHero, MarketingShell } from "@/components/marketing-shell";
 import { PrimaryButton } from "@/components/brand";
-import {
-  getPublicFeeMarketingCopy,
-  PUBLIC_FEE_REVALIDATE_SECONDS,
-} from "@/features/platform-fees";
+import { getPublicFeeMarketingCopy } from "@/features/platform-fees";
 
-export const revalidate = PUBLIC_FEE_REVALIDATE_SECONDS;
+// Next segment config requires a numeric literal (not imported const).
+// Keep in sync with PUBLIC_FEE_REVALIDATE_SECONDS in features/platform-fees.
+export const revalidate = 300;
 
 export default async function PricingPage() {
   const pricing = await getPublicFeeMarketingCopy();

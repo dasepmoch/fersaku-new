@@ -1,4 +1,10 @@
+import { Suspense } from "react";
 import { AuthShell } from "@/components/auth-shell";
+
 export default function RegisterPage() {
-  return <AuthShell mode="register" />;
+  return (
+    <Suspense fallback={null}>
+      <AuthShell mode="register" />
+    </Suspense>
+  );
 }

@@ -131,7 +131,8 @@ describe("apiRequest", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toBe("/products?page=2&active=true");
+    // Node (vitest/SSR) resolves against API_INTERNAL_URL; browser stays relative.
+    expect(String(url)).toMatch(/\/products\?page=2&active=true$/);
     expect(init).toMatchObject({
       method: "POST",
       credentials: "include",
@@ -552,9 +553,25 @@ describe("apiRequest", () => {
   });
 
   it("builds same-origin relative URLs for browser topology", () => {
-    expect(buildApiUrl("/v1/auth/session")).toBe("/v1/auth/session");
-    expect(buildApiUrl("/v1/catalog", { page: 1 })).toBe(
-      "/v1/catalog?page=1",
-    );
+    // In Node (vitest), relative paths resolve against API_INTERNAL_URL so SSR can fetch.
+    // Browser still uses relative `/v1` (covered when window is defined).
+    const session = buildApiUrl("/v1/auth/session");
+    const catalog = buildApiUrl("/v1/catalog", { page: 1 });
+    if (typeof window === "undefined") {
+      expect(String(session)).toMatch(/\/v1\/auth\/session$/);
+      expect(String(catalog)).toMatch(/\/v1\/catalog\?page=1$/);
+    } else {
+      expect(session).toBe("/v1/auth/session");
+      expect(catalog).toBe("/v1/catalog?page=1");
+    }
+  });
+
+  it("resolves absolute internal URL on server when browser base is empty", () => {
+    // SSR/prerender path: Node cannot fetch relative `/v1`.
+    const url = buildApiUrl("/v1/public/products/featured", { limit: 6 });
+    expect(url).toBeInstanceOf(URL);
+    expect((url as URL).pathname).toBe("/v1/public/products/featured");
+    expect((url as URL).searchParams.get("limit")).toBe("6");
+    expect((url as URL).origin).toMatch(/^https?:\/\//);
   });
 });

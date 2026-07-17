@@ -5,11 +5,12 @@ import {
   publicStatusBannerClasses,
   publicStatusDotClass,
   publicStatusLabelClass,
-  PUBLIC_STATUS_REVALIDATE_SECONDS,
   type PublicPlatformStatusView,
 } from "@/features/platform-status";
 
-export const revalidate = PUBLIC_STATUS_REVALIDATE_SECONDS;
+// Next segment config requires a numeric literal (not imported const).
+// Keep in sync with PUBLIC_STATUS_REVALIDATE_SECONDS in features/platform-status.
+export const revalidate = 60;
 
 function BannerIcon({ kind }: { kind: PublicPlatformStatusView["overallKind"] }) {
   if (kind === "ok") {

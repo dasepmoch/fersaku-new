@@ -1,5 +1,8 @@
 import type { ZodTypeAny } from "zod";
-import { getBrowserApiBaseUrl } from "@/shared/config/env";
+import {
+  getApiInternalUrl,
+  getBrowserApiBaseUrl,
+} from "@/shared/config/env";
 import type { ApiProblem } from "./contracts";
 import { ApiError } from "./api-error";
 import {
@@ -101,13 +104,21 @@ function isUnsafeMethod(method: string | undefined): boolean {
 /**
  * Browser topology (INT-030): same-origin relative `/v1/...` by default.
  * Absolute base only when deprecated NEXT_PUBLIC_API_URL is set.
+ *
+ * Server/SSR/prerender: relative paths are invalid for Node fetch — resolve
+ * against API_INTERNAL_URL (never NEXT_PUBLIC_*) so public SSR can reach Go.
  */
 export function buildApiUrl(
   pathname: string,
   query?: RequestOptions<never, never>["query"],
 ): string | URL {
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
-  const base = getBrowserApiBaseUrl();
+  let base = getBrowserApiBaseUrl();
+
+  // Node (SSR/build/prerender) cannot fetch relative `/v1` — use internal API.
+  if (!base && typeof window === "undefined") {
+    base = getApiInternalUrl();
+  }
 
   if (!base) {
     const params = new URLSearchParams();
