@@ -20,7 +20,10 @@ export function AdminConsoleFrame({ children }: { children: React.ReactNode }) {
       description={meta.description}
       action={<AdminAction section={section} />}
     >
-      <AdminPermissionBoundary permission={meta.permission}>
+      <AdminPermissionBoundary
+        permission={meta.permission}
+        disposition={meta.disposition}
+      >
         {children}
       </AdminPermissionBoundary>
     </AdminShell>

@@ -134,7 +134,8 @@ export function sessionHasPermission(
   claims: SessionClaims | null | undefined,
   permission: string,
 ): boolean {
-  if (!claims) return false;
+  if (!claims || !permission) return false;
+  // Fail closed: empty / unknown permission codes never grant.
   if (claims.permissions.includes("*")) return true;
   return claims.permissions.includes(permission);
 }

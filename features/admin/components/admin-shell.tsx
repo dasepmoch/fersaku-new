@@ -34,7 +34,9 @@ import {
   toAdminLoginRequest,
   useAdminLoginMutation,
 } from "@/features/auth";
+import { canAccessAdminNavHref } from "@/features/admin/config/routes";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/shared/auth/session-provider";
 import { getDomainSource } from "@/shared/data/domain-source";
 import { NotificationCenter, ProfileMenu } from "@/shared/ui/account-controls";
 
@@ -70,7 +72,13 @@ export function AdminShell({
   action?: React.ReactNode;
 }) {
   const path = usePathname();
+  const { claims, ready } = useSession();
   const [open, setOpen] = useState(false);
+  // Fail closed until session ready; then filter by claims (mock * keeps active routes).
+  const visibleNav = nav.filter(([, href]) => {
+    if (!ready) return false;
+    return canAccessAdminNavHref(href, claims);
+  });
   return (
     <div className="min-h-screen bg-[#f3f5f9] text-[#131827]">
       <aside
@@ -117,20 +125,24 @@ export function AdminShell({
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
-          {nav.map(([label, href, Icon], i) => {
+          {visibleNav.map(([label, href, Icon]) => {
             const active =
               href === "/admin" ? path === href : path.startsWith(href);
+            const groupLabel =
+              href === "/admin/orders"
+                ? "Money movement"
+                : href === "/admin/kyc"
+                  ? "Trust & operations"
+                  : href === "/admin/providers"
+                    ? "Infrastructure"
+                    : null;
             return (
               <div key={href}>
-                {[6, 12, 20].includes(i) && (
+                {groupLabel ? (
                   <p className="mt-5 mb-2 px-3 text-[8px] font-extrabold tracking-[.18em] text-[#56617b] uppercase">
-                    {i === 6
-                      ? "Money movement"
-                      : i === 12
-                        ? "Trust & operations"
-                        : "Infrastructure"}
+                    {groupLabel}
                   </p>
-                )}
+                ) : null}
                 <Link
                   href={href}
                   className={cn(

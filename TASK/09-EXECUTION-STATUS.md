@@ -138,7 +138,7 @@ Shared hotspot mempunyai single-writer rule:
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `ADM-100` | P0 | INT-120, INT-130, INT-140, INT-170 | ADM | completed @nikki/opencode · main · 2026-07-17 15:57 WIB · claim released | Admin login/MFA/session/guards | TASK/evidence/ADM-100/20260717-1557-nikki.md · features/auth · features/admin/components/admin-shell.tsx · app/admin/login/page.tsx · tests/unit/adm-100-admin-auth.test.ts |
-| `[ ]` | `ADM-110` | P0 | ADM-100, INT-150 | ADM | — | Least-privilege route/action boundary | — |
+| `[x]` | `ADM-110` | P0 | ADM-100, INT-150 | ADM | completed @nikki/opencode · main · 2026-07-17 16:16 WIB · claim released | Least-privilege route/action boundary | TASK/evidence/ADM-110/20260717-1616-nikki.md · features/admin/config · admin-shell · admin-permission-boundary · tests/unit/adm-110-admin-permissions.test.ts |
 | `[ ]` | `ADM-120` | P1 | ADM-110, INT-160, INT-190 | ADM | — | Admin read/query foundation | — |
 | `[ ]` | `ADM-200` | P1 | ADM-110, ADM-120, SEL-100 | ADM | — | Merchant support/status/capability | — |
 | `[ ]` | `ADM-210` | P1 | ADM-110, ADM-120, BUY-100 | ADM | — | Buyer support surface | — |

@@ -56,19 +56,19 @@ Admin login hanya link/default value; permission boundary selalu mock session. R
 
 ### Checklist
 
-- [ ] Replace `createMockSession("admin")` on API path with session claims.
-- [ ] Map `features/admin/config/routes.ts` minimum permission to exact backend permission registry.
-- [ ] Resolve the current FE↔BE permission-code drift before enabling any admin route. Snapshot FE asks for `profile.read`, `campaigns.read`, `withdrawals.read`, `kyc.read`, `providers.read`, and `system.read`; `AllPermissionCodes`/router currently expose no first-class codes for those (GET withdrawals uses `withdrawals.review`, KYC uses `kyc.review`, providers uses `payments.read`, system uses `platform.emergency`, and campaigns has no route). Do not silently broaden a role or hide a 403: choose one of (a) add narrowly scoped backend read codes and attach them to GET routes, or (b) update the FE route registry to the exact existing code, with separate mutation codes, migration/role seed, OpenAPI, and direct-HTTP tests in the same slice.
-- [ ] Keep `campaigns.read` explicitly `DecisionPending`/disabled until ADM-380 defines a route and permission; `campaigns.publish` alone must not make the current list UI look available.
-- [ ] Remove unknown mock-only codes (`merchants.update`, `providers.read`, `audit.export`, `kyc.read`, and any similar alias) from API-mode fixtures; mock fixtures may be retained only behind a non-live adapter and must be validated against the generated canonical permission registry.
-- [ ] Hide/disable navigation/action through existing boundary, but always call protected endpoint that rechecks permission.
-- [ ] Distinguish read vs write/review/force/reveal/export/assign permissions.
-- [ ] Treat `POST /v1/admin/actions` as a temporary compatibility hazard: its `action` value must resolve through a server-side allowlist to an operation-specific permission/target scope, or be replaced by typed routes. `merchants.write` alone may never authorize buyer session/magic/email, review moderation, credential, delivery, provider, withdrawal, or emergency actions.
-- [ ] Credential permissions are separate from `kyc.review`: define `credentials.read`, `credentials.authorize`, `credentials.rotate`, `credentials.suspend`, and `credentials.revoke` (or an equivalent least-privilege registry) and test that a KYC reviewer cannot manage API keys.
-- [ ] Unknown/missing permission fails closed.
-- [ ] Permission changes trigger session/cache revalidation; stale tabs cannot continue mutation.
-- [ ] Add route permission contract test: every active admin route has declared permission and matching backend operation.
-- [ ] Impersonation scope cannot inherit unrestricted admin permission into seller/buyer request.
+- [x] Replace `createMockSession("admin")` on API path with session claims.
+- [x] Map `features/admin/config/routes.ts` minimum permission to exact backend permission registry.
+- [x] Resolve the current FE↔BE permission-code drift before enabling any admin route. Snapshot FE asks for `profile.read`, `campaigns.read`, `withdrawals.read`, `kyc.read`, `providers.read`, and `system.read`; `AllPermissionCodes`/router currently expose no first-class codes for those (GET withdrawals uses `withdrawals.review`, KYC uses `kyc.review`, providers uses `payments.read`, system uses `platform.emergency`, and campaigns has no route). Do not silently broaden a role or hide a 403: choose one of (a) add narrowly scoped backend read codes and attach them to GET routes, or (b) update the FE route registry to the exact existing code, with separate mutation codes, migration/role seed, OpenAPI, and direct-HTTP tests in the same slice.
+- [x] Keep `campaigns.read` explicitly `DecisionPending`/disabled until ADM-380 defines a route and permission; `campaigns.publish` alone must not make the current list UI look available.
+- [x] Remove unknown mock-only codes (`merchants.update`, `providers.read`, `audit.export`, `kyc.read`, and any similar alias) from API-mode fixtures; mock fixtures may be retained only behind a non-live adapter and must be validated against the generated canonical permission registry.
+- [x] Hide/disable navigation/action through existing boundary, but always call protected endpoint that rechecks permission.
+- [x] Distinguish read vs write/review/force/reveal/export/assign permissions.
+- [ ] Treat `POST /v1/admin/actions` as a temporary compatibility hazard: its `action` value must resolve through a server-side allowlist to an operation-specific permission/target scope, or be replaced by typed routes. `merchants.write` alone may never authorize buyer session/magic/email, review moderation, credential, delivery, provider, withdrawal, or emergency actions. *(BE hazard noted; FE no longer maps unknown aliases; typed route guards remain domain tasks)*
+- [ ] Credential permissions are separate from `kyc.review`: define `credentials.read`, `credentials.authorize`, `credentials.rotate`, `credentials.suspend`, and `credentials.revoke` (or an equivalent least-privilege registry) and test that a KYC reviewer cannot manage API keys. *(registry expansion deferred to ADM-200 / BE)*
+- [x] Unknown/missing permission fails closed.
+- [x] Permission changes trigger session/cache revalidation; stale tabs cannot continue mutation. *(INT-120 broadcast `session-changed` + force bootstrap; FE re-reads claims)*
+- [x] Add route permission contract test: every active admin route has declared permission and matching backend operation.
+- [ ] Impersonation scope cannot inherit unrestricted admin permission into seller/buyer request. *(ADM-390)*
 
 ### Snapshot permission drift that must be resolved atomically
 

@@ -20,7 +20,7 @@ export function hasPermission(
   session: FrontendSession | SessionClaims | null | undefined,
   permission: string,
 ) {
-  if (!session) return false;
+  if (!session || !permission) return false;
   const perms =
     "permissions" in session ? session.permissions : ([] as readonly string[]);
   const authenticated =

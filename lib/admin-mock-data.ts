@@ -513,43 +513,46 @@ export const adminRoles = [
   },
 ];
 
+/** Mock role-builder groups — codes must be subset of authz.AllPermissionCodes (ADM-110). */
 export const permissionGroups = [
   {
     group: "Merchants",
     permissions: [
       ["merchants.read", "View merchant profiles and balances"],
-      ["merchants.update", "Edit verification and settlement settings"],
-      ["merchants.restrict", "Restrict, suspend, or restore merchants"],
-      ["merchants.impersonate", "Open seller dashboard as merchant"],
+      ["merchants.write", "Edit merchant status, API access, and support actions"],
+      ["impersonation.start", "Open seller or buyer surface as support actor"],
     ],
   },
   {
     group: "Money movement",
     permissions: [
-      ["payments.read", "View QRIS payment intents and callbacks"],
-      ["withdrawals.review", "Review withdrawal evidence"],
-      ["withdrawals.approve", "Approve and execute disbursements"],
+      ["payments.read", "View QRIS payment intents, providers, and callbacks"],
+      ["withdrawals.review", "Review, approve, hold, or reject withdrawals"],
+      ["orders.read", "Inspect global orders and fee evidence"],
     ],
   },
   {
     group: "KYC & delivery",
     permissions: [
-      ["kyc.read", "View QRIS API KYC applications"],
-      ["kyc.review", "Approve or reject QRIS API access"],
+      ["kyc.review", "Review QRIS API KYC cases and transitions"],
       ["webhooks.read", "View callbacks and seller webhook deliveries"],
       ["provider_callbacks.replay", "Replay failed Xendit callbacks"],
       ["seller_webhook_deliveries.retry", "Retry failed seller deliveries"],
+      ["fulfillment.read", "Inspect delivery attempts"],
+      ["inventory.read", "Inspect redacted inventory"],
     ],
   },
   {
     group: "Platform",
     permissions: [
-      ["providers.read", "View provider infrastructure health"],
-      ["providers.health_check", "Run non-mutating provider health checks"],
-      ["settings.manage", "Manage operational limits and feature flags"],
-      ["roles.manage", "Create roles and assign permissions"],
-      ["audit.export", "Export immutable audit data"],
-      ["maintenance.manage", "Enable emergency maintenance mode"],
+      ["roles.read", "View roles and permission registry"],
+      ["roles.write", "Create and edit custom roles"],
+      ["roles.assign", "Assign roles and invite staff"],
+      ["users.read", "Lookup staff and seller accounts"],
+      ["audit.read", "Search and export immutable audit trail"],
+      ["platform.emergency", "View system health and emergency controls"],
+      ["platform.fees.preview", "Preview launch fee calculations"],
+      ["admin.dashboard.read", "Open command center overview"],
     ],
   },
 ];

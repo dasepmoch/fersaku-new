@@ -16,9 +16,9 @@ describe("admin route policy", () => {
     ]);
   });
 
-  it("requires explicit permission metadata", () => {
+  it("requires explicit permission metadata aligned to backend", () => {
     const meta = getAdminPageMeta(["withdrawals"]);
-    expect(meta.permission).toBe("withdrawals.read");
+    expect(meta.permission).toBe("withdrawals.review");
     expect(meta.title).toContain("Withdrawal");
   });
 });

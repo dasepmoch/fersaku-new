@@ -13,9 +13,11 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { ADMIN_ACTION_PERMISSIONS } from "@/features/admin/config/permissions";
 import { useAdminRoles } from "@/features/admin/data";
 import { useRouter } from "next/navigation";
 import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
+import { useHasPermission } from "@/shared/auth/session-provider";
 import {
   readVersionedStorage,
   writeVersionedStorage,
@@ -39,6 +41,9 @@ const staffInvitationSchema = z.array(
 export function AdminAction({ section }: { section: string }) {
   const router = useRouter();
   const [staffOpen, setStaffOpen] = useState(false);
+  const canInviteStaff = useHasPermission(ADMIN_ACTION_PERMISSIONS.staffInvite);
+  const canWriteRoles = useHasPermission(ADMIN_ACTION_PERMISSIONS.rolesWrite);
+  const canExportAudit = useHasPermission(ADMIN_ACTION_PERMISSIONS.auditExport);
   if (section === "merchants")
     return (
       <AdminButton
@@ -51,28 +56,50 @@ export function AdminAction({ section }: { section: string }) {
   if (section === "users")
     return (
       <>
-        <AdminButton onClick={() => setStaffOpen(true)}>
+        <AdminButton
+          disabled={!canInviteStaff}
+          title={
+            canInviteStaff
+              ? undefined
+              : "Requires roles.assign permission"
+          }
+          onClick={() => {
+            if (!canInviteStaff) return;
+            setStaffOpen(true);
+          }}
+        >
           <UserCog className="size-4" /> Add staff account
         </AdminButton>
-        {staffOpen && <StaffInviteDialog onClose={() => setStaffOpen(false)} />}
+        {staffOpen && canInviteStaff ? (
+          <StaffInviteDialog onClose={() => setStaffOpen(false)} />
+        ) : null}
       </>
     );
   if (section === "roles")
-    return (
+    return canWriteRoles ? (
       <Link
         href="/admin/roles/new"
         className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#11182a] px-4 text-[10px] font-extrabold text-white"
       >
         <Plus className="size-4" /> Create custom role
       </Link>
+    ) : (
+      <AdminButton disabled title="Requires roles.write permission">
+        <Plus className="size-4" /> Create custom role
+      </AdminButton>
     );
   if (section === "audit-logs")
     return (
       <AdminButton
         secondary
-        onClick={() =>
-          window.dispatchEvent(new Event("fersaku-admin-audit-export"))
+        disabled={!canExportAudit}
+        title={
+          canExportAudit ? undefined : "Requires audit.read permission"
         }
+        onClick={() => {
+          if (!canExportAudit) return;
+          window.dispatchEvent(new Event("fersaku-admin-audit-export"));
+        }}
       >
         <FileDown className="size-4" /> Export trail
       </AdminButton>

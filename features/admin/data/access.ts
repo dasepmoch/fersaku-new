@@ -25,18 +25,18 @@ const mockRoleSchema = z.object({
 
 const mockRoleStoreSchema = z.array(mockRoleSchema);
 
+/** Mock role fixtures — canonical codes only (ADM-110). */
 const fixturePermissions: Record<string, string[]> = {
   role_finance: [
     "merchants.read",
     "payments.read",
     "withdrawals.review",
-    "withdrawals.approve",
-    "audit.export",
+    "orders.read",
+    "audit.read",
   ],
   role_support: [
     "merchants.read",
-    "merchants.update",
-    "kyc.read",
+    "merchants.write",
     "kyc.review",
     "webhooks.read",
     "provider_callbacks.replay",
@@ -52,10 +52,10 @@ const fixturePermissions: Record<string, string[]> = {
     "merchants.read",
     "payments.read",
     "withdrawals.review",
-    "kyc.read",
+    "kyc.review",
     "webhooks.read",
-    "providers.read",
-    "audit.export",
+    "audit.read",
+    "admin.dashboard.read",
   ],
 };
 

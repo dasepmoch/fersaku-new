@@ -1,21 +1,28 @@
 "use client";
 
 import { ShieldX } from "lucide-react";
+import {
+  canAccessAdminPage,
+  type AdminPageMeta,
+} from "@/features/admin/config/routes";
 import { useSession } from "@/shared/auth/session-provider";
 import { getDomainSource } from "@/shared/data/domain-source";
 
 /**
- * INT-120: API mode uses bootstrap claims; mock domain keeps prototype UX via mock claims.
+ * ADM-110 / INT-120: API mode uses bootstrap claims; mock keeps prototype via mock claims.
  * Backend authorization remains authoritative on every command.
  */
 export function AdminPermissionBoundary({
   permission,
+  disposition = "active",
   children,
 }: {
-  permission: string;
+  /** Route minimum permission, or null for authenticated-admin-only surfaces. */
+  permission: AdminPageMeta["permission"];
+  disposition?: AdminPageMeta["disposition"];
   children: React.ReactNode;
 }) {
-  const { hasPermission, ready, isAuthenticated } = useSession();
+  const { claims, ready, isAuthenticated } = useSession();
 
   // Wait for bootstrap so API mode never flash-allows on hardcoded mock.
   if (!ready) {
@@ -29,6 +36,8 @@ export function AdminPermissionBoundary({
     source = "mock";
   }
 
+  const displayCode = permission ?? "admin.session";
+
   // API mode without session: guard already redirected; deny here fail-closed.
   if (source === "api" && !isAuthenticated) {
     return (
@@ -36,13 +45,19 @@ export function AdminPermissionBoundary({
         <ShieldX className="size-7" />
         <h2 className="mt-5 text-xl font-black">Permission required</h2>
         <p className="mt-2 text-sm opacity-70">
-          Your administrator role does not include <code>{permission}</code>.
+          Your administrator role does not include <code>{displayCode}</code>.
         </p>
       </section>
     );
   }
 
-  const allowed = hasPermission(permission);
+  const meta: AdminPageMeta = {
+    title: "",
+    description: "",
+    permission,
+    disposition,
+  };
+  const allowed = canAccessAdminPage(meta, claims);
   if (allowed) return children;
 
   return (
@@ -50,7 +65,7 @@ export function AdminPermissionBoundary({
       <ShieldX className="size-7" />
       <h2 className="mt-5 text-xl font-black">Permission required</h2>
       <p className="mt-2 text-sm opacity-70">
-        Your administrator role does not include <code>{permission}</code>.
+        Your administrator role does not include <code>{displayCode}</code>.
       </p>
     </section>
   );
