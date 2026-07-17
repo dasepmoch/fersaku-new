@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // QLT-215 API harness lives under tests/e2e/api (playwright.api.config.ts).
+  testIgnore: ["**/api/**"],
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,
   workers: process.env.CI ? 2 : 2,

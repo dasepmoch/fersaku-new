@@ -164,7 +164,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `QLT-110` | P0 | INT-000, INT-030; co-evolve INT-150/domain migrations | QA | completed @nikki/opencode · 2026-07-17 · claim released | Single deterministic nonprod seed owner | TASK/evidence/QLT-110/20260717-qlt110-nikki.md · seed-ids.json · backend/internal/seed · backend/cmd/seed |
 | `[ ]` | `QLT-200` | P0/P1 continuous | INT-000, INT-010; domain task co-evolves | QA/domain | — | Unit/mapper/provider-consumer contract tests | — |
 | `[ ]` | `QLT-210` | P0 continuous | QLT-100; tested migration/domain co-evolves | QA/domain | — | Real DB/concurrency/integration suite | — |
-| `[ ]` | `QLT-215` | P0 | QLT-100, QLT-110, INT-025, INT-030, INT-100 | QA | — | Disposable API-mode Playwright harness | — |
+| `[x]` | `QLT-215` | P0 | QLT-100, QLT-110, INT-025, INT-030, INT-100 | QA | completed @nikki/opencode · main · 2026-07-17 14:07 WIB · claim released | Disposable API-mode Playwright harness | TASK/evidence/QLT-215/20260717-1407-nikki.md · playwright.api.config.ts · scripts/e2e-api-stack.sh · tests/e2e/api/ |
 | `[ ]` | `QLT-220` | P0/domain | QLT-215, INT-190; co-evolve with active domain implementation | QA/domain | — | Cross-stack API E2E per domain | — |
 | `[ ]` | `QLT-230` | P0 UI | UI-000, UI-050, UI-060, QLT-100; API parity also QLT-110/215/domain | QA/UX | — | Visual/responsive/a11y/interaction proof | — |
 | `[ ]` | `QLT-300` | P0 | INT-120, INT-130, INT-140, INT-150, INT-170; INT-180 **if live provider/security integration**; capability cells co-evolve | QA/security | — | Security/privacy negative matrix | — |

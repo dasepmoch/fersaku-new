@@ -251,12 +251,12 @@ For every feature API function:
 
 ### Checklist
 
-- [ ] Add separate Playwright project/env for API mode without removing mock projects.
-- [ ] Orchestrate disposable dependencies, migration, `QLT-110` seed, backend API/worker readiness, and Next per-domain source registry.
-- [ ] Provide safe test helpers for Mailpit token extraction and signed fake-provider callback; helpers exist only test environment and cannot boot production.
-- [ ] Capture sanitized trace/network/log; mask/disable artefact during raw secret/document/recovery-code steps.
-- [ ] Make teardown/retry deterministic and parallel namespace-safe.
-- [ ] Add one minimal health/public request test so harness failure is distinguishable from product test failure.
+- [x] Add separate Playwright project/env for API mode without removing mock projects.
+- [x] Orchestrate disposable dependencies, migration, `QLT-110` seed, backend API/worker readiness, and Next per-domain source registry.
+- [x] Provide safe test helpers for Mailpit token extraction and signed fake-provider callback; helpers exist only test environment and cannot boot production.
+- [x] Capture sanitized trace/network/log; mask/disable artefact during raw secret/document/recovery-code steps.
+- [x] Make teardown/retry deterministic and parallel namespace-safe.
+- [x] Add one minimal health/public request test so harness failure is distinguishable from product test failure.
 
 ### Acceptance criteria
 
