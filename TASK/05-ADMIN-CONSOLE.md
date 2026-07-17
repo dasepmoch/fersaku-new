@@ -474,13 +474,13 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 
 ### Checklist FE
 
-- [ ] Replace timers/local state with real provider/system snapshots and typed emergency commands.
-- [ ] Active launch fee fields stay read-only; preview is pure and never persists configuration.
-- [ ] Health reflects actual adapter, mode/account scope, last check, degraded/unavailable—never fake OK.
-- [ ] Exactly approved emergency switches (`SELLER_REGISTRATION`, `QRIS_CHECKOUT`, `WITHDRAWALS`) with version/If-Match.
-- [ ] Emergency mutation existing guarded dialog + permission + actual MFA + reason + incident ticket + idempotency; no optimistic success.
-- [ ] Conflict refreshes version without losing reason.
-- [ ] Health polling bounded and visibility-aware.
+- [x] Replace timers/local state with real provider/system snapshots and typed emergency commands.
+- [x] Active launch fee fields stay read-only; preview is pure and never persists configuration.
+- [x] Health reflects actual adapter, mode/account scope, last check, degraded/unavailable—never fake OK.
+- [x] Exactly approved emergency switches (`SELLER_REGISTRATION`, `QRIS_CHECKOUT`, `WITHDRAWALS`) with version/If-Match.
+- [x] Emergency mutation existing guarded dialog + permission + actual MFA + reason + incident ticket + idempotency; no optimistic success.
+- [x] Conflict refreshes version without losing reason.
+- [x] Health polling bounded and visibility-aware.
 
 ### Checklist BE
 

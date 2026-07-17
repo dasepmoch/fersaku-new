@@ -17,11 +17,22 @@ export type ProviderItem = {
   name: string;
   type: string;
   status: string;
+  /** Truthful health kind — never coerce unknown to ok. */
+  statusKind?: "ok" | "degraded" | "down" | "unknown";
   latency: string;
   uptime: string;
   role: string;
   color: string;
 };
+
+function statusClass(kind: ProviderItem["statusKind"], status: string) {
+  if (kind === "ok" || (!kind && status === "Live")) {
+    return "bg-[#e7f6ec] text-[#238150]";
+  }
+  if (kind === "down") return "bg-[#fff0ee] text-[#c9544d]";
+  if (kind === "unknown") return "bg-[#eef0f5] text-[#5c667a]";
+  return "bg-[#fff0d9] text-[#9a6b20]";
+}
 
 export function GenericProvider({
   provider,
@@ -56,9 +67,7 @@ export function GenericProvider({
         <span
           className={cn(
             "ml-auto rounded-full px-2.5 py-1.5 text-[8px] font-extrabold",
-            provider.status === "Live"
-              ? "bg-[#e7f6ec] text-[#238150]"
-              : "bg-[#fff0d9] text-[#9a6b20]",
+            statusClass(provider.statusKind, provider.status),
           )}
         >
           {provider.status}
@@ -67,7 +76,7 @@ export function GenericProvider({
       <div className="mt-7 grid grid-cols-3 gap-3">
         {[
           ["Latency", provider.latency],
-          ["30D uptime", provider.uptime],
+          ["Scope / note", provider.uptime],
           ["Role", provider.role],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl bg-[#f4f6f9] p-4">

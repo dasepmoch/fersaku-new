@@ -6,107 +6,177 @@ import {
   Database,
   Network,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
+  ShieldQuestion,
   Terminal,
+  type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { EmergencySwitchboard } from "@/features/admin/operations/emergency";
+import { useAdminProviderInfrastructure } from "@/features/admin/operations/emergency/hooks";
+import type {
+  HealthStatusKind,
+  ProviderHealthRow,
+} from "@/features/admin/operations/emergency/data";
+import { demoComponentHealth } from "@/features/admin/operations/emergency/mock";
 import { GenericProvider, type ProviderItem } from "./generic-provider";
 
-const baseProviders: ProviderItem[] = [
-  {
-    id: "xendit",
-    icon: CreditCard,
-    name: "Xendit Payments",
-    type: "QRIS acceptance & disbursement",
-    status: "Live",
-    latency: "142ms",
-    uptime: "99.99%",
-    role: "Payment rail",
-    color: "#5b7cfa",
-  },
-  {
-    id: "r2",
-    icon: Database,
-    name: "Cloudflare R2",
-    type: "Digital asset storage",
-    status: "Live",
-    latency: "86ms",
-    uptime: "100%",
-    role: "Object storage",
-    color: "#e59633",
-  },
-  {
-    id: "redis",
-    icon: Network,
-    name: "Redis / Asynq",
-    type: "Queues & background jobs",
-    status: "Degraded",
-    latency: "386ms",
-    uptime: "99.82%",
-    role: "Queue runtime",
-    color: "#ef6351",
-  },
-  {
-    id: "resend",
-    icon: Terminal,
-    name: "Resend",
-    type: "Transactional email",
-    status: "Live",
-    latency: "121ms",
-    uptime: "99.97%",
-    role: "Email delivery",
-    color: "#8b6ee8",
-  },
-];
+const ICON_BY_ID: Record<string, LucideIcon> = {
+  xendit: CreditCard,
+  r2: Database,
+  redis: Network,
+  resend: Terminal,
+  mail: Terminal,
+};
+
+function statusTone(kind: HealthStatusKind) {
+  switch (kind) {
+    case "ok":
+      return "bg-[#e7f6ec] text-[#238150]";
+    case "degraded":
+      return "bg-[#fff0d9] text-[#9a6b20]";
+    case "down":
+      return "bg-[#fff0ee] text-[#c9544d]";
+    default:
+      return "bg-[#eef0f5] text-[#5c667a]";
+  }
+}
+
+function vaultTone(kind: HealthStatusKind) {
+  switch (kind) {
+    case "ok":
+      return {
+        wrap: "border-[#cfe8da] bg-[#f0faf4]",
+        icon: "bg-[#d9f3e3] text-[#27804d]",
+        btn: "border-[#cfe8da] text-[#277a4b]",
+        Icon: ShieldCheck,
+      };
+    case "degraded":
+      return {
+        wrap: "border-[#f0d9a8] bg-[#fff8eb]",
+        icon: "bg-[#ffe8c2] text-[#9a6b20]",
+        btn: "border-[#f0d9a8] text-[#9a6b20]",
+        Icon: ShieldAlert,
+      };
+    case "down":
+      return {
+        wrap: "border-[#efc9c5] bg-[#fff6f5]",
+        icon: "bg-[#ffe0dc] text-[#c9544d]",
+        btn: "border-[#efc9c5] text-[#c9544d]",
+        Icon: ShieldAlert,
+      };
+    default:
+      return {
+        wrap: "border-[#dfe3ec] bg-[#f5f6f9]",
+        icon: "bg-[#e8ebf2] text-[#5c667a]",
+        btn: "border-[#dfe3ec] text-[#5c667a]",
+        Icon: ShieldQuestion,
+      };
+  }
+}
+
+function toProviderItem(row: ProviderHealthRow): ProviderItem {
+  return {
+    id: row.id,
+    icon: ICON_BY_ID[row.id] ?? Network,
+    name: row.name,
+    type: row.type,
+    status: row.statusLabel,
+    statusKind: row.statusKind,
+    latency: row.latencyLabel,
+    uptime: row.message || row.accountScope || "—",
+    role: row.role,
+    color: row.color,
+  };
+}
 
 export function ProviderInfrastructure() {
-  const [selected, setSelected] = useState("xendit");
+  const isMock = getDomainSource("adminRead") === "mock";
+  const query = useAdminProviderInfrastructure();
+  const rows: ProviderHealthRow[] =
+    query.data?.rows?.length
+      ? query.data.rows
+      : isMock
+        ? demoComponentHealth()
+        : [];
+
+  const items = useMemo(() => rows.map(toProviderItem), [rows]);
+  const [selected, setSelected] = useState<string>("");
   const [testing, setTesting] = useState<string | null>(null);
   const [tested, setTested] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastChecked, setLastChecked] = useState("just now");
-  const provider =
-    baseProviders.find((item) => item.id === selected) || baseProviders[0];
+
+  const activeId =
+    selected && items.some((i) => i.id === selected)
+      ? selected
+      : items[0]?.id ?? "";
+  const provider = items.find((item) => item.id === activeId) ?? items[0];
+
+  const overallKind = query.data?.overallKind ?? (isMock ? "degraded" : "unknown");
+  const tone = vaultTone(overallKind);
+  const VaultIcon = tone.Icon;
+  const lastChecked = query.data?.checkedLabel ?? (isMock ? "just now" : "unknown");
+  const overallLabel =
+    query.data?.overallLabel ??
+    (isMock ? "Provider vault degraded" : "Provider health unknown");
+
+  const refreshing = query.isFetching && !query.isLoading;
+
   const test = (id: string) => {
+    // Refresh is the real health probe; no fake local timer success on api.
     setTesting(id);
     setTested(null);
-    setTimeout(() => {
+    void query.refetch().finally(() => {
       setTesting(null);
       setTested(id);
-      setTimeout(() => setTested(null), 1800);
-    }, 900);
+      window.setTimeout(() => setTested(null), 1800);
+    });
   };
+
   const refreshStatus = () => {
-    setRefreshing(true);
-    window.setTimeout(() => {
-      setRefreshing(false);
-      setLastChecked("just now");
-    }, 700);
+    void query.refetch();
   };
+
+  const loadError =
+    !isMock &&
+    (query.data?.systemError ||
+      query.data?.providersError ||
+      query.error?.message);
+
   return (
     <>
       <EmergencySwitchboard />
       <div className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
         <div>
-          <div className="rounded-[20px] border border-[#cfe8da] bg-[#f0faf4] p-5">
+          <div className={cn("rounded-[20px] border p-5", tone.wrap)}>
             <div className="flex items-center">
-              <span className="grid size-10 place-items-center rounded-xl bg-[#d9f3e3] text-[#27804d]">
-                <ShieldCheck className="size-4" />
+              <span
+                className={cn(
+                  "grid size-10 place-items-center rounded-xl",
+                  tone.icon,
+                )}
+              >
+                <VaultIcon className="size-4" />
               </span>
               <div className="ml-3">
-                <h3 className="text-[10px] font-black">
-                  Provider vault healthy
-                </h3>
+                <h3 className="text-[10px] font-black">{overallLabel}</h3>
                 <p className="mt-1 text-[8px] text-[#688374]">
-                  4 providers • Xendit primary • health checked {lastChecked}
+                  {items.length || 0} providers
+                  {items.some((i) => i.id === "xendit")
+                    ? " • Xendit primary"
+                    : ""}{" "}
+                  • health checked {lastChecked}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={refreshStatus}
-                className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#cfe8da] bg-white px-3 text-[8px] font-extrabold text-[#277a4b]"
+                className={cn(
+                  "ml-auto inline-flex h-9 items-center gap-1.5 rounded-xl border bg-white px-3 text-[8px] font-extrabold",
+                  tone.btn,
+                )}
               >
                 <RefreshCw
                   className={cn("size-3.5", refreshing && "animate-spin")}
@@ -115,16 +185,29 @@ export function ProviderInfrastructure() {
               </button>
             </div>
           </div>
+          {loadError ? (
+            <div className="mt-3 rounded-xl border border-[#efc9c5] bg-[#fff6f5] px-3 py-2 text-[8px] text-[#b94c46]">
+              {loadError}
+            </div>
+          ) : null}
+          {!isMock && items.length === 0 && !query.isLoading ? (
+            <div className="mt-3 rounded-xl border border-[#dfe3ec] bg-white px-3 py-4 text-[8px] text-[#7c879d]">
+              No provider health returned. Not showing fake operational status.
+            </div>
+          ) : null}
           <div className="mt-4 grid gap-2">
-            {baseProviders.map((item) => {
+            {items.map((item) => {
               const Icon = item.icon;
+              const kind =
+                rows.find((r) => r.id === item.id)?.statusKind ?? "unknown";
               return (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => setSelected(item.id)}
                   className={cn(
                     "rounded-[18px] border p-4 text-left transition",
-                    selected === item.id
+                    activeId === item.id
                       ? "shadow-card border-[#5b7cfa] bg-[#eef2ff]"
                       : "border-[#dfe3ec] bg-white",
                   )}
@@ -148,9 +231,7 @@ export function ProviderInfrastructure() {
                     <span
                       className={cn(
                         "ml-auto rounded-full px-2 py-1 text-[7px] font-extrabold",
-                        item.status === "Live"
-                          ? "bg-[#e7f6ec] text-[#238150]"
-                          : "bg-[#fff0d9] text-[#9a6b20]",
+                        statusTone(kind),
                       )}
                     >
                       {item.status}
@@ -163,13 +244,19 @@ export function ProviderInfrastructure() {
           </div>
         </div>
         <div className="min-w-0">
-          <GenericProvider
-            provider={provider}
-            test={() => test(provider.id)}
-            testing={testing === provider.id}
-            tested={tested === provider.id}
-            lastChecked={lastChecked}
-          />
+          {provider ? (
+            <GenericProvider
+              provider={provider}
+              test={() => test(provider.id)}
+              testing={testing === provider.id}
+              tested={tested === provider.id}
+              lastChecked={lastChecked}
+            />
+          ) : (
+            <section className="rounded-[20px] border border-[#dfe3ec] bg-white p-6 text-[9px] text-[#7c879d]">
+              Provider detail unavailable until health is returned.
+            </section>
+          )}
         </div>
       </div>
     </>

@@ -226,7 +226,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Audit list/detail/integrity | audit UI | `GET /v1/admin/audit-logs`, `GET /v1/admin/audit-logs/{eventId}`, `GET /v1/admin/audit-integrity` | M | Mapper; server chain only. | ADM-360 |
 | Audit export | audit UI | `POST /v1/admin/audit-exports`, `GET /v1/admin/audit-exports/{exportId}` | U | Async/redacted/signed/audited. | ADM-360 |
 | Providers/system | provider/system UI | `GET /v1/admin/providers`, `GET /v1/admin/system` | M | Truthful real-adapter health. | ADM-370 |
-| Emergency controls | system UI | `GET /v1/admin/system/emergency-controls`, `POST /v1/admin/system/emergency-controls` | U | Version/MFA/reason/ticket/idempotency. | ADM-370 |
+| Emergency controls | system UI | `GET /v1/admin/system/emergency-controls`, `POST /v1/admin/system/emergency-controls` | M | Version/MFA/reason/ticket/idempotency. FE wired ADM-370. | ADM-370 |
 | Fee read/preview | fee UI | `GET /v1/admin/system/fees`, `POST /v1/admin/system/fees/preview` | M | Read-only active + pure preview; no publish. | ADM-370 |
 | Campaigns | campaign UI | no canonical method/path assigned or mounted | D | Implement/freeze exact campaign operations or live-disable explicitly. | ADM-380 |
 

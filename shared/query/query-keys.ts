@@ -174,6 +174,10 @@ export const queryKeys = {
     campaigns: (filters: Record<string, unknown> = {}) =>
       ["admin", "campaigns", "bounded", filters] as const,
     providers: () => ["admin", "providers"] as const,
+    /** ADM-370 emergency switch list (also embedded in system snapshot). */
+    emergencyControls: () => ["admin", "emergency-controls"] as const,
+    /** ADM-370 active fee policy (admin read; same as platform fees). */
+    systemFees: () => ["admin", "system", "fees"] as const,
     platformVolume: () => ["admin", "platform-volume"] as const,
     permissionGroups: () => ["admin", "permission-groups"] as const,
     inventory: (filters: Record<string, unknown> = {}) =>

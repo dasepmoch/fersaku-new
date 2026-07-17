@@ -3714,3 +3714,134 @@ export type AdminSellerWebhookDeliveryDto = z.infer<
   typeof adminSellerWebhookDeliveryDtoSchema
 >;
 
+/**
+ * ADM-370 — provider/system health + emergency controls + fee preview.
+ * Health status is opaque string; never coerce unknown/degraded to OK in mappers.
+ */
+export const adminHealthStatusSchema = z.string().min(1);
+
+export const adminProviderHealthDtoSchema = z.object({
+  provider: z.string().min(1),
+  status: adminHealthStatusSchema,
+  latencyMs: z.number().int().nullable().optional(),
+  accountScope: z.string().optional(),
+  checkedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  message: z.string().optional(),
+});
+
+export const adminComponentHealthDtoSchema = z.object({
+  component: z.string().min(1),
+  status: adminHealthStatusSchema,
+  latencyMs: z.number().int().nullable().optional(),
+  checkedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  message: z.string().optional(),
+});
+
+export const adminEmergencySwitchNameSchema = z.enum([
+  "SELLER_REGISTRATION",
+  "QRIS_CHECKOUT",
+  "WITHDRAWALS",
+]);
+
+export const adminEmergencyControlDtoSchema = z.object({
+  switchName: z.string().min(1),
+  enabled: z.boolean(),
+  version: z.number().int(),
+  reason: z.string().optional().default(""),
+  incidentTicket: z.string().optional(),
+  updatedBy: z.string().nullable().optional(),
+  effectiveAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const adminSystemSnapshotDtoSchema = z.object({
+  emergencyControls: z.array(adminEmergencyControlDtoSchema).optional(),
+  feePolicyVersion: z.string().optional(),
+  componentHealth: z.array(adminComponentHealthDtoSchema).optional(),
+  note: z.string().optional(),
+});
+
+export const adminProviderHealthListDataSchema = z.object({
+  items: z.array(adminProviderHealthDtoSchema),
+});
+
+export const adminEmergencyControlListDataSchema = z.object({
+  items: z.array(adminEmergencyControlDtoSchema),
+});
+
+export const adminProviderHealthListEnvelopeSchema = successEnvelopeSchema(
+  adminProviderHealthListDataSchema,
+);
+
+export const adminEmergencyControlListEnvelopeSchema = successEnvelopeSchema(
+  adminEmergencyControlListDataSchema,
+);
+
+export const adminEmergencyControlEnvelopeSchema = successEnvelopeSchema(
+  adminEmergencyControlDtoSchema,
+);
+
+export const adminSystemSnapshotEnvelopeSchema = successEnvelopeSchema(
+  adminSystemSnapshotDtoSchema,
+);
+
+export const adminSetEmergencyControlRequestSchema = z.object({
+  switchName: adminEmergencySwitchNameSchema,
+  enabled: z.boolean(),
+  reason: z.string().min(1),
+  incidentTicket: z.string().optional(),
+  expectedVersion: z.number().int().min(1),
+});
+
+export const adminFeePreviewRequestSchema = z.object({
+  kind: z.enum(["transaction", "withdrawal"]),
+  amount: z.number().int().nonnegative(),
+  providerFee: z.number().int().nonnegative().optional(),
+  source: z.enum(["STOREFRONT", "QRIS_API"]).optional(),
+});
+
+export const adminFeePreviewDtoSchema = z.object({
+  policyVersion: z.string().min(1),
+  kind: z.string().min(1),
+  currency: z.string().optional(),
+  source: z.string().optional(),
+  amount: moneyIdrSchema.optional(),
+  gross: moneyIdrSchema.optional(),
+  platformFee: moneyIdrSchema.optional(),
+  processingFee: moneyIdrSchema.optional(),
+  providerProcessingFee: moneyIdrSchema.optional(),
+  totalFee: moneyIdrSchema.optional(),
+  netAmount: moneyIdrSchema.optional(),
+  netDisbursement: moneyIdrSchema.optional(),
+  minimumAmount: moneyIdrSchema.optional(),
+  transactionPercentBps: z.number().int().optional(),
+  transactionFixedIdr: moneyIdrSchema.optional(),
+  withdrawalPercentBps: z.number().int().optional(),
+});
+
+export const adminFeePreviewEnvelopeSchema = successEnvelopeSchema(
+  adminFeePreviewDtoSchema,
+);
+
+export type AdminProviderHealthDto = z.infer<
+  typeof adminProviderHealthDtoSchema
+>;
+export type AdminComponentHealthDto = z.infer<
+  typeof adminComponentHealthDtoSchema
+>;
+export type AdminEmergencyControlDto = z.infer<
+  typeof adminEmergencyControlDtoSchema
+>;
+export type AdminSystemSnapshotDto = z.infer<
+  typeof adminSystemSnapshotDtoSchema
+>;
+export type AdminSetEmergencyControlRequest = z.infer<
+  typeof adminSetEmergencyControlRequestSchema
+>;
+export type AdminFeePreviewDto = z.infer<typeof adminFeePreviewDtoSchema>;
+export type AdminFeePreviewRequest = z.infer<
+  typeof adminFeePreviewRequestSchema
+>;
+

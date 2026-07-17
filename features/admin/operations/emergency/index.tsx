@@ -1,70 +1,175 @@
 "use client";
 
 import { adminPanel } from "@/features/admin/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Network, Pause, Play, Siren } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { emergencySeed } from "./data";
+import { ApiError } from "@/shared/api/api-error";
+import { PROBLEM_CODES } from "@/shared/api/problem-codes";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import {
+  getDomainSource,
+} from "@/shared/data/domain-source";
+import {
+  type EmergencyControl,
+  maintenanceBannerId,
+} from "./data";
 import { Field, Modal } from "./pieces";
-import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
-
-const maintenanceBannerId = "global-maintenance-banner";
+import {
+  incidentModeHealthy,
+  incidentModeLabel,
+} from "./mappers";
+import {
+  useAdminEmergencyControls,
+  useAdminEmergencyWriteEnabled,
+  useAdminProviderInfrastructure,
+  useSetAdminEmergencyControlMutation,
+} from "./hooks";
+import { demoEmergencyControls } from "./mock";
 
 export function EmergencySwitchboard() {
-  const [controls, setControls] = useState(emergencySeed);
+  const isMock = getDomainSource("adminRead") === "mock";
+  const canWrite = useAdminEmergencyWriteEnabled();
+  const infra = useAdminProviderInfrastructure();
+  const emergencyQuery = useAdminEmergencyControls();
+  const mutation = useSetAdminEmergencyControlMutation();
+
+  const serverControls =
+    infra.data?.emergencyControls?.length
+      ? infra.data.emergencyControls
+      : emergencyQuery.data?.length
+        ? emergencyQuery.data
+        : null;
+
+  const [controls, setControls] = useState<EmergencyControl[]>(() =>
+    isMock ? demoEmergencyControls() : [],
+  );
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [banner, setBanner] = useState(true);
+  const [ticket, setTicket] = useState("");
+  const [banner, setBanner] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const idemRef = useRef(createIdempotencyKey());
+
+  useEffect(() => {
+    if (serverControls && serverControls.length > 0) {
+      setControls(serverControls);
+    }
+  }, [serverControls]);
+
   const pending = controls.find((item) => item.id === pendingId);
   const isBannerPending = pendingId === maintenanceBannerId;
   const pendingEnabled = pending?.enabled ?? banner;
   const pendingLabel = pending?.label ?? "global maintenance banner";
   const pendingImpact =
     pending?.impact ?? "Global customer-facing maintenance communication";
+  const modeLabel = incidentModeLabel(controls);
+  const modeHealthy = incidentModeHealthy(controls);
+
   const closePending = () => {
     setPendingId(null);
     setReason("");
+    setTicket("");
     setConfirmed(false);
+    setError(null);
+    setBusy(false);
+    idemRef.current = createIdempotencyKey();
   };
+
   const openPending = (id: string) => {
     setReason("");
+    setTicket("");
     setConfirmed(false);
+    setError(null);
+    idemRef.current = createIdempotencyKey();
     setPendingId(id);
   };
-  const apply = () => {
+
+  const apply = async () => {
     const auditReason = reason.trim();
-    if (auditReason.length < 12 || !confirmed) return;
-    if (pending) {
-      setControls((items) =>
-        items.map((item) =>
-          item.id === pending.id ? { ...item, enabled: !item.enabled } : item,
-        ),
-      );
-      appendClientAuditEvent({
-        actor: "admin@fersaku.id",
-        action: `emergency.${pending.enabled ? "paused" : "enabled"}`,
-        target: pending.id,
-        ip: "mock-admin-session",
-        result: "Success",
-        context: auditReason,
-      });
+    if (auditReason.length < 12 || !confirmed || busy) return;
+
+    // Banner is not a BE emergency switch — disposition only (no fake live authority).
+    if (isBannerPending) {
+      if (!isMock) {
+        setError(
+          "Global maintenance banner is not a runtime emergency switch. Use release-managed status pages; only SELLER_REGISTRATION, QRIS_CHECKOUT, and WITHDRAWALS are live-writable.",
+        );
+        return;
+      }
+      setBanner((b) => !b);
       closePending();
       return;
     }
-    if (!isBannerPending) return;
-    const next = !banner;
-    setBanner(next);
-    appendClientAuditEvent({
-      actor: "admin@fersaku.id",
-      action: `emergency.banner.${next ? "enabled" : "disabled"}`,
-      target: maintenanceBannerId,
-      ip: "mock-admin-session",
-      result: "Success",
-      context: auditReason,
-    });
-    closePending();
+
+    if (!pending) return;
+
+    if (!canWrite) {
+      setError("Missing platform.emergency permission");
+      return;
+    }
+
+    if (!isMock && pending.version < 1) {
+      setError(
+        "This control has no server version yet. Refresh health before mutating.",
+      );
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await mutation.mutateAsync({
+        switchName: pending.switchName,
+        enabled: !pending.enabled,
+        reason: auditReason,
+        incidentTicket: ticket.trim() || undefined,
+        expectedVersion: pending.version || 1,
+        idempotencyKey: idemRef.current,
+      });
+      setControls((items) =>
+        items.map((item) =>
+          item.switchName === result.control.switchName
+            ? result.control
+            : item,
+        ),
+      );
+      closePending();
+    } catch (err) {
+      const isConflict =
+        err instanceof ApiError &&
+        (err.status === 409 || err.code === PROBLEM_CODES.CONFLICT);
+      if (isConflict) {
+        // Refresh version without losing reason (ADM-370 AC).
+        try {
+          await emergencyQuery.refetch();
+          await infra.refetch();
+        } catch {
+          /* ignore */
+        }
+        setError(
+          "Version conflict — controls refreshed. Review state and confirm again with the same reason.",
+        );
+        idemRef.current = createIdempotencyKey();
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Emergency control update failed",
+        );
+      }
+      setBusy(false);
+    }
   };
+
+  const loadError =
+    !isMock &&
+    (infra.data?.systemError ||
+      infra.error?.message ||
+      emergencyQuery.error?.message);
+
   return (
     <>
       <section className={`${adminPanel} mb-5 overflow-hidden`}>
@@ -93,12 +198,24 @@ export function EmergencySwitchboard() {
               <p className="text-[7px] font-extrabold tracking-wider text-white/40 uppercase">
                 Incident mode
               </p>
-              <b className="mt-1 block text-[9px] text-[#74e0a4]">
-                Normal operations
+              <b
+                className={cn(
+                  "mt-1 block text-[9px]",
+                  modeHealthy ? "text-[#74e0a4]" : "text-[#f1b84b]",
+                )}
+              >
+                {modeLabel}
               </b>
             </div>
           </div>
         </div>
+        {loadError ? (
+          <div className="border-b border-[#efc9c5] bg-[#fff6f5] px-4 py-3 text-[8px] text-[#b94c46]">
+            {typeof loadError === "string"
+              ? loadError
+              : "Emergency controls unavailable — not showing fake green state"}
+          </div>
+        ) : null}
         <div className="grid gap-px bg-[#e5e8ef] sm:grid-cols-2 xl:grid-cols-3">
           {controls.map((control) => (
             <div key={control.id} className="bg-white p-4">
@@ -118,10 +235,12 @@ export function EmergencySwitchboard() {
                   )}
                 </span>
                 <button
+                  type="button"
                   aria-label={`${control.enabled ? "Pause" : "Enable"} ${control.label}`}
+                  disabled={!canWrite || busy}
                   onClick={() => openPending(control.id)}
                   className={cn(
-                    "relative ml-auto h-6 w-11 rounded-full",
+                    "relative ml-auto h-6 w-11 rounded-full disabled:opacity-50",
                     control.enabled ? "bg-[#28a566]" : "bg-[#d85b53]",
                   )}
                 >
@@ -156,16 +275,24 @@ export function EmergencySwitchboard() {
             <div>
               <b className="block text-[8px]">Global maintenance banner</b>
               <span className="text-[7px] text-[#7c879d]">
-                Xendit sedang maintenance singkat. Pembayaran tetap aman dan
-                akan kembali segera.
+                {isMock
+                  ? "Xendit sedang maintenance singkat. Pembayaran tetap aman dan akan kembali segera."
+                  : "Not a live emergency switch — release-managed communication only (truthful disposition)."}
               </span>
             </div>
           </div>
           <button
+            type="button"
             aria-label={`${banner ? "Disable" : "Enable"} global maintenance banner`}
+            disabled={!isMock}
+            title={
+              isMock
+                ? undefined
+                : "Banner is not backend-backed; only three emergency switches are runtime-writable"
+            }
             onClick={() => openPending(maintenanceBannerId)}
             className={cn(
-              "relative h-6 w-11 shrink-0 rounded-full sm:ml-auto",
+              "relative h-6 w-11 shrink-0 rounded-full sm:ml-auto disabled:cursor-not-allowed disabled:opacity-40",
               banner ? "bg-[#5b7cfa]" : "bg-[#cbd2de]",
             )}
           >
@@ -191,6 +318,11 @@ export function EmergencySwitchboard() {
               Affected surfaces
             </p>
             <p className="mt-2 text-[9px] font-bold">{pendingImpact}</p>
+            {pending ? (
+              <p className="mt-2 text-[7px] text-[#8b95a8]">
+                Switch {pending.switchName} · version {pending.version}
+              </p>
+            ) : null}
           </div>
           <Field label="Required incident or maintenance reason">
             <textarea
@@ -201,6 +333,16 @@ export function EmergencySwitchboard() {
               className="resize-none rounded-xl border border-[#dce1e9] p-3 text-[9px] outline-none"
             />
           </Field>
+          {pending && !isBannerPending ? (
+            <Field label="Incident ticket (optional)">
+              <input
+                value={ticket}
+                onChange={(event) => setTicket(event.target.value)}
+                placeholder="INC-…"
+                className="h-10 rounded-xl border border-[#dce1e9] px-3 text-[9px] outline-none"
+              />
+            </Field>
+          ) : null}
           <label className="mt-4 flex gap-3 rounded-xl border border-[#f0d69e] bg-[#fff8e8] p-4 text-[8px] leading-4 text-[#7c6a45]">
             <input
               type="checkbox"
@@ -211,22 +353,29 @@ export function EmergencySwitchboard() {
             I reviewed customer impact, fallback behavior, communication banner,
             and rollback owner.
           </label>
+          {error ? (
+            <p className="mt-3 rounded-xl border border-[#efc9c5] bg-[#fff6f5] p-3 text-[8px] text-[#b94c46]">
+              {error}
+            </p>
+          ) : null}
           <div className="mt-5 flex gap-2">
             <button
+              type="button"
               onClick={closePending}
               className="h-10 flex-1 rounded-xl border border-[#dce1e9] text-[8px] font-bold"
             >
               Cancel
             </button>
             <button
-              disabled={reason.trim().length < 12 || !confirmed}
-              onClick={apply}
+              type="button"
+              disabled={reason.trim().length < 12 || !confirmed || busy}
+              onClick={() => void apply()}
               className={cn(
                 "h-10 flex-1 rounded-xl text-[8px] font-extrabold text-white disabled:bg-[#b9bfca]",
                 pendingEnabled ? "bg-[#d95750]" : "bg-[#218a52]",
               )}
             >
-              Confirm & audit change
+              {busy ? "Applying…" : "Confirm & audit change"}
             </button>
           </div>
         </Modal>
