@@ -470,37 +470,48 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 �
 ## QLT-310 — Performance dan “smooth” behavior budget
 
 **Priority:** P1
+**Depends on:** INT-160; capability cells co-evolve
 
-### Frontend interaction targets
+Parent framework (category registration/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-310-PERFORMANCE-COEVOLUTION.md` and `TASK/evidence/QLT-310/`. Parent `[x]` does **not** mark every FE interaction / BE budget / UX smoothness bullet or §3.7 capability cell complete; cells co-evolve with domain performance-sensitive slices. **Do not invent load-test results.**
+
+### Parent framework (done)
+
+- [x] Three categories registered: FE interaction guards, BE budget categories, UX smoothness policy.
+- [x] Required non-empty samples (bundle budget, query policy, checkout poll no-overlap, timeouts).
+- [x] Parent assert suite `tests/unit/qlt-310-parent-framework.test.ts`.
+- [x] CI suite guard `ci-assert-suite.mjs` `qlt-310-performance`; wired in `frontend-static` / `ci:assert:performance` (+ existing `frontend-build` bundle budget).
+- [x] Continuous co-evolution rule documented — domain slices expand budgets/guards in same PR as performance-sensitive changes; domain SLOs co-evolve via §3.7 cells.
+
+### Frontend interaction targets (capability cells / domain co-evolution — not claimed by parent alone)
 
 Targets harus dikonfirmasi dengan actual baseline/SLO, tetapi gunakan guard berikut:
 
-- search debounce sekitar 250–400 ms; request sebelumnya dibatalkan;
-- no overlapping checkout polls; visible pending poll bounded, hidden tab strongly reduced;
-- background refetch keeps previous content;
-- exact cache invalidation, not whole-console refetch;
+- search debounce sekitar 250–400 ms; request sebelumnya dibatalkan; *(parent sample: QUERY-MUTATION-POLICY + checkout quote debounce)*
+- no overlapping checkout polls; visible pending poll bounded, hidden tab strongly reduced; *(parent sample: chk-120-checkout-poll no-overlap)*
+- background refetch keeps previous content; *(parent sample: query-policy keepPreviousData)*
+- exact cache invalidation, not whole-console refetch; *(parent sample: matchesExactQueryKey / INT-160)*
 - list page bounded server limit; no fetch-all;
 - large upload direct-to-object storage with progress/cancel;
 - charts receive bounded aggregated series, not raw transaction history;
 - Server Components private fetch no shared cache and no waterfall where queries independent;
-- query/mutation timeout per operation class, not one indiscriminate value for upload/export/provider.
+- query/mutation timeout per operation class, not one indiscriminate value for upload/export/provider. *(parent sample: http-client timeoutMs + unit abort)*
 
-### Backend budgets/tests
+### Backend budgets/tests (capability cells / domain co-evolution — not claimed by parent alone)
 
-- Define SLO per read/write/payment/callback and measure p50/p95/p99.
+- Define SLO per read/write/payment/callback and measure p50/p95/p99. *(domain cells; no invented load results)*
 - Explain query plans/indexes for seller/admin filters and cursor.
 - N+1 detector/query count tests for order/customer/review/inventory read models.
 - Connection pool budgets across API/worker replicas.
 - Load test checkout create/status/callback, seller/admin lists, notifications, webhook worker.
 - Backpressure and graceful degradation; readiness/load shedding as designed.
 
-### UX smoothness acceptance
+### UX smoothness acceptance (capability cells / domain co-evolution — not claimed by parent alone)
 
 - No flash from mock -> real data.
 - No stale tenant/actor row.
-- Filter result race cannot revert UI.
-- Button only locks relevant operation and recovers on error.
-- Polling/upload timers abort on unmount.
+- Filter result race cannot revert UI. *(parent sample: keepPrevious + abort on key change)*
+- Button only locks relevant operation and recovers on error. *(parent sample: createPendingDedupe)*
+- Polling/upload timers abort on unmount. *(parent sample: chk-120 poll abort)*
 - Layout and scroll/focus position remain stable on background updates.
 
 ---

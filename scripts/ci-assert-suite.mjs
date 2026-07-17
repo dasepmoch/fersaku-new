@@ -569,6 +569,107 @@ switch (suite) {
     break;
   }
 
+  case "qlt-310-performance": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-310 continuous).
+    minLines(join(root, "docs/QLT-310-PERFORMANCE-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-310-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-310-PERFORMANCE-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "FE interaction guards",
+      "BE budget categories",
+      "UX smoothness policy",
+      "qlt-310-performance",
+      "check-bundle-budget",
+      "same PR",
+      "Do not invent",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-310 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const samples = [
+      "scripts/check-bundle-budget.mjs",
+      "shared/query/query-policy.ts",
+      "shared/query/mutation-policy.ts",
+      "shared/query/QUERY-MUTATION-POLICY.md",
+      "tests/unit/int-160-query-mutation.test.ts",
+      "features/commerce/checkout/poll.ts",
+      "tests/unit/chk-120-checkout-poll.test.ts",
+      "shared/api/http-client.ts",
+      "tests/unit/http-client.test.ts",
+      "tests/unit/qlt-310-parent-framework.test.ts",
+    ];
+    for (const f of samples) minLines(join(root, f), 30);
+
+    const bundle = readFileSync(
+      join(root, "scripts/check-bundle-budget.mjs"),
+      "utf8",
+    );
+    for (const needle of ["maxChunkBytes", "maxTotalBytes", "Bundle budget"]) {
+      if (!bundle.includes(needle)) {
+        fail(`check-bundle-budget.mjs missing parent marker: ${needle}`);
+      }
+    }
+
+    const pollTest = readFileSync(
+      join(root, "tests/unit/chk-120-checkout-poll.test.ts"),
+      "utf8",
+    );
+    if (!pollTest.includes("no overlapping polls")) {
+      fail("chk-120-checkout-poll.test.ts missing no-overlap assertion");
+    }
+
+    const httpTest = readFileSync(
+      join(root, "tests/unit/http-client.test.ts"),
+      "utf8",
+    );
+    if (!httpTest.includes("timeout")) {
+      fail("http-client.test.ts missing timeout coverage");
+    }
+
+    const queryPolicy = readFileSync(
+      join(root, "shared/query/query-policy.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "keepPreviousData",
+      "matchesExactQueryKey",
+      "staleTimeForSurface",
+    ]) {
+      if (!queryPolicy.includes(needle)) {
+        fail(`query-policy.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-310-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-310",
+      "MATRIX_CATEGORIES",
+      "FE interaction guards",
+      "check-bundle-budget",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-310-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-310 parent harness + 3 categories + samples=${samples.length} + bundle/query/poll/timeout + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

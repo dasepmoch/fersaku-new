@@ -43,11 +43,12 @@ jobs:
 
       - run: npm ci
 
-      - name: Assert unit + security-negative + QLT-300 suites are non-empty
+      - name: Assert unit + security-negative + QLT-300 + QLT-310 suites are non-empty
         run: |
           node scripts/ci-assert-suite.mjs frontend-unit
           node scripts/ci-assert-suite.mjs security-negative
           node scripts/ci-assert-suite.mjs qlt-300-security
+          node scripts/ci-assert-suite.mjs qlt-310-performance
 
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0
