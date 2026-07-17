@@ -151,6 +151,16 @@ export const queryKeys = {
       ["admin", "kyc", "case", caseId] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>
       ["admin", "webhooks", "bounded", filters] as const,
+    /** ADM-350 inbound provider callbacks only. */
+    providerCallbacks: (filters: Record<string, unknown> = {}) =>
+      ["admin", "provider-callbacks", "bounded", filters] as const,
+    providerCallback: (callbackId: string) =>
+      ["admin", "provider-callbacks", callbackId] as const,
+    /** ADM-350 outbound seller webhook deliveries only. */
+    sellerWebhookDeliveries: (filters: Record<string, unknown> = {}) =>
+      ["admin", "seller-webhook-deliveries", "bounded", filters] as const,
+    sellerWebhookDelivery: (deliveryId: string) =>
+      ["admin", "seller-webhook-deliveries", deliveryId] as const,
     roles: () => ["admin", "roles"] as const,
     /** ADM-220 role detail (roles.read). */
     role: (roleId: string) => ["admin", "roles", roleId] as const,

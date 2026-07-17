@@ -409,14 +409,14 @@ Backend tidak boleh mencampur ownership/signature/retry semantics kedua resource
 
 ### Checklist FE
 
-- [ ] Query kedua endpoint dengan filter dan declared pagination profile masing-masing; mapper discriminated union ke existing table.
-- [ ] Stable unique row key includes kind + ID.
-- [ ] Provider replay hanya pada valid stored callback dan permission.
-- [ ] Seller delivery retry hanya outbound delivery endpoint.
-- [ ] Force-fulfill uses order delivery command + verified evidence, not a fake local row update.
-- [ ] Existing detail/guarded dialogs preserved; actual reason/MFA/idempotency.
-- [ ] Response/evidence redacted; never render signature/token/full secret body.
-- [ ] Partial source failure shown via existing error pattern, not silently omitted.
+- [x] Query kedua endpoint dengan filter dan declared pagination profile masing-masing; mapper discriminated union ke existing table.
+- [x] Stable unique row key includes kind + ID.
+- [x] Provider replay hanya pada valid stored callback dan permission.
+- [x] Seller delivery retry hanya outbound delivery endpoint.
+- [x] Force-fulfill uses order delivery command + verified evidence, not a fake local row update.
+- [x] Existing detail/guarded dialogs preserved; actual reason/MFA/idempotency.
+- [x] Response/evidence redacted; never render signature/token/full secret body.
+- [x] Partial source failure shown via existing error pattern, not silently omitted.
 
 ### Checklist BE
 

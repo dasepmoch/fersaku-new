@@ -3579,3 +3579,138 @@ export type AdminKycTransitionRequest = z.infer<
   typeof adminKycTransitionRequestSchema
 >;
 
+// --- ADM-350 admin provider callbacks (inbound) + seller webhook deliveries (outbound) ---
+// Never accept encrypted payload / raw signature / secret body fields.
+
+const FORBIDDEN_WEBHOOK_PAYLOAD_KEYS = [
+  "encryptedPayload",
+  "encrypted_payload",
+  "rawPayload",
+  "raw_payload",
+  "payloadBody",
+  "payload_body",
+  "signingSecret",
+  "signature",
+  "signatureHeader",
+  "secret",
+  "token",
+] as const;
+
+function rejectWebhookSecretFields(
+  val: Record<string, unknown>,
+  ctx: z.RefinementCtx,
+) {
+  for (const key of FORBIDDEN_WEBHOOK_PAYLOAD_KEYS) {
+    if (key in val && val[key] != null && val[key] !== "") {
+      ctx.addIssue({
+        code: "custom",
+        message: `Forbidden field ${key} must not appear on admin webhook DTOs`,
+        path: [key],
+      });
+    }
+  }
+}
+
+/** Inbound Xendit/provider callback admin read model (no encrypted payload). */
+export const adminProviderCallbackDtoSchema = z
+  .object({
+    callbackId: z.string().min(1),
+    provider: z.string().optional(),
+    accountScope: z.string().optional(),
+    paymentMode: z.string().optional(),
+    providerEventId: z.string().optional(),
+    processingState: z.string().min(1),
+    receivedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+    attemptCount: z.number().int().optional(),
+    replayCount: z.number().int().optional(),
+    normalizedType: z.string().optional(),
+    paymentIntentId: z.string().optional(),
+    providerReference: z.string().optional(),
+    payloadDigest: z.string().optional(),
+    mismatchCode: z.string().optional(),
+    alertCode: z.string().optional(),
+    failureCode: z.string().optional(),
+    processedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+  })
+  .passthrough()
+  .superRefine((val, ctx) =>
+    rejectWebhookSecretFields(val as Record<string, unknown>, ctx),
+  );
+
+export const adminProviderCallbackListEnvelopeSchema = successEnvelopeSchema(
+  z.array(adminProviderCallbackDtoSchema),
+);
+
+export const adminProviderCallbackEnvelopeSchema = successEnvelopeSchema(
+  adminProviderCallbackDtoSchema,
+);
+
+export const adminProviderCallbackReplayRequestSchema = z.object({
+  reason: z.string().min(1),
+});
+
+/** Outbound seller delivery admin projection (never provider callback IDs). */
+export const adminSellerWebhookDeliveryDtoSchema = z
+  .object({
+    deliveryId: z.string().min(1),
+    kind: z.string().optional(),
+    endpointId: z.string().optional(),
+    endpointHost: z.string().optional(),
+    merchantId: z.string().optional(),
+    storeId: z.string().optional(),
+    paymentMode: z.string().optional(),
+    eventId: z.string().optional(),
+    eventType: z.string().optional(),
+    status: z.string().min(1),
+    attemptCount: z.number().int().optional(),
+    isTest: z.boolean().optional(),
+    nextRetryAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+    lastHttpClass: z.string().optional(),
+    lastHttpStatus: z.number().int().optional(),
+    lastLatencyMs: z.number().int().optional(),
+    lastErrorClass: z.string().optional(),
+    deadLetterReason: z.string().optional(),
+    payloadHash: z.string().optional(),
+    payloadVersion: z.string().optional(),
+    sourceKind: z.string().optional(),
+    orderId: z.string().optional(),
+    paymentIntentId: z.string().optional(),
+    deliveredAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+    createdAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+    updatedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional(),
+  })
+  .passthrough()
+  .superRefine((val, ctx) =>
+    rejectWebhookSecretFields(val as Record<string, unknown>, ctx),
+  );
+
+export const adminSellerWebhookDeliveryListEnvelopeSchema =
+  successEnvelopeSchema(z.array(adminSellerWebhookDeliveryDtoSchema));
+
+export const adminSellerWebhookDeliveryEnvelopeSchema = successEnvelopeSchema(
+  adminSellerWebhookDeliveryDtoSchema,
+);
+
+export const adminSellerWebhookDeliveryRetryRequestSchema = z.object({
+  reason: z.string().min(1),
+});
+
+export type AdminProviderCallbackDto = z.infer<
+  typeof adminProviderCallbackDtoSchema
+>;
+export type AdminSellerWebhookDeliveryDto = z.infer<
+  typeof adminSellerWebhookDeliveryDtoSchema
+>;
+

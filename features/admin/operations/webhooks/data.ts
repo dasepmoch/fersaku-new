@@ -18,6 +18,13 @@ export type ProviderCallbackRow = WebhookBaseRow & {
   signatureValidation: "VERIFIED" | "REJECTED";
   canonicalEventKey: string;
   rawPayloadRef: string;
+  /** BE processing state when live (ACCEPTED|PROCESSING|PROCESSED|FAILED|QUARANTINED). */
+  processingState?: string;
+  payloadDigest?: string;
+  mismatchCode?: string;
+  failureCode?: string;
+  paymentIntentId?: string;
+  providerEventId?: string;
   fulfillmentEvidence?: {
     id: string;
     fileName: string;
@@ -34,6 +41,12 @@ export type SellerWebhookDeliveryRow = WebhookBaseRow & {
   kind: "SELLER_DELIVERY";
   source: "Seller";
   deliveryStatus: string;
+  endpointHost?: string;
+  endpointId?: string;
+  merchantId?: string;
+  eventId?: string;
+  deadLetterReason?: string;
+  payloadHash?: string;
 };
 
 export type WebhookRow = ProviderCallbackRow | SellerWebhookDeliveryRow;

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Check, ShieldCheck, Zap } from "lucide-react";
 import { rupiah } from "@/lib/utils";
 import type { ProviderCallbackRow } from "./data";
 import { Field, Modal } from "./pieces";
 import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
+import { forceFulfillAdminOrder } from "@/features/admin/data/fulfillment-commands";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import { isAdminWebhooksWriteApi } from "./api";
 
 export function ForceFulfillDialog({
   row,
@@ -19,6 +22,10 @@ export function ForceFulfillDialog({
   const [reason, setReason] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [recentMfaVerified, setRecentMfaVerified] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const idemRef = useRef<string | null>(null);
+  const isApi = isAdminWebhooksWriteApi();
   const evidence = row.fulfillmentEvidence;
   const evidenceBound = Boolean(
     evidence &&
@@ -31,7 +38,8 @@ export function ForceFulfillDialog({
     reason.trim().length >= 12 &&
     evidenceBound &&
     confirmed &&
-    recentMfaVerified;
+    recentMfaVerified &&
+    !submitting;
   return (
     <Modal
       title="Manual Force-Fulfill"
@@ -105,10 +113,13 @@ export function ForceFulfillDialog({
           />
           <span>
             Recent MFA re-authentication is verified for this manual fulfillment
-            override (mock).
+            override{isApi ? "" : " (mock)"}.
           </span>
         </label>
       </div>
+      {error ? (
+        <p className="mt-3 text-[8px] text-[#c9544d]">{error}</p>
+      ) : null}
       <div className="mt-6 flex gap-2">
         <button
           onClick={onClose}
@@ -118,24 +129,45 @@ export function ForceFulfillDialog({
         </button>
         <button
           disabled={!ready}
-          onClick={() => {
+          onClick={async () => {
             if (!ready || !evidence) return;
-            appendClientAuditEvent({
-              actor: "admin@fersaku.id",
-              action: "fulfillment.force_replay",
-              target: row.order,
-              ip: "mock-admin-session",
-              result: "Success",
-              context: JSON.stringify({
-                callbackId: row.id,
-                providerReference: row.providerReference,
-                amount: row.amount,
-                evidenceId: evidence.id,
-                evidenceSha256: evidence.sha256,
-                reason: reason.trim(),
-              }),
-            });
-            onComplete();
+            const trimmed = reason.trim();
+            setSubmitting(true);
+            setError("");
+            try {
+              if (isApi) {
+                if (!idemRef.current) {
+                  idemRef.current = createIdempotencyKey();
+                }
+                await forceFulfillAdminOrder({
+                  orderId: row.order,
+                  reason: trimmed,
+                  idempotencyKey: idemRef.current,
+                });
+                idemRef.current = null;
+              } else {
+                appendClientAuditEvent({
+                  actor: "admin@fersaku.id",
+                  action: "fulfillment.force_replay",
+                  target: row.order,
+                  ip: "mock-admin-session",
+                  result: "Success",
+                  context: JSON.stringify({
+                    callbackId: row.id,
+                    providerReference: row.providerReference,
+                    amount: row.amount,
+                    evidenceId: evidence.id,
+                    evidenceSha256: evidence.sha256,
+                    reason: trimmed,
+                  }),
+                });
+              }
+              onComplete();
+            } catch {
+              setError("Force-fulfill failed. No local state was changed.");
+            } finally {
+              setSubmitting(false);
+            }
           }}
           className="h-10 flex-1 rounded-xl bg-[#d95750] text-[8px] font-extrabold text-white disabled:bg-[#b9bfca]"
         >
