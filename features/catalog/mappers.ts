@@ -4,13 +4,23 @@
  * Authority: TASK/evidence/UI-040/dto-view-parity.md
  */
 
-import type { CatalogProductDto, PublicStorefrontDto } from "@/shared/api/schemas";
+import type {
+  CatalogProductDto,
+  FeaturedCatalogProductDto,
+  PublicStorefrontDto,
+} from "@/shared/api/schemas";
 import {
   invalidApiContract,
   mapExhaustiveEnum,
   requireSafeMoneyIdr,
 } from "@/shared/api/mappers";
-import type { CatalogProduct, ProductType, PublicStorefront } from "./contracts";
+import type {
+  CatalogProduct,
+  FeaturedCatalogProduct,
+  ProductType,
+  PublicProductMatch,
+  PublicStorefront,
+} from "./contracts";
 
 const PRODUCT_TYPE_MAP = {
   download: "download",
@@ -117,6 +127,9 @@ export function mapCatalogProductDto(dto: CatalogProductDto): CatalogProduct {
     glyph: dto.glyph,
     includes: [...dto.includes],
   };
+  if (dto.storeSlug !== undefined && dto.storeSlug !== "") {
+    view.storeSlug = dto.storeSlug;
+  }
   if (dto.badge !== undefined) view.badge = dto.badge;
   if (dto.allowPayWhatYouWant !== undefined) {
     view.allowPayWhatYouWant = dto.allowPayWhatYouWant;
@@ -133,6 +146,58 @@ export function mapCatalogProductListDto(
   items: CatalogProductDto[],
 ): CatalogProduct[] {
   return items.map(mapCatalogProductDto);
+}
+
+/** Featured DTO must carry storeSlug (fail closed if missing). */
+export function mapFeaturedCatalogProductDto(
+  dto: FeaturedCatalogProductDto,
+): FeaturedCatalogProduct {
+  const base = mapCatalogProductDto(dto);
+  const storeSlug = dto.storeSlug?.trim();
+  if (!storeSlug) {
+    return invalidApiContract("Featured product missing storeSlug", {
+      issues: [{ path: "storeSlug", message: "required for public featured links" }],
+    });
+  }
+  return { ...base, storeSlug };
+}
+
+export function mapFeaturedCatalogProductListDto(
+  items: FeaturedCatalogProductDto[],
+): FeaturedCatalogProduct[] {
+  return items.map(mapFeaturedCatalogProductDto);
+}
+
+/** Canonical public product path for a store-bound product. */
+export function publicProductHref(storeSlug: string, productSlug: string): string {
+  return `/@${storeSlug}/${productSlug}`;
+}
+
+export function publicStoreHref(storeSlug: string): string {
+  return `/@${storeSlug}`;
+}
+
+/**
+ * Attach storeSlug to storefront products (BE storefront products may omit storeSlug).
+ */
+export function mapPublicStorefrontDtoWithStoreSlug(
+  dto: PublicStorefrontDto,
+): PublicStorefront {
+  const view = mapPublicStorefrontDto(dto);
+  view.products = view.products.map((p) =>
+    p.storeSlug ? p : { ...p, storeSlug: view.slug },
+  );
+  return view;
+}
+
+export function toPublicProductMatch(
+  product: CatalogProduct,
+  storeSlug: string,
+): PublicProductMatch {
+  return {
+    product: product.storeSlug ? product : { ...product, storeSlug },
+    storeSlug,
+  };
 }
 
 /** Map wire PublicStorefront DTO to frozen PublicStorefront view model. */

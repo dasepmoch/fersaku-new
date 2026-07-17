@@ -28,6 +28,7 @@ type CatalogStore interface {
 	ListPublishedProductsByStore(ctx context.Context, storeID string) ([]catalog.Product, error)
 	ListFeaturedProducts(ctx context.Context, limit int32) ([]catalog.Product, error)
 	GetPublishedProductByIDOrSlug(ctx context.Context, idOrSlug string) (catalog.Product, error)
+	GetPublishedProductByStoreAndSlug(ctx context.Context, storeSlug, productSlug string) (catalog.Product, error)
 	ProductSlugExists(ctx context.Context, storeID, slug string, excludeID string) (bool, error)
 
 	// Storefront revisions

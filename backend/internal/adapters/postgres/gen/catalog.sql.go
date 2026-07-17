@@ -289,17 +289,43 @@ func (q *Queries) GetProductBySlug(ctx context.Context, arg GetProductBySlugPara
 }
 
 const getPublishedProductByID = `-- name: GetPublishedProductByID :one
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE id = $1 AND status = 'published'
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.id = $1 AND p.status = 'published' AND s.status = 'ACTIVE'
 `
 
-func (q *Queries) GetPublishedProductByID(ctx context.Context, id string) (Product, error) {
+type GetPublishedProductByIDRow struct {
+	ID                  string             `json:"id"`
+	StoreID             string             `json:"store_id"`
+	MerchantID          string             `json:"merchant_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Short               string             `json:"short"`
+	Description         string             `json:"description"`
+	PriceIdr            int64              `json:"price_idr"`
+	Type                string             `json:"type"`
+	Status              string             `json:"status"`
+	Version             string             `json:"version"`
+	Badge               string             `json:"badge"`
+	Palette             string             `json:"palette"`
+	Glyph               string             `json:"glyph"`
+	Includes            []byte             `json:"includes"`
+	AllowPwyt           bool               `json:"allow_pwyt"`
+	MinimumPriceIdr     *int64             `json:"minimum_price_idr"`
+	PublishedAt         pgtype.Timestamptz `json:"published_at"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	ActiveSchemaVersion *int32             `json:"active_schema_version"`
+	StoreSlug           string             `json:"store_slug"`
+}
+
+func (q *Queries) GetPublishedProductByID(ctx context.Context, id string) (GetPublishedProductByIDRow, error) {
 	row := q.db.QueryRow(ctx, getPublishedProductByID, id)
-	var i Product
+	var i GetPublishedProductByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.StoreID,
@@ -322,24 +348,52 @@ func (q *Queries) GetPublishedProductByID(ctx context.Context, id string) (Produ
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ActiveSchemaVersion,
+		&i.StoreSlug,
 	)
 	return i, err
 }
 
 const getPublishedProductBySlug = `-- name: GetPublishedProductBySlug :one
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE slug = $1 AND status = 'published'
-ORDER BY published_at DESC NULLS LAST
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.slug = $1 AND p.status = 'published' AND s.status = 'ACTIVE'
+ORDER BY p.published_at DESC NULLS LAST
 LIMIT 1
 `
 
-func (q *Queries) GetPublishedProductBySlug(ctx context.Context, slug string) (Product, error) {
+type GetPublishedProductBySlugRow struct {
+	ID                  string             `json:"id"`
+	StoreID             string             `json:"store_id"`
+	MerchantID          string             `json:"merchant_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Short               string             `json:"short"`
+	Description         string             `json:"description"`
+	PriceIdr            int64              `json:"price_idr"`
+	Type                string             `json:"type"`
+	Status              string             `json:"status"`
+	Version             string             `json:"version"`
+	Badge               string             `json:"badge"`
+	Palette             string             `json:"palette"`
+	Glyph               string             `json:"glyph"`
+	Includes            []byte             `json:"includes"`
+	AllowPwyt           bool               `json:"allow_pwyt"`
+	MinimumPriceIdr     *int64             `json:"minimum_price_idr"`
+	PublishedAt         pgtype.Timestamptz `json:"published_at"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	ActiveSchemaVersion *int32             `json:"active_schema_version"`
+	StoreSlug           string             `json:"store_slug"`
+}
+
+// Global slug is first-match only; prefer GetPublishedProductByStoreAndSlug for store-bound reads.
+func (q *Queries) GetPublishedProductBySlug(ctx context.Context, slug string) (GetPublishedProductBySlugRow, error) {
 	row := q.db.QueryRow(ctx, getPublishedProductBySlug, slug)
-	var i Product
+	var i GetPublishedProductBySlugRow
 	err := row.Scan(
 		&i.ID,
 		&i.StoreID,
@@ -362,6 +416,77 @@ func (q *Queries) GetPublishedProductBySlug(ctx context.Context, slug string) (P
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ActiveSchemaVersion,
+		&i.StoreSlug,
+	)
+	return i, err
+}
+
+const getPublishedProductByStoreAndSlug = `-- name: GetPublishedProductByStoreAndSlug :one
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE s.slug = $1 AND p.slug = $2 AND p.status = 'published' AND s.status = 'ACTIVE'
+`
+
+type GetPublishedProductByStoreAndSlugParams struct {
+	Slug   string `json:"slug"`
+	Slug_2 string `json:"slug_2"`
+}
+
+type GetPublishedProductByStoreAndSlugRow struct {
+	ID                  string             `json:"id"`
+	StoreID             string             `json:"store_id"`
+	MerchantID          string             `json:"merchant_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Short               string             `json:"short"`
+	Description         string             `json:"description"`
+	PriceIdr            int64              `json:"price_idr"`
+	Type                string             `json:"type"`
+	Status              string             `json:"status"`
+	Version             string             `json:"version"`
+	Badge               string             `json:"badge"`
+	Palette             string             `json:"palette"`
+	Glyph               string             `json:"glyph"`
+	Includes            []byte             `json:"includes"`
+	AllowPwyt           bool               `json:"allow_pwyt"`
+	MinimumPriceIdr     *int64             `json:"minimum_price_idr"`
+	PublishedAt         pgtype.Timestamptz `json:"published_at"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	ActiveSchemaVersion *int32             `json:"active_schema_version"`
+	StoreSlug           string             `json:"store_slug"`
+}
+
+func (q *Queries) GetPublishedProductByStoreAndSlug(ctx context.Context, arg GetPublishedProductByStoreAndSlugParams) (GetPublishedProductByStoreAndSlugRow, error) {
+	row := q.db.QueryRow(ctx, getPublishedProductByStoreAndSlug, arg.Slug, arg.Slug_2)
+	var i GetPublishedProductByStoreAndSlugRow
+	err := row.Scan(
+		&i.ID,
+		&i.StoreID,
+		&i.MerchantID,
+		&i.Slug,
+		&i.Title,
+		&i.Short,
+		&i.Description,
+		&i.PriceIdr,
+		&i.Type,
+		&i.Status,
+		&i.Version,
+		&i.Badge,
+		&i.Palette,
+		&i.Glyph,
+		&i.Includes,
+		&i.AllowPwyt,
+		&i.MinimumPriceIdr,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ActiveSchemaVersion,
+		&i.StoreSlug,
 	)
 	return i, err
 }
@@ -514,25 +639,53 @@ func (q *Queries) InsertStorefrontRevision(ctx context.Context, arg InsertStoref
 }
 
 const listFeaturedProducts = `-- name: ListFeaturedProducts :many
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE status = 'published'
-ORDER BY published_at DESC NULLS LAST, id DESC
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.status = 'published'
+  AND s.status = 'ACTIVE'
+ORDER BY p.published_at DESC NULLS LAST, p.id DESC
 LIMIT $1
 `
 
-func (q *Queries) ListFeaturedProducts(ctx context.Context, limit int32) ([]Product, error) {
+type ListFeaturedProductsRow struct {
+	ID                  string             `json:"id"`
+	StoreID             string             `json:"store_id"`
+	MerchantID          string             `json:"merchant_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Short               string             `json:"short"`
+	Description         string             `json:"description"`
+	PriceIdr            int64              `json:"price_idr"`
+	Type                string             `json:"type"`
+	Status              string             `json:"status"`
+	Version             string             `json:"version"`
+	Badge               string             `json:"badge"`
+	Palette             string             `json:"palette"`
+	Glyph               string             `json:"glyph"`
+	Includes            []byte             `json:"includes"`
+	AllowPwyt           bool               `json:"allow_pwyt"`
+	MinimumPriceIdr     *int64             `json:"minimum_price_idr"`
+	PublishedAt         pgtype.Timestamptz `json:"published_at"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	ActiveSchemaVersion *int32             `json:"active_schema_version"`
+	StoreSlug           string             `json:"store_slug"`
+}
+
+// PUB-100: published products on ACTIVE stores only; include canonical store slug.
+func (q *Queries) ListFeaturedProducts(ctx context.Context, limit int32) ([]ListFeaturedProductsRow, error) {
 	rows, err := q.db.Query(ctx, listFeaturedProducts, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Product{}
+	items := []ListFeaturedProductsRow{}
 	for rows.Next() {
-		var i Product
+		var i ListFeaturedProductsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.StoreID,
@@ -555,6 +708,7 @@ func (q *Queries) ListFeaturedProducts(ctx context.Context, limit int32) ([]Prod
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ActiveSchemaVersion,
+			&i.StoreSlug,
 		); err != nil {
 			return nil, err
 		}

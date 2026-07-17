@@ -21,6 +21,7 @@ import { Footer } from "@/components/footer";
 import { ProductArt } from "@/components/product-art";
 import { RotatingQuote } from "@/components/rotating-quote";
 import { listFeaturedProducts } from "@/features/catalog/api";
+import { publicProductHref } from "@/features/catalog/mappers";
 
 const features = [
   [
@@ -61,7 +62,7 @@ const features = [
   ],
 ];
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function Home() {
   const products = await listFeaturedProducts(6);
@@ -183,7 +184,7 @@ export default async function Home() {
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {products.slice(0, 6).map((p, i) => (
               <Link
-                href={`/@asep-ai-tools/${p.slug}`}
+                href={publicProductHref(p.storeSlug, p.slug)}
                 key={p.id}
                 className={`group hairline shadow-card rounded-[30px] border bg-white p-3 transition hover:-translate-y-1 ${i === 0 ? "sm:col-span-2 lg:col-span-1" : ""}`}
               >

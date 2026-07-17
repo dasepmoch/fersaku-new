@@ -61,11 +61,11 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 
 | Operation/UI | FE seam | Backend route | Status | Required mapping/gap | Task/evidence |
 | --- | --- | --- | --- | --- | --- |
-| Featured products | `features/catalog/api.ts` | `GET /v1/public/products/featured` | M | DTO lacks canonical `storeSlug`/store URL and query must exclude inactive/suspended stores; schema/mapper/public cache. | PUB-100 |
-| Public store | catalog API | `GET /v1/public/stores/{slug}` | A | Published-only DTO, 404 semantics. | PUB-100 |
-| Public product | catalog API | `GET /v1/public/products/{idOrSlug}` | M | Backend slug lookup is global/first-match; bind lookup to public store or require canonical unique ID so same slug across stores cannot resolve wrong tenant. | PUB-100 |
-| Public reviews | seller reviews API | `GET /v1/public/products/{productId}/reviews` | M | DTO join/status/cursor -> existing card. | PUB-100 |
-| Rating summary | seller reviews API | `GET /v1/public/products/{productId}/reviews/summary` | M | `count/averageRating/rating1..5` -> `total/average/distribution`. | PUB-100 |
+| Featured products | `features/catalog/api.ts` | `GET /v1/public/products/featured` | A | storeSlug + ACTIVE store filter + schema/mapper. | PUB-100 |
+| Public store | catalog API | `GET /v1/public/stores/{slug}` | A | Published-only DTO, 404→null. | PUB-100 |
+| Public product | catalog API | `GET /v1/public/products/{idOrSlug}?store=` | A | Store-bound via `store` query; storeSlug on DTO. | PUB-100 |
+| Public reviews | seller reviews API | `GET /v1/public/products/{productId}/reviews` | A | DTO + mapper → existing card; cursor not exposed. | PUB-100 |
+| Rating summary | seller reviews API | `GET /v1/public/products/{productId}/reviews/summary` | A | `count/averageRating/rating1..5` → `total/average/distribution`; zero-safe. | PUB-100 |
 | Fee read | no full seam | `GET /v1/platform/fees` | U | Read-only active policy for public/preview mapping; checkout server quote remains authority. | PUB-110/CHK-100 |
 | Marketing fee copy | home/pricing | `GET /v1/platform/fees` | U | Versioned public policy maps to frozen fee UI; prevent drift. | PUB-110 |
 | Contact submission | contact form | no route mounted | D | Add exact public contact operation or live-disable; fake local success forbidden. | PUB-200 |

@@ -1,17 +1,35 @@
-import { apiRequest } from "@/shared/api/http-client";
+import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   catalogProductEnvelopeSchema,
   catalogProductListEnvelopeSchema,
+  featuredCatalogProductListEnvelopeSchema,
   publicStorefrontEnvelopeSchema,
   structuralEnvelopeSchema,
 } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
+import { classifyApiError } from "@/shared/api/error-policy";
 import {
   getDomainSource,
   shouldUseMockFixtures,
 } from "@/shared/data/domain-source";
-import type { CatalogProduct } from "./contracts";
+import type {
+  CatalogProduct,
+  FeaturedCatalogProduct,
+  PublicProductMatch,
+  PublicStorefront,
+} from "./contracts";
+import {
+  mapCatalogProductDto,
+  mapCatalogProductListDto,
+  mapFeaturedCatalogProductListDto,
+  mapPublicStorefrontDtoWithStoreSlug,
+  toPublicProductMatch,
+} from "./mappers";
 import { demoProducts, findDemoProduct, getDemoStorefront } from "./mock";
+
+/** Short public SSR/browser revalidate for published catalog (PUB-100). */
+export const PUBLIC_CATALOG_REVALIDATE_SECONDS = 60;
+export const PUBLIC_CATALOG_CACHE_TAG = "public-catalog";
 
 export type PublishProductInput = {
   storeId: string;
@@ -26,16 +44,39 @@ export type PublishProductResult = {
   requestId: string;
 };
 
+function isResourceNotFound(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  const classified = classifyApiError(error.status, error.problem, {
+    retryAfterSeconds: error.retryAfterSeconds,
+  });
+  return classified.kind === "resource_not_found";
+}
+
+function featuredFromDemo(limit: number): FeaturedCatalogProduct[] {
+  return demoProducts.slice(0, limit).map((p) => ({
+    ...p,
+    storeSlug: p.storeSlug || "asep-ai-tools",
+  }));
+}
+
+/**
+ * Featured published products. Each item carries canonical storeSlug for links.
+ * Mock fixtures attach demo store slugs; API requires storeSlug in schema.
+ */
 export async function listFeaturedProducts(
   limit = 6,
   signal?: AbortSignal,
-): Promise<CatalogProduct[]> {
-  if (shouldUseMockFixtures("publicCatalog")) return demoProducts.slice(0, limit);
-  const response = await apiRequest<ApiEnvelope<CatalogProduct[]>>(
-    "/v1/public/products/featured",
-    { schema: catalogProductListEnvelopeSchema, query: { limit }, signal },
-  );
-  return response.data;
+): Promise<FeaturedCatalogProduct[]> {
+  if (shouldUseMockFixtures("publicCatalog")) return featuredFromDemo(limit);
+
+  const response = await apiRequest<
+    import("zod").infer<typeof featuredCatalogProductListEnvelopeSchema>
+  >("/v1/public/products/featured", {
+    schema: featuredCatalogProductListEnvelopeSchema,
+    query: { limit },
+    signal,
+  });
+  return mapFeaturedCatalogProductListDto(response.data);
 }
 
 export async function publishSellerProduct(
@@ -69,11 +110,13 @@ export async function listSellerProducts(
 ): Promise<CatalogProduct[]> {
   if (shouldUseMockFixtures("sellerCatalog")) return demoProducts;
 
-  const response = await apiRequest<ApiEnvelope<CatalogProduct[]>>(
-    `/v1/stores/${storeId}/products`,
-    { schema: catalogProductListEnvelopeSchema, signal },
-  );
-  return response.data;
+  const response = await apiRequest<
+    import("zod").infer<typeof catalogProductListEnvelopeSchema>
+  >(`/v1/stores/${storeId}/products`, {
+    schema: catalogProductListEnvelopeSchema,
+    signal,
+  });
+  return mapCatalogProductListDto(response.data);
 }
 
 export async function getSellerProduct(
@@ -85,38 +128,117 @@ export async function getSellerProduct(
     return demoProducts.find((product) => product.id === productId) || null;
   }
 
-  const response = await apiRequest<ApiEnvelope<CatalogProduct>>(
-    `/v1/stores/${storeId}/products/${productId}`,
-    { schema: catalogProductEnvelopeSchema, signal },
-  );
-  return response.data;
+  try {
+    const response = await apiRequest<
+      import("zod").infer<typeof catalogProductEnvelopeSchema>
+    >(`/v1/stores/${storeId}/products/${productId}`, {
+      schema: catalogProductEnvelopeSchema,
+      signal,
+    });
+    return mapCatalogProductDto(response.data);
+  } catch (error) {
+    if (isResourceNotFound(error)) return null;
+    throw error;
+  }
 }
 
-export async function getPublicStorefront(slug: string, signal?: AbortSignal) {
+/**
+ * Public storefront by slug. 404 RESOURCE_NOT_FOUND → null; network/5xx rethrow.
+ */
+export async function getPublicStorefront(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<PublicStorefront | null> {
   if (shouldUseMockFixtures("publicCatalog")) return getDemoStorefront(slug);
 
-  const response = await apiRequest<
-    ApiEnvelope<Awaited<ReturnType<typeof getDemoStorefront>>>
-  >(`/v1/public/stores/${slug}`, {
-    schema: publicStorefrontEnvelopeSchema,
-    signal,
-  });
-  return response.data;
+  try {
+    const response = await apiRequest<
+      import("zod").infer<typeof publicStorefrontEnvelopeSchema>
+    >(`/v1/public/stores/${encodeURIComponent(slug)}`, {
+      schema: publicStorefrontEnvelopeSchema,
+      signal,
+    });
+    return mapPublicStorefrontDtoWithStoreSlug(response.data);
+  } catch (error) {
+    if (isResourceNotFound(error)) return null;
+    throw error;
+  }
 }
 
+/**
+ * Dedicated public product lookup, optionally bound to storeSlug.
+ * When storeSlug is provided, BE uses store-bound slug resolution (dual-store safe).
+ * 404 → null; network/5xx rethrow.
+ */
+export async function getPublicProduct(
+  productIdOrSlug: string,
+  options?: { storeSlug?: string; signal?: AbortSignal },
+): Promise<PublicProductMatch | null> {
+  const storeSlug = options?.storeSlug?.trim();
+  const signal = options?.signal;
+
+  if (shouldUseMockFixtures("publicCatalog")) {
+    if (storeSlug) {
+      const store = getDemoStorefront(storeSlug);
+      if (!store) return null;
+      const product = store.products.find(
+        (p) => p.id === productIdOrSlug || p.slug === productIdOrSlug,
+      );
+      if (!product) return null;
+      return toPublicProductMatch(
+        { ...product, storeSlug: store.slug },
+        store.slug,
+      );
+    }
+    const match = findDemoProduct(productIdOrSlug);
+    if (!match) return null;
+    return toPublicProductMatch(
+      { ...match.product, storeSlug: match.store.slug },
+      match.store.slug,
+    );
+  }
+
+  try {
+    const response = await apiRequest<
+      import("zod").infer<typeof catalogProductEnvelopeSchema>
+    >(`/v1/public/products/${encodeURIComponent(productIdOrSlug)}`, {
+      schema: catalogProductEnvelopeSchema,
+      query: storeSlug ? { store: storeSlug } : undefined,
+      signal,
+    });
+    const product = mapCatalogProductDto(response.data);
+    const resolvedSlug = product.storeSlug || storeSlug;
+    if (!resolvedSlug) {
+      return toPublicProductMatch(product, "");
+    }
+    return toPublicProductMatch(product, resolvedSlug);
+  } catch (error) {
+    if (isResourceNotFound(error)) return null;
+    throw error;
+  }
+}
+
+/**
+ * Legacy helper used by checkout: product + optional full storefront.
+ * Prefer getPublicProduct + getPublicStorefront for store-bound product pages.
+ */
 export async function findPublicProduct(
   productIdOrSlug: string,
   signal?: AbortSignal,
 ) {
-  if (shouldUseMockFixtures("publicCatalog")) return findDemoProduct(productIdOrSlug);
+  if (shouldUseMockFixtures("publicCatalog")) {
+    return findDemoProduct(productIdOrSlug);
+  }
 
-  const response = await apiRequest<
-    ApiEnvelope<NonNullable<Awaited<ReturnType<typeof findDemoProduct>>>>
-  >(`/v1/public/products/${productIdOrSlug}`, {
-    schema: catalogProductEnvelopeSchema,
-    signal,
-  });
-  return response.data;
+  const match = await getPublicProduct(productIdOrSlug, { signal });
+  if (!match) return null;
+  const store = match.storeSlug
+    ? await getPublicStorefront(match.storeSlug, signal)
+    : null;
+  if (!store) {
+    return { product: match.product, store: null as unknown as PublicStorefront };
+  }
+  return { product: match.product, store };
 }
 
 /**

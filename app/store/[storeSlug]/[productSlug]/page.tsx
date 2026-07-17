@@ -12,11 +12,15 @@ import {
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import { getPublicStorefront } from "@/features/catalog/api";
+import {
+  getPublicProduct,
+  getPublicStorefront,
+} from "@/features/catalog/api";
 import {
   listPublicProductReviews,
   getPublicProductRating,
 } from "@/features/seller/reviews/api";
+import { reviewDistributionWidthPercent } from "@/features/seller/reviews/mappers";
 import { rupiah } from "@/lib/utils";
 
 export default async function ProductPage({
@@ -25,9 +29,18 @@ export default async function ProductPage({
   params: Promise<{ storeSlug: string; productSlug: string }>;
 }) {
   const { storeSlug, productSlug } = await params;
-  const store = await getPublicStorefront(storeSlug);
-  const p = store?.products.find((x) => x.slug === productSlug);
-  if (!store || !p) notFound();
+  const [store, productMatch] = await Promise.all([
+    getPublicStorefront(storeSlug),
+    getPublicProduct(productSlug, { storeSlug }),
+  ]);
+  if (!store || !productMatch) notFound();
+  if (productMatch.storeSlug && productMatch.storeSlug !== store.slug) {
+    notFound();
+  }
+  const p =
+    store.products.find((x) => x.id === productMatch.product.id) ||
+    productMatch.product;
+  if (p.slug !== productSlug && p.id !== productSlug) notFound();
   const [ratingSummary, reviews] = await Promise.all([
     getPublicProductRating(p.id),
     listPublicProductReviews(p.id),
@@ -159,7 +172,7 @@ export default async function ProductPage({
                     <div
                       className="h-full rounded-full bg-[#e8a72e]"
                       style={{
-                        width: `${(ratingSummary.distribution[score as keyof typeof ratingSummary.distribution] / ratingSummary.total) * 100}%`,
+                        width: `${reviewDistributionWidthPercent(ratingSummary, score)}%`,
                       }}
                     />
                   </div>

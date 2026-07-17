@@ -407,12 +407,24 @@ func (h *CatalogHandler) PublicProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idOrSlug := chi.URLParam(r, "idOrSlug")
-	prod, err := h.Svc.GetPublicProduct(r.Context(), idOrSlug)
+	// Optional store-bound lookup: ?store=slug or X-Store-Slug (PUB-100 dual-store same product slug).
+	storeSlug := strings.TrimSpace(r.URL.Query().Get("store"))
+	if storeSlug == "" {
+		storeSlug = strings.TrimSpace(r.Header.Get("X-Store-Slug"))
+	}
+	var (
+		prod catalog.Product
+		err  error
+	)
+	if storeSlug != "" {
+		prod, err = h.Svc.GetPublicProductForStore(r.Context(), storeSlug, idOrSlug)
+	} else {
+		prod, err = h.Svc.GetPublicProduct(r.Context(), idOrSlug)
+	}
 	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	// FE findPublicProduct expects { product, store } or product — return product with store slug context
 	presenters.WriteData(w, r, http.StatusOK, productDTO(prod, false))
 }
 
@@ -494,6 +506,9 @@ func productDTO(p catalog.Product, seller bool) map[string]any {
 		"palette":     p.Palette,
 		"glyph":       p.Glyph,
 		"includes":    p.Includes,
+	}
+	if p.StoreSlug != "" {
+		out["storeSlug"] = p.StoreSlug
 	}
 	if p.Badge != "" {
 		out["badge"] = p.Badge

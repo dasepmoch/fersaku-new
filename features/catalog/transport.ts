@@ -12,6 +12,12 @@ export type {
 } from "@/shared/api/generated";
 
 export type {
+  FeaturedCatalogProductDto,
+  PublicReviewDto,
+  PublicReviewSummaryDto,
+} from "@/shared/api/schemas";
+
+export type {
   OperationSuccessJson,
 } from "@/shared/api/generated";
 

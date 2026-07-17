@@ -13,10 +13,22 @@ export type CatalogProduct = {
   palette: string;
   glyph: string;
   includes: string[];
+  /** Canonical owning store slug for public featured/product links (PUB-100). */
+  storeSlug?: string;
   allowPayWhatYouWant?: boolean;
   minimumPrice?: number;
   updatesEnabled?: boolean;
   currentVersion?: string;
+};
+
+/** Featured homepage card — storeSlug is required for tenant-correct URLs. */
+export type FeaturedCatalogProduct = CatalogProduct & {
+  storeSlug: string;
+};
+
+export type PublicProductMatch = {
+  product: CatalogProduct;
+  storeSlug: string;
 };
 
 export type PublicStorefront = {

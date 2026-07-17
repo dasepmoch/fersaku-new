@@ -91,7 +91,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[ ]` | `AUT-110` | P0 | INT-010, INT-020, INT-025, INT-100, INT-120, INT-130; INT-180 **if live mail** | PUB | — | Buyer magic-link session | — |
 | `[ ]` | `AUT-120` | P1 | AUT-100, AUT-110, INT-140 | PUB/FND | — | Shared reset/email/MFA/recovery ceremony | — |
 | `[ ]` | `AUT-130` | P1 decision | INT-025, INT-120, INT-130 | PUB | — | OAuth implemented or authoritatively disabled | — |
-| `[~]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | @nikki/opencode · main · 2026-07-17 · files: public catalog, TASK/evidence/PUB-100 | Featured/store/product/review reads | TASK/evidence/PUB-100/ |
+| `[x]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:28 WIB · claim released | Featured/store/product/review reads | TASK/evidence/PUB-100/20260717-1328-nikki.md · features/catalog · features/seller/reviews · tests/unit/pub-100-public-catalog.test.ts |
 | `[ ]` | `PUB-110` | P1 | INT-000, INT-010, INT-100 | PUB | — | Authoritative public fee copy | — |
 | `[ ]` | `PUB-200` | P1 decision | INT-025, INT-100, INT-130 | PUB | — | Contact submit or disabled disposition | — |
 | `[ ]` | `PUB-210` | P1 | PUB-100 | PUB | — | Store search and safe social links | — |

@@ -371,6 +371,9 @@ func (s *CatalogService) GetPublicStorefront(ctx context.Context, slug string) (
 	if err != nil {
 		return catalog.PublicStorefront{}, apperr.Internal(apperr.CodeInternalError, "List products failed")
 	}
+	for i := range products {
+		products[i].StoreSlug = st.Slug
+	}
 	out := catalog.PublicStorefront{
 		Slug:               st.Slug,
 		Name:               st.Name,
@@ -424,12 +427,30 @@ func (s *CatalogService) ListFeaturedProducts(ctx context.Context, limit int) ([
 }
 
 // GetPublicProduct returns a published product by id or slug (global slug match first product).
+// Prefer GetPublicProductForStore when the store slug is known (same product slug across stores).
 func (s *CatalogService) GetPublicProduct(ctx context.Context, idOrSlug string) (catalog.Product, error) {
 	idOrSlug = strings.TrimSpace(idOrSlug)
 	if idOrSlug == "" {
 		return catalog.Product{}, catalog.ErrNotFound
 	}
 	p, err := s.Store.GetPublishedProductByIDOrSlug(ctx, idOrSlug)
+	if err != nil {
+		if s.Store.IsNotFound(err) {
+			return catalog.Product{}, catalog.ErrNotFound
+		}
+		return catalog.Product{}, apperr.Internal(apperr.CodeInternalError, "Product lookup failed")
+	}
+	return p, nil
+}
+
+// GetPublicProductForStore returns a published product bound to an ACTIVE store slug.
+func (s *CatalogService) GetPublicProductForStore(ctx context.Context, storeSlug, productSlug string) (catalog.Product, error) {
+	storeSlug = strings.ToLower(strings.TrimSpace(storeSlug))
+	productSlug = strings.TrimSpace(productSlug)
+	if storeSlug == "" || productSlug == "" {
+		return catalog.Product{}, catalog.ErrNotFound
+	}
+	p, err := s.Store.GetPublishedProductByStoreAndSlug(ctx, storeSlug, productSlug)
 	if err != nil {
 		if s.Store.IsNotFound(err) {
 			return catalog.Product{}, catalog.ErrNotFound

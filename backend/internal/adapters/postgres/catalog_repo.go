@@ -245,7 +245,7 @@ func (r *CatalogRepo) ListFeaturedProducts(ctx context.Context, limit int32) ([]
 	}
 	out := make([]catalog.Product, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, mapProduct(row))
+		out = append(out, mapFeaturedProductRow(row))
 	}
 	return out, nil
 }
@@ -253,7 +253,7 @@ func (r *CatalogRepo) ListFeaturedProducts(ctx context.Context, limit int32) ([]
 func (r *CatalogRepo) GetPublishedProductByIDOrSlug(ctx context.Context, idOrSlug string) (catalog.Product, error) {
 	row, err := r.queries().GetPublishedProductByID(ctx, idOrSlug)
 	if err == nil {
-		return mapProduct(row), nil
+		return mapPublishedProductByIDRow(row), nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return catalog.Product{}, err
@@ -262,7 +262,18 @@ func (r *CatalogRepo) GetPublishedProductByIDOrSlug(ctx context.Context, idOrSlu
 	if err != nil {
 		return catalog.Product{}, err
 	}
-	return mapProduct(row2), nil
+	return mapPublishedProductBySlugRow(row2), nil
+}
+
+func (r *CatalogRepo) GetPublishedProductByStoreAndSlug(ctx context.Context, storeSlug, productSlug string) (catalog.Product, error) {
+	row, err := r.queries().GetPublishedProductByStoreAndSlug(ctx, gen.GetPublishedProductByStoreAndSlugParams{
+		Slug:   storeSlug,
+		Slug_2: productSlug,
+	})
+	if err != nil {
+		return catalog.Product{}, err
+	}
+	return mapPublishedProductByStoreAndSlugRow(row), nil
 }
 
 func (r *CatalogRepo) ProductSlugExists(ctx context.Context, storeID, slug string, excludeID string) (bool, error) {
@@ -338,39 +349,90 @@ func (r *CatalogRepo) NextRevisionNumber(ctx context.Context, storeID string) (i
 }
 
 func mapProduct(row gen.Product) catalog.Product {
+	return mapProductFields(
+		row.ID, row.StoreID, row.MerchantID, "",
+		row.Slug, row.Title, row.Short, row.Description,
+		row.PriceIdr, row.Type, row.Status, row.Version, row.Badge, row.Palette, row.Glyph,
+		row.Includes, row.AllowPwyt, row.MinimumPriceIdr, row.PublishedAt, row.CreatedAt, row.UpdatedAt,
+	)
+}
+
+func mapFeaturedProductRow(row gen.ListFeaturedProductsRow) catalog.Product {
+	return mapProductFields(
+		row.ID, row.StoreID, row.MerchantID, row.StoreSlug,
+		row.Slug, row.Title, row.Short, row.Description,
+		row.PriceIdr, row.Type, row.Status, row.Version, row.Badge, row.Palette, row.Glyph,
+		row.Includes, row.AllowPwyt, row.MinimumPriceIdr, row.PublishedAt, row.CreatedAt, row.UpdatedAt,
+	)
+}
+
+func mapPublishedProductByIDRow(row gen.GetPublishedProductByIDRow) catalog.Product {
+	return mapProductFields(
+		row.ID, row.StoreID, row.MerchantID, row.StoreSlug,
+		row.Slug, row.Title, row.Short, row.Description,
+		row.PriceIdr, row.Type, row.Status, row.Version, row.Badge, row.Palette, row.Glyph,
+		row.Includes, row.AllowPwyt, row.MinimumPriceIdr, row.PublishedAt, row.CreatedAt, row.UpdatedAt,
+	)
+}
+
+func mapPublishedProductBySlugRow(row gen.GetPublishedProductBySlugRow) catalog.Product {
+	return mapProductFields(
+		row.ID, row.StoreID, row.MerchantID, row.StoreSlug,
+		row.Slug, row.Title, row.Short, row.Description,
+		row.PriceIdr, row.Type, row.Status, row.Version, row.Badge, row.Palette, row.Glyph,
+		row.Includes, row.AllowPwyt, row.MinimumPriceIdr, row.PublishedAt, row.CreatedAt, row.UpdatedAt,
+	)
+}
+
+func mapPublishedProductByStoreAndSlugRow(row gen.GetPublishedProductByStoreAndSlugRow) catalog.Product {
+	return mapProductFields(
+		row.ID, row.StoreID, row.MerchantID, row.StoreSlug,
+		row.Slug, row.Title, row.Short, row.Description,
+		row.PriceIdr, row.Type, row.Status, row.Version, row.Badge, row.Palette, row.Glyph,
+		row.Includes, row.AllowPwyt, row.MinimumPriceIdr, row.PublishedAt, row.CreatedAt, row.UpdatedAt,
+	)
+}
+
+func mapProductFields(
+	id, storeID, merchantID, storeSlug, slug, title, short, description string,
+	priceIdr int64, typ, status, version, badge, palette, glyph string,
+	includesJSON []byte, allowPwyt bool, minimumPriceIdr *int64,
+	publishedAt pgtype.Timestamptz, createdAt, updatedAt time.Time,
+) catalog.Product {
 	includes := []string{}
-	if len(row.Includes) > 0 {
-		_ = json.Unmarshal(row.Includes, &includes)
+	if len(includesJSON) > 0 {
+		_ = json.Unmarshal(includesJSON, &includes)
 		if includes == nil {
 			includes = []string{}
 		}
 	}
 	var pub *time.Time
-	if row.PublishedAt.Valid {
-		t := row.PublishedAt.Time.UTC()
+	if publishedAt.Valid {
+		t := publishedAt.Time.UTC()
 		pub = &t
 	}
 	return catalog.Product{
-		ID:              row.ID,
-		StoreID:         row.StoreID,
-		MerchantID:      row.MerchantID,
-		Slug:            row.Slug,
-		Title:           row.Title,
-		Short:           row.Short,
-		Description:     row.Description,
-		PriceIDR:        row.PriceIdr,
-		Type:            catalog.ProductType(row.Type),
-		Status:          catalog.ProductStatus(row.Status),
-		Version:         row.Version,
-		Badge:           row.Badge,
-		Palette:         row.Palette,
-		Glyph:           row.Glyph,
+		ID:              id,
+		StoreID:         storeID,
+		MerchantID:      merchantID,
+		StoreSlug:       storeSlug,
+		Slug:            slug,
+		Title:           title,
+		Short:           short,
+		Description:     description,
+		PriceIDR:        priceIdr,
+		Type:            catalog.ProductType(typ),
+		Status:          catalog.ProductStatus(status),
+		Version:         version,
+		Badge:           badge,
+		Palette:         palette,
+		Glyph:           glyph,
 		Includes:        includes,
-		AllowPWYT:       row.AllowPwyt,
-		MinimumPriceIDR: row.MinimumPriceIdr,
+		AllowPWYT:       allowPwyt,
+		MinimumPriceIDR: minimumPriceIdr,
 		PublishedAt:     pub,
-		CreatedAt:       row.CreatedAt,
-		UpdatedAt:       row.UpdatedAt,
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 		Sales:           0,
 	}
 }

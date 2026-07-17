@@ -506,6 +506,17 @@ type InvoiceVersion struct {
 	CreatedAt       time.Time          `json:"created_at"`
 }
 
+type JobLease struct {
+	JobName       string             `json:"job_name"`
+	Owner         string             `json:"owner"`
+	LeaseUntil    time.Time          `json:"lease_until"`
+	LockedAt      time.Time          `json:"locked_at"`
+	LastSuccessAt pgtype.Timestamptz `json:"last_success_at"`
+	LastError     *string            `json:"last_error"`
+	RunCount      int64              `json:"run_count"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
 type KycCase struct {
 	ID                  string             `json:"id"`
 	MerchantID          string             `json:"merchant_id"`

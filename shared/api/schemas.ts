@@ -175,6 +175,8 @@ export const catalogProductDtoSchema = z.object({
   palette: z.string(),
   glyph: z.string(),
   includes: z.array(z.string()),
+  /** Canonical owning store slug — required for featured homepage links (PUB-100). */
+  storeSlug: z.string().min(1).optional(),
   allowPayWhatYouWant: z.boolean().optional(),
   minimumPrice: moneyIdrSchema.optional(),
   updatesEnabled: z.boolean().optional(),
@@ -183,6 +185,57 @@ export const catalogProductDtoSchema = z.object({
   storeId: z.string().optional(),
   merchantId: z.string().optional(),
 });
+
+/** Featured list items must carry storeSlug so homepage never hardcodes a demo store. */
+export const featuredCatalogProductDtoSchema = catalogProductDtoSchema.extend({
+  storeSlug: z.string().min(1),
+});
+
+export const featuredCatalogProductListEnvelopeSchema = successEnvelopeSchema(
+  z.array(featuredCatalogProductDtoSchema),
+);
+
+/** Public review wire DTO (BE ReviewView). */
+export const publicReviewDtoSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().optional(),
+  productId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  title: z.string(),
+  body: z.string(),
+  status: z.string(),
+  verifiedPurchase: z.boolean().optional(),
+  contentVersion: z.number().int().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  sellerReply: z.string().nullable().optional(),
+  /** Display-only fields when present (mock may include). */
+  buyer: z.string().optional(),
+  initials: z.string().optional(),
+  product: z.string().optional(),
+  seller: z.string().optional(),
+  verified: z.boolean().optional(),
+});
+
+export const publicReviewListEnvelopeSchema = cursorListEnvelopeSchema(
+  publicReviewDtoSchema,
+);
+
+/** BE ReviewSummaryView: count/averageRating/rating1..5 */
+export const publicReviewSummaryDtoSchema = z.object({
+  productId: z.string().optional(),
+  count: z.number().int().min(0),
+  averageRating: z.number(),
+  rating1: z.number().int().min(0),
+  rating2: z.number().int().min(0),
+  rating3: z.number().int().min(0),
+  rating4: z.number().int().min(0),
+  rating5: z.number().int().min(0),
+});
+
+export const publicReviewSummaryEnvelopeSchema = successEnvelopeSchema(
+  publicReviewSummaryDtoSchema,
+);
 
 export const catalogProductEnvelopeSchema = successEnvelopeSchema(
   catalogProductDtoSchema,
@@ -279,7 +332,14 @@ export type NumberedPageListMeta = z.infer<typeof numberedPageListMetaSchema>;
 export type ApiProblemParsed = z.infer<typeof apiProblemSchema>;
 export type ProblemEnvelope = z.infer<typeof problemEnvelopeSchema>;
 export type CatalogProductDto = z.infer<typeof catalogProductDtoSchema>;
+export type FeaturedCatalogProductDto = z.infer<
+  typeof featuredCatalogProductDtoSchema
+>;
 export type PublicStorefrontDto = z.infer<typeof publicStorefrontDtoSchema>;
+export type PublicReviewDto = z.infer<typeof publicReviewDtoSchema>;
+export type PublicReviewSummaryDto = z.infer<
+  typeof publicReviewSummaryDtoSchema
+>;
 export type FeePolicyDto = z.infer<typeof feePolicySchema>;
 export type AuthLoginDataDto = z.infer<typeof authLoginDataSchema>;
 export type AuthSessionDataDto = z.infer<typeof authSessionDataSchema>;

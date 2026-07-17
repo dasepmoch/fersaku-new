@@ -36,6 +36,8 @@ type Product struct {
 	ID               string
 	StoreID          string
 	MerchantID       string
+	// StoreSlug is the owning store's canonical public slug (public projections).
+	StoreSlug        string
 	Slug             string
 	Title            string
 	Short            string

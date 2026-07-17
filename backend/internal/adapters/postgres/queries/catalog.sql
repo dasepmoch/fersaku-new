@@ -108,32 +108,47 @@ WHERE store_id = $1 AND status = 'published'
 ORDER BY published_at DESC NULLS LAST, id DESC;
 
 -- name: ListFeaturedProducts :many
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE status = 'published'
-ORDER BY published_at DESC NULLS LAST, id DESC
+-- PUB-100: published products on ACTIVE stores only; include canonical store slug.
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.status = 'published'
+  AND s.status = 'ACTIVE'
+ORDER BY p.published_at DESC NULLS LAST, p.id DESC
 LIMIT $1;
 
 -- name: GetPublishedProductByID :one
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE id = $1 AND status = 'published';
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.id = $1 AND p.status = 'published' AND s.status = 'ACTIVE';
 
 -- name: GetPublishedProductBySlug :one
-SELECT id, store_id, merchant_id, slug, title, short, description,
-       price_idr, type, status, version, badge, palette, glyph, includes,
-       allow_pwyt, minimum_price_idr, published_at, created_at, updated_at,
-       active_schema_version
-FROM products
-WHERE slug = $1 AND status = 'published'
-ORDER BY published_at DESC NULLS LAST
+-- Global slug is first-match only; prefer GetPublishedProductByStoreAndSlug for store-bound reads.
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE p.slug = $1 AND p.status = 'published' AND s.status = 'ACTIVE'
+ORDER BY p.published_at DESC NULLS LAST
 LIMIT 1;
+
+-- name: GetPublishedProductByStoreAndSlug :one
+SELECT p.id, p.store_id, p.merchant_id, p.slug, p.title, p.short, p.description,
+       p.price_idr, p.type, p.status, p.version, p.badge, p.palette, p.glyph, p.includes,
+       p.allow_pwyt, p.minimum_price_idr, p.published_at, p.created_at, p.updated_at,
+       p.active_schema_version, s.slug AS store_slug
+FROM products p
+INNER JOIN stores s ON s.id = p.store_id
+WHERE s.slug = $1 AND p.slug = $2 AND p.status = 'published' AND s.status = 'ACTIVE';
 
 -- name: ProductSlugExists :one
 SELECT EXISTS (

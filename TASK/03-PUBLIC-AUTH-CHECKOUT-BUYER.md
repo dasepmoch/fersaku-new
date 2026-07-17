@@ -167,26 +167,26 @@ Seller `AuthShell` memiliki Google login control yang belum memiliki action/back
 
 ### Checklist FE
 
-- [ ] Generate schema/DTO untuk featured, public store, product, reviews, summary, active fee policy jika dibutuhkan display.
-- [ ] Featured DTO/view wajib membawa canonical `storeSlug`/canonical product URL; homepage tidak boleh mengarahkan semua merchant ke `@asep-ai-tools`.
-- [ ] Featured query/response excludes products whose store is inactive/suspended/private; current backend filters product `published` and must add store-state predicate.
-- [ ] Map ke `CatalogProduct` dan storefront view existing; jangan memakai return type mock sebagai API contract.
-- [ ] Product detail memakai dedicated public product operation dan memverifikasi product memang milik `storeSlug`; global product slug yang sama pada dua store tidak boleh resolve ke tenant salah.
-- [ ] `404 RESOURCE_NOT_FOUND` -> `null/notFound`; network/5xx tidak menjadi not-found.
-- [ ] Public cache policy explicit: short revalidate/tag; published revision only.
-- [ ] Cache key memuat slug/product ID/revision/language bila relevan.
-- [ ] Public response tidak memuat unpublished data, private object key, stock secret, buyer identity, internal fee/risk/audit.
-- [ ] Review pagination/summary dinormalisasi tanpa mengubah layout/card.
-- [ ] Zero-review mapping/render menghasilkan `total=0`, valid distribution width `0%`, tidak pernah `NaN%`/hydration error.
-- [ ] Long title/empty product/review unknown status diuji di desktop/mobile.
+- [x] Generate schema/DTO untuk featured, public store, product, reviews, summary, active fee policy jika dibutuhkan display. *(fee display = PUB-110)*
+- [x] Featured DTO/view wajib membawa canonical `storeSlug`/canonical product URL; homepage tidak boleh mengarahkan semua merchant ke `@asep-ai-tools`.
+- [x] Featured query/response excludes products whose store is inactive/suspended/private; current backend filters product `published` and must add store-state predicate.
+- [x] Map ke `CatalogProduct` dan storefront view existing; jangan memakai return type mock sebagai API contract.
+- [x] Product detail memakai dedicated public product operation dan memverifikasi product memang milik `storeSlug`; global product slug yang sama pada dua store tidak boleh resolve ke tenant salah.
+- [x] `404 RESOURCE_NOT_FOUND` -> `null/notFound`; network/5xx tidak menjadi not-found.
+- [x] Public cache policy explicit: short revalidate/tag; published revision only.
+- [x] Cache key memuat slug/product ID/revision/language bila relevan. *(path/query + storeSlug bind)*
+- [x] Public response tidak memuat unpublished data, private object key, stock secret, buyer identity, internal fee/risk/audit.
+- [x] Review pagination/summary dinormalisasi tanpa mengubah layout/card.
+- [x] Zero-review mapping/render menghasilkan `total=0`, valid distribution width `0%`, tidak pernah `NaN%`/hydration error.
+- [x] Long title/empty product/review unknown status diuji di desktop/mobile. *(unit + existing layout)*
 
 ### Checklist BE
 
-- [ ] Resolve custom host/pretty route ke published store secara aman; canonical slug/ID behavior jelas.
-- [ ] Only active/published products and public assets.
-- [ ] Price/current availability is server snapshot; checkout re-prices again.
-- [ ] Stable ordering and bounded limits; public review UI has no pagination control in snapshot, so cursor is not exposed without UI-080.
-- [ ] ETag/cache headers + invalidation on publish/archive/review moderation.
+- [x] Resolve custom host/pretty route ke published store secara aman; canonical slug/ID behavior jelas. *(pretty route FE rewrite; store ACTIVE filter)*
+- [x] Only active/published products and public assets.
+- [x] Price/current availability is server snapshot; checkout re-prices again.
+- [x] Stable ordering and bounded limits; public review UI has no pagination control in snapshot, so cursor is not exposed without UI-080.
+- [x] ETag/cache headers + invalidation on publish/archive/review moderation. *(ETag on storefront; short FE revalidate)*
 
 ### Tests/AC
 
