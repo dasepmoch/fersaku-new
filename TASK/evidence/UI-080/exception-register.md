@@ -64,7 +64,7 @@ The following are **pre-catalogued gaps** from disposition matrix §6 — resolu
 | `UXE-007` | Static/no-op marketing controls | Same element static behavior or disabled | **open** — PUB-230 |
 | `UXE-008` | Onboarding outside workspace boundaries | Form state / root error; no maintenance banner | **closed** — SEL-110 (form fieldError only; no maintenance panel) |
 | `UXE-009` | Public home/store empty arrays | Non-empty launch invariant or approved composition | **open** — product/UX decision |
-| `UXE-010` | Contact form missing error/pending regions | Disable submit or approved composition | **open** — PUB-200 |
+| `UXE-010` | Contact form missing error/pending regions | Disable submit or approved composition | **open** — PUB-200 chose launch DISABLED; UI-080 still required before IMPLEMENT |
 | `UXE-011` | Auth negative/MFA/rate/unavailable gaps; AdminLogin mock | Block canary or approved composition | **open** — AUT/ADM |
 | `UXE-012` | Seller product/review/inventory empty | Launch invariant or approved composition | **open** — SEL-210/240/270 |
 

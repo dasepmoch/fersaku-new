@@ -472,6 +472,36 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("PUB-200: contact submit is authoritatively disabled in API mode", () => {
+    /**
+     * Contact is OUT-OF-SCOPE for launch (no public contact endpoint; UXE-010
+     * has no field-error/pending/general-error region). Mock may keep local
+     * prototype setSent; API/disabled must set disabled + title and must never
+     * set sent=true without backend acceptance.
+     */
+    const contactPage = path.join(root, "app/(company)/contact/page.tsx");
+    const contactSource = readFileSync(contactPage, "utf8");
+
+    expect(contactSource).toMatch(/Kirim pesan/);
+    expect(contactSource).toMatch(/getDomainSource\(["']publicCatalog["']\)/);
+    expect(contactSource).toMatch(/contactSubmitEnabled/);
+    expect(contactSource).toMatch(/disabled=\{!contactSubmitEnabled\}/);
+    expect(contactSource).toMatch(
+      /Contact submit is out of scope for launch \(PUB-200 deferred\)/,
+    );
+    // Guard: local success only after mock-enabled gate (never unconditional setSent(true) on submit)
+    expect(contactSource).toMatch(
+      /if\s*\(\s*!contactSubmitEnabled\s*\)\s*return/,
+    );
+    expect(contactSource).not.toMatch(
+      /onClick=\{\(\)\s*=>\s*setSent\(true\)\}/,
+    );
+    // No contact transport mounted until product re-opens as IMPLEMENT
+    expect(contactSource).not.toMatch(
+      /\/v1\/public\/contact|contact-messages|submitContact|postContact/i,
+    );
+  });
+
   it("AUT-130: seller Google OAuth is authoritatively disabled in API mode", () => {
     /**
      * OAuth is OUT-OF-SCOPE for launch. Seller AuthShell Google control must be

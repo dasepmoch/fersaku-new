@@ -2,9 +2,23 @@
 import { Check, Mail, MessageSquare, Send } from "lucide-react";
 import { useState } from "react";
 import { ContentPage } from "@/components/content-page";
+import { getDomainSource } from "@/shared/data/domain-source";
+
+/** PUB-200: contact command OUT-OF-SCOPE for launch; API/live must not fake-success. */
+const CONTACT_SUBMIT_DISABLED_TITLE =
+  "Contact submit is out of scope for launch (PUB-200 deferred)";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
+  const publicSource = (() => {
+    try {
+      return getDomainSource("publicCatalog");
+    } catch {
+      return "api";
+    }
+  })();
+  // Mock may keep prototype setSent; API/disabled must be authoritatively disabled.
+  const contactSubmitEnabled = publicSource === "mock";
   return (
     <ContentPage
       eyebrow="Hubungi kami"
@@ -75,8 +89,18 @@ export default function ContactPage() {
                   />
                 </Field>
                 <button
-                  onClick={() => setSent(true)}
-                  className="h-12 rounded-xl bg-[#173f2c] text-xs font-extrabold text-white"
+                  type="button"
+                  disabled={!contactSubmitEnabled}
+                  title={
+                    contactSubmitEnabled
+                      ? undefined
+                      : CONTACT_SUBMIT_DISABLED_TITLE
+                  }
+                  onClick={() => {
+                    if (!contactSubmitEnabled) return;
+                    setSent(true);
+                  }}
+                  className="h-12 rounded-xl bg-[#173f2c] text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Kirim pesan
                 </button>

@@ -231,12 +231,13 @@ Homepage dan pricing page memiliki fee/minimum hardcoded. Checkout tetap server-
 
 ### Checklist
 
-- [ ] Jika form tetap active di live, add exact public contact operation through `INT-000` (for example `POST /v1/public/contact-messages`) before codegen; jika out-of-scope, control harus existing disabled/unavailable state, bukan instant fake success.
-- [ ] Request exact `name`, `email`, topic enum, message, optional anti-bot proof; bounded lengths/content type.
-- [ ] Anti-spam/rate limit/honeypot/provider policy, generic acknowledgement, no account enumeration.
-- [ ] Persist/queue ticket or transactional mail via real adapter/outbox; never claim “Pesan terkirim” until durable acceptance.
-- [ ] PII retention/redaction/consent and security-report routing documented.
-- [ ] Snapshot `ContactPage` has no field-error, pending, or general-error region. Bind only an already-approved existing composition; otherwise keep submit `DISABLED` and record `UXE-010/UI-080` before adding any state copy/layout.
+- [x] **Launch disposition `DISABLED`/`OUT-OF-SCOPE`:** no public contact endpoint mounted; `ContactPage` has no field-error/pending/general-error region (`UXE-010` open). API/disabled mode authoritatively disables submit + title; mock may keep prototype `setSent`. Never fake-success in API/live.
+- [ ] Jika form di-reopen IMPLEMENT di live, add exact public contact operation through `INT-000` (for example `POST /v1/public/contact-messages`) before codegen; control must not stay active no-op.
+- [ ] Request exact `name`, `email`, topic enum, message, optional anti-bot proof; bounded lengths/content type. *(deferred until IMPLEMENT)*
+- [ ] Anti-spam/rate limit/honeypot/provider policy, generic acknowledgement, no account enumeration. *(deferred)*
+- [ ] Persist/queue ticket or transactional mail via real adapter/outbox; never claim “Pesan terkirim” until durable acceptance. *(deferred)*
+- [ ] PII retention/redaction/consent and security-report routing documented. *(deferred)*
+- [x] Snapshot `ContactPage` has no field-error, pending, or general-error region → submit kept `DISABLED` in API mode; `UXE-010` remains open until UI-080/IMPLEMENT.
 
 ### Tests/AC
 
