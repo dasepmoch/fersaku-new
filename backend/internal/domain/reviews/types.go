@@ -15,6 +15,16 @@ const (
 	MaxRating     = 5
 	MaxTitleRunes = 200
 	MaxBodyRunes  = 4000
+	MaxReplyRunes = 2000
+)
+
+// Report reason codes accepted from seller report command (SEL-270).
+const (
+	ReportReasonSpam       = "SPAM"
+	ReportReasonAbuse      = "ABUSE"
+	ReportReasonOffTopic   = "OFF_TOPIC"
+	ReportReasonOther      = "OTHER"
+	ReportReasonInaccurate = "INACCURATE"
 )
 
 // Review is a verified-purchase product review.

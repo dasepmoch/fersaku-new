@@ -5945,6 +5945,178 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/reviews:
+    get:
+      operationId: listStoreReviews
+      summary: Store-scoped seller review list (BoundedNoPaging first result)
+      tags:
+      - seller
+      - reviews
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: q
+        in: query
+        description: Search title, body, product, or buyer display
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - PENDING
+          - PUBLISHED
+          - NEEDS_EDIT
+      - name: rating
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 50
+      responses:
+        '200':
+          description: SellerReviewView[] (bounded; hasMore always false at launch)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerReviewListEnvelope'
+        '404':
+          description: Foreign/unknown store (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/reviews/summary:
+    get:
+      operationId: getStoreReviewSummary
+      summary: Store-scoped published rating aggregate
+      tags:
+      - seller
+      - reviews
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SellerStoreReviewSummary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerStoreReviewSummaryEnvelope'
+        '404':
+          description: Foreign/unknown store (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/reviews/{reviewId}/reply:
+    put:
+      operationId: upsertStoreReviewReply
+      summary: Create or version-update public seller reply
+      tags:
+      - seller
+      - reviews
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertSellerReviewReplyRequest'
+      responses:
+        '200':
+          description: SellerReplyView
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerReviewReplyEnvelope'
+        '404':
+          description: Foreign store/review (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+        '409':
+          description: Reply version conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/reviews/{reviewId}/report:
+    post:
+      operationId: reportStoreReview
+      summary: Report review to admin (no moderation status change)
+      tags:
+      - seller
+      - reviews
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportSellerReviewRequest'
+      responses:
+        '201':
+          description: SellerReviewReportView
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerReviewReportEnvelope'
+        '404':
+          description: Foreign store/review (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+        '409':
+          description: Duplicate report for same reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
   /v1/stores/{storeId}/orders/{orderId}/delivery:
     get:
       operationId: sellerGetDeliveryGrant
@@ -11709,6 +11881,211 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SellerCustomerNote'
+        meta:
+          $ref: '#/components/schemas/Meta'
+    SellerReviewView:
+      type: object
+      required:
+      - id
+      - storeId
+      - productId
+      - productTitle
+      - sellerName
+      - buyerDisplay
+      - rating
+      - title
+      - body
+      - status
+      - verifiedPurchase
+      - contentVersion
+      - createdAt
+      - updatedAt
+      description: Store-scoped seller review list row (safe buyer display; no email/PII beyond display name).
+      properties:
+        id:
+          type: string
+        storeId:
+          type: string
+        productId:
+          type: string
+        productTitle:
+          type: string
+        sellerName:
+          type: string
+        buyerDisplay:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+        body:
+          type: string
+        status:
+          type: string
+        verifiedPurchase:
+          type: boolean
+        contentVersion:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        sellerReply:
+          type: string
+          nullable: true
+        replyContentVersion:
+          type: integer
+          nullable: true
+    SellerReviewListEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerReviewView'
+        meta:
+          $ref: '#/components/schemas/CursorListMeta'
+    SellerStoreReviewSummary:
+      type: object
+      required:
+      - storeId
+      - count
+      - averageRating
+      - rating1
+      - rating2
+      - rating3
+      - rating4
+      - rating5
+      properties:
+        storeId:
+          type: string
+        count:
+          type: integer
+          format: int64
+        averageRating:
+          type: number
+          format: double
+        rating1:
+          type: integer
+          format: int64
+        rating2:
+          type: integer
+          format: int64
+        rating3:
+          type: integer
+          format: int64
+        rating4:
+          type: integer
+          format: int64
+        rating5:
+          type: integer
+          format: int64
+    SellerStoreReviewSummaryEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerStoreReviewSummary'
+        meta:
+          $ref: '#/components/schemas/Meta'
+    UpsertSellerReviewReplyRequest:
+      type: object
+      required:
+      - body
+      properties:
+        body:
+          type: string
+          maxLength: 2000
+        expectedVersion:
+          type: integer
+          description: Required when updating an existing reply; omit on first create.
+    SellerReviewReply:
+      type: object
+      required:
+      - reviewId
+      - storeId
+      - body
+      - contentVersion
+      - createdAt
+      - updatedAt
+      properties:
+        reviewId:
+          type: string
+        storeId:
+          type: string
+        body:
+          type: string
+        contentVersion:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SellerReviewReplyEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerReviewReply'
+        meta:
+          $ref: '#/components/schemas/Meta'
+    ReportSellerReviewRequest:
+      type: object
+      required:
+      - reasonCode
+      properties:
+        reasonCode:
+          type: string
+          enum:
+          - SPAM
+          - ABUSE
+          - OFF_TOPIC
+          - OTHER
+          - INACCURATE
+        context:
+          type: string
+          maxLength: 1000
+    SellerReviewReport:
+      type: object
+      required:
+      - id
+      - reviewId
+      - reasonCode
+      - status
+      - createdAt
+      properties:
+        id:
+          type: string
+        reviewId:
+          type: string
+        reasonCode:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    SellerReviewReportEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerReviewReport'
         meta:
           $ref: '#/components/schemas/Meta'
     FieldViolation:

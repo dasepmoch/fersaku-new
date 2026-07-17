@@ -403,3 +403,401 @@ func (q *Queries) ReviewUpdateContent(ctx context.Context, arg ReviewUpdateConte
 	)
 	return i, err
 }
+
+const sellerReviewGetByStoreAndID = `-- name: SellerReviewGetByStoreAndID :one
+SELECT id, store_id, merchant_id, product_id, order_id, order_item_id, buyer_user_id,
+       rating, title, body, status, verified_purchase, content_version, created_at, updated_at
+FROM product_reviews
+WHERE id = $1 AND store_id = $2 AND status <> 'REMOVED'
+`
+
+type SellerReviewGetByStoreAndIDParams struct {
+	ID      string `json:"id"`
+	StoreID string `json:"store_id"`
+}
+
+func (q *Queries) SellerReviewGetByStoreAndID(ctx context.Context, arg SellerReviewGetByStoreAndIDParams) (ProductReview, error) {
+	row := q.db.QueryRow(ctx, sellerReviewGetByStoreAndID, arg.ID, arg.StoreID)
+	var i ProductReview
+	err := row.Scan(
+		&i.ID,
+		&i.StoreID,
+		&i.MerchantID,
+		&i.ProductID,
+		&i.OrderID,
+		&i.OrderItemID,
+		&i.BuyerUserID,
+		&i.Rating,
+		&i.Title,
+		&i.Body,
+		&i.Status,
+		&i.VerifiedPurchase,
+		&i.ContentVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellerReviewListByStore = `-- name: SellerReviewListByStore :many
+SELECT
+    r.id,
+    r.store_id,
+    r.merchant_id,
+    r.product_id,
+    r.order_id,
+    r.order_item_id,
+    r.buyer_user_id,
+    r.rating,
+    r.title,
+    r.body,
+    r.status,
+    r.verified_purchase,
+    r.content_version,
+    r.created_at,
+    r.updated_at,
+    p.title::text AS product_title,
+    s.name::text AS store_name,
+    COALESCE(
+        NULLIF(trim(o.buyer_name), ''),
+        NULLIF(trim(u.name), ''),
+        'Pembeli'
+    )::text AS buyer_display,
+    COALESCE(rep.body, '')::text AS seller_reply_body,
+    rep.content_version AS reply_content_version
+FROM product_reviews r
+JOIN products p ON p.id = r.product_id
+JOIN stores s ON s.id = r.store_id
+JOIN orders o ON o.id = r.order_id
+LEFT JOIN users u ON u.id = r.buyer_user_id
+LEFT JOIN product_review_replies rep ON rep.review_id = r.id
+WHERE r.store_id = $1
+  AND r.status <> 'REMOVED'
+  AND (
+    $3::text IS NULL
+    OR r.status = $3::text
+  )
+  AND (
+    $4::int IS NULL
+    OR r.rating = $4::int
+  )
+  AND (
+    $5::text IS NULL
+    OR r.title ILIKE '%' || $5::text || '%'
+    OR r.body ILIKE '%' || $5::text || '%'
+    OR p.title ILIKE '%' || $5::text || '%'
+    OR COALESCE(o.buyer_name, '') ILIKE '%' || $5::text || '%'
+  )
+ORDER BY r.created_at DESC, r.id DESC
+LIMIT $2
+`
+
+type SellerReviewListByStoreParams struct {
+	StoreID string  `json:"store_id"`
+	Limit   int32   `json:"limit"`
+	Status  *string `json:"status"`
+	Rating  *int32  `json:"rating"`
+	Q       *string `json:"q"`
+}
+
+type SellerReviewListByStoreRow struct {
+	ID                  string    `json:"id"`
+	StoreID             string    `json:"store_id"`
+	MerchantID          string    `json:"merchant_id"`
+	ProductID           string    `json:"product_id"`
+	OrderID             string    `json:"order_id"`
+	OrderItemID         string    `json:"order_item_id"`
+	BuyerUserID         string    `json:"buyer_user_id"`
+	Rating              int16     `json:"rating"`
+	Title               string    `json:"title"`
+	Body                string    `json:"body"`
+	Status              string    `json:"status"`
+	VerifiedPurchase    bool      `json:"verified_purchase"`
+	ContentVersion      int32     `json:"content_version"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+	ProductTitle        string    `json:"product_title"`
+	StoreName           string    `json:"store_name"`
+	BuyerDisplay        string    `json:"buyer_display"`
+	SellerReplyBody     string    `json:"seller_reply_body"`
+	ReplyContentVersion *int32    `json:"reply_content_version"`
+}
+
+func (q *Queries) SellerReviewListByStore(ctx context.Context, arg SellerReviewListByStoreParams) ([]SellerReviewListByStoreRow, error) {
+	rows, err := q.db.Query(ctx, sellerReviewListByStore,
+		arg.StoreID,
+		arg.Limit,
+		arg.Status,
+		arg.Rating,
+		arg.Q,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SellerReviewListByStoreRow{}
+	for rows.Next() {
+		var i SellerReviewListByStoreRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.MerchantID,
+			&i.ProductID,
+			&i.OrderID,
+			&i.OrderItemID,
+			&i.BuyerUserID,
+			&i.Rating,
+			&i.Title,
+			&i.Body,
+			&i.Status,
+			&i.VerifiedPurchase,
+			&i.ContentVersion,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ProductTitle,
+			&i.StoreName,
+			&i.BuyerDisplay,
+			&i.SellerReplyBody,
+			&i.ReplyContentVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const sellerReviewReplyInsert = `-- name: SellerReviewReplyInsert :one
+INSERT INTO product_review_replies (
+    id, review_id, store_id, author_user_id, body, content_version, created_at, updated_at
+) VALUES (
+    $1, $2, $3, $4, $5, 1, $6, $6
+)
+RETURNING id, review_id, store_id, author_user_id, body, content_version, created_at, updated_at
+`
+
+type SellerReviewReplyInsertParams struct {
+	ID           string    `json:"id"`
+	ReviewID     string    `json:"review_id"`
+	StoreID      string    `json:"store_id"`
+	AuthorUserID string    `json:"author_user_id"`
+	Body         string    `json:"body"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+func (q *Queries) SellerReviewReplyInsert(ctx context.Context, arg SellerReviewReplyInsertParams) (ProductReviewReply, error) {
+	row := q.db.QueryRow(ctx, sellerReviewReplyInsert,
+		arg.ID,
+		arg.ReviewID,
+		arg.StoreID,
+		arg.AuthorUserID,
+		arg.Body,
+		arg.CreatedAt,
+	)
+	var i ProductReviewReply
+	err := row.Scan(
+		&i.ID,
+		&i.ReviewID,
+		&i.StoreID,
+		&i.AuthorUserID,
+		&i.Body,
+		&i.ContentVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellerReviewReplyUpdate = `-- name: SellerReviewReplyUpdate :one
+UPDATE product_review_replies
+SET body = $3,
+    content_version = content_version + 1,
+    updated_at = $4
+WHERE review_id = $1
+  AND store_id = $2
+  AND content_version = $5
+RETURNING id, review_id, store_id, author_user_id, body, content_version, created_at, updated_at
+`
+
+type SellerReviewReplyUpdateParams struct {
+	ReviewID       string    `json:"review_id"`
+	StoreID        string    `json:"store_id"`
+	Body           string    `json:"body"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	ContentVersion int32     `json:"content_version"`
+}
+
+func (q *Queries) SellerReviewReplyUpdate(ctx context.Context, arg SellerReviewReplyUpdateParams) (ProductReviewReply, error) {
+	row := q.db.QueryRow(ctx, sellerReviewReplyUpdate,
+		arg.ReviewID,
+		arg.StoreID,
+		arg.Body,
+		arg.UpdatedAt,
+		arg.ContentVersion,
+	)
+	var i ProductReviewReply
+	err := row.Scan(
+		&i.ID,
+		&i.ReviewID,
+		&i.StoreID,
+		&i.AuthorUserID,
+		&i.Body,
+		&i.ContentVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const sellerReviewReportGetByDedupe = `-- name: SellerReviewReportGetByDedupe :one
+SELECT id, review_id, reporter_user_id, reason_code, context, status, created_at
+FROM product_review_reports
+WHERE review_id = $1
+  AND reporter_user_id = $2
+  AND reason_code = $3
+`
+
+type SellerReviewReportGetByDedupeParams struct {
+	ReviewID       string `json:"review_id"`
+	ReporterUserID string `json:"reporter_user_id"`
+	ReasonCode     string `json:"reason_code"`
+}
+
+func (q *Queries) SellerReviewReportGetByDedupe(ctx context.Context, arg SellerReviewReportGetByDedupeParams) (ProductReviewReport, error) {
+	row := q.db.QueryRow(ctx, sellerReviewReportGetByDedupe, arg.ReviewID, arg.ReporterUserID, arg.ReasonCode)
+	var i ProductReviewReport
+	err := row.Scan(
+		&i.ID,
+		&i.ReviewID,
+		&i.ReporterUserID,
+		&i.ReasonCode,
+		&i.Context,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const sellerReviewReportInsert = `-- name: SellerReviewReportInsert :one
+INSERT INTO product_review_reports (
+    id, review_id, reporter_user_id, reason_code, context, status, created_at
+) VALUES (
+    $1, $2, $3, $4, $5, 'OPEN', $6
+)
+RETURNING id, review_id, reporter_user_id, reason_code, context, status, created_at
+`
+
+type SellerReviewReportInsertParams struct {
+	ID             string    `json:"id"`
+	ReviewID       string    `json:"review_id"`
+	ReporterUserID string    `json:"reporter_user_id"`
+	ReasonCode     string    `json:"reason_code"`
+	Context        string    `json:"context"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+func (q *Queries) SellerReviewReportInsert(ctx context.Context, arg SellerReviewReportInsertParams) (ProductReviewReport, error) {
+	row := q.db.QueryRow(ctx, sellerReviewReportInsert,
+		arg.ID,
+		arg.ReviewID,
+		arg.ReporterUserID,
+		arg.ReasonCode,
+		arg.Context,
+		arg.CreatedAt,
+	)
+	var i ProductReviewReport
+	err := row.Scan(
+		&i.ID,
+		&i.ReviewID,
+		&i.ReporterUserID,
+		&i.ReasonCode,
+		&i.Context,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const sellerReviewSummaryByStore = `-- name: SellerReviewSummaryByStore :one
+SELECT
+    COUNT(*)::bigint AS count,
+    COALESCE(AVG(rating), 0)::float8 AS average_rating,
+    COUNT(*) FILTER (WHERE rating = 1)::bigint AS rating1,
+    COUNT(*) FILTER (WHERE rating = 2)::bigint AS rating2,
+    COUNT(*) FILTER (WHERE rating = 3)::bigint AS rating3,
+    COUNT(*) FILTER (WHERE rating = 4)::bigint AS rating4,
+    COUNT(*) FILTER (WHERE rating = 5)::bigint AS rating5
+FROM product_reviews
+WHERE store_id = $1 AND status = 'PUBLISHED'
+`
+
+type SellerReviewSummaryByStoreRow struct {
+	Count         int64   `json:"count"`
+	AverageRating float64 `json:"average_rating"`
+	Rating1       int64   `json:"rating1"`
+	Rating2       int64   `json:"rating2"`
+	Rating3       int64   `json:"rating3"`
+	Rating4       int64   `json:"rating4"`
+	Rating5       int64   `json:"rating5"`
+}
+
+func (q *Queries) SellerReviewSummaryByStore(ctx context.Context, storeID string) (SellerReviewSummaryByStoreRow, error) {
+	row := q.db.QueryRow(ctx, sellerReviewSummaryByStore, storeID)
+	var i SellerReviewSummaryByStoreRow
+	err := row.Scan(
+		&i.Count,
+		&i.AverageRating,
+		&i.Rating1,
+		&i.Rating2,
+		&i.Rating3,
+		&i.Rating4,
+		&i.Rating5,
+	)
+	return i, err
+}
+
+const sellerReviewUserCanAccessStore = `-- name: SellerReviewUserCanAccessStore :one
+
+SELECT EXISTS (
+    SELECT 1
+    FROM stores s
+    JOIN merchant_members mm ON mm.merchant_id = s.merchant_id
+    WHERE s.id = $1
+      AND mm.user_id = $2
+      AND mm.status = 'ACTIVE'
+) AS ok
+`
+
+type SellerReviewUserCanAccessStoreParams struct {
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+}
+
+// SEL-270 seller store-scoped review list/summary/reply/report.
+func (q *Queries) SellerReviewUserCanAccessStore(ctx context.Context, arg SellerReviewUserCanAccessStoreParams) (bool, error) {
+	row := q.db.QueryRow(ctx, sellerReviewUserCanAccessStore, arg.ID, arg.UserID)
+	var ok bool
+	err := row.Scan(&ok)
+	return ok, err
+}
+
+const sellerReviewUserIsPlatformAdmin = `-- name: SellerReviewUserIsPlatformAdmin :one
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = $1
+      AND r.archived_at IS NULL
+      AND r.code IN ('SUPER_ADMIN', 'ADMIN_SUPPORT')
+) AS ok
+`
+
+func (q *Queries) SellerReviewUserIsPlatformAdmin(ctx context.Context, userID string) (bool, error) {
+	row := q.db.QueryRow(ctx, sellerReviewUserIsPlatformAdmin, userID)
+	var ok bool
+	err := row.Scan(&ok)
+	return ok, err
+}

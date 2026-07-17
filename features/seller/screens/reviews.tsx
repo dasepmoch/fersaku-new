@@ -8,49 +8,88 @@ import {
 } from "@/features/seller/ui";
 import { CheckCircle2, Star } from "lucide-react";
 import { useState } from "react";
-import { demoRatingSummary, demoReviews } from "@/features/seller/reviews/api";
 import {
+  useReportSellerReview,
   useSellerRatingSummary,
   useSellerReviews,
+  useUpsertSellerReviewReply,
 } from "@/features/seller/reviews/hooks";
+import {
+  emptyRatingSummary,
+  fiveStarSharePercent,
+  formatAverageRating,
+  reviewDistributionWidthPercent,
+  verifiedSharePercent,
+} from "@/features/seller/reviews/mappers";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 
 function SellerReviews() {
   const storeId = useSellerStoreId();
-  // Keep query layer wired; local state owns reply/report mutations for mock UX.
-  useSellerReviews(storeId);
-  const { data: summary = demoRatingSummary() } =
+  const { data: items = [] } = useSellerReviews(storeId);
+  const { data: summary = emptyRatingSummary() } =
     useSellerRatingSummary(storeId);
-  const [items, setItems] = useState(() => demoReviews());
+  const replyMutation = useUpsertSellerReviewReply(storeId);
+  const reportMutation = useReportSellerReview(storeId);
   const [replying, setReplying] = useState<string | null>(null);
   const [reply, setReply] = useState("");
+  const awaitingReply = items.filter((i) => !i.sellerReply).length;
+  const fiveStarCount = summary.distribution[5] ?? 0;
+  const fiveShare = fiveStarSharePercent(summary);
+  const verifiedShare = verifiedSharePercent(items);
+  const averageLabel = formatAverageRating(summary.average);
   const saveReply = (id: string) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, sellerReply: reply } : item,
-      ),
+    const current = items.find((item) => item.id === id);
+    if (!current || !reply.trim() || replyMutation.isPending) return;
+    replyMutation.mutate(
+      {
+        reviewId: id,
+        productId: current.productId,
+        body: reply,
+        expectedVersion: current.replyContentVersion,
+      },
+      {
+        onSuccess: () => {
+          setReplying(null);
+          setReply("");
+        },
+      },
     );
-    setReplying(null);
-    setReply("");
+  };
+  const reportReview = (id: string) => {
+    const current = items.find((item) => item.id === id);
+    if (!current || reportMutation.isPending) return;
+    reportMutation.mutate({
+      reviewId: id,
+      productId: current.productId,
+      reasonCode: "OTHER",
+    });
   };
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
         <MiniStat
           label="Rating rata-rata"
-          value={String(summary.average)}
+          value={averageLabel}
           note={`${summary.total} ulasan`}
         />
-        <MiniStat label="5 bintang" value="82,8%" note="154 pembeli" />
+        <MiniStat
+          label="5 bintang"
+          value={fiveShare}
+          note={`${fiveStarCount} pembeli`}
+        />
         <MiniStat
           label="Menunggu balasan"
-          value={String(items.filter((i) => !i.sellerReply).length)}
+          value={String(awaitingReply)}
           note="Respons meningkatkan trust"
         />
         <MiniStat
           label="Verified purchase"
-          value="100%"
-          note="Tidak ada ulasan tamu"
+          value={verifiedShare}
+          note={
+            verifiedShare === "100%"
+              ? "Tidak ada ulasan tamu"
+              : `${items.filter((i) => i.verified).length} verified`
+          }
         />
       </div>
       <section className={`${sellerCard} mt-4 overflow-hidden`}>
@@ -72,7 +111,7 @@ function SellerReviews() {
               Rating tokomu
             </p>
             <div className="mt-4 flex items-end gap-3">
-              <b className="font-display text-6xl">4.8</b>
+              <b className="font-display text-6xl">{averageLabel}</b>
               <div className="pb-2">
                 <div className="flex text-[#ffe69a]">
                   {[1, 2, 3, 4, 5].map((x) => (
@@ -80,7 +119,7 @@ function SellerReviews() {
                   ))}
                 </div>
                 <span className="mt-1 block text-[8px] text-white/45">
-                  186 verified reviews
+                  {summary.total} verified reviews
                 </span>
               </div>
             </div>
@@ -92,16 +131,12 @@ function SellerReviews() {
                     <div
                       className="h-full rounded-full bg-[#d7ff64]"
                       style={{
-                        width: `${(summary.distribution[score as keyof typeof summary.distribution] / summary.total) * 100}%`,
+                        width: `${reviewDistributionWidthPercent(summary, score)}%`,
                       }}
                     />
                   </div>
                   <span className="text-white/45">
-                    {
-                      summary.distribution[
-                        score as keyof typeof summary.distribution
-                      ]
-                    }
+                    {summary.distribution[score] ?? 0}
                   </span>
                 </div>
               ))}
@@ -160,14 +195,17 @@ function SellerReviews() {
                     />
                     <div className="mt-2 flex justify-end gap-2">
                       <button
+                        type="button"
                         onClick={() => setReplying(null)}
                         className="hairline rounded-lg border px-3 py-2 text-[8px] font-bold"
                       >
                         Batal
                       </button>
                       <button
+                        type="button"
                         onClick={() => saveReply(review.id)}
-                        className="rounded-lg bg-[#173f2c] px-3 py-2 text-[8px] font-extrabold text-white"
+                        disabled={replyMutation.isPending || !reply.trim()}
+                        className="rounded-lg bg-[#173f2c] px-3 py-2 text-[8px] font-extrabold text-white disabled:opacity-60"
                       >
                         Publikasikan balasan
                       </button>
@@ -176,18 +214,20 @@ function SellerReviews() {
                 ) : (
                   <div className="mt-4 flex gap-2">
                     <button
-                      onClick={() => setReplying(review.id)}
+                      type="button"
+                      onClick={() => {
+                        setReplying(review.id);
+                        setReply(review.sellerReply ?? "");
+                      }}
                       className="hairline rounded-lg border px-3 py-2 text-[8px] font-bold"
                     >
                       {review.sellerReply ? "Edit balasan" : "Balas ulasan"}
                     </button>
                     <button
-                      onClick={() =>
-                        setItems((current) =>
-                          current.filter((item) => item.id !== review.id),
-                        )
-                      }
-                      className="hairline rounded-lg border px-3 py-2 text-[8px] font-bold text-[#a44f3b]"
+                      type="button"
+                      onClick={() => reportReview(review.id)}
+                      disabled={reportMutation.isPending}
+                      className="hairline rounded-lg border px-3 py-2 text-[8px] font-bold text-[#a44f3b] disabled:opacity-60"
                     >
                       Laporkan ke admin
                     </button>

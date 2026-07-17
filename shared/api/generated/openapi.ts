@@ -3261,6 +3261,74 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/stores/{storeId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped seller review list (BoundedNoPaging first result) */
+        get: operations["listStoreReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/reviews/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped published rating aggregate */
+        get: operations["getStoreReviewSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/reviews/{reviewId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Create or version-update public seller reply */
+        put: operations["upsertStoreReviewReply"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/reviews/{reviewId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report review to admin (no moderation status change) */
+        post: operations["reportStoreReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stores/{storeId}/orders/{orderId}/delivery": {
         parameters: {
             query?: never;
@@ -6392,6 +6460,88 @@ export type components = {
             data: components["schemas"]["SellerCustomerNote"];
             meta: components["schemas"]["Meta"];
         };
+        /** @description Store-scoped seller review list row (safe buyer display; no email/PII beyond display name). */
+        SellerReviewView: {
+            id: string;
+            storeId: string;
+            productId: string;
+            productTitle: string;
+            sellerName: string;
+            buyerDisplay: string;
+            rating: number;
+            title: string;
+            body: string;
+            status: string;
+            verifiedPurchase: boolean;
+            contentVersion: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            sellerReply?: string | null;
+            replyContentVersion?: number | null;
+        };
+        SellerReviewListEnvelope: {
+            data: components["schemas"]["SellerReviewView"][];
+            meta: components["schemas"]["CursorListMeta"];
+        };
+        SellerStoreReviewSummary: {
+            storeId: string;
+            /** Format: int64 */
+            count: number;
+            /** Format: double */
+            averageRating: number;
+            /** Format: int64 */
+            rating1: number;
+            /** Format: int64 */
+            rating2: number;
+            /** Format: int64 */
+            rating3: number;
+            /** Format: int64 */
+            rating4: number;
+            /** Format: int64 */
+            rating5: number;
+        };
+        SellerStoreReviewSummaryEnvelope: {
+            data: components["schemas"]["SellerStoreReviewSummary"];
+            meta: components["schemas"]["Meta"];
+        };
+        UpsertSellerReviewReplyRequest: {
+            body: string;
+            /** @description Required when updating an existing reply; omit on first create. */
+            expectedVersion?: number;
+        };
+        SellerReviewReply: {
+            reviewId: string;
+            storeId: string;
+            body: string;
+            contentVersion: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SellerReviewReplyEnvelope: {
+            data: components["schemas"]["SellerReviewReply"];
+            meta: components["schemas"]["Meta"];
+        };
+        ReportSellerReviewRequest: {
+            /** @enum {string} */
+            reasonCode: "SPAM" | "ABUSE" | "OFF_TOPIC" | "OTHER" | "INACCURATE";
+            context?: string;
+        };
+        SellerReviewReport: {
+            id: string;
+            reviewId: string;
+            reasonCode: string;
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SellerReviewReportEnvelope: {
+            data: components["schemas"]["SellerReviewReport"];
+            meta: components["schemas"]["Meta"];
+        };
         FieldViolation: {
             field: string;
             /** @example INVALID */
@@ -6590,6 +6740,16 @@ export type SchemaSellerCustomerListEnvelope = components['schemas']['SellerCust
 export type SchemaSellerCustomerDetailEnvelope = components['schemas']['SellerCustomerDetailEnvelope'];
 export type SchemaUpsertSellerCustomerNoteRequest = components['schemas']['UpsertSellerCustomerNoteRequest'];
 export type SchemaSellerCustomerNoteEnvelope = components['schemas']['SellerCustomerNoteEnvelope'];
+export type SchemaSellerReviewView = components['schemas']['SellerReviewView'];
+export type SchemaSellerReviewListEnvelope = components['schemas']['SellerReviewListEnvelope'];
+export type SchemaSellerStoreReviewSummary = components['schemas']['SellerStoreReviewSummary'];
+export type SchemaSellerStoreReviewSummaryEnvelope = components['schemas']['SellerStoreReviewSummaryEnvelope'];
+export type SchemaUpsertSellerReviewReplyRequest = components['schemas']['UpsertSellerReviewReplyRequest'];
+export type SchemaSellerReviewReply = components['schemas']['SellerReviewReply'];
+export type SchemaSellerReviewReplyEnvelope = components['schemas']['SellerReviewReplyEnvelope'];
+export type SchemaReportSellerReviewRequest = components['schemas']['ReportSellerReviewRequest'];
+export type SchemaSellerReviewReport = components['schemas']['SellerReviewReport'];
+export type SchemaSellerReviewReportEnvelope = components['schemas']['SellerReviewReportEnvelope'];
 export type SchemaFieldViolation = components['schemas']['FieldViolation'];
 export type SchemaMoneyIdr = components['schemas']['MoneyIdr'];
 export type SchemaRfc3339Timestamp = components['schemas']['Rfc3339Timestamp'];
@@ -12541,7 +12701,156 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemEnvelope"];
                 };
             };
-            /** @description Note version conflict */
+        };
+    };
+    listStoreReviews: {
+        parameters: {
+            query?: {
+                /** @description Search title, body, product, or buyer display */
+                q?: string;
+                status?: "PENDING" | "PUBLISHED" | "NEEDS_EDIT";
+                rating?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                storeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerReviewView[] (bounded; hasMore always false at launch) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerReviewListEnvelope"];
+                };
+            };
+            /** @description Foreign/unknown store (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    getStoreReviewSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerStoreReviewSummary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerStoreReviewSummaryEnvelope"];
+                };
+            };
+            /** @description Foreign/unknown store (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    upsertStoreReviewReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertSellerReviewReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description SellerReplyView */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerReviewReplyEnvelope"];
+                };
+            };
+            /** @description Foreign store/review (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+            /** @description Reply version conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    reportStoreReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportSellerReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description SellerReviewReportView */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerReviewReportEnvelope"];
+                };
+            };
+            /** @description Foreign store/review (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+            /** @description Duplicate report for same reason */
             409: {
                 headers: {
                     [name: string]: unknown;

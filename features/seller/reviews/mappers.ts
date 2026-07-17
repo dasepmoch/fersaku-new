@@ -1,11 +1,13 @@
 /**
- * Public review transport DTO → existing SellerReview / SellerRatingSummary view models (PUB-100).
+ * Public + seller review transport DTO → SellerReview / SellerRatingSummary (PUB-100 / SEL-270).
  * Pure; no React.
  */
 
 import type {
   PublicReviewDto,
   PublicReviewSummaryDto,
+  SellerReviewDto,
+  SellerStoreReviewSummaryDto,
 } from "@/shared/api/schemas";
 import type { SellerRatingSummary, SellerReview } from "./contracts";
 
@@ -16,10 +18,14 @@ const STATUS_VIEW: Record<string, string> = {
   PENDING: "Pending moderation",
   pending: "Pending moderation",
   "Pending moderation": "Pending moderation",
+  NEEDS_EDIT: "Needs edit",
+  needs_edit: "Needs edit",
   HIDDEN: "Hidden",
   hidden: "Hidden",
   REJECTED: "Rejected",
   rejected: "Rejected",
+  REMOVED: "Removed",
+  removed: "Removed",
 };
 
 function mapReviewStatus(status: string): string {
@@ -92,6 +98,53 @@ export function mapPublicReviewSummaryDto(
   return { average, total, distribution };
 }
 
+/** Map seller store review DTO → frozen SellerReview card model (SEL-270). */
+export function mapSellerReviewDto(dto: SellerReviewDto): SellerReview {
+  const buyer = dto.buyerDisplay?.trim() || "Pembeli";
+  const view: SellerReview = {
+    id: dto.id,
+    productId: dto.productId,
+    product: dto.productTitle ?? "",
+    seller: dto.sellerName ?? "",
+    buyer,
+    initials: initialsFromBuyer(buyer),
+    rating: dto.rating,
+    title: dto.title,
+    body: dto.body,
+    verified: dto.verifiedPurchase,
+    status: mapReviewStatus(dto.status),
+    createdAt: formatReviewDate(dto.createdAt),
+    contentVersion: dto.contentVersion,
+  };
+  if (dto.sellerReply) view.sellerReply = dto.sellerReply;
+  if (
+    dto.replyContentVersion != null &&
+    Number.isFinite(dto.replyContentVersion)
+  ) {
+    view.replyContentVersion = dto.replyContentVersion;
+  }
+  return view;
+}
+
+export function mapSellerReviewListDto(items: SellerReviewDto[]): SellerReview[] {
+  return items.map(mapSellerReviewDto);
+}
+
+/** Store summary shares the same aggregate shape as public product summary. */
+export function mapSellerStoreReviewSummaryDto(
+  dto: SellerStoreReviewSummaryDto,
+): SellerRatingSummary {
+  return mapPublicReviewSummaryDto({
+    count: dto.count,
+    averageRating: dto.averageRating,
+    rating1: dto.rating1,
+    rating2: dto.rating2,
+    rating3: dto.rating3,
+    rating4: dto.rating4,
+    rating5: dto.rating5,
+  });
+}
+
 /** Distribution bar width percent for score 1..5; zero total → 0 (no NaN). */
 export function reviewDistributionWidthPercent(
   summary: SellerRatingSummary,
@@ -104,10 +157,37 @@ export function reviewDistributionWidthPercent(
   return Number.isFinite(pct) ? pct : 0;
 }
 
+/** Share of five-star ratings as display percent string (never NaN). */
+export function fiveStarSharePercent(summary: SellerRatingSummary): string {
+  if (!summary.total || summary.total <= 0) return "0%";
+  const five = summary.distribution[5] ?? 0;
+  if (!Number.isFinite(five) || five <= 0) return "0%";
+  const pct = (five / summary.total) * 100;
+  if (!Number.isFinite(pct)) return "0%";
+  const rounded = Math.round(pct * 10) / 10;
+  return `${String(rounded).replace(".", ",")}%`;
+}
+
+/** Verified purchase share among listed reviews (never NaN). */
+export function verifiedSharePercent(reviews: SellerReview[]): string {
+  if (!reviews.length) return "0%";
+  const verified = reviews.filter((r) => r.verified).length;
+  const pct = (verified / reviews.length) * 100;
+  if (!Number.isFinite(pct)) return "0%";
+  return `${Math.round(pct)}%`;
+}
+
 export function emptyRatingSummary(): SellerRatingSummary {
   return {
     average: 0,
     total: 0,
     distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   };
+}
+
+/** Format average for MiniStat / sidebar (one decimal when needed). */
+export function formatAverageRating(average: number): string {
+  if (!Number.isFinite(average) || average <= 0) return "0";
+  const rounded = Math.round(average * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }

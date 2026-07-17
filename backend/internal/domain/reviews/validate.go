@@ -45,3 +45,23 @@ func ValidatePatch(rating *int32, title, body *string) (t string, b string, hasT
 	}
 	return t, b, hasTitle, hasBody, nil
 }
+
+// ValidateReplyBody checks seller reply body bounds.
+func ValidateReplyBody(body string) (string, error) {
+	b := strings.TrimSpace(body)
+	if b == "" || utf8.RuneCountInString(b) > MaxReplyRunes {
+		return "", ErrInvalidReply
+	}
+	return b, nil
+}
+
+// NormalizeReportReason validates and uppercases seller report reason codes.
+func NormalizeReportReason(reason string) (string, error) {
+	code := strings.ToUpper(strings.TrimSpace(reason))
+	switch code {
+	case ReportReasonSpam, ReportReasonAbuse, ReportReasonOffTopic, ReportReasonOther, ReportReasonInaccurate:
+		return code, nil
+	default:
+		return "", ErrInvalidReportReason
+	}
+}

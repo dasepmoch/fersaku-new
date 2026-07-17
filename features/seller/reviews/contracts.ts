@@ -12,10 +12,23 @@ export type SellerReview = {
   status: string;
   createdAt: string;
   sellerReply?: string;
+  /** Server reply version for optimistic concurrency on edit. */
+  replyContentVersion?: number;
+  contentVersion?: number;
 };
 
 export type SellerRatingSummary = {
   average: number;
   total: number;
   distribution: Record<number, number>;
+};
+
+export type UpsertSellerReplyInput = {
+  body: string;
+  expectedVersion?: number;
+};
+
+export type ReportSellerReviewInput = {
+  reasonCode?: "SPAM" | "ABUSE" | "OFF_TOPIC" | "OTHER" | "INACCURATE";
+  context?: string;
 };

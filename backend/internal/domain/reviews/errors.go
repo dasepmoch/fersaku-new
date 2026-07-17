@@ -10,4 +10,8 @@ var (
 	ErrInvalidRating       = apperr.Validation(apperr.CodeValidationFailed, "Rating must be 1..5")
 	ErrInvalidContent      = apperr.Validation(apperr.CodeValidationFailed, "Invalid review content")
 	ErrOrderItemMismatch   = apperr.Validation(apperr.CodeValidationFailed, "Order item does not match review binding")
+	ErrInvalidReply        = apperr.Validation(apperr.CodeValidationFailed, "Invalid reply body")
+	ErrInvalidReportReason = apperr.Validation(apperr.CodeValidationFailed, "Invalid report reason")
+	ErrReportDuplicate     = apperr.Conflict(apperr.CodeConflict, "Report already submitted")
+	ErrReplyVersionConflict = apperr.Conflict(apperr.CodeConflict, "Reply version conflict")
 )

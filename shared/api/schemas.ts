@@ -829,6 +829,105 @@ export type BuyerPatchReviewRequest = z.infer<
   typeof buyerPatchReviewRequestSchema
 >;
 
+// --- Seller reviews (SEL-270) — store-scoped list/summary/reply/report ---
+
+/** Launch BoundedNoPaging first-result limit (no paging control on snapshot). */
+export const SELLER_REVIEW_LIST_LIMIT = 50;
+
+/** BE SellerReviewView for store-scoped seller list. */
+export const sellerReviewDtoSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().min(1),
+  productId: z.string().min(1),
+  productTitle: z.string(),
+  sellerName: z.string(),
+  buyerDisplay: z.string(),
+  rating: z.number().int().min(1).max(5),
+  title: z.string(),
+  body: z.string(),
+  status: z.string().min(1),
+  verifiedPurchase: z.boolean(),
+  contentVersion: z.number().int().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  sellerReply: z.string().nullable().optional(),
+  replyContentVersion: z.number().int().min(1).nullable().optional(),
+});
+
+export const sellerReviewListEnvelopeSchema = cursorListEnvelopeSchema(
+  sellerReviewDtoSchema,
+);
+
+/** BE SellerStoreReviewSummaryView — same aggregate shape as product summary. */
+export const sellerStoreReviewSummaryDtoSchema = z.object({
+  storeId: z.string().min(1),
+  count: z.number().int().min(0),
+  averageRating: z.number(),
+  rating1: z.number().int().min(0),
+  rating2: z.number().int().min(0),
+  rating3: z.number().int().min(0),
+  rating4: z.number().int().min(0),
+  rating5: z.number().int().min(0),
+});
+
+export const sellerStoreReviewSummaryEnvelopeSchema = successEnvelopeSchema(
+  sellerStoreReviewSummaryDtoSchema,
+);
+
+export const upsertSellerReviewReplyRequestSchema = z.object({
+  body: z.string().min(1).max(2000),
+  expectedVersion: z.number().int().min(1).optional(),
+});
+
+export const sellerReviewReplyDtoSchema = z.object({
+  reviewId: z.string().min(1),
+  storeId: z.string().min(1),
+  body: z.string().min(1),
+  contentVersion: z.number().int().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerReviewReplyEnvelopeSchema = successEnvelopeSchema(
+  sellerReviewReplyDtoSchema,
+);
+
+export const reportSellerReviewRequestSchema = z.object({
+  reasonCode: z.enum([
+    "SPAM",
+    "ABUSE",
+    "OFF_TOPIC",
+    "OTHER",
+    "INACCURATE",
+  ]),
+  context: z.string().max(1000).optional(),
+});
+
+export const sellerReviewReportDtoSchema = z.object({
+  id: z.string().min(1),
+  reviewId: z.string().min(1),
+  reasonCode: z.string().min(1),
+  status: z.string().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerReviewReportEnvelopeSchema = successEnvelopeSchema(
+  sellerReviewReportDtoSchema,
+);
+
+export type SellerReviewDto = z.infer<typeof sellerReviewDtoSchema>;
+export type SellerStoreReviewSummaryDto = z.infer<
+  typeof sellerStoreReviewSummaryDtoSchema
+>;
+export type UpsertSellerReviewReplyRequest = z.infer<
+  typeof upsertSellerReviewReplyRequestSchema
+>;
+export type SellerReviewReplyDto = z.infer<typeof sellerReviewReplyDtoSchema>;
+export type ReportSellerReviewRequest = z.infer<
+  typeof reportSellerReviewRequestSchema
+>;
+export type SellerReviewReportDto = z.infer<typeof sellerReviewReportDtoSchema>;
+
 // --- Seller orders (SEL-250) — store-scoped; no delivery secrets ---
 
 /** Default/max page size for seller order NumberedPageList. */

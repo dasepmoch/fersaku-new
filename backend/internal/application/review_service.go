@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/delivery"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/orders"
@@ -307,4 +309,339 @@ func (s *ReviewService) SummaryByProduct(ctx context.Context, productID string) 
 		Rating4:       sum.Rating4,
 		Rating5:       sum.Rating5,
 	}, nil
+}
+
+// --- SEL-270 seller store-scoped reviews ---
+
+const (
+	sellerReviewDefaultLimit = 50
+	sellerReviewMaxLimit     = 50
+	sellerReviewMaxSearchLen = 100
+	sellerReportContextMax   = 1000
+)
+
+// SellerReviewView is the seller list/detail card DTO (safe buyer display only).
+type SellerReviewView struct {
+	ID                  string    `json:"id"`
+	StoreID             string    `json:"storeId"`
+	ProductID           string    `json:"productId"`
+	ProductTitle        string    `json:"productTitle"`
+	SellerName          string    `json:"sellerName"`
+	BuyerDisplay        string    `json:"buyerDisplay"`
+	Rating              int32     `json:"rating"`
+	Title               string    `json:"title"`
+	Body                string    `json:"body"`
+	Status              string    `json:"status"`
+	VerifiedPurchase    bool      `json:"verifiedPurchase"`
+	ContentVersion      int32     `json:"contentVersion"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
+	SellerReply         *string   `json:"sellerReply,omitempty"`
+	ReplyContentVersion *int32    `json:"replyContentVersion,omitempty"`
+}
+
+// SellerStoreReviewSummaryView is store-level published rating aggregate.
+type SellerStoreReviewSummaryView struct {
+	StoreID       string  `json:"storeId"`
+	Count         int64   `json:"count"`
+	AverageRating float64 `json:"averageRating"`
+	Rating1       int64   `json:"rating1"`
+	Rating2       int64   `json:"rating2"`
+	Rating3       int64   `json:"rating3"`
+	Rating4       int64   `json:"rating4"`
+	Rating5       int64   `json:"rating5"`
+}
+
+// UpsertSellerReplyInput is create/update seller reply body.
+type UpsertSellerReplyInput struct {
+	Body            string
+	ExpectedVersion *int32
+}
+
+// SellerReplyView is the reply command response.
+type SellerReplyView struct {
+	ReviewID       string    `json:"reviewId"`
+	StoreID        string    `json:"storeId"`
+	Body           string    `json:"body"`
+	ContentVersion int32     `json:"contentVersion"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
+// ReportSellerReviewInput is the report command (no moderation status change).
+type ReportSellerReviewInput struct {
+	ReasonCode string
+	Context    string
+}
+
+// SellerReviewReportView is report command response.
+type SellerReviewReportView struct {
+	ID         string    `json:"id"`
+	ReviewID   string    `json:"reviewId"`
+	ReasonCode string    `json:"reasonCode"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+func (s *ReviewService) requireStoreAccess(ctx context.Context, userID, storeID string) error {
+	if userID == "" {
+		return apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required")
+	}
+	if storeID == "" {
+		return reviews.ErrNotFound
+	}
+	if s.Store == nil {
+		return apperr.Internal(apperr.CodeInternalError, "Reviews unavailable")
+	}
+	admin, err := s.Store.UserIsPlatformAdmin(ctx, userID)
+	if err != nil {
+		return apperr.Internal(apperr.CodeInternalError, "Authorization check failed")
+	}
+	if admin {
+		return nil
+	}
+	ok, err := s.Store.UserCanAccessStore(ctx, userID, storeID)
+	if err != nil {
+		return apperr.Internal(apperr.CodeInternalError, "Authorization check failed")
+	}
+	if !ok {
+		return reviews.ErrNotFound
+	}
+	return nil
+}
+
+func normalizeSellerReviewFilter(f SellerReviewListFilter) SellerReviewListFilter {
+	f.StoreID = strings.TrimSpace(f.StoreID)
+	f.Q = strings.TrimSpace(f.Q)
+	if utf8.RuneCountInString(f.Q) > sellerReviewMaxSearchLen {
+		f.Q = string([]rune(f.Q)[:sellerReviewMaxSearchLen])
+	}
+	f.Status = strings.ToUpper(strings.TrimSpace(f.Status))
+	switch f.Status {
+	case reviews.StatusPending, reviews.StatusPublished, reviews.StatusNeedsEdit:
+		// allowed filter values
+	default:
+		f.Status = ""
+	}
+	if f.Rating != nil {
+		if *f.Rating < reviews.MinRating || *f.Rating > reviews.MaxRating {
+			f.Rating = nil
+		}
+	}
+	if f.Limit <= 0 {
+		f.Limit = sellerReviewDefaultLimit
+	}
+	if f.Limit > sellerReviewMaxLimit {
+		f.Limit = sellerReviewMaxLimit
+	}
+	return f
+}
+
+// ListSellerByStore returns a bounded first-page seller review list (no cursor UI).
+func (s *ReviewService) ListSellerByStore(ctx context.Context, userID string, f SellerReviewListFilter) ([]SellerReviewView, error) {
+	f = normalizeSellerReviewFilter(f)
+	if err := s.requireStoreAccess(ctx, userID, f.StoreID); err != nil {
+		return nil, err
+	}
+	rows, err := s.Store.ListSellerByStore(ctx, f)
+	if err != nil {
+		return nil, apperr.Internal(apperr.CodeInternalError, "Review list failed")
+	}
+	out := make([]SellerReviewView, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, mapSellerReviewRow(row))
+	}
+	return out, nil
+}
+
+// SummaryByStore returns published rating aggregates for a store.
+func (s *ReviewService) SummaryByStore(ctx context.Context, userID, storeID string) (SellerStoreReviewSummaryView, error) {
+	storeID = strings.TrimSpace(storeID)
+	if err := s.requireStoreAccess(ctx, userID, storeID); err != nil {
+		return SellerStoreReviewSummaryView{}, err
+	}
+	sum, err := s.Store.SummaryByStore(ctx, storeID)
+	if err != nil {
+		return SellerStoreReviewSummaryView{}, apperr.Internal(apperr.CodeInternalError, "Review summary failed")
+	}
+	return SellerStoreReviewSummaryView{
+		StoreID:       storeID,
+		Count:         sum.Count,
+		AverageRating: sum.AverageRating,
+		Rating1:       sum.Rating1,
+		Rating2:       sum.Rating2,
+		Rating3:       sum.Rating3,
+		Rating4:       sum.Rating4,
+		Rating5:       sum.Rating5,
+	}, nil
+}
+
+// UpsertSellerReply creates or version-updates the single public seller reply.
+func (s *ReviewService) UpsertSellerReply(ctx context.Context, userID, storeID, reviewID string, in UpsertSellerReplyInput) (SellerReplyView, error) {
+	storeID = strings.TrimSpace(storeID)
+	reviewID = strings.TrimSpace(reviewID)
+	if err := s.requireStoreAccess(ctx, userID, storeID); err != nil {
+		return SellerReplyView{}, err
+	}
+	if reviewID == "" {
+		return SellerReplyView{}, reviews.ErrNotFound
+	}
+	body, err := reviews.ValidateReplyBody(in.Body)
+	if err != nil {
+		return SellerReplyView{}, err
+	}
+	if _, err := s.Store.GetReviewByStoreAndID(ctx, storeID, reviewID); err != nil {
+		if s.Store.IsNotFound(err) {
+			return SellerReplyView{}, reviews.ErrNotFound
+		}
+		return SellerReplyView{}, apperr.Internal(apperr.CodeInternalError, "Review lookup failed")
+	}
+	now := s.now()
+	existing, err := s.Store.GetReplyByReview(ctx, reviewID)
+	if err != nil && !s.Store.IsNotFound(err) {
+		return SellerReplyView{}, apperr.Internal(apperr.CodeInternalError, "Reply lookup failed")
+	}
+	if s.Store.IsNotFound(err) {
+		reply, err := s.Store.InsertReply(ctx, reviews.Reply{
+			ID:             s.IDs.New(),
+			ReviewID:       reviewID,
+			StoreID:        storeID,
+			AuthorUserID:   userID,
+			Body:           body,
+			ContentVersion: 1,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		})
+		if err != nil {
+			if s.Store.IsUniqueViolation(err) {
+				// Race: another write created the reply; surface conflict.
+				return SellerReplyView{}, reviews.ErrReplyVersionConflict
+			}
+			return SellerReplyView{}, apperr.Internal(apperr.CodeInternalError, "Reply create failed")
+		}
+		return SellerReplyView{
+			ReviewID:       reply.ReviewID,
+			StoreID:        reply.StoreID,
+			Body:           reply.Body,
+			ContentVersion: reply.ContentVersion,
+			CreatedAt:      reply.CreatedAt,
+			UpdatedAt:      reply.UpdatedAt,
+		}, nil
+	}
+	expected := existing.ContentVersion
+	if in.ExpectedVersion != nil {
+		expected = *in.ExpectedVersion
+	}
+	updated, err := s.Store.UpdateReply(ctx, reviewID, storeID, body, expected, now)
+	if err != nil {
+		if s.Store.IsNotFound(err) {
+			return SellerReplyView{}, reviews.ErrReplyVersionConflict
+		}
+		return SellerReplyView{}, apperr.Internal(apperr.CodeInternalError, "Reply update failed")
+	}
+	return SellerReplyView{
+		ReviewID:       updated.ReviewID,
+		StoreID:        updated.StoreID,
+		Body:           updated.Body,
+		ContentVersion: updated.ContentVersion,
+		CreatedAt:      updated.CreatedAt,
+		UpdatedAt:      updated.UpdatedAt,
+	}, nil
+}
+
+// ReportSellerReview records a seller report without changing moderation status.
+func (s *ReviewService) ReportSellerReview(ctx context.Context, userID, storeID, reviewID string, in ReportSellerReviewInput) (SellerReviewReportView, error) {
+	storeID = strings.TrimSpace(storeID)
+	reviewID = strings.TrimSpace(reviewID)
+	if err := s.requireStoreAccess(ctx, userID, storeID); err != nil {
+		return SellerReviewReportView{}, err
+	}
+	if reviewID == "" {
+		return SellerReviewReportView{}, reviews.ErrNotFound
+	}
+	reason, err := reviews.NormalizeReportReason(in.ReasonCode)
+	if err != nil {
+		return SellerReviewReportView{}, err
+	}
+	contextText := strings.TrimSpace(in.Context)
+	if utf8.RuneCountInString(contextText) > sellerReportContextMax {
+		contextText = string([]rune(contextText)[:sellerReportContextMax])
+	}
+	if _, err := s.Store.GetReviewByStoreAndID(ctx, storeID, reviewID); err != nil {
+		if s.Store.IsNotFound(err) {
+			return SellerReviewReportView{}, reviews.ErrNotFound
+		}
+		return SellerReviewReportView{}, apperr.Internal(apperr.CodeInternalError, "Review lookup failed")
+	}
+	if existing, err := s.Store.GetReportByDedupe(ctx, reviewID, userID, reason); err == nil {
+		return SellerReviewReportView{
+			ID:         existing.ID,
+			ReviewID:   existing.ReviewID,
+			ReasonCode: existing.ReasonCode,
+			Status:     existing.Status,
+			CreatedAt:  existing.CreatedAt,
+		}, reviews.ErrReportDuplicate
+	} else if !s.Store.IsNotFound(err) {
+		return SellerReviewReportView{}, apperr.Internal(apperr.CodeInternalError, "Report lookup failed")
+	}
+	now := s.now()
+	row, err := s.Store.InsertReport(ctx, SellerReviewReportRow{
+		ID:             s.IDs.New(),
+		ReviewID:       reviewID,
+		ReporterUserID: userID,
+		ReasonCode:     reason,
+		Context:        contextText,
+		Status:         "OPEN",
+		CreatedAt:      now,
+	})
+	if err != nil {
+		if s.Store.IsUniqueViolation(err) {
+			if existing, e2 := s.Store.GetReportByDedupe(ctx, reviewID, userID, reason); e2 == nil {
+				return SellerReviewReportView{
+					ID:         existing.ID,
+					ReviewID:   existing.ReviewID,
+					ReasonCode: existing.ReasonCode,
+					Status:     existing.Status,
+					CreatedAt:  existing.CreatedAt,
+				}, reviews.ErrReportDuplicate
+			}
+			return SellerReviewReportView{}, reviews.ErrReportDuplicate
+		}
+		return SellerReviewReportView{}, apperr.Internal(apperr.CodeInternalError, "Report create failed")
+	}
+	return SellerReviewReportView{
+		ID:         row.ID,
+		ReviewID:   row.ReviewID,
+		ReasonCode: row.ReasonCode,
+		Status:     row.Status,
+		CreatedAt:  row.CreatedAt,
+	}, nil
+}
+
+func mapSellerReviewRow(row SellerReviewListRow) SellerReviewView {
+	v := SellerReviewView{
+		ID:               row.Review.ID,
+		StoreID:          row.Review.StoreID,
+		ProductID:        row.Review.ProductID,
+		ProductTitle:     row.ProductTitle,
+		SellerName:       row.StoreName,
+		BuyerDisplay:     row.BuyerDisplay,
+		Rating:           row.Review.Rating,
+		Title:            row.Review.Title,
+		Body:             row.Review.Body,
+		Status:           row.Review.Status,
+		VerifiedPurchase: row.Review.VerifiedPurchase,
+		ContentVersion:   row.Review.ContentVersion,
+		CreatedAt:        row.Review.CreatedAt,
+		UpdatedAt:        row.Review.UpdatedAt,
+	}
+	if row.SellerReplyBody != "" {
+		b := row.SellerReplyBody
+		v.SellerReply = &b
+	}
+	if row.ReplyContentVersion != nil {
+		cv := *row.ReplyContentVersion
+		v.ReplyContentVersion = &cv
+	}
+	return v
 }

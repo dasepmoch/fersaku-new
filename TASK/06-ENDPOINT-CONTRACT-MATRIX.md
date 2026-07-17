@@ -142,9 +142,9 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Delivery grant state | order detail | `GET /v1/stores/{storeId}/orders/{orderId}/delivery` | U | Map grant state only. | SEL-250 |
 | Delivery resend/retry/revoke | seller delivery backend; order UI only exposes resend | `POST /v1/stores/{storeId}/orders/{orderId}/delivery/resend`, `POST /v1/stores/{storeId}/orders/{orderId}/delivery/retry`, `POST /v1/stores/{storeId}/orders/{orderId}/delivery/revoke` | M | Wire resend through existing control. Keep retry/revoke backend-only or live-disabled until an existing control is characterized; typed transition/idempotency/rate/audit remain required. | SEL-250/UI-080 |
 | Customers list/detail | seller customer API | expected `GET /v1/stores/{storeId}/customers`, `GET /v1/stores/{storeId}/customers/{customerId}` | G | Build tenant read model/history/notes/privacy. | SEL-260 |
-| Seller reviews list | seller reviews API | expected `GET /v1/stores/{storeId}/reviews` | G | Joined store read model/filter/pagination. | SEL-270 |
-| Seller review summary | reviews API | expected `GET /v1/stores/{storeId}/reviews/summary` | G | Aggregate mapper. | SEL-270 |
-| Reply/report review | reviews screen | no seller route found | G | Typed reply/report/version/audit. | SEL-270 |
+| Seller reviews list | seller reviews API | `GET /v1/stores/{storeId}/reviews` | M | Joined store read model; BoundedNoPaging first result (limit 50); no cursor UI. | SEL-270 |
+| Seller review summary | reviews API | `GET /v1/stores/{storeId}/reviews/summary` | M | Store published aggregate → total/average/distribution. | SEL-270 |
+| Reply/report review | reviews screen | `PUT /v1/stores/{storeId}/reviews/{reviewId}/reply`, `POST /v1/stores/{storeId}/reviews/{reviewId}/report` | M | Versioned reply; report reason/dedupe; no moderation status change. | SEL-270 |
 | Coupon list/create | coupon screens | `GET /v1/stores/{storeId}/coupons/`, `POST /v1/stores/{storeId}/coupons/` | M | Router currently uses trailing slash; freeze one canonical slash policy, schema/filter/pagination/idempotency. | SEL-280/INT-000 |
 | Coupon detail/patch | coupon UI | `GET /v1/stores/{storeId}/coupons/{couponId}`, `PATCH /v1/stores/{storeId}/coupons/{couponId}` | U | Revision/validation. | SEL-280 |
 | Coupon activate/pause/archive | coupon UI | `POST /v1/stores/{storeId}/coupons/{couponId}/activate`, `POST /v1/stores/{storeId}/coupons/{couponId}/pause`, `POST /v1/stores/{storeId}/coupons/{couponId}/archive` | U | State transitions/concurrency. | SEL-280 |

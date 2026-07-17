@@ -823,6 +823,17 @@ func NewRouterWith(d RouterDeps) http.Handler {
 			cr.With(middleware.RequirePermission("seller.store.write")).Put("/{customerId}/notes", sch.UpsertNote)
 		})
 	}
+	// SEL-270 seller review list/summary/reply/report (store-scoped; BoundedNoPaging).
+	if d.ReviewService != nil {
+		rh := &handlers.ReviewsHandler{Svc: d.ReviewService}
+		r.Route("/v1/stores/{storeId}/reviews", func(rr chi.Router) {
+			rr.Use(handlers.RequireAuth)
+			rr.With(middleware.RequirePermission("seller.store.read")).Get("/", rh.ListSeller)
+			rr.With(middleware.RequirePermission("seller.store.read")).Get("/summary", rh.SummarySeller)
+			rr.With(middleware.RequirePermission("seller.store.write")).Put("/{reviewId}/reply", rh.UpsertSellerReply)
+			rr.With(middleware.RequirePermission("seller.store.write")).Post("/{reviewId}/report", rh.ReportSeller)
+		})
+	}
 	if d.DeliveryService != nil {
 		dh := &handlers.DeliveryHandler{Svc: d.DeliveryService}
 		// Order-scoped delivery/invoice (session or token)

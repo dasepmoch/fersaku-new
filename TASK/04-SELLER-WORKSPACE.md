@@ -322,21 +322,21 @@ Screen memanggil query tetapi menginisialisasi/merender demo state; backend tida
 
 ### Backend task
 
-- [ ] Store-scoped review list joined with product and safe buyer display; bounded filter/status/rating. Snapshot has no pagination control, so no hidden cursor/page navigation.
-- [ ] Store summary aggregate compatible with UI distribution.
-- [ ] Seller reply create/update with version and transition policy.
-- [ ] Report command with reason/category, idempotency, audit; no arbitrary moderation status.
-- [ ] Permission/tenant/privacy enforcement.
+- [x] Store-scoped review list joined with product and safe buyer display; bounded filter/status/rating. Snapshot has no pagination control, so no hidden cursor/page navigation.
+- [x] Store summary aggregate compatible with UI distribution.
+- [x] Seller reply create/update with version and transition policy.
+- [x] Report command with reason/category, idempotency, audit; no arbitrary moderation status.
+- [x] Permission/tenant/privacy enforcement.
 
 ### Frontend task
 
-- [ ] Use query data as authority; no initial demo copy in API mode.
-- [ ] Mapper backend IDs/fields to existing `SellerReview` and `SellerRatingSummary`.
-- [ ] Replace every hardcoded summary truth (`4.8`, `186`, `82.8%`, verified percentage/count) with the authoritative mapped summary; zero denominator must never render `NaN`/success-like claims.
-- [ ] Snapshot has no empty composition. A zero-review store requires a truthful non-empty launch invariant or `UXE-012/UI-080` before API activation; do not retain demo rows/summary or invent an empty card.
-- [ ] Wire reply/report through existing controls/dialog; pending/failure not success.
-- [ ] Exact invalidate seller/public summary/list as state permits.
-- [ ] Keep local draft text only until submit; server reply version after success.
+- [x] Use query data as authority; no initial demo copy in API mode.
+- [x] Mapper backend IDs/fields to existing `SellerReview` and `SellerRatingSummary`.
+- [x] Replace every hardcoded summary truth (`4.8`, `186`, `82.8%`, verified percentage/count) with the authoritative mapped summary; zero denominator must never render `NaN`/success-like claims.
+- [x] Snapshot has no empty composition. A zero-review store requires a truthful non-empty launch invariant or `UXE-012/UI-080` before API activation; do not retain demo rows/summary or invent an empty card.
+- [x] Wire reply/report through existing controls/dialog; pending/failure not success.
+- [x] Exact invalidate seller/public summary/list as state permits.
+- [x] Keep local draft text only until submit; server reply version after success.
 
 ### Tests/AC
 
