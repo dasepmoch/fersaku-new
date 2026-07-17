@@ -1,0 +1,48 @@
+# Git / VCS
+.git
+.gitignore
+.gitattributes
+
+# Env and secrets (never bake into image)
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+**/secrets/
+**/secret/
+
+# Frontend / monorepo noise (build context is backend/)
+node_modules
+../frontend
+../screenshots
+**/screenshots/
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webp
+
+# Local build artifacts
+bin/
+dist/
+tmp/
+*.exe
+*.test
+coverage.out
+coverage.html
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Docs/tests heavy assets (keep source tests)
+**/*_test.go.bak
+test-results/
+playwright-report/
+
+# Docker compose local data
+.compose-data/
+postgres-data/
+minio-data/

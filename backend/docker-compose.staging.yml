@@ -1,0 +1,38 @@
+# Optional staging-shaped overlay (BE-630). Does NOT replace production HA (ADR-0007).
+# Local default remains: docker compose -f docker-compose.yml
+#
+# Rehearse multi-replica API/worker without breaking local single-replica workflow:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --scale api=2 --scale worker=2
+#
+# Notes:
+# - Host port 18080 only binds the first API replica; use an external LB for true multi-port staging.
+# - Xendit stays fake unless you inject staging secrets via env (never commit them).
+# - Postgres/Redis/MinIO here are still single-node compose — production uses managed services.
+
+name: fersaku-backend
+
+services:
+  api:
+    environment:
+      APP_ENV: ${APP_ENV:-staging}
+      # Staging requires session secrets (config fail-closed). Use secret manager in real staging.
+      SESSION_SECRET: ${SESSION_SECRET:-staging-dev-session-secret-min-16}
+      CSRF_SECRET: ${CSRF_SECRET:-staging-dev-csrf-secret-min-16xx}
+      XENDIT_MODE: ${XENDIT_MODE:-fake}
+    deploy:
+      # Compose deploy keys are advisory for swarm; --scale is the portable local lever.
+      replicas: 2
+    # Prefer explicit resource hints when the engine supports them
+    # mem_limit: 512m
+
+  worker:
+    environment:
+      APP_ENV: ${APP_ENV:-staging}
+      SESSION_SECRET: ${SESSION_SECRET:-staging-dev-session-secret-min-16}
+      CSRF_SECRET: ${CSRF_SECRET:-staging-dev-csrf-secret-min-16xx}
+      XENDIT_MODE: ${XENDIT_MODE:-fake}
+    deploy:
+      replicas: 2
+
+# Production topology, pool budgets, drain policy: docs/launch/topology.md

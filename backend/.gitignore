@@ -1,0 +1,10 @@
+bin/
+*.exe
+.env
+.env.local
+.env.*.local
+.compose-data/
+.gocache/
+.gomod/
+.gotmp/
+

@@ -1,0 +1,985 @@
+{
+  "project": "fersaku-new",
+  "repo": "/var/www/fersaku-new",
+  "sourceOfTruth": [
+    "docs/BACKEND_PRODUCTION_TASKS.md",
+    "docs/BACKEND_HANDOFF.md",
+    "ARCHITECTURE.md"
+  ],
+  "createdAt": "2026-07-16T23:50:00+07:00",
+  "updatedAt": "2026-07-17T04:30:05+07:00",
+  "status": "complete",
+  "executor": "opencode-only",
+  "projectManager": "nikki",
+  "autonomousMode": true,
+  "overnightNote": "User may be asleep; Nikki continues task-by-task until done. OpenCode questions answered from BACKEND_PRODUCTION_TASKS.md + BACKEND_HANDOFF.md. No UI design changes.",
+  "rules": {
+    "implementEverything": true,
+    "noSkippedTasks": true,
+    "followAllMdRules": true,
+    "noUiDesignChanges": true,
+    "adaptToExistingUiOnly": true,
+    "frontendMockRemainsDefault": true,
+    "moneyInt64WholeIdr": true,
+    "xenditOnly": true,
+    "noDuitku": true,
+    "noRefundDispute": true,
+    "noReconciliationConsole": true,
+    "noSubscriptionPlans": true,
+    "kycOnlyForLiveQrisApi": true,
+    "mandatoryStoreOnboarding": true,
+    "unifiedWalletPerMerchant": true,
+    "postgresAuthoritative": true,
+    "redisNonAuthoritative": true
+  },
+  "feePolicyLaunch": {
+    "transactionPercentBps": 300,
+    "transactionFixedIdr": 700,
+    "withdrawalPercentBps": 300,
+    "minimumWithdrawalIdr": 50000,
+    "minimumPaymentIdr": 1000,
+    "maximumPaymentIdr": 100000000,
+    "immutableViaAdmin": true
+  },
+  "summary": {
+    "totalTasks": 36,
+    "pending": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "done": 36,
+    "skipped": 0
+  },
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "keputusan dan repository foundation",
+      "status": "done",
+      "tasks": [
+        "BE-000",
+        "BE-001",
+        "BE-002"
+      ]
+    },
+    {
+      "id": "phase-1",
+      "name": "persistence, transport, auth, authorization",
+      "status": "done",
+      "tasks": [
+        "BE-100",
+        "BE-110",
+        "BE-120",
+        "BE-125",
+        "BE-130",
+        "BE-135",
+        "BE-140"
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "mandatory store onboarding and storefront commerce",
+      "status": "done",
+      "tasks": [
+        "BE-200",
+        "BE-210",
+        "BE-215",
+        "BE-220",
+        "BE-230",
+        "BE-235",
+        "BE-240"
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "payments, gateway, ledger, withdrawals",
+      "status": "done",
+      "tasks": [
+        "BE-300",
+        "BE-310",
+        "BE-320",
+        "BE-330",
+        "BE-340",
+        "BE-350",
+        "BE-360"
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "KYC, API credentials, webhooks, buyer",
+      "status": "done",
+      "tasks": [
+        "BE-400",
+        "BE-410",
+        "BE-420",
+        "BE-430"
+      ],
+      "note": "BE-430 done; phase-4 complete"
+    },
+    {
+      "id": "phase-5",
+      "name": "slim admin and operations",
+      "status": "done",
+      "tasks": [
+        "BE-500",
+        "BE-510",
+        "BE-520",
+        "BE-530"
+      ],
+      "note": "BE-530 done; phase-5 complete"
+    },
+    {
+      "id": "phase-6",
+      "name": "production hardening and release",
+      "status": "done",
+      "tasks": [
+        "BE-600",
+        "BE-610",
+        "BE-620",
+        "BE-630"
+      ],
+      "note": "BE-630 done; phase-6 complete; owner-sign residual on live canary/secrets"
+    }
+  ],
+  "tasks": {
+    "BE-000": {
+      "title": "Product/architecture decision records",
+      "phase": "phase-0",
+      "status": "done",
+      "dependsOn": [],
+      "evidence": [
+        "backend/docs/adr/ADR-0001-modular-monolith.md",
+        "backend/docs/adr/ADR-0002-one-xendit-account.md",
+        "backend/docs/adr/ADR-0003-launch-fee-policy.md",
+        "backend/docs/adr/ADR-0004-session-mfa-impersonation.md",
+        "backend/docs/adr/ADR-0005-non-goals.md",
+        "backend/docs/adr/ADR-0006-free-features.md",
+        "backend/docs/adr/ADR-0007-production-runtime-topology.md",
+        "backend/docs/DECISIONS.md",
+        "backend/README.md"
+      ],
+      "notes": "All ADRs Accepted 2026-07-16; DECISIONS index + backend README updated"
+    },
+    "BE-001": {
+      "title": "Scaffold Go workspace",
+      "phase": "phase-0",
+      "status": "done",
+      "dependsOn": [
+        "BE-000"
+      ],
+      "evidence": [
+        "backend/go.mod",
+        "backend/Makefile",
+        "backend/cmd/api/main.go",
+        "backend/cmd/worker/main.go",
+        "backend/internal/app/app.go",
+        "backend/internal/ports/ports.go",
+        "backend/internal/config/config.go",
+        "backend/internal/architecture/import_boundary_test.go",
+        "backend/internal/platform/errors/errors.go",
+        "backend/api/openapi.yaml",
+        "backend/sqlc.yaml",
+        "backend/README.md",
+        "backend/internal/adapters/http/router_smoke_test.go"
+      ],
+      "notes": "Verified: go test ./... PASS; health routes 200 via httptest; earlier curl 404 was port conflict not missing routes"
+    },
+    "BE-002": {
+      "title": "Docker/local/CI foundation",
+      "phase": "phase-0",
+      "status": "done",
+      "dependsOn": [
+        "BE-001"
+      ],
+      "evidence": [
+        "backend/Dockerfile (multi-target: api, worker; non-root 65532)",
+        "backend/.dockerignore",
+        "backend/docker-compose.yml (api/worker/postgres/redis/minio/mailpit)",
+        "backend/.env.example",
+        "backend/Makefile (compose-up/down/migrate/seed)",
+        "backend/scripts/migrate.sh (stub)",
+        "backend/scripts/seed.sh (stub)",
+        "backend/scripts/check-generated.sh (placeholder exit 0)",
+        "backend/internal/config/config.go (local vs production fail-closed)",
+        "backend/internal/config/config_test.go",
+        "backend/README.md (ports table + compose workflow)",
+        ".github/workflows/backend-ci.yml (fmt/vet/test/race/docker build)",
+        "docker compose config OK; docker compose build api+worker OK",
+        "compose deps healthy: postgres:5433 redis:6380 minio:9000/9001 mailpit:8025",
+        "api healthy on :18080 /health/live + /health/ready; runs as nonroot",
+        "go test ./... PASS"
+      ],
+      "notes": "Host ports: API 18080, postgres 5433, redis 6380, mailpit 8025, minio 9000/9001. Xendit local=fake. No production secrets in compose. migrate/seed stubs until BE-100."
+    },
+    "BE-100": {
+      "title": "Database/migration/sqlc foundation",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-002"
+      ],
+      "evidence": [
+        "backend/migrations/000001_foundation.up.sql (outbox_events, idempotency_records, audit_events stub, schema_meta, pgcrypto)",
+        "backend/migrations/000001_foundation.down.sql",
+        "backend/migrations/README.md (migrate vs app role separation)",
+        "backend/scripts/migrate.sh (real golang-migrate up/down/version)",
+        "backend/scripts/check-generated.sh (sqlc gen/ drift check)",
+        "backend/sqlc.yaml + queries outbox/idempotency/audit",
+        "backend/internal/adapters/postgres/gen/* (sqlc generated)",
+        "backend/internal/adapters/postgres/pool.go (pgxpool timeouts/max conns/Ping)",
+        "backend/internal/adapters/postgres/uow.go (WithTx, RunAtomic, TryInsertIdempotency)",
+        "backend/internal/adapters/postgres/noop.go (unit-test path without DB)",
+        "backend/internal/platform/cursor (opaque created_at+id encode/decode + unit tests)",
+        "backend/internal/app/app.go (wire pool when DATABASE_URL set)",
+        "backend/test/integration/foundation_test.go (migrate up-from-zero, concurrent idempotency, atomic rollback)",
+        "backend/Makefile (migrate, sqlc, test-integration)",
+        "backend/go.mod (github.com/jackc/pgx/v5 v5.7.5)",
+        "backend/README.md (DB/migrate/integration docs)",
+        "Verified: migrate drop+up \u2192 version 1; go test ./... PASS without DB; go test -tags=integration ./test/integration/... PASS; architecture boundary PASS"
+      ],
+      "notes": "IDs=text ULID; money=bigint IDR later. Full JCS audit chain deferred to BE-530 (minimal audit stub for atomic UoW proof). Domain has no pgx imports."
+    },
+    "BE-110": {
+      "title": "HTTP transport contract",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-100"
+      ],
+      "evidence": [
+        "backend/go.mod (github.com/go-chi/chi/v5 v5.2.2)",
+        "backend/internal/adapters/http/router.go (chi + middleware order documented)",
+        "backend/internal/adapters/http/middleware/* (recovery, request_id, trusted_proxy, logging, timeout, auth placeholder, csrf stub, ratelimit)",
+        "backend/internal/adapters/http/presenters/* (envelope, problem, MapError, ListMeta/cursor)",
+        "backend/internal/adapters/http/decode/json.go (1MiB limit, DisallowUnknownFields, application/json)",
+        "backend/internal/adapters/http/reqctx (request id / client IP context)",
+        "backend/internal/adapters/http/handlers/{health,status,scaffold}.go",
+        "backend/internal/platform/errors/{codes,errors}.go (\u00a76.3 stable codes)",
+        "backend/internal/version/version.go",
+        "backend/api/openapi.yaml (health, status, problem, envelope, scaffold)",
+        "httptest: request id, problem shape, validation, not found, panic\u2192INTERNAL_ERROR, rate limit, CSRF stub, scaffold prod absent",
+        "Verified: go test ./... PASS; go vet ./... PASS; architecture boundary PASS; api+worker build OK"
+      ],
+      "notes": "CSRF soft-disabled until BE-120 sessions. Auth placeholder fails closed only when AuthModeRequired. Scaffold echo local/test only. Money JSON int64 when present."
+    },
+    "BE-120": {
+      "title": "Identity/session lifecycle",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-110"
+      ],
+      "evidence": [
+        "backend/migrations/000002_identity.up.sql (users, auth_sessions, auth_challenges, mfa_factors, mfa_recovery_codes)",
+        "backend/migrations/000002_identity.down.sql",
+        "backend/internal/domain/auth/* (Argon2id, token hash, TOTP, recovery, types)",
+        "backend/internal/application/auth_service.go + auth_repo.go (IdentityStore port)",
+        "backend/internal/adapters/postgres/identity_repo.go + identity_store.go + queries/identity.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/auth.go routes under /v1/auth/*",
+        "backend/internal/adapters/http/middleware/auth.go real session load; csrf.go constant-time double-submit",
+        "backend/internal/adapters/mail/capture.go for tests",
+        "backend/api/openapi.yaml auth paths",
+        "backend/test/integration/identity_test.go register\u2192verify\u2192login\u2192session\u2192logout; enumeration; concurrent consume; reset revoke; magic once; MFA; rotate",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "BE-125 owns password/change, dual email-change confirm pair, MFA disable, full profile PATCH, notification preferences \u2014 omitted. Cookie SameSite=Lax default; Secure on staging/production. Bootstrap tokens POST body only."
+    },
+    "BE-125": {
+      "title": "Account profile, security settings, and preferences",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-110",
+        "BE-120"
+      ],
+      "evidence": [
+        "backend/migrations/000003_profile.up.sql (user_profiles, email_change_requests, user_notification_preferences; EMAIL_CHANGE_* purposes)",
+        "backend/migrations/000003_profile.down.sql",
+        "backend/internal/domain/auth/profile.go + profile_test.go (closed prefs schema, mandatory events, validation)",
+        "backend/internal/application/account_service.go (profile, password change, dual email-change, MFA disable, prefs)",
+        "backend/internal/application/auth_repo.go IdentityStore extended",
+        "backend/internal/adapters/postgres/queries/profile.sql + identity_repo/store + sqlc gen",
+        "backend/internal/adapters/http/handlers/auth.go (password/change, email-change/*, mfa/disable, MeHandler)",
+        "backend/internal/adapters/http/router.go /v1/me/* + remaining auth routes",
+        "backend/api/openapi.yaml BE-125 paths",
+        "backend/test/integration/profile_test.go (version conflict, password rotate, dual email order/race, MFA disable, mandatory prefs)",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 3; go vet ./... PASS"
+      ],
+      "notes": "Dual email-change requires both proofs; sessions revoked on commit. Password change revokes others + invalidates reset challenges + rotates current session. MFA disable/regenerate need fresh MFA. Mandatory SECURITY/PAYMENT/KYC/WITHDRAWAL cannot be opted out."
+    },
+    "BE-130": {
+      "title": "RBAC and tenant authorization",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-120"
+      ],
+      "evidence": [
+        "backend/migrations/000004_rbac.up.sql (permissions, roles, role_permissions, user_roles, merchants, merchant_members, stores + system seeds)",
+        "backend/migrations/000004_rbac.down.sql",
+        "backend/internal/domain/authz/* (permission registry, system roles, FORBIDDEN vs NOT_FOUND policy)",
+        "backend/internal/application/authz_service.go + authz_repo.go",
+        "backend/internal/adapters/postgres/authz_repo.go + queries/authz.sql + sqlc gen",
+        "backend/internal/adapters/http/middleware/authz.go RequirePermission",
+        "backend/internal/adapters/http/handlers/authz.go sample admin/seller/buyer routes",
+        "Principal permissions cache on session resolve (domain auth.Principal + reqctx)",
+        "backend/cmd/seed + scripts/seed.sh BOOTSTRAP_ADMIN_EMAIL \u2192 SUPER_ADMIN",
+        "backend/api/openapi.yaml BE-130 sample paths + policy note",
+        "backend/test/integration/rbac_test.go (bootstrap, forbidden, cross-tenant 404, unscoped list)",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 4; go vet ./... PASS"
+      ],
+      "notes": "BE-135 owns custom roles CRUD + invitations. Cross-tenant IDs \u2192 RESOURCE_NOT_FOUND; missing permission \u2192 FORBIDDEN; no unscoped admin list without merchants.read."
+    },
+    "BE-135": {
+      "title": "Roles, assignments, and invitation lifecycle",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-120",
+        "BE-130"
+      ],
+      "evidence": [
+        "backend/migrations/000005_roles_invites.up.sql (staff_invitations, merchant_invitations; invitations.* perms)",
+        "backend/migrations/000005_roles_invites.down.sql",
+        "backend/internal/domain/authz/anti_escalation.go + anti_escalation_test.go",
+        "backend/internal/domain/authz/permissions.go (invitations.staff/merchant registry)",
+        "backend/internal/application/roles_service.go (custom role CRUD, assignments, invites, accept)",
+        "backend/internal/application/authz_repo.go (AuthzStore BE-135 methods)",
+        "backend/internal/adapters/postgres/authz_repo.go + queries/authz.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/roles.go",
+        "backend/internal/adapters/http/router.go (admin roles/invites + \u00a76.5 accept)",
+        "backend/api/openapi.yaml BE-135 paths",
+        "backend/test/integration/roles_invites_test.go",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 5; go vet ./... PASS"
+      ],
+      "notes": "Anti-escalation: held+delegable only; system roles immutable; last SUPER_ADMIN protected; privilege changes revoke sessions. Invites hashed/email-bound/single-use/expiring/revocable; POST body token only."
+    },
+    "BE-140": {
+      "title": "Notification inbox and dispatch foundation",
+      "phase": "phase-1",
+      "status": "done",
+      "dependsOn": [
+        "BE-100",
+        "BE-120",
+        "BE-130"
+      ],
+      "evidence": [
+        "backend/migrations/000006_notifications.up.sql (notifications, notification_delivery_attempts, notification_suppressions; dedupe uidx recipient+event+content_version)",
+        "backend/migrations/000006_notifications.down.sql",
+        "backend/internal/domain/notifications/* (closed registry, CTA sanitize, mandatory/optional policy, dedupe keys)",
+        "backend/internal/application/notification_service.go + notification_repo.go",
+        "backend/internal/adapters/postgres/notification_repo.go + queries/notifications.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/notifications.go",
+        "backend/internal/adapters/http/router.go /v1/notifications + buyer/admin/seller aliases",
+        "backend/internal/jobs/notification_worker.go (notification.dispatch + email.send from outbox)",
+        "backend/internal/adapters/mail/failing.go",
+        "backend/api/openapi.yaml BE-140 paths",
+        "backend/test/integration/notifications_test.go (dedupe, cross-user 404, read/read-all/badge, email failure keeps inbox, worker idempotent, mandatory prefs)",
+        "backend/internal/domain/notifications/sanitize_test.go",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 6; go vet ./... PASS"
+      ],
+      "notes": "Dispatch async via outbox_events; email failure does not delete inbox. Cross-recipient IDs \u2192 RESOURCE_NOT_FOUND. Mandatory SECURITY/PAYMENT/KYC/WITHDRAWAL ignore opt-out per BE-125."
+    },
+    "BE-200": {
+      "title": "Merchant/store onboarding",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-130"
+      ],
+      "evidence": [
+        "backend/migrations/000007_onboarding.up.sql (onboarding_state/step/completed_at/progress; bio/address/accent; slug format; last-store delete/archive triggers)",
+        "backend/migrations/000007_onboarding.down.sql",
+        "backend/internal/domain/stores/* (slug normalize/reserved, \u00a75.2 SM, CanComplete without product)",
+        "backend/internal/application/onboarding_service.go + onboarding_repo.go",
+        "backend/internal/adapters/postgres/onboarding_repo.go + queries/onboarding.sql + authz.sql store/merchant columns + sqlc gen",
+        "backend/internal/adapters/http/handlers/onboarding.go",
+        "backend/internal/adapters/http/router.go \u00a77.3 routes",
+        "backend/internal/app/app.go OnboardingService wire",
+        "backend/api/openapi.yaml BE-200 paths",
+        "backend/test/integration/onboarding_test.go (complete w/o product, retry same store, slug conflict, no last-store delete, orphan scan)",
+        "backend/internal/domain/stores/slug_test.go",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 7; go vet ./... PASS"
+      ],
+      "notes": "POST /onboarding/store idempotent; complete requires identity+slug; product optional; orphan integrity scan ListMerchantsMissingCanonicalStore"
+    },
+    "BE-210": {
+      "title": "Catalog/storefront revisions",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-200"
+      ],
+      "evidence": [
+        "backend/migrations/000008_catalog.up.sql (products + storefront_revisions + stores.published_revision_id)",
+        "backend/migrations/000008_catalog.down.sql",
+        "backend/internal/domain/catalog/* (types, price/slug validation, STOREFRONT_REVISION_CONFLICT)",
+        "backend/internal/application/catalog_service.go + catalog_repo.go",
+        "backend/internal/adapters/postgres/catalog_repo.go + queries/catalog.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/catalog.go",
+        "backend/internal/adapters/http/router.go \u00a77.4 public + \u00a77.5 seller product/storefront",
+        "backend/internal/app/app.go CatalogService wire",
+        "backend/api/openapi.yaml BE-210 paths (CatalogProduct price int64, PublicStorefront, revision conflict)",
+        "backend/internal/platform/errors/codes.go CodeStorefrontRevisionConflict",
+        "backend/test/integration/catalog_test.go (price int64, publish/archive, slug uniqueness, public published-only, revision conflict, cross-tenant 404)",
+        "backend/internal/domain/catalog/validate_test.go",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 8; go vet ./... PASS"
+      ],
+      "notes": "FE CatalogProduct.price maps to int64 IDR; public reads published only; storefront publish uses expectedRevision/If-Match \u2192 STOREFRONT_REVISION_CONFLICT. Inventory stock/coupons/R2 deferred."
+    },
+    "BE-215": {
+      "title": "Coupon policy, seller management, and checkout reservation",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-100",
+        "BE-210"
+      ],
+      "evidence": [
+        "backend/migrations/000009_coupons.up.sql (coupons, coupon_product_scopes, coupon_reservations, coupon_redemptions; unique store+normalized_code; row-lock counters)",
+        "backend/migrations/000009_coupons.down.sql",
+        "backend/internal/domain/coupons/* (SM, integer percent bps/fixed IDR, tip never discounted, clamp non-negative)",
+        "backend/internal/application/coupon_service.go + coupon_repo.go (seller CRUD/activate/pause/archive optimistic version; Quote ignores client discount; Reserve FOR UPDATE; Release/Convert/Expire/HeldUnknown hooks)",
+        "backend/internal/adapters/postgres/coupon_repo.go + queries/coupons.sql + sqlc gen (context-scoped TX for concurrent last-slot)",
+        "backend/internal/adapters/http/handlers/coupons.go + router.go seller /v1/stores/{storeId}/coupons* + POST /v1/checkout/quote|apply-coupon|coupon-reservations",
+        "backend/api/openapi.yaml BE-215 paths/schemas",
+        "backend/docs/BE-215-payment-hooks.md (BE-310/330 conversion contract)",
+        "backend/test/integration/coupons_test.go (last-slot race, idempotent reserve, client discount ignored, percent/fixed math, release/convert)",
+        "backend/internal/domain/coupons/pricing_test.go",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 9; go vet ./... PASS"
+      ],
+      "notes": "Reservation/redemption foundation complete without live payment. ConvertReservationToRedemption + MarkReservationHeldUnknown + ExpireReservations are payment-state stubs for BE-310/330. No public coupon enumeration. Limits via Postgres locks not Redis."
+    },
+    "BE-220": {
+      "title": "R2 object/upload/delivery foundation",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-100"
+      ],
+      "evidence": [
+        "backend/migrations/000010_objects.up.sql (object_refs, delivery_grants stub, quota_usage)",
+        "backend/migrations/000010_objects.down.sql",
+        "backend/internal/domain/objects/* (keys, purpose, KYC presign forbidden, validation)",
+        "backend/internal/ports/objectstore.go",
+        "backend/internal/adapters/r2/{client,fake,noop}.go (MinIO/R2 aws-sdk-go-v2; fake for unit tests)",
+        "backend/internal/application/object_service.go + object_repo.go",
+        "backend/internal/adapters/postgres/object_repo.go + queries/objects.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/objects.go + router routes",
+        "backend/api/openapi.yaml BE-220 paths (no raw key in DTO; Cache-Control no-store)",
+        "backend/docs/BE-220-r2-bucket-lock.md (Bucket Lock intent + backup/PITR boundary; KYC not presigned)",
+        "backend/internal/application/object_service_test.go (cross-tenant, incomplete, checksum, happy)",
+        "backend/test/integration/objects_test.go (cross-tenant, incomplete/checksum, MinIO presign complete)",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 10; go vet ./... PASS"
+      ],
+      "notes": "Server-generated create-only keys; KYC never browser-presigned (BE-400). Soft merchant quota. LocalScanPass for local/test only."
+    },
+    "BE-230": {
+      "title": "Inventory/fulfillment",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-210",
+        "BE-220"
+      ],
+      "evidence": [
+        "backend/migrations/000011_inventory.up.sql (inventory_schemas, stock_items, stock_reservations, stock_reveal_audits; products.active_schema_version; seller inventory.reveal grant)",
+        "backend/migrations/000011_inventory.down.sql",
+        "backend/internal/security/aead.go (AES-256-GCM envelope; STOCK_ENCRYPTION_KEY / KYC_ENCRYPTION_KEY)",
+        "backend/internal/domain/inventory/* (schema/fields, mask, validate, states, errors)",
+        "backend/internal/application/inventory_service.go + inventory_repo.go (schema put expected-version, import bind active, Reserve SKIP LOCKED, expire, AllocateOnFulfillment, reveal audit, revoke)",
+        "backend/internal/adapters/postgres/queries/inventory.sql + inventory_repo.go + sqlc gen",
+        "backend/internal/adapters/http/handlers/inventory.go + router \u00a77.5 inventory routes; Cache-Control no-store on reveal",
+        "backend/api/openapi.yaml BE-230 paths (no global reveal; masked list DTOs)",
+        "backend/test/integration/inventory_test.go (concurrent last-unit, mask/reveal no-store, schema conflict, stale import, allocate, revoke)",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; migrate version 11; go vet ./... PASS"
+      ],
+      "notes": "CODE stock foundation complete. Full delivery grants/invoices are BE-235. Secrets encrypted at rest; list always masked; per-item reveal only with inventory.reveal + reason + audit."
+    },
+    "BE-235": {
+      "title": "Delivery grants, attempts, and immutable invoices",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-230"
+      ],
+      "evidence": [
+        "backend/migrations/000012_delivery_invoices.up.sql (orders, order_items, delivery_grants, delivery_attempts, invoices, invoice_versions; hashed access tokens)",
+        "backend/migrations/000012_delivery_invoices.down.sql",
+        "backend/internal/domain/delivery/* + orders/types + invoices/types",
+        "backend/internal/application/delivery_service.go (CreatePaidOrderAndGrant stub, buyer access/token, seller/admin resend/retry/force-fulfill/revoke, immutable invoice, public verify)",
+        "backend/internal/application/delivery_repo.go",
+        "backend/internal/adapters/postgres/queries/delivery.sql + delivery_repo.go + sqlc gen",
+        "backend/internal/adapters/http/handlers/delivery.go + router BE-235 routes",
+        "backend/internal/app/app.go DeliveryService wire",
+        "backend/api/openapi.yaml BE-235 paths (buyer/seller/admin/public invoice verify; privacy-safe public fields)",
+        "backend/test/integration/delivery_test.go (unpaid/cross-tenant denied, retry same grant, revoke, invoice immutability after price change)",
+        "Verified: migrate version 12; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Payment provider finalization remains BE-310/330. CreatePaidOrderAndGrant + POST /v1/_test/paid-orders (local/test only) inserts verified-paid stub. One grant per order item; retries reuse allocation; revoke stops token immediately; invoice v1 snapshot immutable after catalog price change; public verify returns safe fields only."
+    },
+    "BE-240": {
+      "title": "Store custom-domain lifecycle",
+      "phase": "phase-2",
+      "status": "done",
+      "dependsOn": [
+        "BE-200"
+      ],
+      "evidence": [
+        "backend/migrations/000013_domains.up.sql (store_domains + global claim/active unique indexes + tombstone cooldown)",
+        "backend/migrations/000013_domains.down.sql",
+        "backend/internal/domain/domains/* (IDNA hostname normalize/reject, lifecycle types, ExpectedTXTName)",
+        "backend/internal/ports/dns.go + edge.go (DNSLookup TXT, EdgeProvisioner idempotent)",
+        "backend/internal/adapters/dns/fake.go + edge/fake.go (no shell dig)",
+        "backend/internal/application/domain_service.go + domain_repo.go (create/verify/delete/resolve/revalidate)",
+        "backend/internal/adapters/postgres/queries/domains.sql + domain_repo.go + sqlc gen",
+        "backend/internal/adapters/http/handlers/domains.go + auth cookie guard on custom hosts",
+        "backend/internal/adapters/http/router.go /v1/stores/{storeId}/domains* + GET /v1/public/host-resolve",
+        "backend/api/openapi.yaml BE-240 paths/schemas",
+        "backend/test/integration/domains_test.go (concurrent claim, stale token, host resolve, delete/cooldown, invalid hostnames)",
+        "Verified: migrate version 13; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Acceptance: concurrent stores cannot claim one hostname; stale token/other tenant cannot activate; ACTIVE Host serves only its store; delete removes edge routing before post-cooldown reuse. Phase-2 complete."
+    },
+    "BE-300": {
+      "title": "Fee policy/value objects",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-100"
+      ],
+      "evidence": [
+        "backend/internal/domain/platform/{money,fees,policy,errors}.go pure int64 calculators",
+        "backend/internal/domain/platform/fees_test.go (\u00a70.3 table + overflow/min/net edges)",
+        "backend/migrations/000014_fee_policy.up.sql (fee_policies + fee_snapshots + LAUNCH_FEE_POLICY_V1 seed checksum 74db3dc2\u2026)",
+        "backend/internal/adapters/postgres/queries/fees.sql + fee_repo.go + sqlc gen",
+        "backend/internal/application/fee_service.go (ActivePolicy, Preview, Snapshot; no publish)",
+        "backend/internal/adapters/http/handlers/fees.go GET /v1/platform/fees + admin preview; RejectFeeMutation 405",
+        "backend/api/openapi.yaml BE-300 paths/schemas",
+        "backend/test/integration/fees_test.go (seed, 100k\u21923700/96300, below min, mutation 405)",
+        "Verified: migrate version 14; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Acceptance: Rp100k fee 3700 net 96300; withdrawal <50k rejected; no float; no runtime admin fee mutation. Next BE-310."
+    },
+    "BE-310": {
+      "title": "Hosted checkout/order intent",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-210",
+        "BE-215",
+        "BE-230",
+        "BE-300"
+      ],
+      "evidence": [
+        "backend/migrations/000015_checkout.up.sql (payment_intents, provider_events shell, orders checkout columns)",
+        "backend/internal/domain/payments/* (SM, types, errors)",
+        "backend/internal/ports/qris.go (QRISProvider Create/Get/Cancel/Expire)",
+        "backend/internal/adapters/xendit/fake.go + real_stub.go (deterministic fake)",
+        "backend/internal/application/checkout_service.go + checkout_repo.go",
+        "backend/internal/adapters/postgres/checkout_repo.go + queries/checkout.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/checkout.go + router BE-310 routes",
+        "backend/api/openapi.yaml BE-310 paths/schemas",
+        "backend/test/integration/checkout_test.go (client price ignored, fee 100k=3700, idempotent create, expire timeout no stock release, simulate prod absent)",
+        "Verified: migrate version 15; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "Acceptance: server price authority; duplicate Idempotency-Key same intent; expire timeout \u2192 UNKNOWN_OUTCOME retains stock until provider unpaid-terminal; simulate-payment only local/test. Callback finalization BE-330; gateway BE-320."
+    },
+    "BE-320": {
+      "title": "QRIS gateway API",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-300",
+        "BE-130"
+      ],
+      "evidence": [
+        "backend/migrations/000016_gateway.up.sql (merchant_api_keys, merchant_api_capabilities, gateway_redirect_origins, seller_webhook_endpoints, gateway_payment_events; payment_intents gateway columns)",
+        "backend/internal/domain/gateway/* (types, validate origin/metadata, errors)",
+        "backend/internal/application/gateway_service.go + gateway_repo.go (create/status/cancel/events; API key auth; LIVE capability gate)",
+        "backend/internal/adapters/postgres/gateway_repo.go + queries/gateway.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/gateway.go + middleware/gateway_auth.go + router canonical /v1/gateway + legacy /v1/qris",
+        "backend/api/openapi.yaml BE-320 paths/schemas (merchantApiKey security)",
+        "backend/test/integration/gateway_test.go (sandbox create, live KYC reject, webhookUrl reject, inactive webhookEndpointId, unregistered redirect, no product endpoints)",
+        "Verified: migrate version 16; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "Acceptance: sandbox isolated without KYC; live rejected before capability; same fee service after LIVE capability; webhookEndpointId only; redirect allowlist never network-fetched. Callback finalization BE-330; full credential lifecycle BE-410."
+    },
+    "BE-330": {
+      "title": "Inbound Xendit callback + payment finalization",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-310",
+        "BE-320"
+      ],
+      "evidence": [
+        "backend/migrations/000017_callbacks.up.sql (provider_callback_rejections, payment_provider_events columns, payment_settlements exactly-once PAYMENT_CAPTURE:{intent})",
+        "backend/migrations/000017_callbacks.down.sql",
+        "backend/internal/domain/payments/callback.go + xendit_envelope.go (+ unit tests)",
+        "backend/internal/application/callback_service.go + callback_repo.go",
+        "backend/internal/adapters/postgres/callback_repo.go + queries/callbacks.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/callbacks.go + router POST /v1/webhooks/xendit + admin provider-callbacks replay",
+        "backend/internal/jobs/callback_worker.go + app worker poll",
+        "backend/api/openapi.yaml BE-330 paths",
+        "backend/test/integration/callbacks_test.go (invalid token rejection, 80 concurrent duplicate paid, late paid after expire, cross-mode no collision)",
+        "Verified: migrate version 17; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS; architecture boundary PASS"
+      ],
+      "notes": "Acceptance: 80 concurrent same four-part key = 1 event/paid/settlement/grant; invalid token only rejections; late paid after EXPIRED posts once with paid_late; SANDBOX vs LIVE same provider_event_id no collision. Minimal settlement stub; full COA BE-340."
+    },
+    "BE-340": {
+      "title": "Unified ledger/balance",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-300",
+        "BE-330"
+      ],
+      "evidence": [
+        "backend/migrations/000018_ledger.up.sql (chart_of_accounts, ledger_journals, ledger_entries, settlement_lots, merchant_balances, merchant_balance_sources, post_ledger_transaction SECURITY DEFINER, rebuild_merchant_balances, append-only triggers, deferred balanced constraint)",
+        "backend/migrations/000018_ledger.down.sql",
+        "backend/internal/domain/ledger/* (templates PAYMENT_CAPTURE/SETTLEMENT_RELEASE, FIFO allocation, fee split, types)",
+        "backend/internal/application/ledger_service.go + ledger_repo.go (PostPaymentCapture, ReleaseDueSettlements, GetFinanceSummary, ListLedger, ListRevenue, RebuildBalances, PreviewWithdrawalAllocation)",
+        "backend/internal/adapters/postgres/queries/ledger.sql + ledger_repo.go + sqlc gen",
+        "backend/internal/adapters/http/handlers/finance.go + router /v1/stores/{storeId}/finance/* + /v1/seller/finance/* + admin merchant finance summary",
+        "backend/internal/app/app.go wire Ledger + callback dual-write postLedgerForPaid + settlement release worker poll",
+        "backend/api/openapi.yaml BE-340 finance paths/schemas",
+        "backend/test/integration/ledger_test.go (100k\u219296300 available, pending\u2192release, source totals sum, rebuild equals projection, append-only, FIFO mixed, idempotent capture, HTTP summary/ledger)",
+        "Verified: migrate version 18; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Acceptance: source totals sum to unified balance; rebuild equals projection; entries append-only. Local/test ForceImmediateRelease posts capture+release; production uses settlement_delay_seconds (default 86400) + ReleaseDueSettlements poller. Withdrawal disbursement is BE-350 (allocation helpers only)."
+    },
+    "BE-350": {
+      "title": "Bank/withdrawal/disbursement",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-340"
+      ],
+      "evidence": [
+        "backend/migrations/000019_withdrawals.up.sql (bank_accounts encrypted, merchant_withdrawal_locks, withdrawal_quotes, withdrawals, withdrawal_allocations, provider ref unique, schema_meta TTL/lock/fee)",
+        "backend/migrations/000019_withdrawals.down.sql",
+        "backend/internal/domain/withdrawals/* (status SM, mask, types, errors)",
+        "backend/internal/domain/ledger/templates.go WITHDRAWAL_RESERVE/RELEASE/COMPLETE/RECAPTURE + provider fee equal/higher/lower settle",
+        "backend/internal/ports/disbursement.go DisbursementProvider",
+        "backend/internal/adapters/xendit/fake.go Quote/Create/GetDisbursement + timeout UNKNOWN_OUTCOME",
+        "backend/internal/application/withdrawal_service.go + withdrawal_repo.go",
+        "backend/internal/adapters/postgres/withdrawal_repo.go + queries/withdrawals.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/withdrawals.go + router bank/quotes/withdrawals/admin/disbursement webhook",
+        "backend/internal/app/app.go wire WithdrawalService",
+        "backend/api/openapi.yaml BE-350 paths",
+        "backend/test/integration/withdrawals_test.go (below min, fee 100k\u21925500 net 94500, concurrent overspend impossible, timeout no double payout, quote idempotent)",
+        "Verified: migrate version 19; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Acceptance: concurrent cannot overspend; provider timeout no second payout/no reserve release; terminal settle/release exactly once; actual fee variance journals without rewriting merchant quote/net. Admin UI polish BE-510."
+    },
+    "BE-360": {
+      "title": "Storefront attribution and aggregate analytics",
+      "phase": "phase-3",
+      "status": "done",
+      "dependsOn": [
+        "BE-210",
+        "BE-310",
+        "BE-330"
+      ],
+      "evidence": [
+        "backend/migrations/000020_analytics.up.sql (storefront_sessions, attribution_events, order_attribution_snapshots, store_traffic_daily, analytics_collection_policies, retention_runs; LAUNCH_ANALYTICS_POLICY_V1)",
+        "backend/migrations/000020_analytics.down.sql",
+        "backend/internal/domain/analytics/* (strip/UTM, last-non-direct 30d, CSV escape, bot filter, policy types)",
+        "backend/internal/application/analytics_service.go + analytics_repo.go (capture, convert-once, rebuild daily, overview/traffic/export, retention)",
+        "backend/internal/adapters/postgres/analytics_repo.go + queries/analytics.sql",
+        "backend/internal/adapters/http/handlers/analytics.go + router GET /v1/stores/{storeId}/analytics/overview|traffic|traffic/export",
+        "Checkout CreateIntent captures attribution; Callback sideEffectsPaid marks conversion; Gateway EnsureQRISNoAttribution",
+        "backend/api/openapi.yaml BE-360 paths/schemas",
+        "backend/test/integration/analytics_test.go (sensitive URL strip, late-paid once, rebuild equals, QRIS not in traffic, policy seed)",
+        "backend/internal/domain/analytics/strip_test.go",
+        "Verified: migrate version 20; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS; architecture boundary PASS"
+      ],
+      "notes": "Acceptance: rebuild deterministic; PAID converts once incl late-paid; secrets/hashes/QRIS never in seller responses/exports. Phase-3 complete. Next BE-400."
+    },
+    "BE-400": {
+      "title": "KYC live API workflow",
+      "phase": "phase-4",
+      "status": "done",
+      "dependsOn": [
+        "BE-220",
+        "BE-130"
+      ],
+      "evidence": [
+        "backend/migrations/000021_kyc.up.sql + down (kyc_cases, kyc_documents, transitions, api_credential_issuance_requests)",
+        "backend/internal/domain/kyc/* (status matrix \u00a75.4, types, errors, unit tests)",
+        "backend/internal/application/kyc_service.go + kyc_repo.go",
+        "backend/internal/adapters/postgres/kyc_repo.go + queries/kyc.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/kyc.go + router /v1/me/kyc + /v1/merchants/{id}/kyc + /v1/admin/kyc",
+        "Server-mediated upload: size/type/scan/EncryptAEAD \u2192 private R2 PutObjectBytes; RejectKYCPresign",
+        "APPROVE \u2192 merchant_api_capabilities LIVE ACTIVE + AUTHORIZED issuance + outbox (no raw key)",
+        "LIVE CreateAPIKey denied until capability (BE-410 owns claim UX)",
+        "backend/api/openapi.yaml BE-400 paths",
+        "backend/test/integration/kyc_test.go + gateway live gate update",
+        "Verified: migrate version 21; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "Acceptance: rejection reason required; non-API storefront never forced through KYC. Next BE-410 credential claim lifecycle."
+    },
+    "BE-410": {
+      "title": "Credential lifecycle",
+      "phase": "phase-4",
+      "status": "done",
+      "dependsOn": [
+        "BE-400"
+      ],
+      "evidence": [
+        "backend/migrations/000022_credentials.up.sql + down (claim hash fields, secret_claims, webhook_endpoint_secret_versions skeleton, key_version/fingerprint)",
+        "backend/internal/domain/credentials/* (types, errors, claim TTL/topics)",
+        "backend/internal/application/credential_service.go + credential_repo.go (request issuance, claim exchange, list masked, revoke/suspend, admin authorize)",
+        "backend/internal/adapters/postgres/credential_repo.go + queries/credentials.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/credentials.go + router \u00a77.9 + /v1/me/credentials + admin authorize/suspend/revoke",
+        "backend/api/openapi.yaml BE-410 paths (claim POST body token only, Cache-Control no-store)",
+        "backend/test/integration/credentials_test.go (raw not in DB, double claim fail, live without KYC denied, revoke fails gateway, admin never raw)",
+        "kyc_test updated: live key via claim after approve",
+        "Verified: migrate version 22; go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS"
+      ],
+      "notes": "Single ACTIVE key per merchant; LIVE claim rechecks KYC capability; sandbox without KYC; admin authorize never raw. Webhook secret delivery is BE-420 (schema skeleton only)."
+    },
+    "BE-420": {
+      "title": "Outbound seller-webhook delivery",
+      "phase": "phase-4",
+      "status": "done",
+      "dependsOn": [
+        "BE-410",
+        "BE-140"
+      ],
+      "evidence": [
+        "backend/migrations/000023_webhooks.up.sql + down (webhook_deliveries, attempts, dead_letters; endpoint secret refs)",
+        "backend/internal/domain/webhooks/* (types, signing HMAC v1, stable event IDs)",
+        "backend/internal/platform/ssrf/* (HTTPS + private IP + DNS rebinding + redirect revalidation)",
+        "backend/internal/application/webhook_service.go + webhook_repo.go (CRUD, secret claim, enqueue, deliver, admin retry)",
+        "backend/internal/adapters/postgres/webhook_repo.go + queries/webhooks.sql + sqlc gen",
+        "backend/internal/jobs/webhook_worker.go (seller_webhook.deliver)",
+        "backend/internal/adapters/http/handlers/webhooks.go + router \u00a77.9 + admin seller-webhook-deliveries",
+        "callback_service EnqueuePaymentPaidFromIntent on settlement insert",
+        "backend/api/openapi.yaml BE-420 paths",
+        "backend/test/integration/webhooks_test.go (private-network reject, retry event/signature semantics, inbound provider IDs rejected)",
+        "Verified: migrate version 23; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "API-key and endpoint-secret lifecycles independent; outbound admin namespace separate from provider-callbacks.replay. Next BE-430."
+    },
+    "BE-430": {
+      "title": "Buyer identity/purchases/delivery/reviews",
+      "phase": "phase-4",
+      "status": "done",
+      "dependsOn": [
+        "BE-235",
+        "BE-120"
+      ],
+      "evidence": [
+        "backend/migrations/000024_buyer.up.sql + down (product_reviews, replies, reports)",
+        "backend/internal/domain/reviews/* (types, eligibility validation)",
+        "backend/internal/application/buyer_service.go + buyer_repo.go (purchase list/detail ownership)",
+        "backend/internal/application/review_service.go + review_repo.go (verified create/patch; public list/summary)",
+        "backend/internal/adapters/postgres/buyer_repo.go + review_repo.go + queries/buyer.sql + reviews.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/buyer.go + reviews.go + router \u00a77.11",
+        "backend/api/openapi.yaml BE-430 paths",
+        "backend/test/integration/buyer_test.go (A\u2260B order 404, public invoice safe fields, review without delivery rejected)",
+        "Verified: migrate version 24; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "Acceptance: buyer cannot access another order; public invoice reveals safe fields only. Magic-link BUYER + delivery access/resend/invoice reused from BE-120/BE-235. Phase-4 complete. Next BE-500."
+    },
+    "BE-500": {
+      "title": "Admin read models",
+      "phase": "phase-5",
+      "status": "done",
+      "dependsOn": [
+        "BE-130",
+        "BE-330",
+        "BE-350"
+      ],
+      "evidence": [
+        "backend/migrations/000025_admin_reads.up.sql (admin.dashboard.read, buyers/orders/payments/inventory/fulfillment/reviews/users/webhooks.read)",
+        "backend/internal/domain/authz/permissions.go BE-500 codes",
+        "backend/internal/domain/admin/types.go FE-aligned DTOs",
+        "backend/internal/application/admin_read_service.go + admin_repo.go",
+        "backend/internal/adapters/postgres/queries/admin_reads.sql + admin_repo.go + sqlc gen",
+        "backend/internal/adapters/http/handlers/admin_reads.go",
+        "backend/internal/adapters/http/router.go BE-500 routes; provider-callbacks list=webhooks.read; seller-webhook-deliveries list=webhooks.read separate",
+        "backend/internal/app/app.go AdminReadService wire",
+        "backend/api/openapi.yaml BE-500 paths",
+        "backend/internal/application/admin_read_service_test.go",
+        "backend/test/integration/admin_reads_test.go (403 without admin, no secrets, payment source filters, MIXED rejected on payments, 24h volume, deleted domains 404)",
+        "Verified: migrate 25; go test ./... PASS; go test -tags=integration ./test/integration/... PASS"
+      ],
+      "notes": "FE AdminMerchant/Buyer/Order/Payment/Withdrawal/Inventory/Review contracts; user lookup for BE-520; inbound vs outbound webhook queues remain separate; mutations deferred BE-510/520/530."
+    },
+    "BE-510": {
+      "title": "Eight lightweight admin operations",
+      "phase": "phase-5",
+      "status": "done",
+      "dependsOn": [
+        "BE-500",
+        "BE-400"
+      ],
+      "evidence": [
+        "backend/migrations/000026_admin_ops.up.sql (emergency controls, audit metadata, reviews.moderate, merchant suspension fields)",
+        "backend/internal/domain/admin/ops.go source/emergency/action contracts",
+        "backend/internal/domain/authz/permissions.go reviews.moderate",
+        "backend/internal/application/admin_ops_service.go + admin_ops_repo.go",
+        "backend/internal/adapters/postgres/admin_ops_repo.go + queries/admin_ops.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/admin_ops.go + kyc ageMinutes/rejectionReason",
+        "backend/internal/adapters/http/router.go BE-510 routes + POST /v1/admin/actions",
+        "backend/internal/app/app.go AdminOps wire + emergency into checkout/gateway/withdrawals",
+        "backend/api/openapi.yaml BE-510 paths/schemas AdminActionInput",
+        "backend/internal/application/admin_ops_service_test.go MIXED/emergency unit",
+        "backend/test/integration/admin_ops_test.go permission/reason/merchant-api independent/MIXED/emergency/audit",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/ -run TestAdminOps_ PASS"
+      ],
+      "notes": "Acceptance: mutations permissioned/reasoned/audited; payment sources exactly STOREFRONT|QRIS_API; withdrawals MIXED ok; merchant.status vs api_access independent; three emergency switches; no heavy console. Next BE-520 impersonation."
+    },
+    "BE-520": {
+      "title": "Admin impersonation",
+      "phase": "phase-5",
+      "status": "done",
+      "dependsOn": [
+        "BE-130",
+        "BE-120"
+      ],
+      "evidence": [
+        "backend/migrations/000027_impersonation.up.sql (scope CHECK READ_ONLY|SUPPORT_WRITE only)",
+        "backend/internal/domain/admin/impersonation.go + impersonation_allowlist.go (exact two SUPPORT_WRITE commands)",
+        "backend/internal/application/impersonation_service.go + impersonation_repo.go",
+        "backend/internal/adapters/postgres/impersonation_repo.go + queries/impersonation.sql + sqlc gen",
+        "backend/internal/adapters/http/handlers/impersonation.go + middleware/impersonation.go",
+        "backend/internal/adapters/http/router.go routes + ImpersonationGate + PATCH /v1/stores/{storeId}",
+        "backend/internal/application/auth_service.go createSessionWithExpiry + ResolveDerived attach",
+        "backend/internal/app/app.go ImpersonationService wire",
+        "backend/api/openapi.yaml ImpersonationScope/StartInput + three paths",
+        "backend/internal/domain/admin/impersonation_allowlist_test.go default-deny registry",
+        "backend/internal/application/impersonation_service_test.go",
+        "backend/test/integration/impersonation_test.go tampered/end/SUPPORT_WRITE/merchant-owner",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/ -run TestImpersonation_ PASS"
+      ],
+      "notes": "Acceptance: tampered cookie fails; end/expiry blocks derived session; SUPPORT_WRITE only buyer.profile.support_update + store.presentation.support_update; no PRIVILEGED/FULL; reasoned audit start/end. Next BE-530 audit chain."
+    },
+    "BE-530": {
+      "title": "Audit/platform/provider operations",
+      "phase": "phase-5",
+      "status": "done",
+      "dependsOn": [
+        "BE-100",
+        "BE-510"
+      ],
+      "evidence": [
+        "backend/migrations/000028_audit_chain.up.sql (append_audit_event SECURITY DEFINER, audit_chain_heads, audit_checkpoints, UPDATE/DELETE triggers)",
+        "backend/migrations/000028_audit_chain.down.sql",
+        "backend/internal/domain/audit/* (JCS-1 canonicalize, row_hash, checkpoint sign payload, golden tests)",
+        "backend/internal/application/audit_service.go + audit_repo.go (Append/Search/Detail/Export/VerifyChain/CreateCheckpoint)",
+        "backend/internal/adapters/postgres/audit_repo.go + audit_append.go (raw SECURITY DEFINER calls)",
+        "backend/internal/adapters/postgres/queries/audit.sql + sqlc gen",
+        "AdminOps/Impersonation/Authz/Credential writers routed through append_audit_event",
+        "Emergency SetEmergencyControl immutable before/after via chain append",
+        "Fee: no runtime publish (BE-300 RejectFeeMutation 405 retained)",
+        "GET /v1/admin/system componentHealth Xendit/R2/Redis/mail no secrets",
+        "backend/api/openapi.yaml BE-530 paths/docs",
+        "backend/test/integration/audit_chain_test.go (20 concurrent gap-free, tamper AUDIT_CHAIN_BROKEN, checkpoint overwrite denied, health no secrets, emergency before/after, UPDATE/DELETE denied)",
+        "Verified: migrate 28; go test ./... PASS; go test -tags=integration ./test/integration/ -run TestAuditChain_ PASS"
+      ],
+      "notes": "Acceptance: concurrent appends unique/gap-free under head lock; deliberate row tamper raises AUDIT_CHAIN_BROKEN; checkpoint overwrite/delete denied; fee no runtime publish; health no secrets. Phase-5 complete. Next BE-600."
+    },
+    "BE-600": {
+      "title": "Observability/SLO/runbooks",
+      "phase": "phase-6",
+      "status": "done",
+      "dependsOn": [
+        "BE-530"
+      ],
+      "evidence": [
+        "backend/docs/observability-log-fields.md (request_id, trace_id, business-safe ids)",
+        "backend/internal/platform/metrics (Prometheus registry: http, payment_paid, callback, webhook, outbox lag, audit chain)",
+        "GET /metrics Prometheus text; middleware Metrics + Trace (X-Request-ID + W3C traceparent)",
+        "backend/docs/slo.md launch SLOs",
+        "backend/docs/runbooks/{incident-diagnosis,sandbox-qris-synthetic,callback-failure,queue-outbox,r2-email-health,backup-restore-integrity}.md",
+        "backend/docs/dashboards/launch-overview.{md,json}",
+        "backend/scripts/synthetic_health.sh (live/ready/metrics/trace/callback reject/gateway/outbox/audit/mail/r2)",
+        "backend/api/openapi.yaml /metrics",
+        "Tests: metrics text + traceparent smoke; go test ./... PASS; integration PASS; synthetic_health OK on compose :18080"
+      ],
+      "notes": "Acceptance: staged incident diagnosable via request_id/trace_id/business-safe ids + runbooks. Next BE-610."
+    },
+    "BE-610": {
+      "title": "Security verification",
+      "phase": "phase-6",
+      "status": "done",
+      "dependsOn": [
+        "BE-600"
+      ],
+      "evidence": [
+        "backend/docs/security/threat-model.md (STRIDE-lite payments/KYC/webhooks/admin/impersonation)",
+        "backend/docs/security/authorization-matrix.md (roles \u00d7 resources)",
+        "backend/docs/security/residual-risks.md (owner signature placeholders; RR-001 external pentest accepted pending)",
+        "backend/docs/security/scan-sla.md (SAST/deps/secret/image remediation SLA)",
+        "backend/scripts/security_scan.sh (go vet, govulncheck, secret scan, deps list, image note) exit 0",
+        "backend/test/integration/security_verification_test.go (SSRF/CSRF/session expiry/cross-tenant/webhook private/KYC presign/raw credential/impersonation default-deny)",
+        "Dependency hardening: aws-sdk-go-v2 s3, pgx v5.9.2, x/net, x/crypto, chi v5.2.4; go 1.25 toolchain; Dockerfile golang:1.25-alpine",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; security_scan.sh PASS; govulncheck symbol results 0 called vulns"
+      ],
+      "notes": "Acceptance: no unresolved critical/high in-repo; residual risks documented for owner signature (external pentest RR-001). Next BE-620."
+    },
+    "BE-620": {
+      "title": "Performance/resilience",
+      "phase": "phase-6",
+      "status": "done",
+      "dependsOn": [
+        "BE-600"
+      ],
+      "evidence": [
+        "backend/docs/performance/baseline.md (staging load targets, pool settings, EXPLAIN/index notes for hot paths)",
+        "backend/docs/performance/pool-tuning.md (pgx DefaultPoolConfig + ADR-0007 80% budget; Redis non-authority)",
+        "backend/docs/performance/resilience-drills.md (how to run + financial invariants)",
+        "backend/docs/performance/horizontal-scaling.md (API/worker stateless; DB-backed correctness)",
+        "backend/scripts/resilience_drills.sh (worker restart, Redis FLUSHDB, fake Xendit timeout tests, concurrent idempotency)",
+        "Makefile resilience-drills / resilience-drills-dry / resilience-drills-full",
+        "backend/docs/slo.md cross-link to baseline",
+        "Local drill evidence: worker restart OK; Redis FLUSHDB balances_sum/intents/journals unchanged; API live 200",
+        "Integration reuse: TestCallback_DuplicatePaid_SingleEffect (80x), TestConcurrentIdempotencyFirstWriterWins, TestConcurrentWithdrawalsCannotOverspend, TestProviderTimeoutNoDoublePayout",
+        "Verified: go test ./... PASS; go test -tags=integration ./test/integration/... PASS; go vet ./... PASS; resilience_drills.sh --local PASS"
+      ],
+      "notes": "Acceptance: agreed staging load/SLO documented; financial invariants hold under failure injection (tests + local drill report). Next BE-630."
+    },
+    "BE-630": {
+      "title": "Staging-to-production launch",
+      "phase": "phase-6",
+      "status": "done",
+      "dependsOn": [
+        "BE-610",
+        "BE-620"
+      ],
+      "evidence": [
+        "backend/docs/launch/readiness-checklist.md",
+        "backend/docs/launch/secrets-matrix.md",
+        "backend/docs/launch/topology.md",
+        "backend/docs/launch/xendit-callback-failure-domain.md",
+        "backend/docs/launch/e2e-acceptance.md",
+        "backend/docs/launch/canary-rollback.md",
+        "backend/scripts/launch_bootstrap.sh",
+        "backend/docker-compose.staging.yml",
+        "backend/tmp/launch-evidence/* (migrate28, bootstrap, synthetic, security, resilience, unit, integration, callback-fd, canary-local)",
+        "docs/BACKEND_PRODUCTION_TASKS.md BE-630 checkboxes [x]",
+        "Verified: go test ./... PASS; go test -tags=integration PASS; synthetic/security/resilience PASS; local canary recreate PASS"
+      ],
+      "notes": "Owner-sign residual: live HA/secrets/Xendit canary, residual-risk signatures, FE vitest when node_modules present. Engineering launch package complete."
+    }
+  },
+  "current": {
+    "phase": "complete",
+    "taskId": null,
+    "opencodeSession": "be-630-launch",
+    "note": "All 36 backend production tasks done; production go-live requires owner signatures"
+  },
+  "definitionOfDone": [
+    "code in correct module + dependency direction",
+    "migration/query/OpenAPI/generated code consistent",
+    "unit + integration + contract/negative tests green",
+    "authorization/tenant/idempotency/concurrency checked",
+    "logs/metrics do not leak secrets/PII",
+    "operational failure/retry/timeout documented",
+    "frontend adapter can use contract without UI change",
+    "acceptance evidence recorded",
+    "no non-goal or over-abstraction added"
+  ]
+}

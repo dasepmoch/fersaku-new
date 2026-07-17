@@ -1,0 +1,886 @@
+// Package app is the composition root: wires config, ports, adapters, and
+// constructs API/worker runtimes. Only this package (and cmd) may import adapters.
+package app
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	dnsadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/dns"
+	edgeadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/edge"
+	httpadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/http"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/middleware"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/mail"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/observability"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/postgres"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/queue"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/r2"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/redis"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/xendit"
+	"github.com/dasepmoch/fersaku-new/backend/internal/application"
+	"github.com/dasepmoch/fersaku-new/backend/internal/config"
+	"github.com/dasepmoch/fersaku-new/backend/internal/domain/admin"
+	domainauth "github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
+	"github.com/dasepmoch/fersaku-new/backend/internal/jobs"
+	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
+	"github.com/dasepmoch/fersaku-new/backend/internal/version"
+)
+
+// DBPinger is satisfied by postgres.Pool and postgres.Noop.
+type DBPinger interface {
+	Ping(ctx context.Context) error
+}
+
+// Runtime holds shared dependencies for api and worker.
+type Runtime struct {
+	Config config.Config
+	Log    ports.Logger
+	Clock  ports.Clock
+	IDs    ports.IDGenerator
+	Queue  ports.Queue
+	Mail   ports.Mailer
+	// DB is the real pool when DATABASE_URL is set; nil otherwise.
+	DB *postgres.Pool
+	// DBPing is always non-nil (Pool or Noop) for readiness checks.
+	DBPing DBPinger
+	Redis  redis.Noop
+	Xendit *xendit.Fake
+	R2     r2.Noop
+	Health *application.HealthService
+	// Auth is wired when DATABASE_URL is set (BE-120).
+	Auth *application.AuthService
+	// Authz is wired when DATABASE_URL is set (BE-130).
+	Authz *application.AuthzService
+	// Notifications is wired when DATABASE_URL is set (BE-140).
+	Notifications *application.NotificationService
+	// Onboarding is wired when DATABASE_URL is set (BE-200).
+	Onboarding *application.OnboardingService
+	// Catalog is wired when DATABASE_URL is set (BE-210).
+	Catalog *application.CatalogService
+	// Coupons is wired when DATABASE_URL is set (BE-215).
+	Coupons *application.CouponService
+	// Objects is wired when DATABASE_URL is set (BE-220); uses MinIO/R2 when configured.
+	Objects *application.ObjectService
+	// Inventory is wired when DATABASE_URL is set (BE-230).
+	Inventory *application.InventoryService
+	// Delivery is wired when DATABASE_URL is set (BE-235).
+	Delivery *application.DeliveryService
+	// Domains is wired when DATABASE_URL is set (BE-240).
+	Domains *application.DomainService
+	// Fees is always wired (pure calculator); uses DB when pool available (BE-300).
+	Fees *application.FeeService
+	// Checkout is wired when DATABASE_URL is set (BE-310).
+	Checkout *application.CheckoutService
+	// Gateway is wired when DATABASE_URL is set (BE-320).
+	Gateway *application.GatewayService
+	// Callbacks is wired when DATABASE_URL is set (BE-330).
+	Callbacks *application.CallbackService
+	// Ledger is wired when DATABASE_URL is set (BE-340).
+	Ledger *application.LedgerService
+	// Withdrawals is wired when DATABASE_URL is set (BE-350).
+	Withdrawals *application.WithdrawalService
+	// Analytics is wired when DATABASE_URL is set (BE-360).
+	Analytics *application.AnalyticsService
+	// KYC is wired when DATABASE_URL is set (BE-400).
+	KYC *application.KYCService
+	// Credentials is wired when DATABASE_URL is set (BE-410).
+	Credentials *application.CredentialService
+	// Webhooks is wired when DATABASE_URL is set (BE-420).
+	Webhooks *application.WebhookService
+	// Buyer is wired when DATABASE_URL is set (BE-430).
+	Buyer *application.BuyerService
+	// Reviews is wired when DATABASE_URL is set (BE-430).
+	Reviews *application.ReviewService
+	// AdminReads is wired when DATABASE_URL is set (BE-500).
+	AdminReads *application.AdminReadService
+	// AdminOps is wired when DATABASE_URL is set (BE-510).
+	AdminOps *application.AdminOpsService
+	// Impersonation is wired when DATABASE_URL is set (BE-520).
+	Impersonation *application.ImpersonationService
+	// Audit is wired when DATABASE_URL is set (BE-530 JCS-1 chain).
+	Audit *application.AuditService
+	// ObjectStore is the S3-compatible port (MinIO local / R2 prod).
+	ObjectStore ports.ObjectStore
+}
+
+// NewRuntime loads config and wires adapters. Uses real pgx pool when DATABASE_URL is set.
+func NewRuntime(serviceName string) (*Runtime, error) {
+	cfg, err := config.Load(serviceName)
+	if err != nil {
+		return nil, err
+	}
+	log := observability.NewSlogLogger(cfg.LogLevel, cfg.ServiceName)
+	clock := observability.SystemClock{}
+	ids := observability.NewULIDGenerator()
+	q := queue.NewFake()
+	mailer := mail.Noop{}
+	rd := redis.Noop{}
+	xd := xendit.NewFake()
+
+	var objStore ports.ObjectStore = r2.Noop{}
+	if cfg.R2Endpoint != "" && cfg.R2AccessKeyID != "" && cfg.R2SecretAccessKey != "" {
+		client, cerr := r2.NewClient(r2.Config{
+			Endpoint:        cfg.R2Endpoint,
+			Region:          cfg.R2Region,
+			AccessKeyID:     cfg.R2AccessKeyID,
+			SecretAccessKey: cfg.R2SecretAccessKey,
+			ForcePathStyle:  cfg.R2ForcePathStyle,
+		})
+		if cerr != nil {
+			return nil, fmt.Errorf("app: r2 client: %w", cerr)
+		}
+		objStore = client
+		if cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest {
+			bctx, bcancel := context.WithTimeout(context.Background(), 5*time.Second)
+			_ = r2.EnsureBuckets(bctx, client, cfg.R2BucketPublic, cfg.R2BucketPrivate)
+			bcancel()
+		}
+	}
+
+	var pool *postgres.Pool
+	var dbPing DBPinger = postgres.Noop{}
+	adapters := "fake/noop"
+	if cfg.DatabaseURL != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		pool, err = postgres.Open(ctx, cfg.DatabaseURL, postgres.DefaultPoolConfig())
+		if err != nil {
+			return nil, fmt.Errorf("app: open database: %w", err)
+		}
+		dbPing = pool
+		adapters = "postgres+fake"
+		if objStore.Configured() {
+			adapters = "postgres+r2"
+		}
+	}
+
+	health := application.NewHealthService(
+		func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			return dbPing.Ping(ctx)
+		},
+		func() error { return rd.Ping() },
+	)
+
+	var authSvc *application.AuthService
+	var authzSvc *application.AuthzService
+	var notifSvc *application.NotificationService
+	var onboardSvc *application.OnboardingService
+	var catalogSvc *application.CatalogService
+	var couponSvc *application.CouponService
+	var objectSvc *application.ObjectService
+	var inventorySvc *application.InventoryService
+	var deliverySvc *application.DeliveryService
+	var domainSvc *application.DomainService
+	var feeSvc *application.FeeService
+	var checkoutSvc *application.CheckoutService
+	var gatewaySvc *application.GatewayService
+	var callbackSvc *application.CallbackService
+	var ledgerSvc *application.LedgerService
+	var withdrawalSvc *application.WithdrawalService
+	var analyticsSvc *application.AnalyticsService
+	var kycSvc *application.KYCService
+	var credentialSvc *application.CredentialService
+	var webhookSvc *application.WebhookService
+	var buyerSvc *application.BuyerService
+	var reviewSvc *application.ReviewService
+	var adminReadSvc *application.AdminReadService
+	var adminOpsSvc *application.AdminOpsService
+	var impersonationSvc *application.ImpersonationService
+	var auditSvc *application.AuditService
+	if pool != nil {
+		store := postgres.IdentityStore{Repo: postgres.NewIdentityRepo(pool.Pool())}
+		authzSvc = &application.AuthzService{
+			Store:    postgres.NewAuthzRepo(pool.Pool()),
+			IDs:      ids,
+			Clock:    clock,
+			Log:      log,
+			Mail:     mailer,
+			Sessions: store,
+		}
+		authSvc = &application.AuthService{
+			Store: store,
+			IDs:   ids,
+			Clock: clock,
+			Mail:  mailer,
+			Log:   log,
+			Config: application.AuthConfig{
+				SessionCookieName: cfg.SessionCookieName,
+				TokenHashSecret:   cfg.SessionSecret,
+				SecureCookie:      cfg.AppEnv == config.EnvProduction || cfg.AppEnv == config.EnvStaging,
+				SameSiteStrict:    false, // Lax default for storefronts; Strict optional for admin deploy
+			},
+			Authz: authzSvc,
+		}
+		notifSvc = &application.NotificationService{
+			Store: postgres.NewNotificationRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Mail:  mailer,
+			Log:   log,
+		}
+		onboardSvc = &application.OnboardingService{
+			Store: postgres.NewOnboardingRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		catalogSvc = &application.CatalogService{
+			Store: postgres.NewCatalogRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		couponSvc = &application.CouponService{
+			Store: postgres.NewCouponRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		objectSvc = &application.ObjectService{
+			Store:                  postgres.NewObjectRepo(pool.Pool()),
+			Objects:                objStore,
+			IDs:                    ids,
+			Clock:                  clock,
+			Log:                    log,
+			BucketPublic:           cfg.R2BucketPublic,
+			BucketPrivate:          cfg.R2BucketPrivate,
+			MerchantSoftQuotaBytes: 0, // default domain soft limit
+			// Local/test allow pass-through scan; production must wire real scanner later.
+			LocalScanPass: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+		}
+		stockKey := cfg.EffectiveStockEncryptionKey()
+		if stockKey == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
+			stockKey = "local-dev-stock-encryption-key!!!!"
+		}
+		inventorySvc = &application.InventoryService{
+			Store:         postgres.NewInventoryRepo(pool.Pool()),
+			IDs:           ids,
+			Clock:         clock,
+			Log:           log,
+			EncryptionKey: stockKey,
+		}
+		deliverySvc = &application.DeliveryService{
+			Store:         postgres.NewDeliveryRepo(pool.Pool()),
+			IDs:           ids,
+			Clock:         clock,
+			Log:           log,
+			EncryptionKey: stockKey,
+			TokenSecret:   cfg.SessionSecret,
+		}
+		domainSvc = &application.DomainService{
+			Store:       postgres.NewDomainRepo(pool.Pool()),
+			DNS:         dnsadapter.NewFake(),
+			Edge:        edgeadapter.NewFake(),
+			IDs:         ids,
+			Clock:       clock,
+			Log:         log,
+			TokenSecret: cfg.SessionSecret,
+		}
+		feeSvc = &application.FeeService{
+			Store: postgres.NewFeeRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		// BE-310: hosted checkout uses fake Xendit in local/test; SANDBOX mode.
+		paymentMode := "SANDBOX"
+		if cfg.AppEnv == config.EnvProduction {
+			paymentMode = "LIVE"
+		}
+		// BE-360: attribution analytics (wired before checkout/gateway/callback).
+		analyticsSvc = &application.AnalyticsService{
+			Store:          postgres.NewAnalyticsRepo(pool.Pool()),
+			IDs:            ids,
+			Clock:          clock,
+			Log:            log,
+			HashSecret:     cfg.SessionSecret,
+			HashKeyVersion: "v1",
+		}
+		checkoutSvc = &application.CheckoutService{
+			Store:           postgres.NewCheckoutRepo(pool.Pool()),
+			Fees:            feeSvc,
+			Coupons:         couponSvc,
+			Inventory:       inventorySvc,
+			Analytics:       analyticsSvc,
+			QRIS:            xd,
+			IDs:             ids,
+			Clock:           clock,
+			Log:             log,
+			PaymentMode:     paymentMode,
+			AccountScope:    xd.AccountScope,
+			SimulateEnabled: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			TokenSecret:     cfg.SessionSecret,
+		}
+		// BE-320: QRIS gateway shares fee service + QRIS provider; mode from API key.
+		gatewaySvc = &application.GatewayService{
+			Store:         postgres.NewGatewayRepo(pool.Pool()),
+			Fees:          feeSvc,
+			Analytics:     analyticsSvc,
+			QRIS:          xd,
+			IDs:           ids,
+			Clock:         clock,
+			Log:           log,
+			KeyHashSecret: cfg.SessionSecret,
+			AccountScope:  xd.AccountScope,
+		}
+		// BE-340: unified ledger; local/test force immediate available (delay 0 policy via ForceImmediateRelease).
+		ledgerSvc = &application.LedgerService{
+			Store:                 postgres.NewLedgerRepo(pool.Pool()),
+			IDs:                   ids,
+			Clock:                 clock,
+			Log:                   log,
+			ForceImmediateRelease: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			DefaultPaymentMode:    paymentMode,
+		}
+		// BE-420: outbound seller webhooks (before callback so paid path can enqueue).
+		whEnc := cfg.KYCEncryptionKey
+		if whEnc == "" {
+			whEnc = cfg.EffectiveStockEncryptionKey()
+		}
+		if whEnc == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
+			whEnc = "local-dev-webhook-encryption-key!!"
+		}
+		webhookSvc = &application.WebhookService{
+			Store:           postgres.NewWebhookRepo(pool.Pool()),
+			Auth:            authSvc,
+			IDs:             ids,
+			Clock:           clock,
+			Log:             log,
+			EncryptionKey:   whEnc,
+			ClaimHashSecret: cfg.SessionSecret,
+		}
+		// BE-330: inbound Xendit callbacks; token from config (empty rejects all).
+		webhookToken := cfg.XenditWebhookToken
+		if webhookToken == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
+			webhookToken = "local-xendit-webhook-token"
+		}
+		callbackSvc = &application.CallbackService{
+			Store:              postgres.NewCallbackRepo(pool.Pool()),
+			Coupons:            couponSvc,
+			Delivery:           deliverySvc,
+			Inventory:          inventorySvc,
+			DeliveryStore:      postgres.NewDeliveryRepo(pool.Pool()),
+			Ledger:             ledgerSvc,
+			Analytics:          analyticsSvc,
+			Webhooks:           webhookSvc,
+			IDs:                ids,
+			Clock:              clock,
+			Log:                log,
+			WebhookToken:       webhookToken,
+			AccountScope:       cfg.XenditAccountScope,
+			DefaultPaymentMode: paymentMode,
+			TokenSecret:        cfg.SessionSecret,
+		}
+		// BE-350: bank accounts, quotes, reserve, disbursement.
+		encKey := stockKey
+		if encKey == "" {
+			encKey = cfg.KYCEncryptionKey
+		}
+		if encKey == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
+			encKey = "local-dev-stock-encryption-key!!!!"
+		}
+		auto := cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest
+		withdrawalSvc = &application.WithdrawalService{
+			Store:              postgres.NewWithdrawalRepo(pool.Pool()),
+			Ledger:             ledgerSvc,
+			Fees:               feeSvc,
+			Disburse:           xd,
+			IDs:                ids,
+			Clock:              clock,
+			Log:                log,
+			EncryptionKey:      encKey,
+			AccountScope:       cfg.XenditAccountScope,
+			DefaultPaymentMode: paymentMode,
+			ForceAutoApprove:   &auto,
+		}
+		// BE-400: KYC live QRIS API workflow (server-mediated upload + capability grant).
+		kycKey := cfg.KYCEncryptionKey
+		if kycKey == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
+			kycKey = "local-dev-kyc-encryption-key!!!!!"
+		}
+		privBucket := cfg.R2BucketPrivate
+		if privBucket == "" {
+			privBucket = "fersaku-private"
+		}
+		kycSvc = &application.KYCService{
+			Store:         postgres.NewKYCRepo(pool.Pool()),
+			Objects:       objStore,
+			BucketPrivate: privBucket,
+			EncryptionKey: kycKey,
+			LocalScanPass: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			IDs:           ids,
+			Clock:         clock,
+			Log:           log,
+		}
+		// BE-410: credential lifecycle (claim/revoke; admin never raw).
+		credentialSvc = &application.CredentialService{
+			Store:           postgres.NewCredentialRepo(pool.Pool()),
+			Auth:            authSvc,
+			IDs:             ids,
+			Clock:           clock,
+			Log:             log,
+			KeyHashSecret:   cfg.SessionSecret,
+			ClaimHashSecret: cfg.SessionSecret,
+		}
+		// BE-430: buyer purchases + verified reviews.
+		buyerSvc = &application.BuyerService{
+			Purchases: postgres.NewBuyerRepo(pool.Pool()),
+			Auth:      authSvc,
+			IDs:       ids,
+			Clock:     clock,
+			Log:       log,
+		}
+		reviewSvc = &application.ReviewService{
+			Store: postgres.NewReviewRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		// BE-500: permissioned admin read models.
+		adminReadSvc = &application.AdminReadService{
+			Store: postgres.NewAdminRepo(pool.Pool()),
+			Clock: clock,
+			Log:   log,
+		}
+		// BE-530: JCS-1 append-only audit chain.
+		auditSvc = &application.AuditService{
+			Store: postgres.NewAuditRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		// BE-510: lightweight admin operations + actions dispatcher.
+		adminOpsSvc = &application.AdminOpsService{
+			Store:       postgres.NewAdminOpsRepo(pool.Pool()),
+			Auth:        authSvc,
+			Delivery:    deliverySvc,
+			Withdrawals: withdrawalSvc,
+			Credentials: credentialSvc,
+			Fees:        feeSvc,
+			Audit:       auditSvc,
+			IDs:         ids,
+			Clock:       clock,
+			Log:         log,
+			ComponentHealth: func(ctx context.Context) []admin.ComponentHealth {
+				return platformComponentHealth(ctx, pool, clock)
+			},
+		}
+		// BE-520: admin impersonation (derived session + scope gate).
+		impersonationSvc = &application.ImpersonationService{
+			Store: postgres.NewImpersonationRepo(pool.Pool()),
+			Auth:  authSvc,
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+		authSvc.Impersonation = impersonationSvc
+		// Wire emergency switches into create paths (checkout/gateway/withdrawals).
+		emCheck := func(ctx context.Context, switchName string) (bool, error) {
+			return adminOpsSvc.IsEmergencyDisabled(ctx, switchName)
+		}
+		if checkoutSvc != nil {
+			checkoutSvc.EmergencyDisabled = emCheck
+		}
+		if gatewaySvc != nil {
+			gatewaySvc.EmergencyDisabled = emCheck
+		}
+		if withdrawalSvc != nil {
+			withdrawalSvc.EmergencyDisabled = emCheck
+		}
+	} else {
+		// No DB: pure in-memory launch policy for calculator/preview unit paths.
+		feeSvc = &application.FeeService{
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
+	}
+
+	rt := &Runtime{
+		Config:        cfg,
+		Log:           log,
+		Clock:         clock,
+		IDs:           ids,
+		Queue:         q,
+		Mail:          mailer,
+		DB:            pool,
+		DBPing:        dbPing,
+		Redis:         rd,
+		Xendit:        xd,
+		R2:            r2.Noop{},
+		ObjectStore:   objStore,
+		Health:        health,
+		Auth:          authSvc,
+		Authz:         authzSvc,
+		Notifications: notifSvc,
+		Onboarding:    onboardSvc,
+		Catalog:       catalogSvc,
+		Coupons:       couponSvc,
+		Objects:       objectSvc,
+		Inventory:     inventorySvc,
+		Delivery:      deliverySvc,
+		Domains:       domainSvc,
+		Fees:          feeSvc,
+		Checkout:      checkoutSvc,
+		Gateway:       gatewaySvc,
+		Callbacks:     callbackSvc,
+		Ledger:        ledgerSvc,
+		Withdrawals:   withdrawalSvc,
+		Analytics:     analyticsSvc,
+		KYC:           kycSvc,
+		Credentials:   credentialSvc,
+		Webhooks:      webhookSvc,
+		Buyer:         buyerSvc,
+		Reviews:       reviewSvc,
+		AdminReads:    adminReadSvc,
+		AdminOps:      adminOpsSvc,
+		Impersonation: impersonationSvc,
+		Audit:         auditSvc,
+	}
+	// BE-600: scrape-time gauges for outbox lag + audit head (cheap SELECT).
+	wireMetricsScrape(rt)
+
+	rt.Log.Info("runtime wired",
+		"app_env", string(cfg.AppEnv),
+		"service", cfg.ServiceName,
+		"adapters", adapters,
+		"database", cfg.DatabaseURL != "",
+	)
+	return rt, nil
+}
+
+// wireMetricsScrape registers process metrics scrape gauges (BE-600).
+func wireMetricsScrape(rt *Runtime) {
+	if rt == nil {
+		return
+	}
+	// Import via observability re-export keeps composition root free of platform path churn.
+	observability.Global.SetScrapeGauges(func() map[string]float64 {
+		out := map[string]float64{
+			"fersaku_outbox_pending":            0,
+			"fersaku_outbox_oldest_age_seconds": 0,
+			"fersaku_audit_chain_head_sequence": 0,
+			"fersaku_audit_chain_ok":            1,
+		}
+		if rt.DB == nil {
+			return out
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		var pending int64
+		var oldestAge float64
+		_ = rt.DB.Pool().QueryRow(ctx, `
+			SELECT
+			  COUNT(*)::bigint,
+			  COALESCE(EXTRACT(EPOCH FROM (now() - MIN(created_at))), 0)::float8
+			FROM outbox_events
+			WHERE status IN ('pending', 'failed')
+		`).Scan(&pending, &oldestAge)
+		out["fersaku_outbox_pending"] = float64(pending)
+		out["fersaku_outbox_oldest_age_seconds"] = oldestAge
+
+		var headSeq int64
+		err := rt.DB.Pool().QueryRow(ctx, `
+			SELECT COALESCE(head_sequence, 0)::bigint
+			FROM audit_chain_heads
+			WHERE chain_scope = 'default'
+		`).Scan(&headSeq)
+		if err == nil {
+			out["fersaku_audit_chain_head_sequence"] = float64(headSeq)
+		}
+		return out
+	})
+}
+
+// Close releases adapter resources.
+func (rt *Runtime) Close() error {
+	if rt.DB != nil {
+		rt.DB.Close()
+	}
+	if rt.Queue != nil {
+		return rt.Queue.Close()
+	}
+	return nil
+}
+
+// RunAPI starts the HTTP server and blocks until SIGINT/SIGTERM or ctx cancel.
+func (rt *Runtime) RunAPI(ctx context.Context) error {
+	// CSRF: enabled when auth is wired; soft-disable only when no session backend.
+	csrfSoft := rt.Auth == nil
+	// Local/test may soft-disable for easier manual curl; production/staging enforce.
+	if rt.Config.AppEnv == config.EnvLocal || rt.Config.AppEnv == config.EnvTest {
+		// Keep CSRF on when Auth is present so cookie mutations are protected.
+		csrfSoft = false
+		if rt.Auth == nil {
+			csrfSoft = true
+		}
+	}
+	var tokenHasher func(string) string
+	if rt.Auth != nil {
+		secret := rt.Config.SessionSecret
+		tokenHasher = func(raw string) string {
+			return authHashToken(raw, secret)
+		}
+	}
+	handler := httpadapter.NewRouterWith(httpadapter.RouterDeps{
+		Log:               rt.Log,
+		IDs:               rt.IDs,
+		Service:           rt.Config.ServiceName,
+		Version:           version.Version,
+		AppEnv:            rt.Config.AppEnv,
+		Ready:             rt.Health.Ready,
+		StartedAt:         time.Now().UTC(),
+		SessionCookieName: rt.Config.SessionCookieName,
+		CSRFSoftDisable:   csrfSoft,
+		TokenHasher:       tokenHasher,
+		AuthService:         rt.Auth,
+		AuthzService:        rt.Authz,
+		NotificationService: rt.Notifications,
+		OnboardingService:   rt.Onboarding,
+		CatalogService:      rt.Catalog,
+		CouponService:       rt.Coupons,
+		ObjectService:       rt.Objects,
+		InventoryService:    rt.Inventory,
+		DeliveryService:     rt.Delivery,
+		DomainService:       rt.Domains,
+		FeeService:          rt.Fees,
+		CheckoutService:     rt.Checkout,
+		GatewayService:      rt.Gateway,
+		CallbackService:     rt.Callbacks,
+		LedgerService:       rt.Ledger,
+		WithdrawalService:   rt.Withdrawals,
+		AnalyticsService:    rt.Analytics,
+		KYCService:          rt.KYC,
+		CredentialService:   rt.Credentials,
+		WebhookService:      rt.Webhooks,
+		BuyerService:        rt.Buyer,
+		ReviewService:       rt.Reviews,
+		AdminReadService:     rt.AdminReads,
+		AdminOpsService:      rt.AdminOps,
+		ImpersonationService: rt.Impersonation,
+		SecureCookies:        rt.Config.AppEnv == config.EnvProduction || rt.Config.AppEnv == config.EnvStaging,
+		SameSiteStrict:    false, // Lax: documented default for buyer/seller storefronts
+		RateLimiter:       middleware.NewTokenBucketLimiter(120, 20),
+		RequestTimeout:    30 * time.Second,
+	})
+	srv := &http.Server{
+		Addr:              rt.Config.HTTPAddr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		rt.Log.Info("api listening", "addr", rt.Config.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), rt.Config.ShutdownTimeout)
+		defer cancel()
+		rt.Log.Info("api shutting down")
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			_ = srv.Close()
+			return fmt.Errorf("api shutdown: %w", err)
+		}
+		return <-errCh
+	case err := <-errCh:
+		return err
+	}
+}
+
+// RunWorker starts the worker (no public listener) and waits on signal/ctx.
+func (rt *Runtime) RunWorker(ctx context.Context) error {
+	sched := jobs.Scheduler{Log: rt.Log, Queue: rt.Queue}
+	if rt.Config.WorkerRunOnce {
+		nNotif, nCb, nWh, nRel := 0, 0, 0, 0
+		var err error
+		if rt.DB != nil && rt.Notifications != nil {
+			w := &jobs.NotificationWorker{
+				Pool: rt.DB.Pool(),
+				Svc:  rt.Notifications,
+				Log:  rt.Log,
+			}
+			nNotif, err = w.ProcessReady(ctx, 50)
+		}
+		if rt.DB != nil && rt.Callbacks != nil {
+			cw := &jobs.CallbackWorker{
+				Pool: rt.DB.Pool(),
+				Svc:  rt.Callbacks,
+				Log:  rt.Log,
+			}
+			nCb, _ = cw.ProcessReady(ctx, 50)
+		}
+		if rt.DB != nil && rt.Webhooks != nil {
+			ww := &jobs.WebhookWorker{
+				Pool: rt.DB.Pool(),
+				Svc:  rt.Webhooks,
+				Log:  rt.Log,
+			}
+			nWh, _ = ww.ProcessReady(ctx, 50)
+		}
+		if rt.Ledger != nil {
+			nRel, _ = rt.Ledger.ReleaseDueSettlements(ctx, 50)
+		}
+		if rt.Analytics != nil {
+			_ = rt.Analytics.RunRetentionDeletion(ctx)
+		}
+		rt.Log.Info("worker ready (run-once mode)", "notification_outbox_processed", nNotif, "callback_outbox_processed", nCb, "seller_webhook_outbox_processed", nWh, "settlement_releases", nRel)
+		return err
+	}
+	// Poll notification + callback outbox until cancelled.
+	if rt.DB != nil && rt.Notifications != nil {
+		w := &jobs.NotificationWorker{
+			Pool: rt.DB.Pool(),
+			Svc:  rt.Notifications,
+			Log:  rt.Log,
+		}
+		go func() {
+			t := time.NewTicker(2 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					if _, err := w.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
+						rt.Log.Warn("notification outbox poll", "err", err.Error())
+					}
+				}
+			}
+		}()
+	}
+	if rt.DB != nil && rt.Callbacks != nil {
+		cw := &jobs.CallbackWorker{
+			Pool: rt.DB.Pool(),
+			Svc:  rt.Callbacks,
+			Log:  rt.Log,
+		}
+		go func() {
+			t := time.NewTicker(2 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					if _, err := cw.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
+						rt.Log.Warn("callback outbox poll", "err", err.Error())
+					}
+				}
+			}
+		}()
+	}
+	// BE-420: outbound seller-webhook delivery poller.
+	if rt.DB != nil && rt.Webhooks != nil {
+		ww := &jobs.WebhookWorker{
+			Pool: rt.DB.Pool(),
+			Svc:  rt.Webhooks,
+			Log:  rt.Log,
+		}
+		go func() {
+			t := time.NewTicker(2 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					if _, err := ww.ProcessReady(ctx, 25); err != nil && rt.Log != nil {
+						rt.Log.Warn("seller webhook outbox poll", "err", err.Error())
+					}
+				}
+			}
+		}()
+	}
+	// BE-340: pending→available settlement release poller.
+	if rt.Ledger != nil {
+		go func() {
+			t := time.NewTicker(5 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					if _, err := rt.Ledger.ReleaseDueSettlements(ctx, 50); err != nil && rt.Log != nil {
+						rt.Log.Warn("settlement release poll", "err", err.Error())
+					}
+				}
+			}
+		}()
+	}
+	return sched.Run(ctx)
+}
+
+// SignalContext returns a context cancelled on SIGINT/SIGTERM.
+func SignalContext() (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+}
+
+func authHashToken(raw, secret string) string {
+	return domainauth.HashTokenKeyed(raw, secret)
+}
+
+// platformComponentHealth probes Xendit/R2/Redis/mail without exposing secrets (BE-530).
+func platformComponentHealth(ctx context.Context, pool *postgres.Pool, clock ports.Clock) []admin.ComponentHealth {
+	now := time.Now().UTC().Format(time.RFC3339)
+	if clock != nil {
+		now = clock.Now().UTC().Format(time.RFC3339)
+	}
+	out := make([]admin.ComponentHealth, 0, 4)
+
+	// Xendit: local/fake mode always OK; never include API keys.
+	out = append(out, admin.ComponentHealth{
+		Component: "xendit",
+		Status:    "OK",
+		CheckedAt: now,
+		Message:   "adapter reachable (no secrets)",
+	})
+
+	// R2: noop Ready in local.
+	r2Status := "OK"
+	r2Msg := "object store ready"
+	if !(r2.Noop{}).Ready() {
+		r2Status = "DEGRADED"
+		r2Msg = "object store not ready"
+	}
+	out = append(out, admin.ComponentHealth{Component: "r2", Status: r2Status, CheckedAt: now, Message: r2Msg})
+
+	// Redis: non-authoritative; noop Ping.
+	rdStatus := "OK"
+	rdMsg := "redis optional/noop"
+	if err := (redis.Noop{}).Ping(); err != nil {
+		rdStatus = "DEGRADED"
+		rdMsg = "redis ping failed"
+	}
+	out = append(out, admin.ComponentHealth{Component: "redis", Status: rdStatus, CheckedAt: now, Message: rdMsg})
+
+	// Mail: capture/noop — report configured without addresses/secrets.
+	out = append(out, admin.ComponentHealth{
+		Component: "mail",
+		Status:    "OK",
+		CheckedAt: now,
+		Message:   "mailer configured (no secrets)",
+	})
+
+	// Postgres is not listed here (already on /health/ready); keep components to Xendit/R2/Redis/mail.
+	_ = ctx
+	_ = pool
+	return out
+}

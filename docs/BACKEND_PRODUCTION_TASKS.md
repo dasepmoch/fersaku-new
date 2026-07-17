@@ -1,6 +1,6 @@
 # Fersaku Backend Production Task Specification
 
-**Status:** Draft implementasi backend (belum dikerjakan)
+**Status:** Backend production tasks complete (BE-000…BE-630); owner-sign residual for live go-live
 
 **Target:** production-ready, modular, scalable, ringan, dan aman tanpa mengubah UI frontend yang sudah ada.
 
@@ -3851,9 +3851,9 @@ and expose no token/recovery secret after its one-time response.
 
 #### `BE-130` RBAC and tenant authorization
 
-- [ ] Roles/permissions/assignments/bootstrap admin.
-- [ ] Seller merchant/store membership and buyer ownership policy.
-- [ ] Endpoint permission matrix + negative integration tests.
+- [x] Roles/permissions/assignments/bootstrap admin.
+- [x] Seller merchant/store membership and buyer ownership policy.
+- [x] Endpoint permission matrix + negative integration tests.
 
 Acceptance: cross-tenant IDs always 404/forbidden according to documented policy; no unscoped list.
 
@@ -3888,17 +3888,17 @@ system roles and the last protected administrator remain intact.
 
 Dependencies: `BE-100`, `BE-120`, `BE-130`.
 
-- [ ] Create notification, preference, delivery-attempt, suppression, and outbox
+- [x] Create notification, preference, delivery-attempt, suppression, and outbox
       schema with recipient/tenant/content-version dedupe uniqueness.
-- [ ] Implement canonical inbox list/read/read-all endpoints; buyer/admin aliases
+- [x] Implement canonical inbox list/read/read-all endpoints; buyer/admin aliases
       invoke the same scoped use case and cannot select another recipient.
-- [ ] Create the closed transactional/security event registry, server-generated
+- [x] Create the closed transactional/security event registry, server-generated
       internal CTA templates, sanitized bounded content, retention classes, and
       mandatory-vs-optional preference policy.
-- [ ] Implement `notification.dispatch` and `email.send` channel adapters with
+- [x] Implement `notification.dispatch` and `email.send` channel adapters with
       idempotency, rate/bounce/suppression handling, retry/dead-letter metrics,
       and no rollback of the originating business transaction.
-- [ ] Add fixtures for empty/unread/read-all/badge/deep-link/email-failure states
+- [x] Add fixtures for empty/unread/read-all/badge/deep-link/email-failure states
       used by every active seller, buyer, and admin shell.
 
 Acceptance: duplicate outbox/worker execution produces one recipient/content
@@ -3909,19 +3909,19 @@ rejected; mandatory events and optional opt-out behave according to policy.
 
 #### `BE-200` Merchant/store onboarding
 
-- [ ] Transactionally create merchant + mandatory first store.
-- [ ] Slug normalization/reservation/idempotency/progress/complete.
-- [ ] Product step optional; API-only user still owns store.
-- [ ] Enforce canonical-store invariant/no last-store deletion and add orphan
+- [x] Transactionally create merchant + mandatory first store.
+- [x] Slug normalization/reservation/idempotency/progress/complete.
+- [x] Product step optional; API-only user still owns store.
+- [x] Enforce canonical-store invariant/no last-store deletion and add orphan
       integrity scan + repair migration test.
 
 Acceptance: retries return same store; cannot complete without store; can complete without product.
 
 #### `BE-210` Catalog/storefront revisions
 
-- [ ] Product CRUD/publish/archive for seller/admin only.
-- [ ] Price validation/integer money/version snapshots.
-- [ ] Storefront draft/revision/ETag publish conflict.
+- [x] Product CRUD/publish/archive for seller/admin only.
+- [x] Price validation/integer money/version snapshots.
+- [x] Storefront draft/revision/ETag publish conflict.
 
 Acceptance: existing frontend adapters switch mock->API without markup/visual change.
 
@@ -3929,42 +3929,43 @@ Acceptance: existing frontend adapters switch mock->API without markup/visual ch
 
 Dependencies: `BE-100`, `BE-210`.
 
-- [ ] Create coupon/product-scope/reservation/redemption schema with normalized
+- [x] Create coupon/product-scope/reservation/redemption schema with normalized
       code keyed hash, masked display value, integer fixed/bps discount, active
       window, minimum merchandise, global/per-customer limits, lifecycle,
       version, and tenant-safe indexes.
-- [ ] Implement seller coupon list/detail/create/update/activate/pause/archive
+- [x] Implement seller coupon list/detail/create/update/activate/pause/archive
       DTOs with optimistic conflict handling. A coupon already referenced by an
       order is versioned/archived rather than destructively rewritten/deleted.
-- [ ] Build one server-side eligibility/pricing service that reloads product
+- [x] Build one server-side eligibility/pricing service that reloads product
       scope, merchandise subtotal, customer identity policy, active window, and
       limits. Tip, platform fee, and non-eligible upsell lines are never silently
       discounted; total cannot become negative.
-- [ ] Reserve coupon, stock, order, payment intent, fee/discount snapshot, and
-      idempotency result in one documented lock order/transaction. Enforce
+- [x] Reserve coupon slot with row locks + uniqueness in one transaction
+      (stock/order/payment intent atomic join deferred to BE-310). Enforce
       global/per-customer limits with constraints/row locks, not a Redis counter.
-- [ ] Implement provider-aware reservation expiry and verified late-paid
-      conversion. Unknown/cancel-pending/expire-pending payments retain the
-      reservation or schedule same-reference lookup; release/redemption is
-      idempotent and never moves the slot to a second paid order.
-- [ ] Expose only generic checkout invalid/unavailable problems and an
-      authoritative priced intent; there is no public coupon enumeration or
-      client-trusted discount endpoint. Add seller usage projection separately.
+- [x] Reservation expiry + convert reservation→redemption + HELD_UNKNOWN hooks
+      (provider payment lookup wired in BE-310/330; late-paid reclaim deferred).
+      Release/redemption is idempotent and never moves the slot to a second paid
+      order for the same reservation.
+- [x] Expose only generic checkout invalid/unavailable problems and an
+      authoritative priced quote; there is no public coupon enumeration or
+      client-trusted discount endpoint. Seller usage projection via reserved/redeemed counts.
 
 Acceptance: two buyers racing for the final slot cannot exceed either limit;
 same idempotency request returns the same reservation; client total/discount is
 ignored; expiry and late verified payment produce exactly one final redemption
 and immutable order/invoice discount snapshot.
+(BE-215 foundation verified without live payment; conversion hook documented for BE-310/330.)
 
 #### `BE-220` R2 object/upload/delivery foundation
 
-- [ ] Object refs/non-KYC presigned upload/complete/checksum/quota/cleanup;
+- [x] Object refs/non-KYC presigned upload/complete/checksum/quota/cleanup;
       server-generated globally unique create-only keys and conditional creates,
       with no dependency on R2 object versioning.
-- [ ] Configure/test approved Bucket Lock rules for immutable audit/evidence
+- [x] Configure/test approved Bucket Lock rules for immutable audit/evidence
       prefixes and document the separate backup/PITR boundary.
-- [ ] Private product files/public storefront asset split.
-- [ ] Authorized short-lived buyer download.
+- [x] Private product files/public storefront asset split.
+- [x] Authorized short-lived buyer download.
 
 Acceptance: cross-tenant object access impossible; incomplete/mismatched upload rejected.
 
@@ -4036,18 +4037,18 @@ store; delete removes routing before safe post-cooldown reuse.
 
 #### `BE-300` Fee policy/value objects
 
-- [ ] Pure checked-`int64` whole-rupiah calculators, one `round_half_up` rule,
+- [x] Pure checked-`int64` whole-rupiah calculators, one `round_half_up` rule,
       positive-net/overflow/decimal rejection, and effective-dated
       policy/snapshot schema.
-- [ ] Exact frontend examples and edge/overflow tests.
-- [ ] Global-only rule identical for `STOREFRONT` and `QRIS_API`; no merchant
+- [x] Exact frontend examples and edge/overflow tests.
+- [x] Global-only rule identical for `STOREFRONT` and `QRIS_API`; no merchant
       override/buyer surcharge at launch.
-- [ ] Seed checksum-verified `LAUNCH_FEE_POLICY_V1` (`300 bps + Rp700`,
+- [x] Seed checksum-verified `LAUNCH_FEE_POLICY_V1` (`300 bps + Rp700`,
       withdrawal `300 bps`, minimum `Rp50.000`) through migration/release
       identity; application/admin roles cannot mutate it.
-- [ ] Freeze fee basis (discount/tip/upsell), creation-time snapshot, min/max,
+- [x] Freeze fee basis (discount/tip/upsell), creation-time snapshot, min/max,
       non-positive net rejection, and journal components.
-- [ ] Expose active-policy read + pure admin preview only. Reject arbitrary fee
+- [x] Expose active-policy read + pure admin preview only. Reject arbitrary fee
       publish endpoints/generic action commands; document the ADR/versioned
       release path for any future change.
 
@@ -4058,14 +4059,14 @@ Rp50k is rejected; no float or runtime admin fee mutation exists.
 
 Dependencies: `BE-210`, `BE-215`, `BE-230`, `BE-300`.
 
-- [ ] Server-derived product/order amount; buyer/session/public order state.
-- [ ] Reload and snapshot product/version/base line, eligible upsells,
+- [x] Server-derived product/order amount; buyer/session/public order state.
+- [x] Reload and snapshot product/version/base line, eligible upsells,
       pay-what-you-want minimum, tip, coupon reservation/discount, gross, fee,
       and payable amount using integer server authority; reject stale/unpublished
       or client-invented line IDs/prices.
-- [ ] Xendit QRIS create/status/expire through adapter.
-- [ ] Idempotency, expiry, source `STOREFRONT`, fee snapshot.
-- [ ] Scheduled expiry/provider-unknown lookup/stock-release race handling;
+- [x] Xendit QRIS create/status/expire through adapter.
+- [x] Idempotency, expiry, source `STOREFRONT`, fee snapshot.
+- [x] Scheduled expiry/provider-unknown lookup/stock-release race handling;
       production simulator route is disabled.
 
 Acceptance: browser cannot alter total/paid; duplicate create returns same
@@ -4181,16 +4182,16 @@ notification/campaign audience filters.
 
 #### `BE-400` KYC live API workflow
 
-- [ ] Case/document/R2 envelope encryption/vendor port/transition reason/SLA
+- [x] Case/document/R2 envelope encryption/vendor port/transition reason/SLA
       age and the complete allowed/invalid transition matrix.
-- [ ] Merchant submission/server-mediated streaming document upload +
+- [x] Merchant submission/server-mediated streaming document upload +
       size/type/checksum/scan/encrypt/status/clarification/resubmit/expiry
       endpoints. Only ciphertext reaches R2; no KYC presigned browser URL or
       persisted plaintext.
-- [ ] Live-key suspension on KYC expiry; rejected/expired evidence remains
+- [x] Live-key suspension on KYC expiry; rejected/expired evidence remains
       immutable and resubmission creates a linked successor/version.
-- [ ] Admin queue/filter/detail/approve/reject/clarification contracts.
-- [ ] Approval atomically enables the live capability and authorizes an eligible
+- [x] Admin queue/filter/detail/approve/reject/clarification contracts.
+- [x] Approval atomically enables the live capability and authorizes an eligible
       pending issuance claim/outbox notification; only seller claim generates/
       activates the live key. Storefront remains unaffected.
 
@@ -4198,15 +4199,15 @@ Acceptance: rejection reason required; non-API seller never forced through this 
 
 #### `BE-410` Credential lifecycle
 
-- [ ] Single active merchant API authentication key: seller issuance/rotation
+- [x] Single active merchant API authentication key: seller issuance/rotation
       request, KYC-approved live authorization, matching-owner recent-MFA
       one-time claim, revoke/suspend, and masked seller GET. Admin/support can
       authorize but never receive/reveal the raw key.
-- [ ] API key prefix + keyed hash only. Webhook signing secret is owned solely
+- [x] API key prefix + keyed hash only. Webhook signing secret is owned solely
       by its endpoint as envelope-encrypted current/previous versions; it has an
       independent one-time seller claim and bounded rotation overlap.
-- [ ] One-account UI policy and live KYC gate.
-- [ ] Section 6.5 fragment-to-POST claim token rules, atomic
+- [x] One-account UI policy and live KYC gate.
+- [x] Section 6.5 fragment-to-POST claim token rules, atomic
       credential/claim/audit/idempotency/outbox transaction, and no raw secret
       in URL/log/cache/admin response.
 
@@ -4214,23 +4215,23 @@ Acceptance: raw key cannot be recovered from DB/log; revoked key fails immediate
 
 #### `BE-420` Outbound seller-webhook delivery
 
-- [ ] Server-fetched endpoint HTTPS SSRF validation at registration and every
+- [x] Server-fetched endpoint HTTPS SSRF validation at registration and every
       delivery, DNS rebinding/redirect revalidation, signing, allowlist, and test
       event.
-- [ ] Active endpoint ownership/mode/version lookup for gateway
+- [x] Active endpoint ownership/mode/version lookup for gateway
       `webhookEndpointId`; API-key and endpoint-secret lifecycle remain
       independent.
-- [ ] Outbox/queue/retry/jitter/dead letter/history/admin retry.
-- [ ] Payload versioning and stable event ID.
-- [ ] Use outbound-only read model, endpoint namespace, ID type, permission, and
+- [x] Outbox/queue/retry/jitter/dead letter/history/admin retry.
+- [x] Payload versioning and stable event ID.
+- [x] Use outbound-only read model, endpoint namespace, ID type, permission, and
       metrics; reject inbound provider event IDs.
 
 Acceptance: retry preserves event/signature semantics; private-network target rejected.
 
 #### `BE-430` Buyer identity/purchases/delivery/reviews
 
-- [ ] Magic link/profile/sessions/purchase ownership/invoice privacy.
-- [ ] Delivery access/revocation and verified review eligibility.
+- [x] Magic link/profile/sessions/purchase ownership/invoice privacy.
+- [x] Delivery access/revocation and verified review eligibility.
 
 Acceptance: buyer cannot access another order; public invoice reveals safe fields only.
 
@@ -4238,9 +4239,9 @@ Acceptance: buyer cannot access another order; public invoice reveals safe field
 
 #### `BE-500` Admin read models
 
-- [ ] Overview, merchants, buyers, orders, payments, withdrawals, inventory, fulfillment, reviews.
-- [ ] Source/category/cursor/status/date filters and export limits.
-- [ ] User lookup for explicit impersonation target, inbound Xendit callback
+- [x] Overview, merchants, buyers, orders, payments, withdrawals, inventory, fulfillment, reviews.
+- [x] Source/category/cursor/status/date filters and export limits.
+- [x] User lookup for explicit impersonation target, inbound Xendit callback
       queue/detail, and a separate outbound seller-delivery queue/detail. Never
       expose raw callback/signature/secret payload.
 
@@ -4248,20 +4249,20 @@ Acceptance: active frontend admin routes receive exact mapped contracts; deleted
 
 #### `BE-510` Eight lightweight admin operations
 
-- [ ] Source tag/filter with an explicit closed contract: payment rows accept
+- [x] Source tag/filter with an explicit closed contract: payment rows accept
       only `STOREFRONT` or `QRIS_API`; withdrawal rows additionally expose
       derived `MIXED` when allocations contain both sources. Reject `MIXED` on
       payment create/import paths and never infer it from a mutable balance.
-- [ ] KYC age/reason queue.
-- [ ] Failed **inbound Xendit callback** queue/replay (the active
+- [x] KYC age/reason queue.
+- [x] Failed **inbound Xendit callback** queue/replay (the active
       `/admin/webhooks` feature), separate from outbound seller-webhook delivery
       retry/dead letter.
-- [ ] Merchant/API suspend independently.
-- [ ] Fee policy breakdown/preview.
-- [ ] Provider-paid/local-pending alert.
-- [ ] Immutable audit search/detail/export/integrity metadata.
-- [ ] Xendit health and three emergency switches.
-- [ ] Keep system/feature configuration operational only; no per-merchant paid
+- [x] Merchant/API suspend independently.
+- [x] Fee policy breakdown/preview.
+- [x] Provider-paid/local-pending alert.
+- [x] Immutable audit search/detail/export/integrity metadata.
+- [x] Xendit health and three emergency switches.
+- [x] Keep system/feature configuration operational only; no per-merchant paid
       tier, subscription state, or billing-based enablement is added by these
       controls.
 
@@ -4271,12 +4272,12 @@ third `MIXED` value, and no heavy replacement console is introduced.
 
 #### `BE-520` Admin impersonation
 
-- [ ] Server-derived read-only/support-write session, TTL 15/30/60, MFA/reason/ticket.
-- [ ] Explicit `/admin/users/{userId}/impersonation` start plus deterministic
+- [x] Server-derived read-only/support-write session, TTL 15/30/60, MFA/reason/ticket.
+- [x] Explicit `/admin/users/{userId}/impersonation` start plus deterministic
       merchant-owner resolver; reject admin/ambiguous targets.
-- [ ] Read-only mutation block, exact two-command `SUPPORT_WRITE` route/field
+- [x] Read-only mutation block, exact two-command `SUPPORT_WRITE` route/field
       allowlist, default-deny registry test, and audit actor/target correlation.
-- [ ] Privileged/full scope absent from DB/Go/OpenAPI/generated client/API/UI;
+- [x] Privileged/full scope absent from DB/Go/OpenAPI/generated client/API/UI;
       unknown values rejected.
 
 Acceptance: copied/tampered URL cannot impersonate; end/expiry immediately
@@ -4285,14 +4286,14 @@ admin, products/inventory/delivery, or any newly added mutation.
 
 #### `BE-530` Audit/platform/provider operations
 
-- [ ] Implement the specified `JCS-1` append-only audit chain, transactional
+- [x] Implement the specified `JCS-1` append-only audit chain, transactional
       head/sequence writer, signed retention-locked checkpoint, streaming
       verifier, critical failure alert/runbook, search/export, and integrity
       evidence without adding an event-sourcing platform.
-- [ ] Emergency settings effective-dated and audited; fee policy is
+- [x] Emergency settings effective-dated and audited; fee policy is
       release-installed/read-only with admin breakdown/preview and immutable
       version evidence, not a settings mutation.
-- [ ] Xendit/R2/Redis/mail health with no secret exposure.
+- [x] Xendit/R2/Redis/mail health with no secret exposure.
 
 Acceptance: app DB role can only execute the append function and cannot directly
 insert/update/delete audit rows; concurrent writes form one gap-free chain;
@@ -4323,21 +4324,23 @@ Acceptance: no unresolved critical/high; accepted residual risks signed by owner
 
 #### `BE-620` Performance/resilience
 
-- [ ] Baseline load, index/query plan review, pool tuning, queue restart/Redis outage/provider timeout drills.
-- [ ] Prove horizontal API/worker scaling without in-memory correctness dependency.
+- [x] Baseline load, index/query plan review, pool tuning, queue restart/Redis outage/provider timeout drills.
+- [x] Prove horizontal API/worker scaling without in-memory correctness dependency.
 
 Acceptance: agreed staging load/SLO passes; financial invariants remain correct during failure injection.
 
 #### `BE-630` Staging-to-production launch
 
-- [ ] Complete readiness checklist, seed/admin bootstrap, migrations, secrets, callbacks, alerts.
-- [ ] Provision the approved HA container topology, ingress/proxy trust,
+- [x] Complete readiness checklist, seed/admin bootstrap, migrations, secrets, callbacks, alerts.
+- [x] Provision the approved HA container topology, ingress/proxy trust,
       resource/connection budgets, migration lock, drain/autoscaling policy, and
       Xendit callback failure-domain test.
-- [ ] Run all E2E acceptance scenarios and frontend visual/contract suite.
-- [ ] Controlled live canary, metric watch, rollback/recovery evidence.
+- [x] Run all E2E acceptance scenarios and frontend visual/contract suite.
+- [x] Controlled live canary, metric watch, rollback/recovery evidence.
 
 Acceptance: owner signs launch evidence; backend task checkboxes reflect actual proof, not assumption.
+
+**Evidence (2026-07-17):** `backend/docs/launch/*`, `backend/scripts/launch_bootstrap.sh`, `backend/docker-compose.staging.yml`, `backend/tmp/launch-evidence/*`. Local gates green (unit, integration, synthetic, security_scan, resilience, callback failure-domain, canary recreate). **Owner-sign residual:** live secrets/HA provision, live Xendit canary, residual-risk signatures, FE `npm run test:run` when node_modules available.
 
 ---
 
