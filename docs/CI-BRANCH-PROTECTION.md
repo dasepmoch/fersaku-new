@@ -10,7 +10,7 @@ Configure repository **Settings → Branches → Branch protection** (or Ruleset
 
 | Job name (exact) | Purpose |
 | --- | --- |
-| `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives + QLT-300/310/320 parents |
+| `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives + QLT-300/310/320/400 parents |
 | `frontend-build (production + bundle budget)` | Production build + bundle budget |
 | `frontend-mock-e2e (smoke/critical/a11y/visual)` | Mock Playwright smoke, critical, a11y, visual + QLT-230 parent harness |
 | `cross-stack-api-e2e (API stack + harness + INT-190 + QLT-220)` | Disposable stack + API harness + INT-190 + QLT-220 parent |
@@ -50,6 +50,7 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 - QLT-300 parent assert / `qlt-300-security` suite guard failure
 - QLT-310 parent assert / `qlt-310-performance` suite guard failure
 - QLT-320 parent assert / `qlt-320-observability` suite guard failure
+- QLT-400 parent assert / `qlt-400-flags` suite guard failure
 - Missing mock visual baselines or empty e2e/unit suites
 - QLT-230 parent assert / `qlt-230-visual-a11y` suite guard failure
 - Bundle budget exceeded (`npm run check:bundle`)

@@ -3,6 +3,8 @@
  * Feature adapters select mock | api | disabled via getDomainSource(domain).
  * Screens must not read env/flags; production/live rejects mock (fail closed).
  * disabled never falls back to mock fixtures.
+ * QLT-400: canary/allowlist/emergency layers live in domain-flags.ts;
+ * this module remains the typed snapshot + accessor source of truth.
  */
 
 import { publicEnv, type AppStage } from "@/shared/config/env";

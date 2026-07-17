@@ -766,6 +766,102 @@ switch (suite) {
     break;
   }
 
+  case "qlt-400-flags": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-400 continuous).
+    minLines(join(root, "docs/QLT-400-FLAGS-COEVOLUTION.md"), 40);
+    minLines(join(root, "tests/unit/qlt-400-parent-framework.test.ts"), 80);
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-400-FLAGS-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "Typed registry",
+      "Production mock rejection",
+      "Emergency kill switch",
+      "Canary / allowlist",
+      "Hydration parity",
+      "Cache cleanup",
+      "qlt-400-flags",
+      "same PR",
+      "Do not invent",
+      "never falls back to mock",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-400 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    const samples = [
+      "shared/data/domain-source.ts",
+      "shared/data/domain-source-provider.tsx",
+      "shared/data/domain-flags.ts",
+      "tests/unit/domain-source.test.ts",
+      "tests/unit/domain-flags.test.ts",
+      "tests/unit/architecture-boundaries.test.ts",
+      "tests/unit/qlt-400-parent-framework.test.ts",
+      "shared/query/QUERY-MUTATION-POLICY.md",
+    ];
+    for (const f of samples) minLines(join(root, f), 30);
+
+    const domainSource = readFileSync(
+      join(root, "shared/data/domain-source.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      'DomainSource = "mock" | "api" | "disabled"',
+      "evaluateDomainSources",
+      "assertProductionDomainSources",
+      "DomainDisabledError",
+      "getDomainSource",
+      "shouldUseMockFixtures",
+    ]) {
+      if (!domainSource.includes(needle)) {
+        fail(`domain-source.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const flags = readFileSync(
+      join(root, "shared/data/domain-flags.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "evaluateDomainFlags",
+      "EmergencyKillSwitch",
+      "buildEmergencyAuditEvent",
+      "purgeDomainCachesOnSourceChange",
+      "resolveCanarySource",
+      "buildDomainSourceTelemetry",
+    ]) {
+      if (!flags.includes(needle)) {
+        fail(`domain-flags.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/unit/qlt-400-parent-framework.test.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-400",
+      "MATRIX_CATEGORIES",
+      "Typed registry",
+      "Emergency kill switch",
+      "co-evolution",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-400-parent-framework.test.ts missing marker: ${needle}`);
+      }
+    }
+
+    ok(
+      `qlt-400 parent harness + categories + samples=${samples.length} + domain-source/flags + kill/canary/cache + co-evolution`,
+    );
+    break;
+  }
+
   default:
     fail(`unknown suite-id: ${suite}`);
 }

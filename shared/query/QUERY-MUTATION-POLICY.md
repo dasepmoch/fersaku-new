@@ -14,6 +14,7 @@ Shape (as needed):
 - Prefer exact invalidation of affected keys after a mutation; avoid broad prefixes like `["admin"]` when only one row changed.
 - **Never** put one-time secrets, QR raw capability, MFA proof, raw credentials, inventory secrets, CSRF/MFA tokens, or Authorization material into query keys or persistent cache entries.
 - Private roots (`seller`, `admin`, `buyer`, `auth`, `session`, `me`, `profile`, `notifications`) are cleared on logout / actor / impersonation change (`shared/auth/private-cache.ts`). Prior-store keys are cleared on store switch (`shared/seller/store-cache.ts`).
+- **QLT-400:** when effective domain source changes, cancel + remove domain caches via `purgeDomainCachesOnSourceChange` / `applyDomainSourceChange` (`shared/data/domain-flags.ts`). Optional key segment: `domainSourceKeySegment(domain, source, configVersion)`. Do not keep mock fixtures in cache after live kill-switch to `disabled`/`api`.
 
 ## Stale / revalidate
 
