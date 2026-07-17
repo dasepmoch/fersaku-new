@@ -139,6 +139,16 @@ export const queryKeys = {
     system: () => ["admin", "system"] as const,
     auditLogs: (filters: Record<string, unknown> = {}) =>
       ["admin", "audit-logs", "bounded", filters] as const,
+    /**
+     * ADM-230: own admin profile/prefs/sessions — subject/session-bound.
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses staff.
+     */
+    profile: (subjectKey = "anon") =>
+      ["admin", subjectKey, "profile"] as const,
+    notificationPreferences: (subjectKey = "anon") =>
+      ["admin", subjectKey, "notification-preferences"] as const,
+    sessions: (subjectKey = "anon") =>
+      ["admin", subjectKey, "sessions"] as const,
   },
   buyer: {
     /**

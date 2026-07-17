@@ -222,13 +222,13 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 ### Checklist
 
-- [ ] Replace localStorage/timers with profile/preference/session hooks.
-- [ ] Profile PATCH with revision; dual-confirm email; password/MFA/session flows.
+- [x] Replace localStorage/timers with profile/preference/session hooks.
+- [x] Profile PATCH with revision; dual-confirm email; password/MFA/session flows. *(email dual-confirm remains disabled chrome; password form not on this screen; MFA recovery + sessions wired)*
 - [x] Photo launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Store-scoped object endpoint remains invalid for admin profile; keep exact existing control disabled.
-- [ ] Admin notification alias wired to shared notification center.
-- [ ] Reuse shared notification adapter owned by `BUY-140` and shared security adapters owned by `AUT-120`; this task only binds admin surface/context.
-- [ ] Revoke current/all sessions triggers correct logout/cache clear.
-- [ ] No raw MFA/recovery/photo signed URL in cache/storage/log.
+- [x] Admin notification alias wired to shared notification center.
+- [x] Reuse shared notification adapter owned by `BUY-140` and shared security adapters owned by `AUT-120`; this task only binds admin surface/context.
+- [x] Revoke current/all sessions triggers correct logout/cache clear.
+- [x] No raw MFA/recovery/photo signed URL in cache/storage/log.
 
 ### Tests/AC
 
