@@ -396,6 +396,23 @@ export function normalizeProductSearch(q: string | undefined): string {
   return (q ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+function productSearchHaystack(p: CatalogProduct): string {
+  return `${p.title} ${p.slug} ${p.short}`.toLowerCase();
+}
+
+/**
+ * PUB-210 — filter already-bounded published storefront products (tenant fixed).
+ * Empty/whitespace query returns the input list unchanged.
+ */
+export function filterStorefrontProducts(
+  products: CatalogProduct[],
+  q: string | undefined,
+): CatalogProduct[] {
+  const normalized = normalizeProductSearch(q);
+  if (!normalized) return products;
+  return products.filter((p) => productSearchHaystack(p).includes(normalized));
+}
+
 /**
  * Apply search/status/type filters and hard bound (no local full-catalog paging).
  * Preserves input order (BE: created_at DESC, id DESC).
@@ -415,13 +432,144 @@ export function applySellerProductListFilters(
     if (status !== "all" && p.status !== status) continue;
     if (type !== "all" && p.type !== type) continue;
     if (q) {
-      const hay = `${p.title} ${p.slug} ${p.short}`.toLowerCase();
-      if (!hay.includes(q)) continue;
+      if (!productSearchHaystack(p).includes(q)) continue;
     }
     out.push(p);
     if (out.length >= max) break;
   }
   return out;
+}
+
+/** External link attrs for safe storefront socials (PUB-210). */
+export const SAFE_EXTERNAL_LINK_REL = "noopener noreferrer" as const;
+export const SAFE_EXTERNAL_LINK_TARGET = "_blank" as const;
+
+const INSTAGRAM_HOSTS = new Set([
+  "instagram.com",
+  "www.instagram.com",
+  "m.instagram.com",
+]);
+
+const YOUTUBE_HOSTS = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "www.youtu.be",
+]);
+
+function stripAtHandle(raw: string): string {
+  return raw.replace(/^@+/, "").trim();
+}
+
+/**
+ * Parse and allowlist a browser-navigable https URL only.
+ * Rejects credentials, non-https schemes, and empty hosts.
+ */
+export function parseSafeHttpsUrl(raw: string | undefined): URL | null {
+  if (raw === undefined) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/[\u0000-\u001f\u007f]/.test(trimmed)) return null;
+  if (/^(javascript|data|vbscript|file|blob):/i.test(trimmed)) return null;
+
+  let candidate = trimmed;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(candidate)) {
+    candidate = `https://${candidate.replace(/^\/+/, "")}`;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(candidate);
+  } catch {
+    return null;
+  }
+
+  if (url.protocol !== "https:") return null;
+  if (url.username || url.password) return null;
+  if (!url.hostname || url.hostname.includes(" ")) return null;
+  if (url.hostname === "localhost" || url.hostname.endsWith(".local")) {
+    return null;
+  }
+  return url;
+}
+
+function hostAllowed(hostname: string, allow: Set<string>): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  return allow.has(host);
+}
+
+/**
+ * Instagram: full https URL on allowlisted hosts, or bare handle/path.
+ * Missing/malicious → undefined (omit icon).
+ */
+export function mapSafeInstagramHref(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) || trimmed.includes("/")) {
+    const url = parseSafeHttpsUrl(trimmed);
+    if (!url || !hostAllowed(url.hostname, INSTAGRAM_HOSTS)) return undefined;
+    return url.toString();
+  }
+
+  const handle = stripAtHandle(trimmed);
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(handle)) return undefined;
+  return `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+}
+
+/**
+ * YouTube: allowlisted hosts, or bare channel/handle token.
+ */
+export function mapSafeYoutubeHref(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) || trimmed.includes("/")) {
+    const url = parseSafeHttpsUrl(trimmed);
+    if (!url || !hostAllowed(url.hostname, YOUTUBE_HOSTS)) return undefined;
+    return url.toString();
+  }
+
+  const handle = stripAtHandle(trimmed);
+  if (!/^[A-Za-z0-9._-]{1,100}$/.test(handle)) return undefined;
+  return `https://www.youtube.com/@${encodeURIComponent(handle)}`;
+}
+
+/**
+ * Website: https only, any public host (no credentials / dangerous schemes).
+ * Bare hostnames get https:// prefix.
+ */
+export function mapSafeWebsiteHref(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  if (trimmed === "#" || trimmed.startsWith("#")) return undefined;
+
+  const url = parseSafeHttpsUrl(trimmed);
+  if (!url) return undefined;
+  if (hostAllowed(url.hostname, INSTAGRAM_HOSTS)) {
+    /* website slot may still point at a site; allow */
+  }
+  return url.toString();
+}
+
+/** Sanitize storefront socials map; omit keys that fail allowlist. */
+export function mapSafeStorefrontSocials(raw: {
+  instagram?: string;
+  website?: string;
+  youtube?: string;
+}): PublicStorefront["socials"] {
+  const socials: PublicStorefront["socials"] = {};
+  const instagram = mapSafeInstagramHref(raw.instagram);
+  const website = mapSafeWebsiteHref(raw.website);
+  const youtube = mapSafeYoutubeHref(raw.youtube);
+  if (instagram) socials.instagram = instagram;
+  if (website) socials.website = website;
+  if (youtube) socials.youtube = youtube;
+  return socials;
 }
 
 function mapOptionalEnum<TTable extends Record<string, string>>(
@@ -550,16 +698,16 @@ export function mapPublicStorefrontDto(
   );
 
   const socialsRaw = dto.socials ?? {};
-  const socials: PublicStorefront["socials"] = {};
-  if (typeof socialsRaw.instagram === "string") {
-    socials.instagram = socialsRaw.instagram;
-  }
-  if (typeof socialsRaw.website === "string") {
-    socials.website = socialsRaw.website;
-  }
-  if (typeof socialsRaw.youtube === "string") {
-    socials.youtube = socialsRaw.youtube;
-  }
+  const socials = mapSafeStorefrontSocials({
+    instagram:
+      typeof socialsRaw.instagram === "string"
+        ? socialsRaw.instagram
+        : undefined,
+    website:
+      typeof socialsRaw.website === "string" ? socialsRaw.website : undefined,
+    youtube:
+      typeof socialsRaw.youtube === "string" ? socialsRaw.youtube : undefined,
+  });
 
   const view: PublicStorefront = {
     slug: dto.slug,

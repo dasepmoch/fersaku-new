@@ -253,11 +253,11 @@ Homepage dan pricing page memiliki fee/minimum hardcoded. Checkout tetap server-
 
 ### Checklist
 
-- [ ] Search button must open/use an existing-component search interaction or be explicitly disabled via route-state decision; no-op active button dilarang. Search may filter already bounded published products or call store-scoped public search, but tenant remains fixed.
-- [ ] Public store DTO carries exact sanitized Instagram/YouTube/website URLs; replace `href="#"` on API path.
-- [ ] Allow only approved `https` schemes/hosts/patterns; add `rel="noopener noreferrer"` and target policy as agreed. Never render `javascript:`, credential URL, or arbitrary internal link.
-- [ ] Missing social link omits the existing icon slot as current conditional composition does; website icon must also be conditional, not fake `#`.
-- [ ] Search result product link uses canonical store slug from same DTO.
+- [x] Search button must open/use an existing-component search interaction or be explicitly disabled via route-state decision; no-op active button dilarang. Search may filter already bounded published products or call store-scoped public search, but tenant remains fixed.
+- [x] Public store DTO carries exact sanitized Instagram/YouTube/website URLs; replace `href="#"` on API path.
+- [x] Allow only approved `https` schemes/hosts/patterns; add `rel="noopener noreferrer"` and target policy as agreed. Never render `javascript:`, credential URL, or arbitrary internal link.
+- [x] Missing social link omits the existing icon slot as current conditional composition does; website icon must also be conditional, not fake `#`.
+- [x] Search result product link uses canonical store slug from same DTO.
 
 ### Tests/AC
 

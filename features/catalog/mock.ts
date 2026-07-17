@@ -5,6 +5,7 @@ import {
   storefronts,
 } from "@/lib/storefront-mock-data";
 import type { CatalogProduct, PublicStorefront } from "./contracts";
+import { mapSafeStorefrontSocials } from "./mappers";
 
 /** Deterministic mock store ids for checkout quote (CHK-100). */
 const DEMO_STORE_IDS: Record<string, string> = {
@@ -40,6 +41,7 @@ export function getDemoStorefront(slug: string): PublicStorefront | null {
   return {
     ...storefront,
     ...(storeId ? { storeId } : {}),
+    socials: mapSafeStorefrontSocials(storefront.socials ?? {}),
     products: withStoreIdentity(
       storefront.products as CatalogProduct[],
       storefront.slug,
