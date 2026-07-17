@@ -467,13 +467,13 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist FE
 
-- [ ] List masked credential metadata/status only; remove fixed fake raw key on API path.
-- [ ] Request issuance requires eligibility/KYC/recent MFA according to backend policy.
-- [ ] Claim endpoint one-time; raw key component-local with TTL and explicit copy/download using existing `SecretRow`.
-- [ ] Revoke/rotate confirmation existing, actual step-up, stable idempotency, no optimistic success.
-- [ ] Separate API auth key from outbound webhook signing secret in mapper/lifecycle.
-- [ ] KYC status for live QRIS API only; storefront functionality not incorrectly gated.
-- [ ] Never put key/claim/MFA token in URL/query/storage/query cache/log/telemetry.
+- [x] List masked credential metadata/status only; remove fixed fake raw key on API path.
+- [x] Request issuance requires eligibility/KYC/recent MFA according to backend policy.
+- [x] Claim endpoint one-time; raw key component-local with TTL and explicit copy/download using existing `SecretRow`.
+- [x] Revoke/rotate confirmation existing, actual step-up, stable idempotency, no optimistic success.
+- [x] Separate API auth key from outbound webhook signing secret in mapper/lifecycle.
+- [x] KYC status for live QRIS API only; storefront functionality not incorrectly gated.
+- [x] Never put key/claim/MFA token in URL/query/storage/query cache/log/telemetry.
 
 ### Checklist BE
 
@@ -484,8 +484,8 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Tests/AC
 
-- claim success/replay/expired/wrong user, revoke/rotate, admin cannot claim, API mode sandbox/live isolation.
-- Raw key disappears on cleanup and never returns from list.
+- [x] claim success/replay/expired/wrong user, revoke/rotate, admin cannot claim, API mode sandbox/live isolation.
+- [x] Raw key disappears on cleanup and never returns from list.
 
 ---
 

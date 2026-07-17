@@ -1,6 +1,16 @@
 "use client";
 
 import { sellerCard } from "@/features/seller/ui";
+import {
+  MOCK_API_KEY_RAW,
+  MOCK_WEBHOOK_SECRET_RAW,
+  pickPrimaryCredential,
+  useApiKeyRevealMemory,
+  useSellerApiCredentials,
+  useSellerKycStatus,
+} from "@/features/seller/api-credentials";
+import { isDomainMock } from "@/shared/data/domain-source";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 
 import Link from "next/link";
 import {
@@ -13,10 +23,29 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const FIXED_API_KEY = "sk_live_mock_not_a_real_secret";
-const FIXED_WEBHOOK_SECRET = "whsec_mock_not_a_real_secret";
-
 function ApiKeys() {
+  const storeId = useSellerStoreId();
+  const mockMode = isDomainMock("sellerOperations");
+  const credentialsQuery = useSellerApiCredentials(storeId);
+  const kycQuery = useSellerKycStatus();
+  const { reveal } = useApiKeyRevealMemory();
+
+  const credentials = credentialsQuery.data ?? [];
+  const primary = pickPrimaryCredential(credentials);
+  const kyc = kycQuery.data;
+
+  const kycLabel =
+    kyc?.statusLabel ?? (mockMode ? "disetujui" : "—");
+
+  const apiKeyDisplay =
+    reveal?.apiKey ??
+    primary?.displayValue ??
+    (mockMode ? MOCK_API_KEY_RAW : "••••••••••••••••");
+
+  const webhookSecretDisplay = mockMode
+    ? MOCK_WEBHOOK_SECRET_RAW
+    : "••••••••••••••••";
+
   return (
     <>
       <div className="rounded-[24px] border border-[#c3dca9] bg-[#eef7df] p-5 sm:flex sm:items-center">
@@ -50,11 +79,11 @@ function ApiKeys() {
               <h2 className="text-sm font-extrabold">API key</h2>
               <p className="mt-1 text-[10px] text-[#7d8982]">
                 Secret key live untuk autentikasi payment gateway QRIS. Status
-                KYC API: disetujui.
+                KYC API: {kycLabel}.
               </p>
             </div>
           </div>
-          <SecretRow value={FIXED_API_KEY} label="API key" />
+          <SecretRow value={apiKeyDisplay} label="API key" />
         </div>
         <div className="hairline border-t p-5">
           <div className="flex items-start gap-3">
@@ -68,7 +97,7 @@ function ApiKeys() {
               </p>
             </div>
           </div>
-          <SecretRow value={FIXED_WEBHOOK_SECRET} label="Webhook secret" />
+          <SecretRow value={webhookSecretDisplay} label="Webhook secret" />
         </div>
         <div className="border-t border-[#e5e9e2] bg-[#f3f4ef] px-5 py-4">
           <p className="text-[10px] leading-5 text-[#5f6b64]">

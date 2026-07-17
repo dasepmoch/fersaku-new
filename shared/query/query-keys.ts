@@ -69,7 +69,16 @@ export const queryKeys = {
     webhooks: (storeId: string) => ["seller", storeId, "webhooks"] as const,
     webhookDeliveries: (storeId: string) =>
       ["seller", storeId, "webhooks", "deliveries"] as const,
+    /**
+     * SEL-330: store-scoped masked API credentials only.
+     * Never put apiKey / claimToken / mfaCode in keys or cached query data.
+     */
     apiKeys: (storeId: string) => ["seller", storeId, "api-keys"] as const,
+    /**
+     * SEL-330: actor-scoped KYC capability status for live QRIS API.
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses sellers.
+     */
+    kyc: (subjectKey = "anon") => ["seller", subjectKey, "kyc"] as const,
     storefront: (storeId: string) => ["seller", storeId, "storefront"] as const,
     /**
      * SEL-340: actor-scoped profile/prefs (me endpoints).

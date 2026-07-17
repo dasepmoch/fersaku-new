@@ -3010,3 +3010,193 @@ export type StaffInvitationAcceptDto = z.infer<
   typeof staffInvitationAcceptDataSchema
 >;
 
+// --- Seller QRIS API credentials + KYC capability (SEL-330) ---
+
+/**
+ * Masked store credential metadata only — never raw apiKey / claimToken on list.
+ * Separate lifecycle from webhook signingSecret (SEL-320).
+ */
+export const sellerApiCredentialDtoSchema = z.object({
+  id: z.string().min(1),
+  merchantId: z.string().optional(),
+  storeId: z.string().optional(),
+  keyPrefix: z.string().optional(),
+  fingerprint: z.string().optional(),
+  paymentMode: z.enum(["SANDBOX", "LIVE"]).or(z.string().min(1)).optional(),
+  status: z.string().min(1),
+  name: z.string().optional(),
+  keyVersion: z.number().int().optional(),
+  purpose: z.string().optional(),
+  lastUsedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  revokedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const sellerApiCredentialListDataSchema = z.object({
+  credentials: z.array(sellerApiCredentialDtoSchema),
+  issuances: z
+    .array(
+      z
+        .object({
+          id: z.string().min(1).optional(),
+          status: z.string().optional(),
+          paymentMode: z.string().optional(),
+          purpose: z.string().optional(),
+          createdAt: z.string().optional(),
+        })
+        .passthrough(),
+    )
+    .optional(),
+});
+
+export const sellerApiCredentialListEnvelopeSchema = successEnvelopeSchema(
+  sellerApiCredentialListDataSchema,
+);
+
+export const sellerApiCredentialEnvelopeSchema = successEnvelopeSchema(
+  sellerApiCredentialDtoSchema,
+);
+
+export const sellerApiCredentialRequestSchema = z.object({
+  paymentMode: z.enum(["SANDBOX", "LIVE"]).optional(),
+  purpose: z
+    .enum(["API_KEY", "ROTATION", "INITIAL_ISSUE", "ROTATE"])
+    .or(z.string().min(1))
+    .optional(),
+  reason: z.string().optional(),
+  mfaCode: z.string().optional(),
+  expectedKeyVersion: z.number().int().optional(),
+});
+
+/**
+ * Issuance response: claimToken once when AUTHORIZED (no-store).
+ * Raw apiKey only after exchange — never on this envelope as cacheable list.
+ */
+export const sellerApiCredentialClaimOfferDataSchema = z.object({
+  credential: sellerApiCredentialDtoSchema.optional(),
+  issuance: z
+    .object({
+      id: z.string().min(1).optional(),
+      status: z.string().optional(),
+      paymentMode: z.string().optional(),
+      purpose: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+  claimId: z.string().optional(),
+  claimToken: z.string().min(1).optional(),
+  claimExpiresAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+  status: z.string().optional(),
+  paymentMode: z.string().optional(),
+});
+
+export const sellerApiCredentialClaimOfferEnvelopeSchema =
+  successEnvelopeSchema(sellerApiCredentialClaimOfferDataSchema);
+
+export const sellerApiCredentialClaimRequestSchema = z.object({
+  token: z.string().min(1).optional(),
+  claimToken: z.string().min(1).optional(),
+  mfaCode: z.string().optional(),
+});
+
+/** One-time raw apiKey — must stay out of query cache / storage / logs. */
+export const sellerApiCredentialSecretClaimDataSchema = z.object({
+  apiKey: z.string().min(1),
+  fingerprint: z.string().optional(),
+  keyPrefix: z.string().optional(),
+  keyVersion: z.number().int().optional(),
+  credential: sellerApiCredentialDtoSchema.optional(),
+});
+
+export const sellerApiCredentialSecretClaimEnvelopeSchema =
+  successEnvelopeSchema(sellerApiCredentialSecretClaimDataSchema);
+
+export const sellerApiCredentialRevokeRequestSchema = z
+  .object({
+    reason: z.string().optional(),
+    mfaCode: z.string().optional(),
+  })
+  .optional();
+
+/** Seller KYC status for live QRIS API capability only (storefront unaffected). */
+export const sellerKycStatusDtoSchema = z.object({
+  status: z.string().min(1),
+  capability: z.string().optional(),
+  paymentMode: z.string().optional(),
+  liveApiEligible: z.boolean().optional(),
+  openCaseId: z.string().optional(),
+  caseStatus: z.string().optional(),
+  requiredDocuments: z.array(z.string()).optional(),
+  clarificationReason: z.string().optional(),
+  approvedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const sellerKycStatusEnvelopeSchema = successEnvelopeSchema(
+  sellerKycStatusDtoSchema,
+);
+
+export const sellerKycCaseDtoSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1),
+  legalName: z.string().optional(),
+  businessName: z.string().optional(),
+  registrationNumber: z.string().optional(),
+  countryCode: z.string().optional(),
+  consentVersion: z.string().optional(),
+  clarificationReason: z.string().optional(),
+  documents: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        type: z.string().optional(),
+        status: z.string().optional(),
+        contentType: z.string().optional(),
+        sizeBytes: z.number().int().optional(),
+      }),
+    )
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const sellerKycCaseEnvelopeSchema = successEnvelopeSchema(
+  sellerKycCaseDtoSchema,
+);
+
+export const sellerKycCreateCaseRequestSchema = z.object({
+  legalName: z.string().min(1),
+  businessName: z.string().optional(),
+  registrationNumber: z.string().optional(),
+  countryCode: z.string().optional(),
+  consentVersion: z.string().optional(),
+  submit: z.boolean().optional(),
+});
+
+export type SellerApiCredentialDto = z.infer<
+  typeof sellerApiCredentialDtoSchema
+>;
+export type SellerApiCredentialRequest = z.infer<
+  typeof sellerApiCredentialRequestSchema
+>;
+export type SellerApiCredentialClaimOfferData = z.infer<
+  typeof sellerApiCredentialClaimOfferDataSchema
+>;
+export type SellerApiCredentialSecretClaimData = z.infer<
+  typeof sellerApiCredentialSecretClaimDataSchema
+>;
+export type SellerKycStatusDto = z.infer<typeof sellerKycStatusDtoSchema>;
+export type SellerKycCaseDto = z.infer<typeof sellerKycCaseDtoSchema>;
+export type SellerKycCreateCaseRequest = z.infer<
+  typeof sellerKycCreateCaseRequestSchema
+>;
+
