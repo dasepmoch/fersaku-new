@@ -48,43 +48,104 @@ describe("queryKeys", () => {
     ]);
   });
 
-  it("builds admin domain keys", () => {
-    expect(queryKeys.admin.merchants()).toEqual(["admin", "merchants", {}]);
+  it("builds admin domain keys with bounded list profile", () => {
+    // ADM-120: list keys include "bounded" profile segment for filter isolation.
+    expect(queryKeys.admin.merchants()).toEqual([
+      "admin",
+      "merchants",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.merchant("str_01")).toEqual([
       "admin",
       "merchants",
       "str_01",
     ]);
-    expect(queryKeys.admin.buyers()).toEqual(["admin", "buyers", {}]);
+    expect(queryKeys.admin.buyers()).toEqual([
+      "admin",
+      "buyers",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.buyer("byr_01")).toEqual([
       "admin",
       "buyers",
       "byr_01",
     ]);
-    expect(queryKeys.admin.orders()).toEqual(["admin", "orders", {}]);
+    expect(queryKeys.admin.orders()).toEqual([
+      "admin",
+      "orders",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.order("FRS-1")).toEqual([
       "admin",
       "orders",
       "FRS-1",
     ]);
-    expect(queryKeys.admin.withdrawals()).toEqual(["admin", "withdrawals", {}]);
+    expect(queryKeys.admin.withdrawals()).toEqual([
+      "admin",
+      "withdrawals",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.withdrawal("WD-1")).toEqual([
       "admin",
       "withdrawals",
       "WD-1",
     ]);
-    expect(queryKeys.admin.payments()).toEqual(["admin", "payments", {}]);
-    expect(queryKeys.admin.kyc()).toEqual(["admin", "kyc", {}]);
-    expect(queryKeys.admin.webhooks()).toEqual(["admin", "webhooks", {}]);
+    expect(queryKeys.admin.payments()).toEqual([
+      "admin",
+      "payments",
+      "bounded",
+      {},
+    ]);
+    expect(queryKeys.admin.kyc()).toEqual(["admin", "kyc", "bounded", {}]);
+    expect(queryKeys.admin.webhooks()).toEqual([
+      "admin",
+      "webhooks",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.roles()).toEqual(["admin", "roles"]);
-    expect(queryKeys.admin.users()).toEqual(["admin", "users", {}]);
-    expect(queryKeys.admin.campaigns()).toEqual(["admin", "campaigns", {}]);
+    expect(queryKeys.admin.users()).toEqual([
+      "admin",
+      "users",
+      "bounded",
+      {},
+    ]);
+    expect(queryKeys.admin.campaigns()).toEqual([
+      "admin",
+      "campaigns",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.providers()).toEqual(["admin", "providers"]);
-    expect(queryKeys.admin.inventory()).toEqual(["admin", "inventory", {}]);
-    expect(queryKeys.admin.fulfillment()).toEqual(["admin", "fulfillment", {}]);
-    expect(queryKeys.admin.reviews()).toEqual(["admin", "reviews", {}]);
+    expect(queryKeys.admin.inventory()).toEqual([
+      "admin",
+      "inventory",
+      "bounded",
+      {},
+    ]);
+    expect(queryKeys.admin.fulfillment()).toEqual([
+      "admin",
+      "fulfillment",
+      "bounded",
+      {},
+    ]);
+    expect(queryKeys.admin.reviews()).toEqual([
+      "admin",
+      "reviews",
+      "bounded",
+      {},
+    ]);
     expect(queryKeys.admin.system()).toEqual(["admin", "system"]);
-    expect(queryKeys.admin.auditLogs()).toEqual(["admin", "audit-logs", {}]);
+    expect(queryKeys.admin.auditLogs()).toEqual([
+      "admin",
+      "audit-logs",
+      "bounded",
+      {},
+    ]);
   });
 
   it("builds buyer domain keys with subject boundary + filters", () => {
@@ -145,5 +206,20 @@ describe("queryKeys", () => {
       "reviews",
       "summary",
     ]);
+  });
+
+  it("builds shared notification keys with surface + subject isolation", () => {
+    expect(queryKeys.notifications.list("buyer", "usr_a:ses_1")).toEqual([
+      "notifications",
+      "buyer",
+      "usr_a:ses_1",
+      "list",
+    ]);
+    expect(queryKeys.notifications.unreadCount("seller", "usr_a:ses_1")).toEqual(
+      ["notifications", "seller", "usr_a:ses_1", "unread-count"],
+    );
+    expect(queryKeys.notifications.list("buyer", "usr_a:ses_1")).not.toEqual(
+      queryKeys.notifications.list("seller", "usr_a:ses_1"),
+    );
   });
 });

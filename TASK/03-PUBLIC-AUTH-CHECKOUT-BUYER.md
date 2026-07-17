@@ -630,13 +630,13 @@ Screen menginisialisasi local sessions sebelum async query selesai dan tidak syn
 
 ### Checklist
 
-- [ ] Replace hardcoded notification dataset with surface-scoped query + mapper.
-- [ ] Unread count and list remain backend authoritative; preserve notification center JSX/style.
-- [ ] Mark one/read-all mutation after server success; exact optimistic update allowed only if rollback implemented and no security consequence.
-- [ ] Load/filter behavior does not resize shell unexpectedly; any future cursor requires an approved existing control.
-- [ ] Notification target URL is server-provided enum/resource mapped to allowlisted internal route, never arbitrary URL.
-- [ ] Profile name/email/session/logout from session provider; no mock identity in API mode.
-- [ ] Clear notification cache on logout/surface/actor/impersonation change.
+- [x] Replace hardcoded notification dataset with surface-scoped query + mapper.
+- [x] Unread count and list remain backend authoritative; preserve notification center JSX/style.
+- [x] Mark one/read-all mutation after server success; exact optimistic update allowed only if rollback implemented and no security consequence. *(post-success cache patch + invalidate; no security-consequence optimistic)*
+- [x] Load/filter behavior does not resize shell unexpectedly; any future cursor requires an approved existing control. *(bounded first page limit=20; no cursor UI)*
+- [x] Notification target URL is server-provided enum/resource mapped to allowlisted internal route, never arbitrary URL.
+- [x] Profile name/email/session/logout from session provider; no mock identity in API mode.
+- [x] Clear notification cache on logout/surface/actor/impersonation change. *(query root `notifications` in private-cache; subject/surface-bound keys)*
 
 ### Ownership boundary
 

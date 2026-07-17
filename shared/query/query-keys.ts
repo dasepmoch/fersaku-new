@@ -151,4 +151,15 @@ export const queryKeys = {
     productReviewSummary: (productId: string) =>
       ["public", "products", productId, "reviews", "summary"] as const,
   },
+  /**
+   * BUY-140: shared notification center — surface + subject/session bound.
+   * Root "notifications" is cleared on logout via private-cache.
+   * subjectKey = `${subjectId}:${sessionId}` so cache never crosses actors.
+   */
+  notifications: {
+    list: (surface: string, subjectKey = "anon") =>
+      ["notifications", surface, subjectKey, "list"] as const,
+    unreadCount: (surface: string, subjectKey = "anon") =>
+      ["notifications", surface, subjectKey, "unread-count"] as const,
+  },
 };

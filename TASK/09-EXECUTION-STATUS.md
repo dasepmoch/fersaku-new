@@ -107,7 +107,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `BUY-110` | P1 | BUY-100 | PUB | completed @nikki/opencode · main · 2026-07-17 15:32 WIB · claim released | Buyer review and purchase commands | TASK/evidence/BUY-110/20260717-1532-nikki.md · features/buyer · tests/unit/buy-110-buyer-reviews.test.ts |
 | `[x]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Buyer profile/preferences/avatar | TASK/evidence/BUY-120/20260717-1617-nikki.md · features/buyer · tests/unit/buy-120-buyer-profile.test.ts |
 | `[x]` | `BUY-130` | P1 | AUT-110, INT-120 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Buyer sessions/revoke/security | TASK/evidence/BUY-130/20260717-1605-nikki.md · features/buyer · tests/unit/buy-130-buyer-sessions.test.ts |
-| `[ ]` | `BUY-140` | P1 shared | INT-120, INT-160 | PUB/FND | — | Canonical notification/profile-shell authority | — |
+| `[x]` | `BUY-140` | P1 shared | INT-120, INT-160 | PUB/FND | completed @nikki/opencode · main · 2026-07-17 16:32 WIB · claim released | Canonical notification/profile-shell authority | TASK/evidence/BUY-140/20260717-1632-nikki.md · shared/notifications · shared/ui/notification-center.tsx · shared/ui/profile-menu.tsx · tests/unit/buy-140-notifications.test.ts |
 
 ### 3.4 Seller workspace
 

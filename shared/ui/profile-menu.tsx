@@ -54,16 +54,25 @@ export function ProfileMenu({ surface }: { surface: Surface }) {
     },
   }[surface];
 
-  // API mode: show session claims; mock keeps prototype labels when no claims yet.
+  // Session-bound identity: API mode never falls back to hardcoded mock persona.
+  const surfaceBound = claims?.surface === sessionSurface;
+  const apiMode = claims?.mode === "api";
   const displayName =
-    claims?.surface === sessionSurface && claims.name
+    surfaceBound && claims?.name
       ? claims.name
-      : defaults.name;
+      : apiMode
+        ? (claims?.name ?? "")
+        : defaults.name;
   const displayEmail =
-    claims?.surface === sessionSurface && claims.email
+    surfaceBound && claims?.email
       ? claims.email
-      : defaults.email;
-  const displayInitials = initialsFromName(displayName, defaults.initials);
+      : apiMode
+        ? (claims?.email ?? "")
+        : defaults.email;
+  const displayInitials = initialsFromName(
+    displayName || displayEmail,
+    apiMode ? "·" : defaults.initials,
+  );
   const config = {
     initials: displayInitials,
     name: displayName,

@@ -2,14 +2,37 @@
 
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { notificationData, type Surface } from "./account-controls-data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Surface } from "./account-controls-data";
+import {
+  useMarkAllNotificationsReadMutation,
+  useMarkNotificationReadMutation,
+  useNotifications,
+  useUnreadNotificationCount,
+} from "@/shared/notifications";
+import { demoNotifications } from "@/shared/notifications/mock";
+import { isNotificationApiDomain } from "@/shared/notifications/api";
 
 export function NotificationCenter({ surface }: { surface: Surface }) {
   const [open, setOpen] = useState(false);
-  const [read, setRead] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
-  const items = notificationData[surface];
+  const listQuery = useNotifications(surface);
+  const unreadQuery = useUnreadNotificationCount(surface);
+  const markRead = useMarkNotificationReadMutation(surface);
+  const markAll = useMarkAllNotificationsReadMutation(surface);
+
+  const items = useMemo(() => {
+    if (listQuery.data) return listQuery.data;
+    // Mock / loading: frozen fixtures only when domain is not api.
+    if (!isNotificationApiDomain(surface)) return demoNotifications(surface);
+    return [];
+  }, [listQuery.data, surface]);
+
+  const unreadCount = useMemo(() => {
+    if (typeof unreadQuery.data === "number") return unreadQuery.data;
+    return items.filter((i) => i.unread).length;
+  }, [unreadQuery.data, items]);
+
   useEffect(() => {
     const close = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node))
@@ -18,6 +41,7 @@ export function NotificationCenter({ surface }: { surface: Surface }) {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -27,7 +51,7 @@ export function NotificationCenter({ surface }: { surface: Surface }) {
         aria-label="Buka notifikasi"
       >
         <Bell className="size-4" />
-        {read.size < items.length && (
+        {unreadCount > 0 && (
           <span className="absolute top-2 right-2 size-1.5 rounded-full bg-[#ff794d]" />
         )}
       </button>
@@ -39,12 +63,15 @@ export function NotificationCenter({ surface }: { surface: Surface }) {
             <div>
               <b className="block text-xs">Notifikasi</b>
               <span className="text-[8px] opacity-55">
-                {items.length - read.size} belum dibaca
+                {unreadCount} belum dibaca
               </span>
             </div>
             <button
               data-feedback="off"
-              onClick={() => setRead(new Set(items.map((i) => i.id)))}
+              disabled={markAll.isPending || unreadCount === 0}
+              onClick={() => {
+                markAll.mutate();
+              }}
               className="ml-auto text-[8px] font-extrabold text-[#5b7cfa]"
             >
               Tandai semua dibaca
@@ -53,13 +80,15 @@ export function NotificationCenter({ surface }: { surface: Surface }) {
           <div>
             {items.map((item) => {
               const Icon = item.icon;
-              const isRead = read.has(item.id);
+              const isRead = !item.unread;
               return (
                 <Link
                   key={item.id}
                   href={item.href}
                   onClick={() => {
-                    setRead(new Set([...read, item.id]));
+                    if (item.unread) {
+                      markRead.mutate(item.id);
+                    }
                     setOpen(false);
                   }}
                   className={`hairline flex gap-3 border-b p-4 transition hover:bg-black/[.03] ${isRead ? "opacity-55" : ""}`}

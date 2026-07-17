@@ -947,6 +947,70 @@ export type NotificationPreferencesPatchRequest = z.infer<
   typeof notificationPreferencesPatchRequestSchema
 >;
 
+// --- Shared notification inbox (BUY-140) — recipient-scoped shell center ---
+
+/** Launch shell list bound (no cursor UI; UI-080 for expansion). */
+export const NOTIFICATION_INBOX_LIST_LIMIT = 20;
+
+export const notificationPrioritySchema = z.enum([
+  "INFO",
+  "WARNING",
+  "CRITICAL",
+  "COMPLIANCE",
+]);
+
+export const notificationInboxSurfaceSchema = z.enum([
+  "SELLER",
+  "BUYER",
+  "ADMIN",
+]);
+
+/** BE NotificationData for GET /v1/{surface}/notifications. */
+export const notificationDataDtoSchema = z.object({
+  id: z.string().min(1),
+  eventCode: notificationEventCodeSchema,
+  title: z.string(),
+  body: z.string(),
+  /** Server-sanitized relative internal path only — FE re-allowlists by surface. */
+  ctaPath: z.string(),
+  contentVersion: z.string(),
+  priority: notificationPrioritySchema,
+  surface: notificationInboxSurfaceSchema,
+  tenantType: z.string().optional(),
+  tenantId: z.string().optional(),
+  readAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  unread: z.boolean(),
+});
+
+export const notificationListEnvelopeSchema = cursorListEnvelopeSchema(
+  notificationDataDtoSchema,
+);
+
+export const notificationEnvelopeSchema = successEnvelopeSchema(
+  notificationDataDtoSchema,
+);
+
+export const unreadCountEnvelopeSchema = successEnvelopeSchema(
+  z.object({
+    count: z.number().int().min(0),
+  }),
+);
+
+export const readAllEnvelopeSchema = successEnvelopeSchema(
+  z.object({
+    updated: z.number().int().min(0),
+  }),
+);
+
+export type NotificationDataDto = z.infer<typeof notificationDataDtoSchema>;
+export type NotificationPriority = z.infer<typeof notificationPrioritySchema>;
+export type NotificationInboxSurface = z.infer<
+  typeof notificationInboxSurfaceSchema
+>;
+
 // --- Seller reviews (SEL-270) — store-scoped list/summary/reply/report ---
 
 /** Launch BoundedNoPaging first-result limit (no paging control on snapshot). */
