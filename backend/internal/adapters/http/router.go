@@ -80,6 +80,8 @@ type RouterDeps struct {
 	BuyerService *application.BuyerService
 	// SellerOrderService when set enables SEL-250 store order list/detail.
 	SellerOrderService *application.SellerOrderService
+	// SellerCustomerService when set enables SEL-260 store customer list/detail/notes.
+	SellerCustomerService *application.SellerCustomerService
 	// ReviewService when set enables BE-430 reviews.
 	ReviewService *application.ReviewService
 	// AdminReadService when set enables BE-500 admin read models.
@@ -809,6 +811,16 @@ func NewRouterWith(d RouterDeps) http.Handler {
 			or.Use(handlers.RequireAuth)
 			or.With(middleware.RequirePermission("seller.store.read")).Get("/", soh.ListOrders)
 			or.With(middleware.RequirePermission("seller.store.read")).Get("/{orderId}", soh.GetOrder)
+		})
+	}
+	// SEL-260 seller customer list/detail/notes (store-scoped purchase aggregate).
+	if d.SellerCustomerService != nil {
+		sch := &handlers.SellerCustomerHandler{Svc: d.SellerCustomerService}
+		r.Route("/v1/stores/{storeId}/customers", func(cr chi.Router) {
+			cr.Use(handlers.RequireAuth)
+			cr.With(middleware.RequirePermission("seller.store.read")).Get("/", sch.ListCustomers)
+			cr.With(middleware.RequirePermission("seller.store.read")).Get("/{customerId}", sch.GetCustomer)
+			cr.With(middleware.RequirePermission("seller.store.write")).Put("/{customerId}/notes", sch.UpsertNote)
 		})
 	}
 	if d.DeliveryService != nil {

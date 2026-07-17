@@ -5820,6 +5820,131 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/customers:
+    get:
+      operationId: listStoreCustomers
+      summary: Store-scoped seller customer list (NumberedPageList; purchase-derived)
+      tags:
+      - seller
+      - customers
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      - name: q
+        in: query
+        description: Search display name, email, or customer id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SellerCustomerSummary[] with NumberedPageListMeta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCustomerListEnvelope'
+        '404':
+          description: Foreign/unknown store (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/customers/{customerId}:
+    get:
+      operationId: getStoreCustomer
+      summary: Store-scoped seller customer detail (history + notes)
+      tags:
+      - seller
+      - customers
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: customerId
+        in: path
+        required: true
+        description: Stable store-scoped customer id (sha256 hex of store+email)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SellerCustomerDetail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCustomerDetailEnvelope'
+        '404':
+          description: Foreign store/customer (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/stores/{storeId}/customers/{customerId}/notes:
+    put:
+      operationId: upsertStoreCustomerNote
+      summary: Create or version-update internal customer note
+      tags:
+      - seller
+      - customers
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertSellerCustomerNoteRequest'
+      responses:
+        '200':
+          description: SellerCustomerNote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerCustomerNoteEnvelope'
+        '404':
+          description: Foreign store/customer (safe not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+        '409':
+          description: Note version conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
   /v1/stores/{storeId}/orders/{orderId}/delivery:
     get:
       operationId: sellerGetDeliveryGrant
@@ -11402,6 +11527,188 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SellerOrderDetail'
+    SellerCustomerSummary:
+      type: object
+      required:
+      - customerId
+      - storeId
+      - displayName
+      - displayEmail
+      - orderCount
+      - spentIdr
+      - lastPurchaseAt
+      description: Store-scoped customer list row (purchase-derived aggregate).
+      properties:
+        customerId:
+          type: string
+        storeId:
+          type: string
+        displayName:
+          type: string
+        displayEmail:
+          type: string
+        orderCount:
+          type: integer
+          format: int64
+        spentIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        lastPurchaseAt:
+          type: string
+          format: date-time
+        firstSeenAt:
+          type: string
+          format: date-time
+        lastProductTitle:
+          type: string
+        lastOrderGrossIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        lastPaymentStatus:
+          type: string
+    SellerCustomerOrderHistoryItem:
+      type: object
+      required:
+      - orderId
+      - orderNumber
+      - productTitle
+      - paymentStatus
+      - grossIdr
+      - createdAt
+      properties:
+        orderId:
+          type: string
+        orderNumber:
+          type: string
+        productTitle:
+          type: string
+        paymentStatus:
+          type: string
+        grossIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    SellerCustomerNote:
+      type: object
+      required:
+      - body
+      - version
+      - updatedAt
+      properties:
+        body:
+          type: string
+        version:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    SellerCustomerConsent:
+      type: object
+      required:
+      - status
+      - label
+      properties:
+        status:
+          type: string
+        label:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    SellerCustomerDetail:
+      type: object
+      required:
+      - customerId
+      - storeId
+      - displayName
+      - displayEmail
+      - orderCount
+      - spentIdr
+      - avgOrderIdr
+      - productCount
+      - lastPurchaseAt
+      - firstSeenAt
+      - orders
+      description: Store-scoped customer detail with bounded history and optional note.
+      properties:
+        customerId:
+          type: string
+        storeId:
+          type: string
+        displayName:
+          type: string
+        displayEmail:
+          type: string
+        orderCount:
+          type: integer
+          format: int64
+        spentIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        avgOrderIdr:
+          $ref: '#/components/schemas/MoneyIdr'
+        productCount:
+          type: integer
+          format: int64
+        lastPurchaseAt:
+          type: string
+          format: date-time
+        firstSeenAt:
+          type: string
+          format: date-time
+        marketingConsent:
+          $ref: '#/components/schemas/SellerCustomerConsent'
+        note:
+          $ref: '#/components/schemas/SellerCustomerNote'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerCustomerOrderHistoryItem'
+    SellerCustomerListEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SellerCustomerSummary'
+        meta:
+          $ref: '#/components/schemas/NumberedPageListMeta'
+    SellerCustomerDetailEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerCustomerDetail'
+    UpsertSellerCustomerNoteRequest:
+      type: object
+      required:
+      - body
+      properties:
+        body:
+          type: string
+          maxLength: 4000
+        expectedVersion:
+          type: integer
+          description: Optimistic concurrency; omit on first create (version 0)
+    SellerCustomerNoteEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SellerCustomerNote'
         meta:
           $ref: '#/components/schemas/Meta'
     FieldViolation:

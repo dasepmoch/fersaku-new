@@ -3210,6 +3210,57 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/stores/{storeId}/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped seller customer list (NumberedPageList; purchase-derived) */
+        get: operations["listStoreCustomers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/customers/{customerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Store-scoped seller customer detail (history + notes) */
+        get: operations["getStoreCustomer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{storeId}/customers/{customerId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Create or version-update internal customer note */
+        put: operations["upsertStoreCustomerNote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stores/{storeId}/orders/{orderId}/delivery": {
         parameters: {
             query?: never;
@@ -5633,6 +5684,10 @@ export type components = {
         InventoryProductSummary: {
             productId: string;
             storeId: string;
+            /** @description Catalog product title (joined; never secrets) */
+            title: string;
+            /** @description Catalog product type (download|link|code) */
+            type: string;
             activeSchemaVersion?: number | null;
             /** Format: int64 */
             available: number;
@@ -6258,6 +6313,83 @@ export type components = {
         };
         SellerOrderDetailEnvelope: {
             data: components["schemas"]["SellerOrderDetail"];
+        };
+        /** @description Store-scoped customer list row (purchase-derived aggregate). */
+        SellerCustomerSummary: {
+            customerId: string;
+            storeId: string;
+            displayName: string;
+            displayEmail: string;
+            /** Format: int64 */
+            orderCount: number;
+            spentIdr: components["schemas"]["MoneyIdr"];
+            /** Format: date-time */
+            lastPurchaseAt: string;
+            /** Format: date-time */
+            firstSeenAt?: string;
+            lastProductTitle?: string;
+            lastOrderGrossIdr?: components["schemas"]["MoneyIdr"];
+            lastPaymentStatus?: string;
+        };
+        SellerCustomerOrderHistoryItem: {
+            orderId: string;
+            orderNumber: string;
+            productTitle: string;
+            paymentStatus: string;
+            grossIdr: components["schemas"]["MoneyIdr"];
+            /** Format: date-time */
+            paidAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SellerCustomerNote: {
+            body: string;
+            version: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        SellerCustomerConsent: {
+            status: string;
+            label: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        /** @description Store-scoped customer detail with bounded history and optional note. */
+        SellerCustomerDetail: {
+            customerId: string;
+            storeId: string;
+            displayName: string;
+            displayEmail: string;
+            /** Format: int64 */
+            orderCount: number;
+            spentIdr: components["schemas"]["MoneyIdr"];
+            avgOrderIdr: components["schemas"]["MoneyIdr"];
+            /** Format: int64 */
+            productCount: number;
+            /** Format: date-time */
+            lastPurchaseAt: string;
+            /** Format: date-time */
+            firstSeenAt: string;
+            marketingConsent?: components["schemas"]["SellerCustomerConsent"];
+            note?: components["schemas"]["SellerCustomerNote"];
+            orders: components["schemas"]["SellerCustomerOrderHistoryItem"][];
+        };
+        SellerCustomerListEnvelope: {
+            data: components["schemas"]["SellerCustomerSummary"][];
+            meta: components["schemas"]["NumberedPageListMeta"];
+        };
+        SellerCustomerDetailEnvelope: {
+            data: components["schemas"]["SellerCustomerDetail"];
+        };
+        UpsertSellerCustomerNoteRequest: {
+            body: string;
+            /** @description Optimistic concurrency; omit on first create (version 0) */
+            expectedVersion?: number;
+        };
+        SellerCustomerNoteEnvelope: {
+            data: components["schemas"]["SellerCustomerNote"];
             meta: components["schemas"]["Meta"];
         };
         FieldViolation: {
@@ -6449,6 +6581,15 @@ export type SchemaSellerOrderTimelineEvent = components['schemas']['SellerOrderT
 export type SchemaSellerOrderDetail = components['schemas']['SellerOrderDetail'];
 export type SchemaSellerOrderListEnvelope = components['schemas']['SellerOrderListEnvelope'];
 export type SchemaSellerOrderDetailEnvelope = components['schemas']['SellerOrderDetailEnvelope'];
+export type SchemaSellerCustomerSummary = components['schemas']['SellerCustomerSummary'];
+export type SchemaSellerCustomerOrderHistoryItem = components['schemas']['SellerCustomerOrderHistoryItem'];
+export type SchemaSellerCustomerNote = components['schemas']['SellerCustomerNote'];
+export type SchemaSellerCustomerConsent = components['schemas']['SellerCustomerConsent'];
+export type SchemaSellerCustomerDetail = components['schemas']['SellerCustomerDetail'];
+export type SchemaSellerCustomerListEnvelope = components['schemas']['SellerCustomerListEnvelope'];
+export type SchemaSellerCustomerDetailEnvelope = components['schemas']['SellerCustomerDetailEnvelope'];
+export type SchemaUpsertSellerCustomerNoteRequest = components['schemas']['UpsertSellerCustomerNoteRequest'];
+export type SchemaSellerCustomerNoteEnvelope = components['schemas']['SellerCustomerNoteEnvelope'];
 export type SchemaFieldViolation = components['schemas']['FieldViolation'];
 export type SchemaMoneyIdr = components['schemas']['MoneyIdr'];
 export type SchemaRfc3339Timestamp = components['schemas']['Rfc3339Timestamp'];
@@ -12288,6 +12429,120 @@ export interface operations {
             };
             /** @description Foreign store/order (safe not found) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    listStoreCustomers: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                /** @description Search display name, email, or customer id */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                storeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerCustomerSummary[] with NumberedPageListMeta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerCustomerListEnvelope"];
+                };
+            };
+            /** @description Foreign/unknown store (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    getStoreCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+                /** @description Stable store-scoped customer id (sha256 hex of store+email) */
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SellerCustomerDetail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerCustomerDetailEnvelope"];
+                };
+            };
+            /** @description Foreign store/customer (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+        };
+    };
+    upsertStoreCustomerNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: string;
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertSellerCustomerNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description SellerCustomerNote */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerCustomerNoteEnvelope"];
+                };
+            };
+            /** @description Foreign store/customer (safe not found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemEnvelope"];
+                };
+            };
+            /** @description Note version conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

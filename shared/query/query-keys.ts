@@ -42,7 +42,16 @@ export const queryKeys = {
     ) => ["seller", storeId, "products", "bounded", filters] as const,
     product: (storeId: string, productId: string) =>
       ["seller", storeId, "products", productId] as const,
-    customers: (storeId: string) => ["seller", storeId, "customers"] as const,
+    /**
+     * SEL-260: store + filters + NumberedPageList profile.
+     * Prefix ["seller", storeId, "customers"] still matches invalidate/clear.
+     */
+    customers: (
+      storeId: string,
+      filters: Record<string, unknown> = {},
+    ) => ["seller", storeId, "customers", filters] as const,
+    customer: (storeId: string, customerId: string) =>
+      ["seller", storeId, "customers", customerId] as const,
     coupons: (storeId: string) => ["seller", storeId, "coupons"] as const,
     reviews: (storeId: string) => ["seller", storeId, "reviews"] as const,
     reviewsSummary: (storeId: string) =>

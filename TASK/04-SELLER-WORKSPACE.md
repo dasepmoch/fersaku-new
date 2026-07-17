@@ -289,20 +289,20 @@ FE inventory contract berasal dari mock shape; backend summary/detail memiliki s
 
 ### Backend task
 
-- [ ] Define customer as store-scoped aggregate derived from purchases, not global buyer profile exposure.
-- [ ] List: stable ID, display name/email masking policy, purchase count/spend/last purchase, consent/status, bounded search/sort and declared pagination profile.
-- [ ] Detail: bounded order history, metrics, internal notes with version/audit, consent-aware contact actions.
-- [ ] Decide guest/customer identity merge semantics and privacy retention.
-- [ ] Add `GET /v1/stores/{storeId}/customers`, detail, notes command, optional bounded export/contact command only if UI control active.
-- [ ] Tenant guard + PII permission/redaction + rate limit/audit.
+- [x] Define customer as store-scoped aggregate derived from purchases, not global buyer profile exposure.
+- [x] List: stable ID, display name/email masking policy, purchase count/spend/last purchase, consent/status, bounded search/sort and declared pagination profile.
+- [x] Detail: bounded order history, metrics, internal notes with version/audit, consent-aware contact actions.
+- [x] Decide guest/customer identity merge semantics and privacy retention. *(merge key: lower(trim(email)) within store; guest rows with empty email excluded)*
+- [x] Add `GET /v1/stores/{storeId}/customers`, detail, notes command, optional bounded export/contact command only if UI control active. *(export/email remain unwired — no characterized action)*
+- [x] Tenant guard + PII permission/redaction + rate limit/audit. *(membership + safe 404; notes versioned)*
 
 ### Frontend task
 
-- [ ] Schema/mapper to existing `SellerCustomer`; use server customer ID, not order ID as pseudo identifier.
-- [ ] Wire list/detail/metrics/history/notes to hooks; remove hardcoded/local notes in API mode.
-- [ ] Preserve table/detail composition and existing modal/form.
-- [ ] Server search plus declared pagination profile; do not load all customers locally.
-- [ ] No raw PII in query keys/telemetry/export filename.
+- [x] Schema/mapper to existing `SellerCustomer`; use server customer ID, not order ID as pseudo identifier.
+- [x] Wire list/detail/metrics/history/notes to hooks; remove hardcoded/local notes in API mode.
+- [x] Preserve table/detail composition and existing modal/form.
+- [x] Server search plus declared pagination profile; do not load all customers locally.
+- [x] No raw PII in query keys/telemetry/export filename.
 
 ### Tests/AC
 

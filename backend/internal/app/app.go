@@ -131,6 +131,8 @@ type Runtime struct {
 	Buyer *application.BuyerService
 	// SellerOrders is wired when DATABASE_URL is set (SEL-250).
 	SellerOrders *application.SellerOrderService
+	// SellerCustomers is wired when DATABASE_URL is set (SEL-260).
+	SellerCustomers *application.SellerCustomerService
 	// Reviews is wired when DATABASE_URL is set (BE-430).
 	Reviews *application.ReviewService
 	// AdminReads is wired when DATABASE_URL is set (BE-500).
@@ -324,6 +326,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	var webhookSvc *application.WebhookService
 	var buyerSvc *application.BuyerService
 	var sellerOrderSvc *application.SellerOrderService
+	var sellerCustomerSvc *application.SellerCustomerService
 	var reviewSvc *application.ReviewService
 	var adminReadSvc *application.AdminReadService
 	var adminOpsSvc *application.AdminOpsService
@@ -580,6 +583,13 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock: clock,
 			Log:   log,
 		}
+		// SEL-260: seller store-scoped customer list/detail/notes.
+		sellerCustomerSvc = &application.SellerCustomerService{
+			Store: postgres.NewSellerCustomerRepo(pool.Pool()),
+			IDs:   ids,
+			Clock: clock,
+			Log:   log,
+		}
 		reviewSvc = &application.ReviewService{
 			Store: postgres.NewReviewRepo(pool.Pool()),
 			IDs:   ids,
@@ -686,8 +696,9 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		Credentials:   credentialSvc,
 		Webhooks:      webhookSvc,
 		Buyer:         buyerSvc,
-		SellerOrders:  sellerOrderSvc,
-		Reviews:       reviewSvc,
+		SellerOrders:     sellerOrderSvc,
+		SellerCustomers:  sellerCustomerSvc,
+		Reviews:          reviewSvc,
 		AdminReads:    adminReadSvc,
 		AdminOps:      adminOpsSvc,
 		Impersonation: impersonationSvc,
@@ -854,8 +865,9 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		CredentialService:   rt.Credentials,
 		WebhookService:      rt.Webhooks,
 		BuyerService:        rt.Buyer,
-		SellerOrderService:  rt.SellerOrders,
-		ReviewService:       rt.Reviews,
+		SellerOrderService:    rt.SellerOrders,
+		SellerCustomerService: rt.SellerCustomers,
+		ReviewService:         rt.Reviews,
 		AdminReadService:     rt.AdminReads,
 		AdminOpsService:      rt.AdminOps,
 		ImpersonationService: rt.Impersonation,

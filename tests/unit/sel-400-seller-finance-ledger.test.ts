@@ -121,7 +121,7 @@ describe("SEL-400 seller finance summary / revenue / ledger", () => {
     });
     dto.sources = {
       STOREFRONT: { availableAmount: 60_000, pendingAmount: 0 },
-      QRIS_API: { available: 36_300, pending: 0 },
+      QRIS_API: { availableAmount: 36_300, pendingAmount: 0 },
     };
     const parsed = financeSummaryDataSchema.parse(dto);
     const view = mapFinanceSummaryDto(parsed);

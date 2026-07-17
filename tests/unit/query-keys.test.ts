@@ -13,6 +13,13 @@ describe("queryKeys", () => {
       "seller",
       DEMO_STORE_ID,
       "customers",
+      {},
+    ]);
+    expect(queryKeys.seller.customer(DEMO_STORE_ID, "cust_1")).toEqual([
+      "seller",
+      DEMO_STORE_ID,
+      "customers",
+      "cust_1",
     ]);
     expect(queryKeys.seller.reviews(DEMO_STORE_ID)).toEqual([
       "seller",

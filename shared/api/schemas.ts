@@ -953,6 +953,97 @@ export type SellerOrderTimelineEventDto = z.infer<
   typeof sellerOrderTimelineEventDtoSchema
 >;
 
+// --- Seller customers (SEL-260) — store-scoped purchase aggregate ---
+
+export const SELLER_CUSTOMER_DEFAULT_PAGE_SIZE = 20;
+export const SELLER_CUSTOMER_MAX_PAGE_SIZE = 50;
+
+export const sellerCustomerSummaryDtoSchema = z.object({
+  customerId: z.string().min(1),
+  storeId: z.string().min(1),
+  displayName: z.string(),
+  displayEmail: z.string(),
+  orderCount: z.number().int().min(0),
+  spentIdr: moneyIdrSchema,
+  lastPurchaseAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  firstSeenAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+  lastProductTitle: z.string().optional(),
+  lastOrderGrossIdr: moneyIdrSchema.optional(),
+  lastPaymentStatus: z.string().optional(),
+});
+
+export const sellerCustomerOrderHistoryItemDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().min(1),
+  productTitle: z.string(),
+  paymentStatus: z.string().min(1),
+  grossIdr: moneyIdrSchema,
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const sellerCustomerNoteDtoSchema = z.object({
+  body: z.string(),
+  version: z.number().int().min(1),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  createdAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+});
+
+export const sellerCustomerConsentDtoSchema = z.object({
+  status: z.string().min(1),
+  label: z.string().min(1),
+  updatedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
+});
+
+export const sellerCustomerDetailDtoSchema = z.object({
+  customerId: z.string().min(1),
+  storeId: z.string().min(1),
+  displayName: z.string(),
+  displayEmail: z.string(),
+  orderCount: z.number().int().min(0),
+  spentIdr: moneyIdrSchema,
+  avgOrderIdr: moneyIdrSchema,
+  productCount: z.number().int().min(0),
+  lastPurchaseAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  firstSeenAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  marketingConsent: sellerCustomerConsentDtoSchema.optional().nullable(),
+  note: sellerCustomerNoteDtoSchema.optional().nullable(),
+  orders: z.array(sellerCustomerOrderHistoryItemDtoSchema),
+});
+
+export const sellerCustomerListEnvelopeSchema = numberedPageListEnvelopeSchema(
+  sellerCustomerSummaryDtoSchema,
+);
+
+export const sellerCustomerDetailEnvelopeSchema = successEnvelopeSchema(
+  sellerCustomerDetailDtoSchema,
+);
+
+export const sellerCustomerNoteEnvelopeSchema = successEnvelopeSchema(
+  sellerCustomerNoteDtoSchema,
+);
+
+export type SellerCustomerSummaryDto = z.infer<
+  typeof sellerCustomerSummaryDtoSchema
+>;
+export type SellerCustomerDetailDto = z.infer<
+  typeof sellerCustomerDetailDtoSchema
+>;
+export type SellerCustomerOrderHistoryItemDto = z.infer<
+  typeof sellerCustomerOrderHistoryItemDtoSchema
+>;
+export type SellerCustomerNoteDto = z.infer<typeof sellerCustomerNoteDtoSchema>;
+
 /** GET /v1/seller/me/merchant — seller bootstrap (INT-150). */
 export const sellerMembershipSchema = z.object({
   merchantId: z.string().min(1),

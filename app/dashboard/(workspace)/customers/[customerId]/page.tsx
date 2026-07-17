@@ -1,8 +1,5 @@
 import { SellerCustomerDetailScreen } from "@/features/seller/screens/customers";
-import { getSellerCustomer } from "@/features/seller/customers/api";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
-import { getDomainSource } from "@/shared/data/domain-source";
-import { notFound } from "next/navigation";
+import { getSellerCustomerServer } from "@/features/seller/customers/server";
 
 export default async function SellerCustomerDetailPage({
   params,
@@ -10,8 +7,6 @@ export default async function SellerCustomerDetailPage({
   params: Promise<{ customerId: string }>;
 }) {
   const { customerId } = await params;
-  if (getDomainSource("sellerOperations") === "mock") {
-    if (!(await getSellerCustomer(DEMO_STORE_ID, customerId))) notFound();
-  }
+  await getSellerCustomerServer(customerId);
   return <SellerCustomerDetailScreen id={customerId} />;
 }

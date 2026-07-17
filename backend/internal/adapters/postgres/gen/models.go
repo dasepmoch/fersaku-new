@@ -1354,6 +1354,17 @@ type Store struct {
 	PublishedRevisionID   *string            `json:"published_revision_id"`
 }
 
+type StoreCustomerNote struct {
+	ID           string    `json:"id"`
+	StoreID      string    `json:"store_id"`
+	CustomerID   string    `json:"customer_id"`
+	Body         string    `json:"body"`
+	Version      int32     `json:"version"`
+	AuthorUserID *string   `json:"author_user_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
 type StoreDomain struct {
 	ID                    string             `json:"id"`
 	StoreID               string             `json:"store_id"`
