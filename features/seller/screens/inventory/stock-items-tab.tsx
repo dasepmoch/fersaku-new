@@ -21,6 +21,8 @@ export function StockItemsTab({
   setShowSecrets,
   stockPageRows,
   stockPagination,
+  onImport,
+  onRevealToggle,
 }: {
   fields: InventoryField[];
   raw: string;
@@ -31,6 +33,10 @@ export function StockItemsTab({
   setShowSecrets: (value: boolean | ((prev: boolean) => boolean)) => void;
   stockPageRows: StockItem[];
   stockPagination: Pagination;
+  /** Optional API-mode import; mock falls back to setImported(true). */
+  onImport?: () => void;
+  /** Optional API-mode per-item reveal; mock falls back to setShowSecrets toggle. */
+  onRevealToggle?: () => void;
 }) {
   const rows = raw.split("\n").filter(Boolean);
 
@@ -61,7 +67,11 @@ export function StockItemsTab({
               {rows.length} baris siap divalidasi
             </span>
             <button
-              onClick={() => setImported(true)}
+              type="button"
+              onClick={() => {
+                if (onImport) onImport();
+                else setImported(true);
+              }}
               className="rounded-lg bg-[#173f2c] px-3 py-2 text-[8px] font-extrabold text-white"
             >
               {imported
@@ -113,7 +123,11 @@ export function StockItemsTab({
             </p>
           </div>
           <button
-            onClick={() => setShowSecrets(!showSecrets)}
+            type="button"
+            onClick={() => {
+              if (onRevealToggle) onRevealToggle();
+              else setShowSecrets(!showSecrets);
+            }}
             className="hairline flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-[8px] font-bold"
           >
             {showSecrets ? (

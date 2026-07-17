@@ -219,24 +219,24 @@ FE inventory contract berasal dari mock shape; backend summary/detail memiliki s
 
 ### Checklist BE
 
-- [ ] Add/extend seller inventory read DTO yang menyediakan fields needed existing UI: product title/type, count available/reserved/sold-or-delivered/invalid-or-revoked, threshold/delivery config, schema version.
-- [ ] Join catalog safely in read model; no per-row N+1.
-- [ ] Split list profiles by actual JSX: inventory product list is bounded/no-paging; only detail `StockItemsTab` uses authoritative `NumberedPageList`. Secrets always redacted.
-- [ ] Schema GET/PUT with version/If-Match; validate field definitions/limits.
-- [ ] Import atomic policy documented: all-or-nothing or partial with exact row errors; idempotency and dedupe.
-- [ ] Reveal verifies tenant + permission + actual recent MFA server-side; remove client boolean authority.
-- [ ] Revoke/invalid transitions explicit, audited, concurrency-safe.
+- [x] Add/extend seller inventory read DTO yang menyediakan fields needed existing UI: product title/type, count available/reserved/sold-or-delivered/invalid-or-revoked, threshold/delivery config, schema version.
+- [x] Join catalog safely in read model; no per-row N+1.
+- [x] Split list profiles by actual JSX: inventory product list is bounded/no-paging; only detail `StockItemsTab` uses authoritative `NumberedPageList`. Secrets always redacted.
+- [x] Schema GET/PUT with version/If-Match; validate field definitions/limits.
+- [x] Import atomic policy documented: all-or-nothing or partial with exact row errors; idempotency and dedupe.
+- [x] Reveal verifies tenant + permission + actual recent MFA server-side; remove client boolean authority.
+- [x] Revoke/invalid transitions explicit, audited, concurrency-safe.
 
 ### Checklist FE
 
-- [ ] Define transport DTO/schema and mapper to existing `InventoryProduct`; decouple contract from `typeof stockProducts`.
-- [ ] Remove presentation import of mock schema/items; mock goes behind adapter.
-- [ ] Wire inventory list as bounded/no-paging and detail stock items with the exact existing `TablePagination`/`NumberedPageList`; do not add pagination to the list screen.
-- [ ] Inventory product list has no empty composition; zero products require `UXE-012` launch invariant/disable/UI-080 before canary.
-- [ ] No copy control exists in the snapshot inventory UI. Do not add one; raw reveal stays component-local and any future copy action requires characterization/UI-080.
-- [ ] Reveal response component-local `no-store`, TTL cleanup; no React Query cache/storage/log/export.
-- [ ] Use actual step-up proof from `INT-140`; same exact reveal dialog/control.
-- [ ] Invalidate exact inventory/product/overview keys after import/revoke.
+- [x] Define transport DTO/schema and mapper to existing `InventoryProduct`; decouple contract from `typeof stockProducts`.
+- [x] Remove presentation import of mock schema/items; mock goes behind adapter.
+- [x] Wire inventory list as bounded/no-paging and detail stock items with the exact existing `TablePagination`/`NumberedPageList`; do not add pagination to the list screen.
+- [x] Inventory product list has no empty composition; zero products require `UXE-012` launch invariant/disable/UI-080 before canary.
+- [x] No copy control exists in the snapshot inventory UI. Do not add one; raw reveal stays component-local and any future copy action requires characterization/UI-080.
+- [x] Reveal response component-local `no-store`, TTL cleanup; no React Query cache/storage/log/export.
+- [x] Use actual step-up proof from `INT-140`; same exact reveal dialog/control.
+- [x] Invalidate exact inventory/product/overview keys after import/revoke.
 
 ### Tests/AC
 

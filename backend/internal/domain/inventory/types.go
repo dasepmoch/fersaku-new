@@ -84,9 +84,12 @@ type Reservation struct {
 }
 
 // ProductSummary is aggregate stock health for a product (masked only).
+// Title/Type come from catalog join (SEL-240 read model); never secrets.
 type ProductSummary struct {
 	ProductID           string
 	StoreID             string
+	Title               string
+	Type                string
 	ActiveSchemaVersion *int32
 	Available           int64
 	Reserved            int64

@@ -10,6 +10,8 @@ export function Inventory() {
   const storeId = useSellerStoreId();
   const { data: stockProducts = [] } = useSellerInventory(storeId);
   const totalAvailable = stockProducts.reduce((sum, p) => sum + p.available, 0);
+  const totalReserved = stockProducts.reduce((sum, p) => sum + p.reserved, 0);
+  const totalSold = stockProducts.reduce((sum, p) => sum + p.sold, 0);
   const low = stockProducts.filter((p) => p.available <= p.lowAt).length;
   return (
     <>
@@ -19,8 +21,16 @@ export function Inventory() {
           value={String(totalAvailable)}
           note="Siap dialokasikan"
         />
-        <MiniStat label="Reserved" value="4" note="Checkout belum selesai" />
-        <MiniStat label="Terjual" value="735" note="Lifetime fulfilled" />
+        <MiniStat
+          label="Reserved"
+          value={String(totalReserved)}
+          note="Checkout belum selesai"
+        />
+        <MiniStat
+          label="Terjual"
+          value={String(totalSold)}
+          note="Lifetime fulfilled"
+        />
         <MiniStat
           label="Stok menipis"
           value={String(low)}

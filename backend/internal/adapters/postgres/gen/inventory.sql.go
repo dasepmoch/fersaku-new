@@ -621,7 +621,7 @@ func (q *Queries) ListExpiredStockReservations(ctx context.Context, arg ListExpi
 }
 
 const listInventoryProductSummaries = `-- name: ListInventoryProductSummaries :many
-SELECT p.id AS product_id, p.store_id, p.active_schema_version,
+SELECT p.id AS product_id, p.store_id, p.title, p.type, p.active_schema_version,
        COALESCE(SUM(CASE WHEN si.status = 'AVAILABLE' THEN 1 ELSE 0 END), 0)::bigint AS available,
        COALESCE(SUM(CASE WHEN si.status = 'RESERVED' THEN 1 ELSE 0 END), 0)::bigint AS reserved,
        COALESCE(SUM(CASE WHEN si.status = 'DELIVERED' THEN 1 ELSE 0 END), 0)::bigint AS delivered,
@@ -630,13 +630,15 @@ SELECT p.id AS product_id, p.store_id, p.active_schema_version,
 FROM products p
 LEFT JOIN stock_items si ON si.product_id = p.id
 WHERE p.store_id = $1
-GROUP BY p.id, p.store_id, p.active_schema_version
+GROUP BY p.id, p.store_id, p.title, p.type, p.active_schema_version, p.created_at
 ORDER BY p.created_at DESC, p.id DESC
 `
 
 type ListInventoryProductSummariesRow struct {
 	ProductID           string `json:"product_id"`
 	StoreID             string `json:"store_id"`
+	Title               string `json:"title"`
+	Type                string `json:"type"`
 	ActiveSchemaVersion *int32 `json:"active_schema_version"`
 	Available           int64  `json:"available"`
 	Reserved            int64  `json:"reserved"`
@@ -657,6 +659,8 @@ func (q *Queries) ListInventoryProductSummaries(ctx context.Context, storeID str
 		if err := rows.Scan(
 			&i.ProductID,
 			&i.StoreID,
+			&i.Title,
+			&i.Type,
 			&i.ActiveSchemaVersion,
 			&i.Available,
 			&i.Reserved,

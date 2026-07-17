@@ -226,6 +226,8 @@ func (s *InventoryService) GetProductInventory(ctx context.Context, userID, stor
 	sum := inventory.ProductSummary{
 		ProductID:           productID,
 		StoreID:             storeID,
+		Title:               prod.Title,
+		Type:                prod.Type,
 		ActiveSchemaVersion: prod.ActiveSchemaVersion,
 		Available:           counts[inventory.StatusAvailable],
 		Reserved:            counts[inventory.StatusReserved],

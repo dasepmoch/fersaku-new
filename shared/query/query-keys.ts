@@ -14,6 +14,10 @@ export const queryKeys = {
     inventory: (storeId: string) => ["seller", storeId, "inventory"] as const,
     inventoryProduct: (storeId: string, productId: string) =>
       ["seller", storeId, "inventory", productId] as const,
+    inventoryProductDetail: (storeId: string, productId: string) =>
+      ["seller", storeId, "inventory", productId, "detail"] as const,
+    inventorySchema: (storeId: string, productId: string) =>
+      ["seller", storeId, "inventory", productId, "schema"] as const,
     ledger: (storeId: string) => ["seller", storeId, "ledger"] as const,
     withdrawals: (storeId: string) =>
       ["seller", storeId, "withdrawals"] as const,

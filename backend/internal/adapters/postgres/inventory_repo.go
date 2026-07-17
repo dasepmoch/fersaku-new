@@ -309,6 +309,8 @@ func (r *InventoryRepo) ListProductSummaries(ctx context.Context, storeID string
 		out = append(out, inventory.ProductSummary{
 			ProductID:           row.ProductID,
 			StoreID:             row.StoreID,
+			Title:               row.Title,
+			Type:                row.Type,
 			ActiveSchemaVersion: row.ActiveSchemaVersion,
 			Available:           row.Available,
 			Reserved:            row.Reserved,

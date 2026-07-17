@@ -330,6 +330,8 @@ func productSummaryDTO(s inventory.ProductSummary) map[string]any {
 	m := map[string]any{
 		"productId": s.ProductID,
 		"storeId":   s.StoreID,
+		"title":     s.Title,
+		"type":      s.Type,
 		"available": s.Available,
 		"reserved":  s.Reserved,
 		"delivered": s.Delivered,

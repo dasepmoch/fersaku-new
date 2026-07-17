@@ -96,7 +96,7 @@ WHERE product_id = $1 AND store_id = $2
 GROUP BY status;
 
 -- name: ListInventoryProductSummaries :many
-SELECT p.id AS product_id, p.store_id, p.active_schema_version,
+SELECT p.id AS product_id, p.store_id, p.title, p.type, p.active_schema_version,
        COALESCE(SUM(CASE WHEN si.status = 'AVAILABLE' THEN 1 ELSE 0 END), 0)::bigint AS available,
        COALESCE(SUM(CASE WHEN si.status = 'RESERVED' THEN 1 ELSE 0 END), 0)::bigint AS reserved,
        COALESCE(SUM(CASE WHEN si.status = 'DELIVERED' THEN 1 ELSE 0 END), 0)::bigint AS delivered,
@@ -105,7 +105,7 @@ SELECT p.id AS product_id, p.store_id, p.active_schema_version,
 FROM products p
 LEFT JOIN stock_items si ON si.product_id = p.id
 WHERE p.store_id = $1
-GROUP BY p.id, p.store_id, p.active_schema_version
+GROUP BY p.id, p.store_id, p.title, p.type, p.active_schema_version, p.created_at
 ORDER BY p.created_at DESC, p.id DESC;
 
 -- name: ClaimAvailableStockItem :one

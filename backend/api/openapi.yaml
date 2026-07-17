@@ -10031,6 +10031,8 @@ components:
       required:
       - productId
       - storeId
+      - title
+      - type
       - available
       - reserved
       - delivered
@@ -10041,6 +10043,12 @@ components:
           type: string
         storeId:
           type: string
+        title:
+          type: string
+          description: Catalog product title (joined; never secrets)
+        type:
+          type: string
+          description: Catalog product type (download|link|code)
         activeSchemaVersion:
           type: integer
           nullable: true

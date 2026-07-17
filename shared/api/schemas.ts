@@ -1088,3 +1088,104 @@ export type AnalyticsChannelBreakdownDto = z.infer<
 >;
 export type AnalyticsTrafficRowDto = z.infer<typeof analyticsTrafficRowSchema>;
 export type AnalyticsTrafficPageDto = z.infer<typeof analyticsTrafficPageSchema>;
+
+// --- Seller inventory (SEL-240) — masked list/detail; reveal is no-store ---
+
+export const inventoryFieldDefSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  secret: z.boolean(),
+  required: z.boolean().optional(),
+  buyerCopyable: z.boolean().optional(),
+  unique: z.boolean().optional(),
+});
+
+export const inventorySchemaDtoSchema = z.object({
+  id: z.string().min(1),
+  productId: z.string().min(1),
+  storeId: z.string().min(1),
+  version: z.number().int(),
+  fields: z.array(inventoryFieldDefSchema),
+  delimiter: z.string().optional(),
+  checksum: z.string().min(1),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+});
+
+export const inventoryProductSummaryDtoSchema = z.object({
+  productId: z.string().min(1),
+  storeId: z.string().min(1),
+  title: z.string().optional().default(""),
+  type: z.string().optional().default(""),
+  activeSchemaVersion: z.number().int().nullable().optional(),
+  available: z.number().int().min(0),
+  reserved: z.number().int().min(0),
+  delivered: z.number().int().min(0),
+  revoked: z.number().int().min(0),
+  total: z.number().int().min(0),
+});
+
+export const inventoryStockItemMaskedDtoSchema = z.object({
+  id: z.string().min(1),
+  productId: z.string().min(1),
+  storeId: z.string().min(1),
+  schemaVersion: z.number().int(),
+  status: z.string().min(1),
+  masked: z.record(z.string(), z.string()).default({}),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const inventoryProductDetailDataSchema = z.object({
+  summary: inventoryProductSummaryDtoSchema,
+  items: z.array(inventoryStockItemMaskedDtoSchema),
+});
+
+export const inventoryProductSummaryListEnvelopeSchema = successEnvelopeSchema(
+  z.array(inventoryProductSummaryDtoSchema),
+);
+
+export const inventoryProductDetailEnvelopeSchema = successEnvelopeSchema(
+  inventoryProductDetailDataSchema,
+);
+
+export const inventorySchemaEnvelopeSchema = successEnvelopeSchema(
+  inventorySchemaDtoSchema,
+);
+
+export const inventoryImportResultSchema = z.object({
+  imported: z.number().int().min(0),
+  itemIds: z.array(z.string()),
+});
+
+export const inventoryImportEnvelopeSchema = successEnvelopeSchema(
+  inventoryImportResultSchema,
+);
+
+export const inventoryRevealDataSchema = z.object({
+  itemId: z.string().min(1),
+  productId: z.string().min(1),
+  schemaVersion: z.number().int().optional(),
+  status: z.string().optional(),
+  secrets: z.record(z.string(), z.string()),
+  masked: z.record(z.string(), z.string()).optional(),
+  auditId: z.string().min(1),
+});
+
+export const inventoryRevealEnvelopeSchema = successEnvelopeSchema(
+  inventoryRevealDataSchema,
+);
+
+export const inventoryStockItemEnvelopeSchema = successEnvelopeSchema(
+  inventoryStockItemMaskedDtoSchema,
+);
+
+export type InventoryFieldDefDto = z.infer<typeof inventoryFieldDefSchema>;
+export type InventorySchemaDto = z.infer<typeof inventorySchemaDtoSchema>;
+export type InventoryProductSummaryDto = z.infer<
+  typeof inventoryProductSummaryDtoSchema
+>;
+export type InventoryStockItemMaskedDto = z.infer<
+  typeof inventoryStockItemMaskedDtoSchema
+>;
+export type InventoryRevealDto = z.infer<typeof inventoryRevealDataSchema>;
+
