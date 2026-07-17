@@ -18,21 +18,34 @@ import {
   KeyRound,
   Plus,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { rupiah } from "@/lib/utils";
 import {
+  nextMerchantApiAccessDisplay,
+  nextMerchantStatusDisplay,
+  toMerchantApiAccessWire,
+  toMerchantStatusWire,
   useAdminAuditEvents,
-  useAdminActionMutation,
   useAdminMerchant,
+  useAdminMerchantFinance,
+  useAdminMerchantWriteEnabled,
   useAdminOrders,
+  useAuthorizeMerchantCredentialMutation,
+  useUpdateMerchantApiAccessMutation,
+  useUpdateMerchantStatusMutation,
 } from "@/features/admin/data";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { MerchantFeeConfigurator } from "@/features/admin/commerce/merchant-fees";
 import { ImpersonationDialog } from "./impersonation-dialog";
 import { MerchantAccessDialog } from "./access-dialog";
 import { Info, RiskBadge } from "./pieces";
 
 export function MerchantDetail({ id }: { id: string }) {
+  const isMock = getDomainSource("adminRead") === "mock";
+  const canWrite = useAdminMerchantWriteEnabled();
   const { data } = useAdminMerchant(id);
+  const { data: finance } = useAdminMerchantFinance(id);
   const { data: orders } = useAdminOrders();
   const { data: auditEvents } = useAdminAuditEvents();
   const merchant = data;
@@ -40,18 +53,62 @@ export function MerchantDetail({ id }: { id: string }) {
   const [accessAction, setAccessAction] = useState<"merchant" | "api" | null>(
     null,
   );
-  const [merchantStatus, setMerchantStatus] = useState(merchant?.status ?? "");
-  const [apiAccess, setApiAccess] = useState(merchant?.apiAccess ?? "");
   const [keysRotated, setKeysRotated] = useState(false);
-  const actionMutation = useAdminActionMutation();
-  const initializedMerchantId = useRef<string | null>(null);
-  useEffect(() => {
-    if (!merchant || initializedMerchantId.current === merchant.id) return;
-    initializedMerchantId.current = merchant.id;
-    setMerchantStatus(merchant.status);
-    setApiAccess(merchant.apiAccess);
-  }, [merchant]);
+  const statusMutation = useUpdateMerchantStatusMutation();
+  const apiAccessMutation = useUpdateMerchantApiAccessMutation();
+  const credentialMutation = useAuthorizeMerchantCredentialMutation();
+  const accessIdemRef = useRef<string | null>(null);
+  const rotateIdemRef = useRef<string | null>(null);
+
   if (!merchant) return null;
+
+  const merchantStatus = merchant.status;
+  const apiAccess = merchant.apiAccess;
+  const accessPending =
+    statusMutation.isPending || apiAccessMutation.isPending;
+  const merchantOrders = (orders ?? [])
+    .filter((o) => o.store === merchant.name || o.store === merchant.id)
+    .slice(0, 4);
+  const orderRows =
+    merchantOrders.length > 0
+      ? merchantOrders
+      : isMock
+        ? (orders ?? []).slice(0, 4)
+        : [];
+
+  const gmvValue = finance
+    ? rupiah(finance.lifetimeGrossAmount)
+    : isMock
+      ? rupiah(82_640_000)
+      : "—";
+  const balanceValue = finance
+    ? rupiah(finance.availableAmount)
+    : isMock
+      ? rupiah(18_240_500)
+      : "—";
+  const platformRevValue = finance
+    ? rupiah(
+        Math.max(
+          0,
+          finance.lifetimeGrossAmount - finance.lifetimeNetAmount,
+        ),
+      )
+    : isMock
+      ? rupiah(3_184_000)
+      : "—";
+  const gmvNote = finance
+    ? `${merchant.orders} orders`
+    : isMock
+      ? "482 orders"
+      : "—";
+  const balanceNote =
+    finance && finance.heldAmount > 0
+      ? `${rupiah(finance.heldAmount)} held`
+      : isMock
+        ? "No active holds"
+        : "Ledger";
+  const platformNote = isMock ? "3% + Rp700 per success" : "Server net delta";
+
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2">
@@ -63,14 +120,23 @@ export function MerchantDetail({ id }: { id: string }) {
         </AdminButton>
         <AdminButton
           secondary
-          onClick={() => setAction("Rotate merchant API credentials")}
+          disabled={!canWrite || credentialMutation.isPending}
+          onClick={() => {
+            rotateIdemRef.current = createIdempotencyKey();
+            setAction("Rotate merchant API credentials");
+          }}
         >
           <KeyRound className="size-4" />
           {keysRotated ? "Keys rotated" : "Rotate keys"}
         </AdminButton>
         <button
-          onClick={() => setAccessAction("merchant")}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#f2c4c0] bg-[#fff5f4] px-4 text-[10px] font-extrabold text-[#c74f48]"
+          type="button"
+          disabled={!canWrite || accessPending}
+          onClick={() => {
+            accessIdemRef.current = createIdempotencyKey();
+            setAccessAction("merchant");
+          }}
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#f2c4c0] bg-[#fff5f4] px-4 text-[10px] font-extrabold text-[#c74f48] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Ban className="size-4" />{" "}
           {merchantStatus === "Suspended" ? "Restore" : "Suspend merchant"}
@@ -78,9 +144,15 @@ export function MerchantDetail({ id }: { id: string }) {
         <AdminButton
           secondary
           disabled={
-            apiAccess === "Pending KYC" || apiAccess === "Not requested"
+            !canWrite ||
+            accessPending ||
+            apiAccess === "Pending KYC" ||
+            apiAccess === "Not requested"
           }
-          onClick={() => setAccessAction("api")}
+          onClick={() => {
+            accessIdemRef.current = createIdempotencyKey();
+            setAccessAction("api");
+          }}
         >
           <Code2 className="size-4" />
           {apiAccess === "Suspended" ? "Restore API" : "Suspend API"}
@@ -108,20 +180,16 @@ export function MerchantDetail({ id }: { id: string }) {
             </div>
           </div>
           <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            <Metric
-              label="Lifetime GMV"
-              value={rupiah(82640000)}
-              note="482 orders"
-            />
+            <Metric label="Lifetime GMV" value={gmvValue} note={gmvNote} />
             <Metric
               label="Available balance"
-              value={rupiah(18240500)}
-              note="No active holds"
+              value={balanceValue}
+              note={balanceNote}
             />
             <Metric
               label="Platform revenue"
-              value={rupiah(3184000)}
-              note="3% + Rp700 per success"
+              value={platformRevValue}
+              note={platformNote}
             />
           </div>
           <div className="mt-7 grid gap-5 border-t border-[#e5e8ef] pt-6 sm:grid-cols-2">
@@ -183,7 +251,7 @@ export function MerchantDetail({ id }: { id: string }) {
               </Link>
             }
           />
-          {(orders ?? []).slice(0, 4).map((o) => (
+          {orderRows.map((o) => (
             <div
               key={o.id}
               className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-t border-[#e8eaf0] px-5 py-4 text-[9px]"
@@ -240,37 +308,52 @@ export function MerchantDetail({ id }: { id: string }) {
           target={accessAction}
           currentStatus={accessAction === "api" ? apiAccess : merchantStatus}
           nextStatus={
-            (accessAction === "api" ? apiAccess : merchantStatus) ===
-            "Suspended"
-              ? accessAction === "api"
-                ? "Enabled"
-                : "Active"
-              : "Suspended"
+            accessAction === "api"
+              ? nextMerchantApiAccessDisplay(apiAccess)
+              : nextMerchantStatusDisplay(merchantStatus)
           }
-          onClose={() => setAccessAction(null)}
+          onClose={() => {
+            setAccessAction(null);
+            accessIdemRef.current = null;
+          }}
           onConfirm={(reason) => {
-            const current = accessAction === "api" ? apiAccess : merchantStatus;
-            const nextStatus =
-              current === "Suspended"
-                ? accessAction === "api"
-                  ? "Enabled"
-                  : "Active"
-                : "Suspended";
-            actionMutation.mutate(
+            const idem =
+              accessIdemRef.current ?? createIdempotencyKey();
+            accessIdemRef.current = idem;
+            if (accessAction === "api") {
+              const nextDisplay = nextMerchantApiAccessDisplay(apiAccess);
+              const wire = toMerchantApiAccessWire(nextDisplay);
+              if (!wire) return;
+              apiAccessMutation.mutate(
+                {
+                  merchantId: merchant.id,
+                  status: wire,
+                  reason,
+                  idempotencyKey: idem,
+                },
+                {
+                  onSuccess: () => {
+                    setAccessAction(null);
+                    accessIdemRef.current = null;
+                  },
+                },
+              );
+              return;
+            }
+            const nextDisplay = nextMerchantStatusDisplay(merchantStatus);
+            const wire = toMerchantStatusWire(nextDisplay);
+            if (!wire) return;
+            statusMutation.mutate(
               {
-                action:
-                  accessAction === "api"
-                    ? "merchant.api_access.update"
-                    : "merchant.status.update",
-                resourceId: merchant.id,
-                status: nextStatus,
+                merchantId: merchant.id,
+                status: wire,
                 reason,
+                idempotencyKey: idem,
               },
               {
                 onSuccess: () => {
-                  if (accessAction === "api") setApiAccess(nextStatus);
-                  else setMerchantStatus(nextStatus);
                   setAccessAction(null);
+                  accessIdemRef.current = null;
                 },
               },
             );
@@ -289,16 +372,22 @@ export function MerchantDetail({ id }: { id: string }) {
           target={merchant.id}
           requiresRecentMfa
           auditHandledExternally
-          onClose={() => setAction(null)}
+          onClose={() => {
+            setAction(null);
+            rotateIdemRef.current = null;
+          }}
           onConfirm={async (reason) => {
-            await actionMutation.mutateAsync({
-              action: "merchant.api_credentials.rotate",
-              resourceId: merchant.id,
+            const idem =
+              rotateIdemRef.current ?? createIdempotencyKey();
+            rotateIdemRef.current = idem;
+            await credentialMutation.mutateAsync({
+              merchantId: merchant.id,
               reason,
-              idempotencyKey: `merchant-key-rotation-${merchant.id}-${Date.now()}`,
-              recentMfaProof: "mock-recent-mfa",
+              mode: "rotate",
+              idempotencyKey: idem,
             });
             setKeysRotated(true);
+            rotateIdemRef.current = null;
           }}
         />
       ) : null}

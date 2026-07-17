@@ -40,6 +40,10 @@ import {
 import { demoInventory, getInventory } from "./inventory";
 import { demoAdminReviews, listAdminReviews } from "./reviews";
 import { demoMerchants, getMerchant, listMerchants } from "./merchants";
+import {
+  getMerchantFinanceSummary,
+  listMerchantCredentials,
+} from "./merchant-commands";
 import { demoAdminOrders, getAdminOrder, listAdminOrders } from "./orders";
 import { demoPayments, listPayments } from "./payments";
 import { demoWithdrawals, getWithdrawal, listWithdrawals } from "./withdrawals";
@@ -98,6 +102,44 @@ export function useAdminMerchant(merchantId: string) {
       demoMerchants().find((m) => m.id === merchantId) || null,
     ),
   });
+}
+
+/** ADM-200 — server finance projection for detail metrics. */
+export function useAdminMerchantFinance(merchantId: string) {
+  const enabled = useAdminReadEnabled("merchants.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.merchantFinance(merchantId),
+    queryFn: (signal) => getMerchantFinanceSummary(merchantId, signal),
+    enabled: Boolean(merchantId) && enabled,
+    surface: "private",
+  });
+}
+
+/**
+ * ADM-200 — masked credentials only.
+ * BE currently requires kyc.review; fail-closed when claim missing on API path.
+ */
+export function useAdminMerchantCredentials(merchantId: string) {
+  const claims = useSessionClaims();
+  const isMock = getDomainSource("adminRead") === "mock";
+  const enabled =
+    Boolean(merchantId) &&
+    (isMock ||
+      claimsHavePermission(claims?.permissions, "kyc.review") ||
+      claimsHavePermission(claims?.permissions, "merchants.read"));
+  return useAppQuery({
+    queryKey: queryKeys.admin.merchantCredentials(merchantId),
+    queryFn: (signal) => listMerchantCredentials(merchantId, signal),
+    enabled,
+    surface: "private",
+  });
+}
+
+/** Write permission gate for merchant status/API controls (ADM-110). */
+export function useAdminMerchantWriteEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "merchants.write");
 }
 
 export function useAdminBuyers(filters: AdminListFilters = {}) {

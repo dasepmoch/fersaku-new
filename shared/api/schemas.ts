@@ -2160,6 +2160,105 @@ export const adminInventoryEnvelopeSchema = successEnvelopeSchema(
 export const ADMIN_LIST_DEFAULT_LIMIT = 50;
 export const ADMIN_LIST_MAX_LIMIT = 100;
 
+/** ADM-200 — admin merchant finance projection (read-only; merchants.read). */
+export const adminMerchantFinanceSummaryDataSchema = z.object({
+  merchantId: z.string().min(1),
+  paymentMode: z.string().optional(),
+  availableAmount: moneyIdrSchema,
+  pendingAmount: moneyIdrSchema,
+  heldAmount: moneyIdrSchema,
+  lifetimeGrossAmount: moneyIdrSchema.optional(),
+  lifetimeNetAmount: moneyIdrSchema.optional(),
+  sources: z
+    .record(
+      z.string(),
+      z.object({
+        availableAmount: moneyIdrSchema.optional(),
+        pendingAmount: moneyIdrSchema.optional(),
+      }),
+    )
+    .optional(),
+  currency: z.literal("IDR").optional(),
+  asOf: rfc3339TimestampSchema.optional(),
+});
+
+export const adminMerchantFinanceSummaryEnvelopeSchema = successEnvelopeSchema(
+  adminMerchantFinanceSummaryDataSchema,
+);
+
+/** Typed status/api-access command results (ADM-200). */
+export const adminMerchantStatusUpdateDataSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1),
+  displayName: z.string().optional(),
+});
+
+export const adminMerchantStatusUpdateEnvelopeSchema = successEnvelopeSchema(
+  adminMerchantStatusUpdateDataSchema,
+);
+
+export const adminMerchantApiAccessUpdateDataSchema = z.object({
+  merchantId: z.string().min(1),
+  status: z.string().min(1),
+  paymentMode: z.string().optional(),
+  capability: z.string().optional(),
+});
+
+export const adminMerchantApiAccessUpdateEnvelopeSchema = successEnvelopeSchema(
+  adminMerchantApiAccessUpdateDataSchema,
+);
+
+/** Masked credential list — never raw key (ADM-200). */
+export const adminMaskedCredentialDtoSchema = z.object({
+  id: z.string().min(1),
+  merchantId: z.string().optional(),
+  keyPrefix: z.string().optional(),
+  fingerprint: z.string().optional(),
+  paymentMode: z.string().optional(),
+  status: z.string(),
+  name: z.string().optional(),
+  keyVersion: z.number().int().optional(),
+  lastUsedAt: z.string().nullable().optional(),
+  revokedAt: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const adminCredentialIssuanceDtoSchema = z.object({
+  id: z.string().min(1).optional(),
+  status: z.string().optional(),
+  merchantId: z.string().optional(),
+  authorizedAt: z.string().optional(),
+  reason: z.string().optional(),
+}).passthrough();
+
+export const adminMerchantCredentialsDataSchema = z.object({
+  credentials: z.array(adminMaskedCredentialDtoSchema),
+  issuances: z.array(adminCredentialIssuanceDtoSchema).optional(),
+});
+
+export const adminMerchantCredentialsEnvelopeSchema = successEnvelopeSchema(
+  adminMerchantCredentialsDataSchema,
+);
+
+export const adminCredentialAuthorizeDataSchema = z
+  .object({
+    id: z.string().optional(),
+    status: z.string().optional(),
+    merchantId: z.string().optional(),
+  })
+  .passthrough()
+  .refine(
+    (v) =>
+      !JSON.stringify(v).includes("fsk_live_") &&
+      !JSON.stringify(v).includes("fsk_test_"),
+    { message: "Admin credential response must never include raw key material" },
+  );
+
+export const adminCredentialAuthorizeEnvelopeSchema = successEnvelopeSchema(
+  adminCredentialAuthorizeDataSchema,
+);
+
 export type AdminOverviewDto = z.infer<typeof adminOverviewDataSchema>;
 export type AdminMerchantDto = z.infer<typeof adminMerchantDtoSchema>;
 export type AdminBuyerDto = z.infer<typeof adminBuyerDtoSchema>;
@@ -2172,4 +2271,10 @@ export type AdminInventorySnapshotDto = z.infer<
   typeof adminInventorySnapshotDtoSchema
 >;
 export type AdminBoundedListMeta = z.infer<typeof adminBoundedListMetaSchema>;
+export type AdminMerchantFinanceSummaryDto = z.infer<
+  typeof adminMerchantFinanceSummaryDataSchema
+>;
+export type AdminMaskedCredentialDto = z.infer<
+  typeof adminMaskedCredentialDtoSchema
+>;
 

@@ -7,7 +7,9 @@ import { compactRupiah } from "@/shared/format/money";
 import type {
   AdminAuditEventDto,
   AdminBuyerDto,
+  AdminMaskedCredentialDto,
   AdminMerchantDto,
+  AdminMerchantFinanceSummaryDto,
   AdminOrderDto,
   AdminOverviewDto,
   AdminPaymentDto,
@@ -19,7 +21,11 @@ import type {
 import type {
   AdminAuditEvent,
   AdminBuyer,
+  AdminMaskedCredential,
   AdminMerchant,
+  AdminMerchantApiAccessWire,
+  AdminMerchantFinanceSummary,
+  AdminMerchantStatusWire,
   AdminOrder,
   AdminPaymentIntent,
   AdminPaymentSource,
@@ -121,6 +127,110 @@ export function mapAdminMerchantDto(dto: AdminMerchantDto): AdminMerchant {
     joined: dto.joined,
     apiAccess: dto.apiAccess,
   };
+}
+
+/**
+ * Map FE display status → wire enum for POST /status.
+ * Merchant lifecycle is independent of API capability axis.
+ */
+export function toMerchantStatusWire(
+  display: string,
+): AdminMerchantStatusWire | null {
+  const s = display.trim().toLowerCase();
+  if (s === "active" || s === "enabled") return "ACTIVE";
+  if (s === "suspended") return "SUSPENDED";
+  if (s === "closed") return "CLOSED";
+  if (s === "restricted") return "SUSPENDED";
+  const upper = display.trim().toUpperCase();
+  if (upper === "ACTIVE" || upper === "SUSPENDED" || upper === "CLOSED") {
+    return upper;
+  }
+  return null;
+}
+
+/**
+ * Map FE display apiAccess → wire enum for POST /api-access/status.
+ * Pending KYC / Not requested are not mutatable via this control.
+ */
+export function toMerchantApiAccessWire(
+  display: string,
+): AdminMerchantApiAccessWire | null {
+  const s = display.trim().toLowerCase();
+  if (s === "enabled" || s === "active") return "ACTIVE";
+  if (s === "suspended") return "SUSPENDED";
+  const upper = display.trim().toUpperCase();
+  if (upper === "ACTIVE" || upper === "SUSPENDED") return upper;
+  return null;
+}
+
+/** Humanize wire merchant status for existing AdminStatus chrome. */
+export function humanizeMerchantStatus(wire: string): string {
+  switch (wire.trim().toUpperCase()) {
+    case "ACTIVE":
+      return "Active";
+    case "SUSPENDED":
+      return "Suspended";
+    case "CLOSED":
+      return "Closed";
+    default:
+      return wire;
+  }
+}
+
+/** Humanize wire API access for existing AdminStatus chrome. */
+export function humanizeMerchantApiAccess(wire: string): string {
+  switch (wire.trim().toUpperCase()) {
+    case "ACTIVE":
+      return "Enabled";
+    case "SUSPENDED":
+      return "Suspended";
+    case "PENDING_KYC":
+      return "Pending KYC";
+    case "INACTIVE":
+    case "EXPIRED":
+    case "REVOKED":
+    case "":
+      return "Not requested";
+    default:
+      return wire;
+  }
+}
+
+export function mapAdminMerchantFinanceSummaryDto(
+  dto: AdminMerchantFinanceSummaryDto,
+  asOf: string,
+): AdminMerchantFinanceSummary {
+  return {
+    merchantId: dto.merchantId,
+    availableAmount: nonNegMoney(dto.availableAmount),
+    pendingAmount: nonNegMoney(dto.pendingAmount),
+    heldAmount: nonNegMoney(dto.heldAmount),
+    lifetimeGrossAmount: nonNegMoney(dto.lifetimeGrossAmount ?? 0),
+    lifetimeNetAmount: nonNegMoney(dto.lifetimeNetAmount ?? 0),
+    asOf: dto.asOf ?? asOf,
+  };
+}
+
+export function mapAdminMaskedCredentialDto(
+  dto: AdminMaskedCredentialDto,
+): AdminMaskedCredential {
+  return {
+    id: dto.id,
+    keyPrefix: dto.keyPrefix ?? "",
+    status: dto.status,
+    paymentMode: dto.paymentMode ?? "",
+    name: dto.name ?? "",
+    fingerprint: dto.fingerprint ?? "",
+  };
+}
+
+/** Next suspend/restore display labels for existing access dialog (no redesign). */
+export function nextMerchantStatusDisplay(current: string): string {
+  return current === "Suspended" ? "Active" : "Suspended";
+}
+
+export function nextMerchantApiAccessDisplay(current: string): string {
+  return current === "Suspended" ? "Enabled" : "Suspended";
 }
 
 export function mapAdminBuyerDto(dto: AdminBuyerDto): AdminBuyer {

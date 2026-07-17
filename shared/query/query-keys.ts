@@ -73,6 +73,11 @@ export const queryKeys = {
       ["admin", "merchants", "bounded", filters] as const,
     merchant: (merchantId: string) =>
       ["admin", "merchants", merchantId] as const,
+    /** ADM-200 finance projection + credential metadata. */
+    merchantFinance: (merchantId: string) =>
+      ["admin", "merchants", merchantId, "finance"] as const,
+    merchantCredentials: (merchantId: string) =>
+      ["admin", "merchants", merchantId, "credentials"] as const,
     buyers: (filters: Record<string, unknown> = {}) =>
       ["admin", "buyers", "bounded", filters] as const,
     buyer: (buyerId: string) => ["admin", "buyers", buyerId] as const,

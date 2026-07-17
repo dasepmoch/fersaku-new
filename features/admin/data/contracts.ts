@@ -69,6 +69,33 @@ export type AdminMerchant = {
   apiAccess: string;
 };
 
+/** ADM-200 — server finance projection for merchant detail metrics. */
+export type AdminMerchantFinanceSummary = {
+  merchantId: string;
+  availableAmount: number;
+  pendingAmount: number;
+  heldAmount: number;
+  lifetimeGrossAmount: number;
+  lifetimeNetAmount: number;
+  asOf: string;
+};
+
+/** Masked API credential metadata — never raw secret. */
+export type AdminMaskedCredential = {
+  id: string;
+  keyPrefix: string;
+  status: string;
+  paymentMode: string;
+  name: string;
+  fingerprint: string;
+};
+
+/** Wire lifecycle status for POST /status (independent of apiAccess). */
+export type AdminMerchantStatusWire = "ACTIVE" | "SUSPENDED" | "CLOSED";
+
+/** Wire API capability for POST /api-access/status (independent of merchant.status). */
+export type AdminMerchantApiAccessWire = "ACTIVE" | "SUSPENDED";
+
 /** The surface that created a successful payment. */
 export type AdminPaymentSource = "STOREFRONT" | "QRIS_API";
 

@@ -126,15 +126,15 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 
 ### Checklist FE
 
-- [ ] Wire list/detail/filter through DTO mapper and the route's declared pagination profile; replace hardcoded detail metrics/orders with server read/query composition.
-- [ ] Merchant status and QRIS API capability remain independent axes.
-- [ ] Use typed status/API access endpoint where available, not generic action if it weakens transition contract.
-- [ ] Existing confirmation dialog collects reason/acknowledgement; actual recent MFA proof supplied by auth layer.
-- [ ] Stable idempotency key across retry; no optimistic label/button flip before response.
-- [ ] Credential authorize/rotate/suspend/revoke never returns raw key to admin.
-- [ ] Credential list/authorize/rotate/suspend/revoke routes must not reuse `kyc.review` as a blanket middleware; server operation and UI permission registry stay aligned.
-- [ ] Refetch exact merchant/list/audit/capability keys after success.
-- [ ] PII/bank/API metadata redacted according permission.
+- [x] Wire list/detail/filter through DTO mapper and the route's declared pagination profile; replace hardcoded detail metrics/orders with server read/query composition. *(list/detail/finance/orders composition; TablePagination client-page until BE numbered meta; filter chrome still prototype SearchInput)*
+- [x] Merchant status and QRIS API capability remain independent axes.
+- [x] Use typed status/API access endpoint where available, not generic action if it weakens transition contract. *(POST `/status` + `/api-access/status`; not generic actions for these)*
+- [x] Existing confirmation dialog collects reason/acknowledgement; actual recent MFA proof supplied by auth layer. *(requireRecentMfa on typed commands)*
+- [x] Stable idempotency key across retry; no optimistic label/button flip before response. *(idempotency held for dialog; labels from refetch after success)*
+- [x] Credential authorize/rotate/suspend/revoke never returns raw key to admin. *(schema + runtime reject `fsk_live_`/`fsk_test_`; rotate via authorize metadata only)*
+- [ ] Credential list/authorize/rotate/suspend/revoke routes must not reuse `kyc.review` as a blanket middleware; server operation and UI permission registry stay aligned. *(FE rotate gated `merchants.write`; BE still mounts credential routes under `kyc.review` — registry split remains BE/INT-000)*
+- [x] Refetch exact merchant/list/audit/capability keys after success.
+- [x] PII/bank/API metadata redacted according permission. *(masked credentials; finance projection only; no raw keys)*
 
 ### Checklist BE
 

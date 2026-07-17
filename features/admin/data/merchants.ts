@@ -1,6 +1,6 @@
 /**
- * ADM-120 — admin merchant list/detail read foundation (merchants.read).
- * Full filter/pagination UX remains ADM-200; this wires schema/mapper/query keys.
+ * ADM-200 — admin merchant list/detail read (merchants.read).
+ * Builds on ADM-120 foundation: schema/mapper/query keys + bounded list.
  */
 
 import type { z } from "zod";

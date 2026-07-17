@@ -6,8 +6,12 @@ export type {
   AdminBuyerSession,
   AdminInventoryField,
   AdminListFilters,
-  AdminPermissionGroup,
+  AdminMaskedCredential,
   AdminMerchant,
+  AdminMerchantApiAccessWire,
+  AdminMerchantFinanceSummary,
+  AdminMerchantStatusWire,
+  AdminPermissionGroup,
   AdminOverview,
   AdminPlatformVolumePoint,
   AdminPlatformVolumeSeries,
@@ -23,6 +27,22 @@ export type {
 } from "./contracts";
 
 export { demoMerchants, getMerchant, listMerchants, listMerchantsPage } from "./merchants";
+export {
+  authorizeMerchantCredential,
+  getMerchantFinanceSummary,
+  isMerchantWriteApi,
+  listMerchantCredentials,
+  updateMerchantApiAccess,
+  updateMerchantStatus,
+  useAuthorizeMerchantCredentialMutation,
+  useUpdateMerchantApiAccessMutation,
+  useUpdateMerchantStatusMutation,
+  type AuthorizeMerchantCredentialInput,
+  type CredentialAuthorizeResult,
+  type MerchantCommandResult,
+  type UpdateMerchantApiAccessInput,
+  type UpdateMerchantStatusInput,
+} from "./merchant-commands";
 export { demoBuyers, getBuyer, listBuyers, listBuyersPage } from "./buyers";
 export {
   demoAdminOrders,
@@ -76,14 +96,22 @@ export {
 export {
   formatCountId,
   formatSuccessRateBps,
-  mapAdminOverviewDto,
+  humanizeMerchantApiAccess,
+  humanizeMerchantStatus,
+  mapAdminMaskedCredentialDto,
   mapAdminMerchantDto,
+  mapAdminMerchantFinanceSummaryDto,
   mapAdminOrderDto,
+  mapAdminOverviewDto,
   mapAdminPaymentDto,
   mapAdminWithdrawalDto,
   mapPlatformVolumeBuckets,
+  nextMerchantApiAccessDisplay,
+  nextMerchantStatusDisplay,
   normalizeAdminListFilters,
   overviewMetricLabels,
+  toMerchantApiAccessWire,
+  toMerchantStatusWire,
 } from "./mappers";
 
 export {
@@ -94,6 +122,9 @@ export {
   useAdminAuditEvents,
   useAdminInventory,
   useAdminMerchant,
+  useAdminMerchantCredentials,
+  useAdminMerchantFinance,
+  useAdminMerchantWriteEnabled,
   useAdminMerchants,
   useAdminOrder,
   useAdminOrders,
