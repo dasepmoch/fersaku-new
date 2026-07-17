@@ -83,12 +83,17 @@ export function Input({
   placeholder,
   prefix,
   value,
+  onChange,
+  error,
 }: {
   label: string;
   placeholder?: string;
   prefix?: string;
   value?: string;
+  onChange?: (value: string) => void;
+  error?: string | null;
 }) {
+  const controlled = typeof onChange === "function";
   return (
     <label className="grid gap-2 text-xs font-bold">
       {label}
@@ -99,11 +104,16 @@ export function Input({
           </span>
         )}
         <input
-          defaultValue={value}
+          {...(controlled
+            ? { value: value ?? "", onChange: (e) => onChange(e.target.value) }
+            : { defaultValue: value })}
           placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent px-4 text-sm font-normal outline-none"
         />
       </div>
+      {error ? (
+        <span className="text-[9px] font-semibold text-[#a44f3b]">{error}</span>
+      ) : null}
     </label>
   );
 }

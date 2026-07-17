@@ -4,6 +4,19 @@ export type ProductType = "download" | "link" | "code";
 export type ProductStatus = "draft" | "published" | "archived";
 
 /**
+ * Visual delivery option on product form (not a catalog type enum).
+ * `credentials` maps to wire type `code` + delivery kind CREDENTIAL (SEL-220).
+ */
+export type ProductDeliveryOption =
+  | "download"
+  | "link"
+  | "code"
+  | "credentials";
+
+/** Inventory/delivery kind after catalog type freeze (SEL-220 / SEL-240). */
+export type ProductDeliveryKind = "DOWNLOAD" | "LINK" | "CODE" | "CREDENTIAL";
+
+/**
  * SEL-210 — product list filters (BoundedNoPaging).
  * BE list has no search/status query yet; adapter maps filters client-side
  * over the store-scoped response and caps at SELLER_PRODUCT_LIST_LIMIT.
@@ -16,6 +29,81 @@ export type SellerProductListFilters = {
 
 /** Launch bound; list UI has no TablePagination (UI-080 for expansion). */
 export const SELLER_PRODUCT_LIST_LIMIT = 50;
+
+/** Form field keys that map to existing product editor regions. */
+export type ProductFormField =
+  | "title"
+  | "slug"
+  | "description"
+  | "price"
+  | "type"
+  | "short"
+  | "generic";
+
+export type ProductFieldError = {
+  field: ProductFormField;
+  message: string;
+};
+
+/** SEL-220 create command (view → wire). */
+export type CreateSellerProductInput = {
+  storeId: string;
+  title: string;
+  slug?: string;
+  short?: string;
+  description?: string;
+  /** Whole IDR. */
+  price: number;
+  /**
+   * Visual delivery option. Never send `credentials` on the wire —
+   * map via mapDeliveryOptionToWireType.
+   */
+  delivery: ProductDeliveryOption;
+  badge?: string;
+  palette?: string;
+  glyph?: string;
+  includes?: string[];
+  allowPayWhatYouWant?: boolean;
+  minimumPrice?: number;
+  currentVersion?: string;
+  idempotencyKey?: string;
+};
+
+/** SEL-220 patch command (partial; status via publish/archive only). */
+export type PatchSellerProductInput = {
+  storeId: string;
+  productId: string;
+  slug?: string;
+  title?: string;
+  short?: string;
+  description?: string;
+  price?: number;
+  delivery?: ProductDeliveryOption;
+  badge?: string;
+  palette?: string;
+  glyph?: string;
+  includes?: string[];
+  allowPayWhatYouWant?: boolean;
+  minimumPrice?: number;
+  minimumPriceCleared?: boolean;
+  currentVersion?: string;
+  /** If-Match / revision when contract supplies it. */
+  ifMatch?: string;
+};
+
+export type ArchiveSellerProductInput = {
+  storeId: string;
+  productId: string;
+  idempotencyKey?: string;
+  reason?: string;
+};
+
+export type PublishSellerProductInput = {
+  storeId: string;
+  productId: string;
+  idempotencyKey?: string;
+  reason?: string;
+};
 
 export type CatalogProduct = {
   id: string;
@@ -40,6 +128,13 @@ export type CatalogProduct = {
   minimumPrice?: number;
   updatesEnabled?: boolean;
   currentVersion?: string;
+};
+
+export type PublishSellerProductResult = {
+  accepted: boolean;
+  productId: string;
+  requestId: string;
+  product?: CatalogProduct;
 };
 
 /** Featured homepage card — storeSlug is required for tenant-correct URLs. */

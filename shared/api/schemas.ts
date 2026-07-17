@@ -245,6 +245,53 @@ export const catalogProductListEnvelopeSchema = successEnvelopeSchema(
   z.array(catalogProductDtoSchema),
 );
 
+/** SEL-220 — POST publish accepted envelope (optional product snapshot). */
+export const publishProductResultDtoSchema = z.object({
+  accepted: z.boolean(),
+  productId: z.string().min(1),
+  requestId: z.string().min(1),
+  product: catalogProductDtoSchema.optional(),
+});
+
+export const publishProductEnvelopeSchema = successEnvelopeSchema(
+  publishProductResultDtoSchema,
+);
+
+/** CreateProductRequest wire body (OpenAPI). */
+export const createProductRequestSchema = z.object({
+  slug: z.string().optional(),
+  title: z.string().min(1),
+  short: z.string().optional(),
+  description: z.string().optional(),
+  price: moneyIdrSchema,
+  type: productTypeSchema,
+  badge: z.string().optional(),
+  palette: z.string().optional(),
+  glyph: z.string().optional(),
+  includes: z.array(z.string()).optional(),
+  allowPayWhatYouWant: z.boolean().optional(),
+  minimumPrice: moneyIdrSchema.optional(),
+  currentVersion: z.string().optional(),
+});
+
+/** PatchProductRequest wire body (OpenAPI). Status is never patched. */
+export const patchProductRequestSchema = z.object({
+  slug: z.string().optional(),
+  title: z.string().optional(),
+  short: z.string().optional(),
+  description: z.string().optional(),
+  price: moneyIdrSchema.optional(),
+  type: productTypeSchema.optional(),
+  badge: z.string().optional(),
+  palette: z.string().optional(),
+  glyph: z.string().optional(),
+  includes: z.array(z.string()).optional(),
+  allowPayWhatYouWant: z.boolean().optional(),
+  minimumPrice: moneyIdrSchema.optional(),
+  minimumPriceCleared: z.boolean().optional(),
+  currentVersion: z.string().optional(),
+});
+
 export const publicStorefrontDtoSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),

@@ -28,3 +28,13 @@ export type GetPublicStoreResponse =
   import("@/shared/api/generated").OperationSuccessJson<"getPublicStore">;
 export type GetPublicProductResponse =
   import("@/shared/api/generated").OperationSuccessJson<"getPublicProduct">;
+
+/** SEL-220 seller product commands. */
+export type CreateStoreProductResponse =
+  import("@/shared/api/generated").OperationSuccessJson<"createStoreProduct">;
+export type PatchStoreProductResponse =
+  import("@/shared/api/generated").OperationSuccessJson<"patchStoreProduct">;
+export type PublishStoreProductResponse =
+  import("@/shared/api/generated").OperationSuccessJson<"publishStoreProduct">;
+export type ArchiveStoreProductResponse =
+  import("@/shared/api/generated").OperationSuccessJson<"archiveStoreProduct">;

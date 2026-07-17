@@ -5,10 +5,24 @@ import { Download, Eye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ProductArt } from "@/components/product-art";
 import {
+  useArchiveSellerProductMutation,
+  usePatchSellerProductMutation,
   usePublishSellerProductMutation,
   useSellerProduct,
 } from "@/features/catalog/hooks";
+import type { ProductFieldError, ProductFormField } from "@/features/catalog/contracts";
+import {
+  mapProductCommandThrown,
+  normalizeProductSlug,
+  parseProductPriceIdr,
+  productDetailStatusLabel,
+} from "@/features/catalog/mappers";
 import { compactRupiah, rupiah } from "@/lib/utils";
+import { getDomainSource } from "@/shared/data/domain-source";
+import {
+  createIdempotencyIntentHolder,
+  createPendingDedupe,
+} from "@/shared/query/mutation-policy";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 import {
   FormGroup,
@@ -19,10 +33,29 @@ import {
   sellerCard,
 } from "./pieces";
 
+function sellerCatalogIsApi(): boolean {
+  try {
+    return getDomainSource("sellerCatalog") === "api";
+  } catch {
+    return false;
+  }
+}
+
+function fieldMsg(
+  errors: ProductFieldError[],
+  field: ProductFormField,
+): string | null {
+  return errors.find((e) => e.field === field)?.message ?? null;
+}
+
 export function ProductDetail({ id }: { id: string }) {
   const storeId = useSellerStoreId();
+  const apiMode = sellerCatalogIsApi();
   const { data: product } = useSellerProduct(storeId, id);
   const publishMutation = usePublishSellerProductMutation();
+  const patchMutation = usePatchSellerProductMutation();
+  const archiveMutation = useArchiveSellerProductMutation();
+
   const [tab, setTab] = useState("Detail");
   const [archived, setArchived] = useState(false);
   const [updatesEnabled, setUpdatesEnabled] = useState(true);
@@ -41,14 +74,65 @@ export function ProductDetail({ id }: { id: string }) {
     },
   ]);
   const [published, setPublished] = useState(false);
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [priceText, setPriceText] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ProductFieldError[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [hydratedId, setHydratedId] = useState<string | null>(null);
+
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const archiveIdemRef = useRef(createIdempotencyIntentHolder());
+  const publishIdemRef = useRef(createIdempotencyIntentHolder());
+  const pendingRef = useRef(createPendingDedupe());
+
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
+
+  useEffect(() => {
+    if (!product || product.id === hydratedId) return;
+    setTitle(product.title);
+    setSlug(product.slug);
+    setDescription(product.description);
+    setPriceText(String(product.price));
+    setArchived(product.status === "archived");
+    setHydratedId(product.id);
+  }, [product, hydratedId]);
+
+  const applyErrors = (err: unknown) => {
+    const mapped = mapProductCommandThrown(err);
+    if (mapped.kind === "field_errors") {
+      setFieldErrors(mapped.fields);
+      return;
+    }
+    setFieldErrors([
+      {
+        field: "generic",
+        message:
+          mapped.kind === "conflict"
+            ? mapped.message
+            : mapped.message || "Gagal menyimpan produk.",
+      },
+    ]);
+  };
+
+  /**
+   * Delivery-tab “Publish update to existing buyers” is a file/release UI
+   * affordance — not catalog publish. Catalog publish uses header save path
+   * when status is draft. Keep local release history UX in mock; API mode
+   * only toggles feedback without inventing a release endpoint (SEL-230).
+   */
   const publishRelease = async () => {
+    if (apiMode) {
+      setPublished(true);
+      timer.current = setTimeout(() => setPublished(false), 2400);
+      return;
+    }
     try {
       await publishMutation.mutateAsync({
         storeId: storeId,
@@ -73,8 +157,90 @@ export function ProductDetail({ id }: { id: string }) {
     setPublished(true);
     timer.current = setTimeout(() => setPublished(false), 2400);
   };
+
+  const saveChanges = async () => {
+    if (!apiMode || !product) return;
+    if (!pendingRef.current.tryBegin()) return;
+    setSubmitting(true);
+    setFieldErrors([]);
+    const price = parseProductPriceIdr(priceText);
+    if (!title.trim()) {
+      setFieldErrors([{ field: "title", message: "Nama produk wajib diisi." }]);
+      pendingRef.current.end();
+      setSubmitting(false);
+      return;
+    }
+    if (price === null) {
+      setFieldErrors([
+        { field: "price", message: "Harga harus bilangan bulat Rupiah." },
+      ]);
+      pendingRef.current.end();
+      setSubmitting(false);
+      return;
+    }
+    try {
+      await patchMutation.mutateAsync({
+        storeId,
+        productId: id,
+        title: title.trim(),
+        slug: normalizeProductSlug(slug) || product.slug,
+        description: description.trim(),
+        price,
+      });
+      if (product.status === "draft") {
+        const key = publishIdemRef.current.getKey();
+        publishIdemRef.current.bindBody({ productId: id });
+        await publishMutation.mutateAsync({
+          storeId,
+          productId: id,
+          idempotencyKey: key,
+          reason: "seller_product_catalog_publish",
+        });
+        publishIdemRef.current.reset();
+      }
+      setHydratedId(null);
+    } catch (err) {
+      applyErrors(err);
+    } finally {
+      pendingRef.current.end();
+      setSubmitting(false);
+    }
+  };
+
+  const toggleArchive = async () => {
+    if (!apiMode) {
+      setArchived(!archived);
+      return;
+    }
+    if (archived) return;
+    if (!pendingRef.current.tryBegin()) return;
+    setSubmitting(true);
+    setFieldErrors([]);
+    try {
+      const key = archiveIdemRef.current.getKey();
+      archiveIdemRef.current.bindBody({ productId: id });
+      await archiveMutation.mutateAsync({
+        storeId,
+        productId: id,
+        idempotencyKey: key,
+        reason: "seller_product_archive",
+      });
+      archiveIdemRef.current.reset();
+      setArchived(true);
+      setHydratedId(null);
+    } catch (err) {
+      applyErrors(err);
+    } finally {
+      pendingRef.current.end();
+      setSubmitting(false);
+    }
+  };
+
   if (!product) return null;
   const p = product;
+  const statusLabel = productDetailStatusLabel(p.status, archived);
+  const genericError = fieldMsg(fieldErrors, "generic");
+
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
       <section className={`${sellerCard} overflow-hidden`}>
@@ -87,7 +253,7 @@ export function ProductDetail({ id }: { id: string }) {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-extrabold">{p.title}</h2>
-              <Status status={archived ? "Archived" : "Active"} />
+              <Status status={statusLabel} />
             </div>
             <p className="mt-1 text-[10px] text-[#7a867f]">
               {p.id} • fersaku.id/@asep/{p.slug}
@@ -100,7 +266,12 @@ export function ProductDetail({ id }: { id: string }) {
             >
               <Eye className="size-3.5" /> Preview
             </Link>
-            <button className="flex h-10 items-center gap-2 rounded-xl bg-[#173f2c] px-4 text-[10px] font-extrabold text-white">
+            <button
+              type="button"
+              disabled={apiMode && submitting}
+              onClick={apiMode ? () => void saveChanges() : undefined}
+              className="flex h-10 items-center gap-2 rounded-xl bg-[#173f2c] px-4 text-[10px] font-extrabold text-white disabled:opacity-60"
+            >
               Simpan perubahan
             </button>
           </div>
@@ -110,6 +281,7 @@ export function ProductDetail({ id }: { id: string }) {
             (x) => (
               <button
                 key={x}
+                type="button"
                 onClick={() => setTab(x)}
                 className={`border-b-2 px-4 py-4 text-[10px] font-extrabold ${tab === x ? "border-[#173f2c]" : "border-transparent text-[#819087]"}`}
               >
@@ -119,6 +291,11 @@ export function ProductDetail({ id }: { id: string }) {
           )}
         </div>
         <div className="p-5 sm:p-7">
+          {genericError ? (
+            <p className="mb-4 text-[10px] font-semibold text-[#a44f3b]">
+              {genericError}
+            </p>
+          ) : null}
           {tab === "Analytics" ? (
             <div className="grid gap-4 sm:grid-cols-3">
               <MiniStat
@@ -150,7 +327,10 @@ export function ProductDetail({ id }: { id: string }) {
                     48.2 MB • Updated 2 Jul 2026
                   </span>
                 </div>
-                <button className="ml-auto text-[10px] font-bold text-[#315d47]">
+                <button
+                  type="button"
+                  className="ml-auto text-[10px] font-bold text-[#315d47]"
+                >
                   Replace file
                 </button>
               </div>
@@ -170,6 +350,7 @@ export function ProductDetail({ id }: { id: string }) {
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setUpdatesEnabled(!updatesEnabled)}
                   className={`relative ml-4 h-6 w-11 shrink-0 rounded-full ${updatesEnabled ? "bg-[#173f2c]" : "bg-[#c9cec9]"}`}
                 >
@@ -197,7 +378,8 @@ export function ProductDetail({ id }: { id: string }) {
                     />
                   </label>
                   <button
-                    onClick={publishRelease}
+                    type="button"
+                    onClick={() => void publishRelease()}
                     className="h-10 rounded-xl bg-[#173f2c] text-[9px] font-extrabold text-white sm:col-span-2"
                   >
                     {published
@@ -236,20 +418,49 @@ export function ProductDetail({ id }: { id: string }) {
                 desc="Konten yang terlihat di halaman produk."
               >
                 <div className="grid gap-4">
-                  <Input label="Nama produk" value={p.title} />
-                  <Input
-                    label="Slug"
-                    value={p.slug}
-                    prefix="fersaku.id/@asep/"
-                  />
-                  <label className="grid gap-2 text-xs font-bold">
-                    Deskripsi
-                    <textarea
-                      defaultValue={p.description}
-                      rows={5}
-                      className="hairline rounded-xl border bg-white p-4 text-sm font-normal outline-none"
-                    />
-                  </label>
+                  {apiMode ? (
+                    <>
+                      <Input
+                        label="Nama produk"
+                        value={title}
+                        onChange={setTitle}
+                        error={fieldMsg(fieldErrors, "title")}
+                      />
+                      <Input
+                        label="Slug"
+                        value={slug}
+                        onChange={(v) => setSlug(normalizeProductSlug(v))}
+                        prefix="fersaku.id/@asep/"
+                        error={fieldMsg(fieldErrors, "slug")}
+                      />
+                      <label className="grid gap-2 text-xs font-bold">
+                        Deskripsi
+                        <textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          rows={5}
+                          className="hairline rounded-xl border bg-white p-4 text-sm font-normal outline-none"
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <Input label="Nama produk" value={p.title} />
+                      <Input
+                        label="Slug"
+                        value={p.slug}
+                        prefix="fersaku.id/@asep/"
+                      />
+                      <label className="grid gap-2 text-xs font-bold">
+                        Deskripsi
+                        <textarea
+                          defaultValue={p.description}
+                          rows={5}
+                          className="hairline rounded-xl border bg-white p-4 text-sm font-normal outline-none"
+                        />
+                      </label>
+                    </>
+                  )}
                 </div>
               </FormGroup>
               <FormGroup
@@ -257,11 +468,29 @@ export function ProductDetail({ id }: { id: string }) {
                 desc="Atur harga dan visibilitas produk."
               >
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Input label="Harga" value={String(p.price)} prefix="Rp" />
+                  {apiMode ? (
+                    <Input
+                      label="Harga"
+                      value={priceText}
+                      onChange={setPriceText}
+                      prefix="Rp"
+                      error={fieldMsg(fieldErrors, "price")}
+                    />
+                  ) : (
+                    <Input
+                      label="Harga"
+                      value={String(p.price)}
+                      prefix="Rp"
+                    />
+                  )}
                   <Select
                     label="Status"
                     options={[
-                      archived ? "Archived" : "Published",
+                      archived
+                        ? "Archived"
+                        : p.status === "draft"
+                          ? "Draft"
+                          : "Published",
                       "Draft",
                       "Archived",
                     ]}
@@ -297,8 +526,10 @@ export function ProductDetail({ id }: { id: string }) {
             penjualan.
           </p>
           <button
-            onClick={() => setArchived(!archived)}
-            className="mt-4 h-10 w-full rounded-xl border border-[#efc8c0] bg-[#fff6f2] text-[10px] font-extrabold text-[#a44f3b]"
+            type="button"
+            disabled={apiMode && (submitting || archived)}
+            onClick={() => void toggleArchive()}
+            className="mt-4 h-10 w-full rounded-xl border border-[#efc8c0] bg-[#fff6f2] text-[10px] font-extrabold text-[#a44f3b] disabled:opacity-60"
           >
             {archived ? "Pulihkan produk" : "Arsipkan produk"}
           </button>

@@ -117,7 +117,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `SEL-110` | P0/P1 | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 14:21 WIB · claim released | Resumable onboarding | TASK/evidence/SEL-110/20260717-1421-nikki.md · features/seller/onboarding · tests/unit/sel-110-onboarding.test.ts |
 | `[x]` | `SEL-200` | P1 | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 14:40 WIB · claim released | Overview/analytics read model | TASK/evidence/SEL-200/20260717-1440-nikki.md · features/seller/analytics · tests/unit/sel-200-seller-overview-analytics.test.ts |
 | `[x]` | `SEL-210` | P1 | SEL-100, INT-190 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Bounded server product list/search (no new page control; `UI-080` for expansion) | TASK/evidence/SEL-210/20260717-sel210-nikki.md · features/catalog · tests/unit/sel-210-seller-products-list.test.ts |
-| `[ ]` | `SEL-220` | P1 | SEL-210 | SEL | — | Product command lifecycle | — |
+| `[x]` | `SEL-220` | P1 | SEL-210 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Product command lifecycle | TASK/evidence/SEL-220/20260717-sel220-nikki.md · features/catalog · tests/unit/sel-220-seller-product-commands.test.ts |
 | `[ ]` | `SEL-230` | P1 | SEL-100; INT-180/185 **if scan lifecycle active** | SEL/RTM | — | Store/public asset safe upload/scan | — |
 | `[ ]` | `SEL-240` | P0/P1 | SEL-220, INT-140 | SEL | — | Inventory schema/import/reveal/revoke | — |
 | `[ ]` | `SEL-250` | P0 gap/P1 wire | SEL-100, INT-190 | SEL | — | Seller order read models/delivery commands | — |

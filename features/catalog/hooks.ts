@@ -7,12 +7,20 @@ import { useAppQuery } from "@/shared/query/create-query";
 import { useAppMutation } from "@/shared/query/create-mutation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  archiveSellerProduct,
+  createSellerProduct,
   getSellerProduct,
   listSellerProducts,
+  patchSellerProduct,
   publishSellerProduct,
-  type PublishProductInput,
 } from "./api";
-import type { SellerProductListFilters } from "./contracts";
+import type {
+  ArchiveSellerProductInput,
+  CreateSellerProductInput,
+  PatchSellerProductInput,
+  PublishSellerProductInput,
+  SellerProductListFilters,
+} from "./contracts";
 import { normalizeProductSearch } from "./mappers";
 import { demoProducts } from "./mock";
 
@@ -59,19 +67,84 @@ export function useSellerProduct(storeId: string, productId: string) {
   });
 }
 
+/** Exact invalidation after product commands (list/detail/overview). */
+function invalidateSellerProductCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  storeId: string,
+  productId?: string,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: ["seller", storeId, "products"],
+  });
+  if (productId) {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.seller.product(storeId, productId),
+    });
+  }
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.seller.analyticsOverview(storeId),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: ["seller", storeId, "analytics"],
+  });
+}
+
+export function useCreateSellerProductMutation() {
+  const queryClient = useQueryClient();
+  return useAppMutation({
+    mutationKey: ["seller", "products", "create"],
+    mutationFn: (input: CreateSellerProductInput, signal) =>
+      createSellerProduct(input, signal),
+    onSuccess: (product, input) => {
+      invalidateSellerProductCaches(queryClient, input.storeId, product.id);
+    },
+  });
+}
+
+export function usePatchSellerProductMutation() {
+  const queryClient = useQueryClient();
+  return useAppMutation({
+    mutationKey: ["seller", "products", "patch"],
+    mutationFn: (input: PatchSellerProductInput, signal) =>
+      patchSellerProduct(input, signal),
+    onSuccess: (product, input) => {
+      invalidateSellerProductCaches(
+        queryClient,
+        input.storeId,
+        product.id || input.productId,
+      );
+    },
+  });
+}
+
 export function usePublishSellerProductMutation() {
   const queryClient = useQueryClient();
   return useAppMutation({
     mutationKey: ["seller", "products", "publish"],
-    mutationFn: (input: PublishProductInput, signal) =>
+    mutationFn: (input: PublishSellerProductInput, signal) =>
       publishSellerProduct(input, signal),
-    onSuccess: (_result, input) => {
-      void queryClient.invalidateQueries({
-        queryKey: ["seller", input.storeId, "products"],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.seller.product(input.storeId, input.productId),
-      });
+    onSuccess: (result, input) => {
+      invalidateSellerProductCaches(
+        queryClient,
+        input.storeId,
+        result.productId || input.productId,
+      );
+    },
+  });
+}
+
+export function useArchiveSellerProductMutation() {
+  const queryClient = useQueryClient();
+  return useAppMutation({
+    mutationKey: ["seller", "products", "archive"],
+    mutationFn: (input: ArchiveSellerProductInput, signal) =>
+      archiveSellerProduct(input, signal),
+    onSuccess: (product, input) => {
+      invalidateSellerProductCaches(
+        queryClient,
+        input.storeId,
+        product.id || input.productId,
+      );
     },
   });
 }

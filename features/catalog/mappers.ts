@@ -14,9 +14,18 @@ import {
   mapExhaustiveEnum,
   requireSafeMoneyIdr,
 } from "@/shared/api/mappers";
+import { ApiError } from "@/shared/api/api-error";
+import { classifyApiError, classifyThrown } from "@/shared/api/error-policy";
+import { PROBLEM_CODES } from "@/shared/api/problem-codes";
 import type {
   CatalogProduct,
+  CreateSellerProductInput,
   FeaturedCatalogProduct,
+  PatchSellerProductInput,
+  ProductDeliveryKind,
+  ProductDeliveryOption,
+  ProductFieldError,
+  ProductFormField,
   ProductStatus,
   ProductType,
   PublicProductMatch,
@@ -112,6 +121,265 @@ export function mapProductStatus(value: string): ProductStatus {
     PRODUCT_STATUS_MAP,
     "product.status",
   );
+}
+
+/**
+ * SEL-220 — freeze delivery-type mapping.
+ * Visual `credentials` is NOT a catalog product type; maps to wire type `code`
+ * plus structured inventory delivery kind CREDENTIAL.
+ * Visual `code` → type `code` + CODE delivery.
+ */
+export function mapDeliveryOptionToWireType(
+  delivery: ProductDeliveryOption,
+): ProductType {
+  if (delivery === "credentials" || delivery === "code") return "code";
+  if (delivery === "download") return "download";
+  if (delivery === "link") return "link";
+  return invalidApiContract(`Unknown product delivery option: ${delivery}`, {
+    issues: [{ path: "type", message: "unsupported delivery option" }],
+  });
+}
+
+export function mapDeliveryOptionToDeliveryKind(
+  delivery: ProductDeliveryOption,
+): ProductDeliveryKind {
+  if (delivery === "credentials") return "CREDENTIAL";
+  if (delivery === "code") return "CODE";
+  if (delivery === "download") return "DOWNLOAD";
+  if (delivery === "link") return "LINK";
+  return invalidApiContract(`Unknown product delivery option: ${delivery}`, {
+    issues: [{ path: "type", message: "unsupported delivery option" }],
+  });
+}
+
+/** Normalize product slug for create/patch (mirrors BE NormalizeProductSlug). */
+export function normalizeProductSlug(raw: string | undefined): string {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (!s) return "";
+  let out = "";
+  for (const ch of s) {
+    const code = ch.charCodeAt(0);
+    if (
+      (code >= 97 && code <= 122) ||
+      (code >= 48 && code <= 57)
+    ) {
+      out += ch;
+    } else if (ch === "-" || ch === "_" || ch === " ") {
+      out += "-";
+    } else if (code > 127) {
+      continue;
+    } else {
+      out += "-";
+    }
+  }
+  return out.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/** Parse whole-IDR price from form text (dots/commas as thousand separators). */
+export function parseProductPriceIdr(raw: string): number | null {
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
+  if (!Number.isSafeInteger(n) || n < 0) return null;
+  return n;
+}
+
+/** Glyph default from title (first 2 alphanumerics upper). */
+export function defaultProductGlyph(title: string): string {
+  const letters = title.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase();
+  return letters || "PR";
+}
+
+const PRODUCT_FIELD_ALIASES: Record<string, ProductFormField> = {
+  title: "title",
+  name: "title",
+  slug: "slug",
+  description: "description",
+  short: "short",
+  price: "price",
+  type: "type",
+  delivery: "type",
+};
+
+function mapProductFieldName(raw: string): ProductFormField | null {
+  const key = raw.trim();
+  if (!key) return null;
+  const leaf = key.includes(".") ? (key.split(".").pop() ?? key) : key;
+  return (
+    PRODUCT_FIELD_ALIASES[leaf] ??
+    PRODUCT_FIELD_ALIASES[leaf.toLowerCase()] ??
+    null
+  );
+}
+
+function defaultProductFieldMessage(
+  field: ProductFormField,
+  code: string,
+): string {
+  if (field === "title") return "Nama produk tidak valid.";
+  if (field === "slug") return "Slug produk tidak valid.";
+  if (field === "price") return "Harga harus bilangan bulat Rupiah.";
+  if (field === "type") return "Jenis pengiriman tidak valid.";
+  if (field === "description") return "Deskripsi tidak valid.";
+  if (code) return "Periksa kembali field ini.";
+  return "Periksa kembali field ini.";
+}
+
+export function mapFieldViolationsToProductFields(
+  violations: Array<{ field: string; code: string; message?: string }>,
+): ProductFieldError[] {
+  const out: ProductFieldError[] = [];
+  const seen = new Set<ProductFormField>();
+  for (const v of violations) {
+    const field = mapProductFieldName(v.field) ?? "generic";
+    if (seen.has(field)) continue;
+    seen.add(field);
+    out.push({
+      field,
+      message: v.message?.trim() || defaultProductFieldMessage(field, v.code),
+    });
+  }
+  return out;
+}
+
+/**
+ * Map thrown product command errors onto existing form field regions.
+ * 409 slug conflict → slug; validation → field violations; preserve draft on conflict.
+ */
+export function mapProductCommandThrown(error: unknown):
+  | { kind: "field_errors"; fields: ProductFieldError[] }
+  | { kind: "conflict"; message: string }
+  | { kind: "generic"; message: string; code: string | null } {
+  if (error instanceof ApiError) {
+    const classified = classifyApiError(error.status, error.problem, {
+      retryAfterSeconds: error.retryAfterSeconds,
+    });
+    const code = error.code;
+
+    if (error.status === 409 || code === PROBLEM_CODES.CONFLICT) {
+      return {
+        kind: "field_errors",
+        fields: [
+          {
+            field: "slug",
+            message: "Slug produk sudah digunakan di toko ini.",
+          },
+        ],
+      };
+    }
+
+    if (
+      code === PROBLEM_CODES.VALIDATION_FAILED ||
+      classified.kind === "form_field_violations"
+    ) {
+      const fields = mapFieldViolationsToProductFields(
+        classified.fieldViolations,
+      );
+      if (fields.length > 0) {
+        return { kind: "field_errors", fields };
+      }
+      return {
+        kind: "field_errors",
+        fields: [
+          {
+            field: "generic",
+            message: error.message || "Periksa kembali data produk.",
+          },
+        ],
+      };
+    }
+
+    if (classified.kind === "conflict_preserve_draft") {
+      return {
+        kind: "conflict",
+        message:
+          error.message ||
+          "Produk berubah di tab lain. Muat ulang untuk menyimpan ulang.",
+      };
+    }
+
+    return {
+      kind: "generic",
+      message: error.message || "Gagal menyimpan produk.",
+      code,
+    };
+  }
+
+  const thrown = classifyThrown(error);
+  return {
+    kind: "generic",
+    message: thrown.message || "Gagal menyimpan produk.",
+    code: thrown.code || null,
+  };
+}
+
+/** Build CreateProductRequest body (wire). Never includes credentials as type. */
+export function toCreateProductRequestBody(
+  input: CreateSellerProductInput,
+): Record<string, unknown> {
+  const type = mapDeliveryOptionToWireType(input.delivery);
+  const slug = normalizeProductSlug(input.slug);
+  const body: Record<string, unknown> = {
+    title: input.title.trim(),
+    price: input.price,
+    type,
+  };
+  if (slug) body.slug = slug;
+  if (input.short !== undefined) body.short = input.short;
+  if (input.description !== undefined) body.description = input.description;
+  if (input.badge !== undefined) body.badge = input.badge;
+  if (input.palette !== undefined) body.palette = input.palette;
+  if (input.glyph !== undefined) body.glyph = input.glyph;
+  if (input.includes !== undefined) body.includes = input.includes;
+  if (input.allowPayWhatYouWant !== undefined) {
+    body.allowPayWhatYouWant = input.allowPayWhatYouWant;
+  }
+  if (input.minimumPrice !== undefined) body.minimumPrice = input.minimumPrice;
+  if (input.currentVersion !== undefined) {
+    body.currentVersion = input.currentVersion;
+  }
+  return body;
+}
+
+/** Build PatchProductRequest body (wire). Status never included. */
+export function toPatchProductRequestBody(
+  input: PatchSellerProductInput,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (input.slug !== undefined) body.slug = normalizeProductSlug(input.slug);
+  if (input.title !== undefined) body.title = input.title.trim();
+  if (input.short !== undefined) body.short = input.short;
+  if (input.description !== undefined) body.description = input.description;
+  if (input.price !== undefined) body.price = input.price;
+  if (input.delivery !== undefined) {
+    body.type = mapDeliveryOptionToWireType(input.delivery);
+  }
+  if (input.badge !== undefined) body.badge = input.badge;
+  if (input.palette !== undefined) body.palette = input.palette;
+  if (input.glyph !== undefined) body.glyph = input.glyph;
+  if (input.includes !== undefined) body.includes = input.includes;
+  if (input.allowPayWhatYouWant !== undefined) {
+    body.allowPayWhatYouWant = input.allowPayWhatYouWant;
+  }
+  if (input.minimumPriceCleared) {
+    body.minimumPriceCleared = true;
+  } else if (input.minimumPrice !== undefined) {
+    body.minimumPrice = input.minimumPrice;
+  }
+  if (input.currentVersion !== undefined) {
+    body.currentVersion = input.currentVersion;
+  }
+  return body;
+}
+
+/** Status label for detail Status chip (existing Active/Archived geometry). */
+export function productDetailStatusLabel(
+  status: ProductStatus | undefined,
+  archivedLocal?: boolean,
+): string {
+  if (archivedLocal || status === "archived") return "Archived";
+  if (status === "draft") return "Draft";
+  return "Active";
 }
 
 /** Existing list chrome label; unknown status never reaches here. */

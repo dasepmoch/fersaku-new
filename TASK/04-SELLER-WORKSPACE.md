@@ -132,16 +132,16 @@ Sebagian query ada, tetapi metrics/traffic/chart filters masih hardcoded dan sel
 
 ### Checklist FE
 
-- [ ] Wire existing form submit to create draft; map only allowed DTO fields.
-- [ ] Freeze delivery-type mapping: visual option `credentials` bukan catalog product type baru. Map ke catalog `type: "code"` plus structured inventory schema/delivery kind `CREDENTIAL`; visual option `code` maps `type: "code"` plus single-field/code delivery. Jangan cast string atau menambah backend enum diam-diam.
-- [ ] React Hook Form/Zod client validation mirrors UX but backend remains authoritative.
-- [ ] Map backend field violations/slug conflict to existing controls without layout/copy change.
-- [ ] Save edit with expected revision/ETag; 409 preserves user input and offers existing retry/reload behavior.
-- [ ] Publish only after required product/inventory/object validations; response status/revision authoritative.
-- [ ] Archive uses explicit endpoint, confirmation existing, reason/idempotency if contract requires.
-- [ ] Distinguish catalog publish from file/product release; do not overload publish endpoint for a different UI command.
-- [ ] Detail SSR forwards cookie via server client and maps only expected 404 to `notFound()`.
-- [ ] Exact invalidation: list/detail/public store/product/overview as affected.
+- [x] Wire existing form submit to create draft; map only allowed DTO fields.
+- [x] Freeze delivery-type mapping: visual option `credentials` bukan catalog product type baru. Map ke catalog `type: "code"` plus structured inventory schema/delivery kind `CREDENTIAL`; visual option `code` maps `type: "code"` plus single-field/code delivery. Jangan cast string atau menambah backend enum diam-diam.
+- [x] React Hook Form/Zod client validation mirrors UX but backend remains authoritative.
+- [x] Map backend field violations/slug conflict to existing controls without layout/copy change.
+- [x] Save edit with expected revision/ETag; 409 preserves user input and offers existing retry/reload behavior.
+- [x] Publish only after required product/inventory/object validations; response status/revision authoritative.
+- [x] Archive uses explicit endpoint, confirmation existing, reason/idempotency if contract requires.
+- [x] Distinguish catalog publish from file/product release; do not overload publish endpoint for a different UI command.
+- [x] Detail SSR forwards cookie via server client and maps only expected 404 to `notFound()`.
+- [x] Exact invalidation: list/detail/public store/product/overview as affected.
 
 ### Checklist BE
 
