@@ -220,6 +220,7 @@ GET /v1/seller/finance/ledger
 GET /v1/seller/finance/revenue
 GET /v1/seller/finance/summary
 GET /v1/seller/me/merchant
+PUT /v1/seller/me/current-store
 GET /v1/seller/notifications
 GET /v1/seller/notifications/
 POST /v1/seller/notifications/read-all

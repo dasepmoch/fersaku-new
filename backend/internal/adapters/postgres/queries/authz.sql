@@ -367,3 +367,28 @@ FROM users
 WHERE id = $1;
 
 -- InsertAuditEventNote removed: AuthzRepo uses callAppendAuditEvent (BE-530).
+
+-- INT-150 store bootstrap / preference
+
+-- name: ListStoresForMerchant :many
+SELECT id, merchant_id, slug, name, status, is_canonical,
+       bio, address, accent_color,
+       onboarding_state, onboarding_step, onboarding_completed_at, onboarding_progress,
+       storefront_revision, published_revision,
+       created_at, updated_at
+FROM stores
+WHERE merchant_id = $1
+  AND status <> 'ARCHIVED'
+ORDER BY is_canonical DESC, created_at ASC, id ASC;
+
+-- name: GetSellerPreferredStoreID :one
+SELECT preferred_store_id
+FROM seller_store_preferences
+WHERE user_id = $1;
+
+-- name: UpsertSellerPreferredStore :exec
+INSERT INTO seller_store_preferences (user_id, preferred_store_id, updated_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE
+SET preferred_store_id = EXCLUDED.preferred_store_id,
+    updated_at = EXCLUDED.updated_at;

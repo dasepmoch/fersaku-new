@@ -15,7 +15,7 @@ import {
 import { useState } from "react";
 import { useAdminRoles } from "@/features/admin/data";
 import { useRouter } from "next/navigation";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 import {
   readVersionedStorage,
   writeVersionedStorage,
@@ -152,7 +152,7 @@ function StaffInviteDialog({ onClose }: { onClose: () => void }) {
       ],
     });
     if (!persisted) throw new Error("Unable to persist mock invitation");
-    appendMockAuditEvent({
+    appendClientAuditEvent({
       actor: "admin@fersaku.id",
       action: "staff.invitation.create",
       target: normalizedEmail,

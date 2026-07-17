@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { NotificationCenter, ProfileMenu } from "@/shared/ui/account-controls";
 import { readVersionedStorage } from "@/shared/storage/versioned-storage";
 import { z } from "zod";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 import {
   clearImpersonationSession,
   isImpersonationSessionActive,
@@ -193,7 +193,7 @@ export function DashboardShell({
     if (bindingIsValid) return;
 
     if (stored && !isImpersonationSessionActive(stored)) {
-      appendMockAuditEvent({
+      appendClientAuditEvent({
         actor: stored.actor,
         action: "impersonation.expired",
         target: stored.targetId,
@@ -201,7 +201,7 @@ export function DashboardShell({
         result: "Success",
       });
     } else {
-      appendMockAuditEvent({
+      appendClientAuditEvent({
         actor: stored?.actor ?? "admin@fersaku.id",
         action: "impersonation.binding.blocked",
         target: stored?.targetId ?? runtimeTargetId ?? "unknown",
@@ -227,7 +227,7 @@ export function DashboardShell({
       ) {
         return;
       }
-      appendMockAuditEvent({
+      appendClientAuditEvent({
         actor: activeImpersonationSession.actor,
         action: "impersonation.expired",
         target: activeImpersonationSession.targetId,
@@ -249,7 +249,7 @@ export function DashboardShell({
     : "";
   const endImpersonation = () => {
     if (!impersonationSession) return;
-    appendMockAuditEvent({
+    appendClientAuditEvent({
       actor: impersonationSession.actor,
       action: "impersonation.ended",
       target: impersonationSession.targetId,

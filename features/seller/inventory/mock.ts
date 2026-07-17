@@ -2,9 +2,8 @@ import {
   canvaSchema,
   stockItems,
   stockProducts,
-  type InventoryField,
-  type StockItem,
 } from "@/lib/inventory-mock-data";
+import type { InventoryField, StockItem } from "./contracts";
 
 export type InventoryProduct = (typeof stockProducts)[number];
 

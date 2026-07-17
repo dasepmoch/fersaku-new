@@ -17,6 +17,7 @@ export function useSellerProducts(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.products(storeId),
     queryFn: (signal) => listSellerProducts(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerCatalog", demoProducts),
   });
 }
@@ -25,7 +26,7 @@ export function useSellerProduct(storeId: string, productId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.product(storeId, productId),
     queryFn: (signal) => getSellerProduct(storeId, productId, signal),
-    enabled: Boolean(productId),
+    enabled: Boolean(storeId && productId),
     placeholderData: mockPlaceholderData(
       "sellerCatalog",
       demoProducts.find((product) => product.id === productId) || null,

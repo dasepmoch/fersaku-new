@@ -6,7 +6,7 @@ import {
   useSellerWithdrawalLock,
   useSellerWithdrawals,
 } from "@/features/finance/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { rupiah } from "@/shared/format/money";
 import { MiniStat } from "@/shared/ui/mini-stat";
 import { SectionHead } from "@/shared/ui/section-head";
@@ -18,9 +18,10 @@ import { FinanceSourceBadge } from "@/shared/finance/source-badge";
 import { isSellerWithdrawalLockActive } from "@/features/finance/withdrawal-policy";
 
 export function Withdrawals() {
-  const { data: summary } = useSellerFinanceSummary(DEMO_STORE_ID);
-  const { data: rows = [] } = useSellerWithdrawals(DEMO_STORE_ID);
-  const { data: lock } = useSellerWithdrawalLock(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: summary } = useSellerFinanceSummary(storeId);
+  const { data: rows = [] } = useSellerWithdrawals(storeId);
+  const { data: lock } = useSellerWithdrawalLock(storeId);
   const { pageRows, pagination } = useClientPagination(rows);
   if (!summary || !lock) return null;
   const lockActive = isSellerWithdrawalLockActive(lock);

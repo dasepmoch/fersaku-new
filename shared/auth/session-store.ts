@@ -10,6 +10,10 @@ import {
   wireHttpClientCsrfHooks,
 } from "@/shared/api/csrf";
 import {
+  clearRecentMfaProof,
+  wireHttpClientRecentMfaHooks,
+} from "@/shared/api/recent-mfa-proof";
+import {
   clearHttpClientSessionHooks,
   getHttpClientSessionHooks,
   setHttpClientSessionHooks,
@@ -25,6 +29,7 @@ import {
   LOADING_SNAPSHOT,
   claimsCacheIdentity,
   createMockClaims,
+  statusFromClaims,
   type SessionClaims,
   type SessionSnapshot,
   type SessionSurface,
@@ -84,6 +89,7 @@ function authDomainSource(): "mock" | "api" | "disabled" {
  */
 export function wireSessionTransportHooks(): void {
   wireHttpClientCsrfHooks();
+  wireHttpClientRecentMfaHooks();
   const existing = getHttpClientSessionHooks();
   setHttpClientSessionHooks({
     ...existing,
@@ -139,7 +145,7 @@ export async function bootstrapSession(options?: {
 
   if (
     !options?.force &&
-    snapshot.status === "authenticated" &&
+    (snapshot.status === "authenticated" || snapshot.status === "mfa_pending") &&
     snapshot.claims
   ) {
     return snapshot;
@@ -164,7 +170,7 @@ export async function bootstrapSession(options?: {
       const claims = createMockClaims(mockSurfaceHint);
       maybeClearPrivateCache(claims);
       setSnapshot({
-        status: "authenticated",
+        status: statusFromClaims(claims),
         claims,
         errorCode: null,
       });
@@ -176,7 +182,7 @@ export async function bootstrapSession(options?: {
     if (result.ok) {
       maybeClearPrivateCache(result.claims);
       setSnapshot({
-        status: "authenticated",
+        status: statusFromClaims(result.claims),
         claims: result.claims,
         errorCode: null,
       });
@@ -225,6 +231,7 @@ export async function establishSessionFromBootstrap(): Promise<SessionSnapshot> 
 
 async function handleSessionExpired(): Promise<void> {
   clearCsrfToken();
+  clearRecentMfaProof();
   maybeClearPrivateCache(null);
   setSnapshot({
     status: "expired",
@@ -256,6 +263,7 @@ export async function logoutSession(options?: {
   } catch {
     clearCsrfToken();
   }
+  clearRecentMfaProof();
 
   maybeClearPrivateCache(null);
   clearSecretLocalSessionState();
@@ -276,6 +284,7 @@ export async function logoutSession(options?: {
 /** Apply remote tab logout without re-calling backend. */
 export function applyRemoteLogout(): void {
   clearCsrfToken();
+  clearRecentMfaProof();
   maybeClearPrivateCache(null);
   clearSecretLocalSessionState();
   if (queryClientRef) {
@@ -294,5 +303,6 @@ export function __resetSessionStoreForTests(): void {
   lastCacheIdentity = claimsCacheIdentity(null);
   mockSurfaceHint = "buyer";
   clearCsrfToken();
+  clearRecentMfaProof();
   clearHttpClientSessionHooks();
 }

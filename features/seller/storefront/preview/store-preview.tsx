@@ -6,7 +6,7 @@ import {
   Link2,
   Search,
 } from "lucide-react";
-import { demoProducts as products } from "@/features/catalog/mock";
+import { getStorefrontBuilderPreviewProducts } from "@/features/catalog/api";
 import { cn } from "@/lib/utils";
 import type { BuilderConfig } from "../types";
 import {
@@ -43,6 +43,7 @@ export function StorePreview({
           ? "font-sans tracking-normal"
           : "font-sans tracking-[-.03em]";
   const limit = device === "mobile" ? 4 : 6;
+  const products = getStorefrontBuilderPreviewProducts();
   const allProducts = products.slice(0, limit);
   const featuredProducts = (
     config.featuredIds.length

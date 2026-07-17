@@ -231,7 +231,9 @@ func (s *AuthService) Logout(ctx context.Context, sessionID, userID string) erro
 	if sessionID == "" || userID == "" {
 		return nil
 	}
-	_, err := s.Store.RevokeSession(ctx, sessionID, userID, s.now())
+	now := s.now()
+	_ = s.Store.RevokeRecentMFAProofsForSession(ctx, sessionID, now)
+	_, err := s.Store.RevokeSession(ctx, sessionID, userID, now)
 	return err
 }
 
@@ -585,11 +587,70 @@ func (s *AuthService) MFAConfirm(ctx context.Context, userID, code string) ([]st
 }
 
 func (s *AuthService) MFAVerify(ctx context.Context, userID, sessionID, code string) error {
-	factor, err := s.Store.GetConfirmedMFAFactor(ctx, userID)
-	if err == nil && auth.VerifyTOTP(factor.SecretEnc, code, s.now()) {
-		return s.Store.SetSessionMFAVerified(ctx, sessionID, s.now())
+	_, err := s.MFAVerifyAndOptionallyMint(ctx, userID, sessionID, code, "")
+	return err
+}
+
+// MFAStepUpResult is returned when verify mints a purpose-scoped recent proof.
+type MFAStepUpResult struct {
+	MFAVerified bool
+	// RawProof is returned once; never stored. Empty when purpose omitted.
+	RawProof  string
+	Purpose   string
+	ExpiresAt time.Time
+	Factor    auth.RecentProofFactor
+}
+
+// MFAVerifyAndOptionallyMint verifies TOTP/recovery, stamps session MFA, and
+// when purpose is non-empty mints a single-use opaque recent proof (INT-140).
+func (s *AuthService) MFAVerifyAndOptionallyMint(ctx context.Context, userID, sessionID, code, purpose string) (MFAStepUpResult, error) {
+	purpose = strings.TrimSpace(purpose)
+	if purpose != "" && !auth.ValidProofPurpose(purpose) {
+		return MFAStepUpResult{}, apperr.Validation(apperr.CodeValidationFailed, "Invalid recent MFA proof purpose")
 	}
 	now := s.now()
+	user, err := s.Store.GetUserByID(ctx, userID)
+	if err != nil {
+		return MFAStepUpResult{}, auth.ErrUnauthenticated
+	}
+
+	// Accounts without MFA: session login is sufficient to mint a purpose proof
+	// (factor=password means re-auth not required beyond existing session).
+	if !user.MFAEnabled {
+		if purpose == "" {
+			// No-op verify for non-MFA accounts.
+			return MFAStepUpResult{MFAVerified: true, Factor: auth.ProofFactorPassword}, nil
+		}
+		raw, exp, err := s.mintRecentProof(ctx, userID, sessionID, purpose, auth.ProofFactorPassword, now)
+		if err != nil {
+			return MFAStepUpResult{}, err
+		}
+		return MFAStepUpResult{
+			MFAVerified: true,
+			RawProof:    raw,
+			Purpose:     purpose,
+			ExpiresAt:   exp,
+			Factor:      auth.ProofFactorPassword,
+		}, nil
+	}
+
+	factor, err := s.Store.GetConfirmedMFAFactor(ctx, userID)
+	if err == nil && auth.VerifyTOTP(factor.SecretEnc, code, now) {
+		if err := s.Store.SetSessionMFAVerified(ctx, sessionID, now); err != nil {
+			return MFAStepUpResult{}, apperr.Internal(apperr.CodeInternalError, "MFA verify failed")
+		}
+		res := MFAStepUpResult{MFAVerified: true, Factor: auth.ProofFactorTOTP}
+		if purpose != "" {
+			raw, exp, err := s.mintRecentProof(ctx, userID, sessionID, purpose, auth.ProofFactorTOTP, now)
+			if err != nil {
+				return MFAStepUpResult{}, err
+			}
+			res.RawProof = raw
+			res.Purpose = purpose
+			res.ExpiresAt = exp
+		}
+		return res, nil
+	}
 	err = s.Store.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.Store.ConsumeRecoveryCode(ctx, userID, auth.RecoveryCodeHash(code), now); err != nil {
 			return err
@@ -597,9 +658,64 @@ func (s *AuthService) MFAVerify(ctx context.Context, userID, sessionID, code str
 		return s.Store.SetSessionMFAVerified(ctx, sessionID, now)
 	})
 	if err != nil {
-		return auth.ErrMFAInvalid
+		return MFAStepUpResult{}, auth.ErrMFAInvalid
 	}
-	return nil
+	res := MFAStepUpResult{MFAVerified: true, Factor: auth.ProofFactorRecovery}
+	if purpose != "" {
+		raw, exp, err := s.mintRecentProof(ctx, userID, sessionID, purpose, auth.ProofFactorRecovery, now)
+		if err != nil {
+			return MFAStepUpResult{}, err
+		}
+		res.RawProof = raw
+		res.Purpose = purpose
+		res.ExpiresAt = exp
+	}
+	return res, nil
+}
+
+// MintRecentMFAProof mints a purpose-scoped proof. MFA accounts must re-prove
+// TOTP/recovery; non-MFA accounts mint a session-bound proof (factor=password).
+func (s *AuthService) MintRecentMFAProof(ctx context.Context, userID, sessionID, code, purpose string) (MFAStepUpResult, error) {
+	purpose = strings.TrimSpace(purpose)
+	if purpose == "" || !auth.ValidProofPurpose(purpose) {
+		return MFAStepUpResult{}, apperr.Validation(apperr.CodeValidationFailed, "Invalid recent MFA proof purpose")
+	}
+	return s.MFAVerifyAndOptionallyMint(ctx, userID, sessionID, code, purpose)
+}
+
+// ConsumeRecentMFAProof validates and single-use consumes X-Recent-MFA-Proof.
+func (s *AuthService) ConsumeRecentMFAProof(ctx context.Context, userID, sessionID, purpose, rawProof string) error {
+	rawProof = strings.TrimSpace(rawProof)
+	purpose = strings.TrimSpace(purpose)
+	if rawProof == "" {
+		return auth.ErrMFAProofRequired
+	}
+	if !auth.ValidProofPurpose(purpose) {
+		return auth.ErrMFAProofPurpose
+	}
+	return s.Store.ConsumeRecentMFAProofByHash(ctx, userID, sessionID, purpose, s.hashTok(rawProof), s.now())
+}
+
+func (s *AuthService) mintRecentProof(ctx context.Context, userID, sessionID, purpose string, factor auth.RecentProofFactor, now time.Time) (raw string, expires time.Time, err error) {
+	raw, err = auth.GenerateToken(32)
+	if err != nil {
+		return "", time.Time{}, apperr.Internal(apperr.CodeInternalError, "Recent MFA proof mint failed")
+	}
+	expires = now.Add(auth.RecentProofTTL)
+	row := auth.RecentMFAProof{
+		ID:        s.IDs.New(),
+		UserID:    userID,
+		SessionID: sessionID,
+		Purpose:   purpose,
+		ProofHash: s.hashTok(raw),
+		Factor:    factor,
+		ExpiresAt: expires,
+		CreatedAt: now,
+	}
+	if err := s.Store.InsertRecentMFAProof(ctx, row); err != nil {
+		return "", time.Time{}, apperr.Internal(apperr.CodeInternalError, "Recent MFA proof mint failed")
+	}
+	return raw, expires, nil
 }
 
 func (s *AuthService) MFARegenerateRecovery(ctx context.Context, userID, sessionID, code string) ([]string, error) {

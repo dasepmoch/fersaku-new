@@ -22,6 +22,7 @@ type memAuthz struct {
 	merchants   map[string]authz.Merchant
 	members     map[string]authz.MerchantMember
 	stores      map[string]authz.Store
+	prefs       map[string]string // userID -> preferred store
 	staffInv    map[string]authz.StaffInvitation
 	merchantInv map[string]authz.MerchantInvitation
 	staffByHash map[string]string
@@ -41,6 +42,7 @@ func newMemAuthz() *memAuthz {
 		merchants:   map[string]authz.Merchant{},
 		members:     map[string]authz.MerchantMember{},
 		stores:      map[string]authz.Store{},
+		prefs:       map[string]string{},
 		staffInv:    map[string]authz.StaffInvitation{},
 		merchantInv: map[string]authz.MerchantInvitation{},
 		staffByHash: map[string]string{},
@@ -410,6 +412,45 @@ func (m *memAuthz) GetCanonicalStoreForMerchant(_ context.Context, merchantID st
 	}
 	return authz.Store{}, errors.New("not found")
 }
+func (m *memAuthz) ListStoresForMerchant(_ context.Context, merchantID string) ([]authz.Store, error) {
+	var out []authz.Store
+	for _, s := range m.stores {
+		if s.MerchantID == merchantID && s.Status != authz.StoreArchived {
+			out = append(out, s)
+		}
+	}
+	// stable: canonical first, then created_at, then id
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			a, b := out[i], out[j]
+			swap := false
+			if a.IsCanonical != b.IsCanonical {
+				swap = !a.IsCanonical && b.IsCanonical
+			} else if !a.CreatedAt.Equal(b.CreatedAt) {
+				swap = a.CreatedAt.After(b.CreatedAt)
+			} else {
+				swap = a.ID > b.ID
+			}
+			if swap {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	return out, nil
+}
+func (m *memAuthz) GetSellerPreferredStoreID(_ context.Context, userID string) (string, error) {
+	if m.prefs == nil {
+		return "", nil
+	}
+	return m.prefs[userID], nil
+}
+func (m *memAuthz) UpsertSellerPreferredStore(_ context.Context, userID, storeID string, _ time.Time) error {
+	if m.prefs == nil {
+		m.prefs = map[string]string{}
+	}
+	m.prefs[userID] = storeID
+	return nil
+}
 func (m *memAuthz) IsNotFound(err error) bool {
 	return err != nil && err.Error() == "not found"
 }
@@ -483,6 +524,107 @@ func TestCrossTenantStoreAccess(t *testing.T) {
 	ae, ok := apperr.AsAppError(err)
 	if !ok || ae.Code != apperr.CodeResourceNotFound {
 		t.Fatalf("want NOT_FOUND, got %#v", err)
+	}
+	_, gErr := svc.StoreAccessGuard(context.Background(), "owner1", "s2", false)
+	if gErr == nil {
+		t.Fatal("StoreAccessGuard expected cross-tenant deny")
+	}
+	ae2, ok := apperr.AsAppError(gErr)
+	if !ok || ae2.Code != apperr.CodeResourceNotFound {
+		t.Fatalf("guard want NOT_FOUND, got %#v", gErr)
+	}
+}
+
+func TestSellerBootstrap_SelectionAndMembership(t *testing.T) {
+	store := newMemAuthz()
+	now := time.Unix(1000, 0).UTC()
+	store.merchants["m1"] = authz.Merchant{ID: "m1", OwnerUserID: "u1", DisplayName: "Shop", Status: authz.MerchantActive}
+	store.members[store.key("m1", "u1")] = authz.MerchantMember{
+		MerchantID: "m1", UserID: "u1", RoleInMerchant: authz.MemberOwner, Status: authz.MemberActive, CreatedAt: now,
+	}
+	store.stores["s_can"] = authz.Store{
+		ID: "s_can", MerchantID: "m1", Slug: "can", Name: "Canonical", Status: authz.StoreActive, IsCanonical: true, CreatedAt: now,
+	}
+	store.stores["s_alt"] = authz.Store{
+		ID: "s_alt", MerchantID: "m1", Slug: "alt", Name: "Alt", Status: authz.StoreActive, IsCanonical: false, CreatedAt: now.Add(time.Hour),
+	}
+	svc := &application.AuthzService{Store: store, Clock: fixedClock{t: now}}
+
+	// No membership → forbidden
+	_, err := svc.GetSellerBootstrap(context.Background(), "nobody")
+	if err == nil {
+		t.Fatal("expected forbidden without membership")
+	}
+	ae, _ := apperr.AsAppError(err)
+	if ae.Code != apperr.CodeForbidden {
+		t.Fatalf("code=%s", ae.Code)
+	}
+
+	// Default current = canonical
+	boot, err := svc.GetSellerBootstrap(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if boot.CanonicalStoreID != "s_can" || boot.CurrentStoreID != "s_can" {
+		t.Fatalf("canonical/current=%s/%s", boot.CanonicalStoreID, boot.CurrentStoreID)
+	}
+	if len(boot.Memberships) != 1 || len(boot.Stores) != 2 {
+		t.Fatalf("memberships=%d stores=%d", len(boot.Memberships), len(boot.Stores))
+	}
+
+	// Preferred valid store
+	if err := svc.SetSellerPreferredStore(context.Background(), "u1", "s_alt"); err != nil {
+		t.Fatal(err)
+	}
+	boot, err = svc.GetSellerBootstrap(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if boot.CurrentStoreID != "s_alt" {
+		t.Fatalf("want preferred s_alt got %s", boot.CurrentStoreID)
+	}
+
+	// Preferred foreign store → fall back to canonical (preference ignored)
+	store.prefs["u1"] = "s_foreign"
+	boot, err = svc.GetSellerBootstrap(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if boot.CurrentStoreID != "s_can" {
+		t.Fatalf("invalid preferred should fall back to canonical, got %s", boot.CurrentStoreID)
+	}
+
+	// Set preferred foreign via API → NOT_FOUND
+	if err := svc.SetSellerPreferredStore(context.Background(), "u1", "s_foreign"); err == nil {
+		t.Fatal("expected deny foreign preferred")
+	}
+}
+
+func TestStoreAccessGuard_MembershipRequired(t *testing.T) {
+	store := newMemAuthz()
+	store.merchants["m1"] = authz.Merchant{ID: "m1", OwnerUserID: "owner", Status: authz.MerchantActive}
+	store.members[store.key("m1", "owner")] = authz.MerchantMember{
+		MerchantID: "m1", UserID: "owner", RoleInMerchant: authz.MemberOwner, Status: authz.MemberActive,
+	}
+	store.stores["s1"] = authz.Store{ID: "s1", MerchantID: "m1", Slug: "s", Status: authz.StoreActive, IsCanonical: true}
+	svc := &application.AuthzService{Store: store}
+
+	access, err := svc.StoreAccessGuard(context.Background(), "owner", "s1", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if access.Store.ID != "s1" || access.Scope.MemberRole != authz.MemberOwner {
+		t.Fatalf("access=%+v", access)
+	}
+
+	// Non-member → NOT_FOUND
+	_, err = svc.StoreAccessGuard(context.Background(), "stranger", "s1", false)
+	if err == nil {
+		t.Fatal("expected not found")
+	}
+	ae, _ := apperr.AsAppError(err)
+	if ae.Code != apperr.CodeResourceNotFound {
+		t.Fatalf("code=%s", ae.Code)
 	}
 }
 

@@ -579,6 +579,47 @@ func (r *AuthzRepo) GetCanonicalStoreForMerchant(ctx context.Context, merchantID
 	return mapStoreRow(row.ID, row.MerchantID, row.Slug, row.Name, row.Status, row.IsCanonical, row.CreatedAt, row.UpdatedAt), nil
 }
 
+func (r *AuthzRepo) ListStoresForMerchant(ctx context.Context, merchantID string) ([]authz.Store, error) {
+	rows, err := r.q.ListStoresForMerchant(ctx, merchantID)
+	if err != nil {
+		return nil, fmt.Errorf("authz: list stores: %w", err)
+	}
+	out := make([]authz.Store, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, mapStoreRow(row.ID, row.MerchantID, row.Slug, row.Name, row.Status, row.IsCanonical, row.CreatedAt, row.UpdatedAt))
+	}
+	return out, nil
+}
+
+func (r *AuthzRepo) GetSellerPreferredStoreID(ctx context.Context, userID string) (string, error) {
+	id, err := r.q.GetSellerPreferredStoreID(ctx, userID)
+	if err != nil {
+		if r.IsNotFound(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("authz: preferred store: %w", err)
+	}
+	if id == nil {
+		return "", nil
+	}
+	return *id, nil
+}
+
+func (r *AuthzRepo) UpsertSellerPreferredStore(ctx context.Context, userID, storeID string, at time.Time) error {
+	var pref *string
+	if storeID != "" {
+		pref = &storeID
+	}
+	if err := r.q.UpsertSellerPreferredStore(ctx, gen.UpsertSellerPreferredStoreParams{
+		UserID:           userID,
+		PreferredStoreID: pref,
+		UpdatedAt:        at,
+	}); err != nil {
+		return fmt.Errorf("authz: upsert preferred store: %w", err)
+	}
+	return nil
+}
+
 func mapRole(row gen.Role) authz.Role {
 	return authz.Role{
 		ID:          row.ID,

@@ -11,7 +11,7 @@ import {
   useSellerFinanceSummary,
   useSellerLedger,
 } from "@/features/finance/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { formatLedgerDate } from "@/shared/format/date";
 import { formatSignedRupiah, rupiah } from "@/shared/format/money";
 import { SectionHead } from "@/shared/ui/section-head";
@@ -27,8 +27,9 @@ const ledgerIcon: Record<string, LucideIcon> = {
 };
 
 export function Balance() {
-  const { data: summary } = useSellerFinanceSummary(DEMO_STORE_ID);
-  const { data: ledger } = useSellerLedger(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: summary } = useSellerFinanceSummary(storeId);
+  const { data: ledger } = useSellerLedger(storeId);
   if (!summary || !ledger) return null;
 
   const monthRows = [

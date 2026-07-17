@@ -2525,20 +2525,57 @@ paths:
   /v1/seller/me/merchant:
     get:
       operationId: sellerMeMerchant
-      summary: Current seller merchant membership
+      summary: Seller bootstrap — merchant, memberships, stores, current store (INT-150)
+      description: |
+        Returns primary merchant, all active memberships with store-scoped capabilities,
+        allowed stores, canonicalStoreId, and server-selected currentStoreId.
+        Selection: valid preferred store → canonical → first stable store.
+        Cross-tenant store IDs are never returned. Membership required (403 if none).
       tags:
       - seller
       security:
       - sessionCookie: []
       responses:
         '200':
-          description: Active merchant membership
+          description: Seller bootstrap snapshot
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessEnvelope'
         '403':
           description: No active merchant membership
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemEnvelope'
+  /v1/seller/me/current-store:
+    put:
+      operationId: sellerSetCurrentStore
+      summary: Persist preferred current store (must be membership-owned)
+      tags:
+      - seller
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - storeId
+              properties:
+                storeId:
+                  type: string
+      responses:
+        '200':
+          description: Updated current store selection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessEnvelope'
+        '404':
+          description: Unknown or cross-tenant store
           content:
             application/json:
               schema:

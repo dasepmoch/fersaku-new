@@ -3,7 +3,7 @@
 import { Check, Eye, LockKeyhole, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 import {
   createImpersonationSession,
   IMPERSONATION_TTLS,
@@ -86,7 +86,7 @@ export function ImpersonationDialog({
       setStorageError(true);
       return;
     }
-    appendMockAuditEvent({
+    appendClientAuditEvent({
       actor: session.actor,
       action: "impersonation.started",
       target: merchantId,

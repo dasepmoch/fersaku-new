@@ -9,7 +9,7 @@ import {
   useSellerWithdrawalLock,
   useSellerWithdrawalQuoteMutation,
 } from "@/features/finance/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { rupiah } from "@/shared/format/money";
 import { FieldInput, FormGroup } from "@/shared/ui/form-controls";
 import { surfaceCard } from "@/shared/ui/styles";
@@ -22,12 +22,13 @@ import {
 import type { SellerWithdrawal } from "@/features/finance/contracts";
 
 export function WithdrawalForm() {
+  const storeId = useSellerStoreId();
   const [submitted, setSubmitted] = useState<SellerWithdrawal | null>(null);
   const [amountInput, setAmountInput] = useState("5000000");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { data: summary } = useSellerFinanceSummary(DEMO_STORE_ID);
-  const { data: lock } = useSellerWithdrawalLock(DEMO_STORE_ID);
+  const { data: summary } = useSellerFinanceSummary(storeId);
+  const { data: lock } = useSellerWithdrawalLock(storeId);
   const quoteMutation = useSellerWithdrawalQuoteMutation();
   const createMutation = useCreateSellerWithdrawalMutation();
   if (!summary || !lock) return null;
@@ -64,7 +65,7 @@ export function WithdrawalForm() {
     try {
       if (!quote) {
         await quoteMutation.mutateAsync({
-          storeId: DEMO_STORE_ID,
+          storeId: storeId,
           bankAccountId: "bank_bca_4821",
           amount: requestAmount,
         });
@@ -72,10 +73,10 @@ export function WithdrawalForm() {
       }
       if (password.trim().length < 8) return;
       const withdrawal = await createMutation.mutateAsync({
-        storeId: DEMO_STORE_ID,
+        storeId: storeId,
         quoteId: quote.id,
         reauthProof: "mock-password-reauth",
-        idempotencyKey: `seller-withdrawal:${DEMO_STORE_ID}:${quote.id}:${Date.now()}`,
+        idempotencyKey: `seller-withdrawal:${storeId}:${quote.id}:${Date.now()}`,
       });
       setSubmitted(withdrawal);
     } catch {

@@ -740,6 +740,18 @@ type MfaFactor struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+type MfaRecentProof struct {
+	ID         string             `json:"id"`
+	UserID     string             `json:"user_id"`
+	SessionID  string             `json:"session_id"`
+	Purpose    string             `json:"purpose"`
+	ProofHash  string             `json:"proof_hash"`
+	Factor     string             `json:"factor"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	ConsumedAt pgtype.Timestamptz `json:"consumed_at"`
+	CreatedAt  time.Time          `json:"created_at"`
+}
+
 type MfaRecoveryCode struct {
 	ID         string             `json:"id"`
 	UserID     string             `json:"user_id"`
@@ -1192,6 +1204,12 @@ type SecretClaim struct {
 	IssuanceRequestID   *string            `json:"issuance_request_id"`
 	CreatedAt           time.Time          `json:"created_at"`
 	UpdatedAt           time.Time          `json:"updated_at"`
+}
+
+type SellerStorePreference struct {
+	UserID           string    `json:"user_id"`
+	PreferredStoreID *string   `json:"preferred_store_id"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type SellerWebhookEndpoint struct {

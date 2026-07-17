@@ -337,6 +337,141 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("INT-170: production presentation must not import feature mock as authority", () => {
+    /**
+     * Dependency-graph gate (not broad text grep): presentation modules may not
+     * resolve-import feature mock fixtures, DEMO_STORE_ID authority, or browser
+     * mock audit as business authority.
+     *
+     * Explicit exemptions (INT-170): mock adapters, hooks placeholder wiring,
+     * tests, shared mock runtime, theme storage, static docs, api playground.
+     */
+    const violations: string[] = [];
+
+    const isExemptPresentation = (relative: string) => {
+      if (relative.startsWith("tests/")) return true;
+      if (relative.startsWith("shared/mock/")) return true;
+      if (relative.endsWith("/mock.ts") || relative.endsWith("/mock.tsx"))
+        return true;
+      if (relative.endsWith("/mock-audit.ts")) return true;
+      if (relative.endsWith("/client-audit.ts")) return true;
+      if (relative.includes("/data/") && relative.endsWith(".ts")) return true;
+      if (relative.endsWith("/api.ts")) return true;
+      if (relative.endsWith("/contracts.ts")) return true;
+      if (relative.endsWith("/hooks.ts") || relative.endsWith("/hooks.tsx"))
+        return true;
+      if (relative.includes("/impersonation/")) return true;
+      if (relative === "components/api-playground.tsx") return true;
+      if (relative === "components/mock-interaction-boundary.tsx") return true;
+      // Shared seller bootstrap / current-store gate DEMO_STORE_ID for mock only
+      if (
+        relative === "shared/seller/bootstrap-api.ts" ||
+        relative === "shared/seller/current-store.tsx" ||
+        relative === "shared/config/demo.ts"
+      ) {
+        return true;
+      }
+      // Finance demo-data is fixture helper used by mock adapters
+      if (relative === "features/finance/demo-data.ts") return true;
+      if (relative === "features/finance/mock-withdrawals.ts") return true;
+      // Shells currently host prototype impersonation chrome (domain follow-up)
+      if (
+        relative === "features/seller/components/dashboard-shell.tsx" ||
+        relative === "features/admin/components/admin-shell.tsx"
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    const isFeatureMockModule = (target: string) => {
+      if (!target.startsWith("features/")) return false;
+      if (target.endsWith("/mock.ts") || target.endsWith("/mock.tsx"))
+        return true;
+      if (target.endsWith("/mock-audit.ts")) return true;
+      // mock-* helpers under feature data (not client-audit facade)
+      if (/\/mock[-_]/.test(target) && !target.endsWith("/client-audit.ts"))
+        return true;
+      return false;
+    };
+
+    for (const file of files) {
+      const relative = relativeSource(file);
+      if (isExemptPresentation(relative)) continue;
+
+      // Focus on presentation surfaces: app routes, components, feature screens/ui
+      const isPresentation =
+        relative.startsWith("app/") ||
+        relative.startsWith("components/") ||
+        (relative.startsWith("features/") &&
+          (relative.includes("/screens/") ||
+            relative.includes("/ui/") ||
+            relative.includes("/components/") ||
+            relative.includes("/domains/") ||
+            relative.includes("/panels/") ||
+            relative.includes("/preview/") ||
+            relative.endsWith(".tsx")));
+      if (!isPresentation) continue;
+
+      for (const specifier of importsOf(file)) {
+        const imported = resolveImport(file, specifier);
+        if (!imported) continue;
+        const target = relativeSource(imported);
+
+        if (isFeatureMockModule(target)) {
+          violations.push(`${relative} -> ${target} (feature mock)`);
+        }
+
+        // Browser mock audit must not be presentation authority outside shells/adapters
+        if (target === "features/admin/data/mock-audit.ts") {
+          violations.push(`${relative} -> ${target} (mock audit)`);
+        }
+      }
+
+      // DEMO_STORE_ID as authority: app pages must gate with domain-source mock
+      const content = readFileSync(file, "utf8");
+      if (
+        relative.startsWith("app/") &&
+        /DEMO_STORE_ID/.test(content) &&
+        !/getDomainSource|shouldUseMockFixtures|isDomainMock/.test(content)
+      ) {
+        violations.push(
+          `${relative}: DEMO_STORE_ID without domain-source mock gate`,
+        );
+      }
+    }
+
+    expect(
+      violations,
+      "API presentation must not reach feature mock / unguarded DEMO_STORE_ID / mock audit authority",
+    ).toEqual([]);
+  });
+
+  it("INT-170: shared foundation must not import feature mock or mock-audit", () => {
+    const violations: string[] = [];
+    for (const file of files.filter((candidate) =>
+      relativeSource(candidate).startsWith("shared/"),
+    )) {
+      const relative = relativeSource(file);
+      if (relative.startsWith("shared/mock/")) continue;
+      for (const specifier of importsOf(file)) {
+        const imported = resolveImport(file, specifier);
+        if (!imported) continue;
+        const target = relativeSource(imported);
+        if (
+          target.startsWith("features/") &&
+          (target.includes("/mock") || target.endsWith("mock-audit.ts"))
+        ) {
+          violations.push(`${relative} -> ${target}`);
+        }
+      }
+    }
+    expect(
+      violations,
+      "shared/* must not depend on feature mock / mock-audit",
+    ).toEqual([]);
+  });
+
   it("has no cycles between internal source modules", () => {
     const graph = new Map<string, string[]>();
     for (const file of files) {

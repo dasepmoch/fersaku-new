@@ -2,6 +2,10 @@
 
 import { CheckCircle2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  isMockInteractionFeedbackEnabled,
+  mockInteractionFeedbackMessage,
+} from "@/shared/data/mock-interaction";
 
 export function MockInteractionBoundary({
   children,
@@ -21,6 +25,9 @@ export function MockInteractionBoundary({
   );
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // INT-170: mock-only feedback is gated off in API mode without markup redesign.
+    if (!isMockInteractionFeedbackEnabled()) return;
+
     const button = (event.target as HTMLElement).closest("button");
     if (
       !button ||
@@ -35,7 +42,7 @@ export function MockInteractionBoundary({
       button.getAttribute("title") ||
       button.textContent?.trim();
     if (!label) return;
-    setMessage(`${label} diproses dalam mode mock.`);
+    setMessage(mockInteractionFeedbackMessage(label));
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setMessage(""), 2600);
   };

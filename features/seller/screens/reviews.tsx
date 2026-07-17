@@ -13,13 +13,14 @@ import {
   useSellerRatingSummary,
   useSellerReviews,
 } from "@/features/seller/reviews/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 
 function SellerReviews() {
+  const storeId = useSellerStoreId();
   // Keep query layer wired; local state owns reply/report mutations for mock UX.
-  useSellerReviews(DEMO_STORE_ID);
+  useSellerReviews(storeId);
   const { data: summary = demoRatingSummary() } =
-    useSellerRatingSummary(DEMO_STORE_ID);
+    useSellerRatingSummary(storeId);
   const [items, setItems] = useState(() => demoReviews());
   const [replying, setReplying] = useState<string | null>(null);
   const [reply, setReply] = useState("");

@@ -18,8 +18,10 @@ export {
   LOADING_SNAPSHOT,
   claimsCacheIdentity,
   createMockClaims,
+  isMfaPendingClaims,
   mapAuthSessionToClaims,
   normalizeSessionSurface,
+  statusFromClaims,
 } from "./session-model";
 
 export {

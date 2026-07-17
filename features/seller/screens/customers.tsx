@@ -11,7 +11,7 @@ import {
   useSellerCustomers,
 } from "@/features/seller/customers/hooks";
 
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { SectionHead } from "@/shared/ui/section-head";
@@ -19,7 +19,8 @@ import { SectionHead } from "@/shared/ui/section-head";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 
 function OrderTable({ compact = false }: { compact?: boolean }) {
-  const { data: customers = [] } = useSellerCustomers(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: customers = [] } = useSellerCustomers(storeId);
   const source = compact ? customers.slice(0, 4) : customers;
   const { pageRows, pagination } = useClientPagination(source);
   return (
@@ -81,7 +82,8 @@ function OrderTable({ compact = false }: { compact?: boolean }) {
   );
 }
 function Customers() {
-  const { data: customers } = useSellerCustomers(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: customers } = useSellerCustomers(storeId);
   const data = customers ?? [];
   const { pageRows, pagination } = useClientPagination(data);
   return (
@@ -144,7 +146,8 @@ function Customers() {
   );
 }
 function CustomerDetail({ id }: { id: string }) {
-  const { data: customer } = useSellerCustomer(DEMO_STORE_ID, id);
+  const storeId = useSellerStoreId();
+  const { data: customer } = useSellerCustomer(storeId, id);
   if (!customer) return null;
   const o = customer;
   return (

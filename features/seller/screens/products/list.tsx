@@ -4,11 +4,12 @@ import { MoreHorizontal } from "lucide-react";
 import { ProductArt } from "@/components/product-art";
 import { useSellerProducts } from "@/features/catalog/hooks";
 import { rupiah } from "@/lib/utils";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { FilterButton, SearchBox, sellerCard } from "./pieces";
 
 export function Products() {
-  const { data: products = [] } = useSellerProducts(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: products = [] } = useSellerProducts(storeId);
   return (
     <section className={sellerCard}>
       <div className="hairline flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center">

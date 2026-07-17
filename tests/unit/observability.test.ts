@@ -47,12 +47,19 @@ describe("observability redaction", () => {
 
     expect(reporter.captureError).toHaveBeenCalledWith({
       error: expect.any(Error),
-      context: { requestId: "req_1", authorization: "[REDACTED]" },
+      context: expect.objectContaining({
+        requestId: "req_1",
+        authorization: "[REDACTED]",
+      }),
+      redactedError: expect.objectContaining({ name: "Error" }),
     });
     expect(reporter.captureMetric).toHaveBeenCalledWith({
       name: "checkout.completed",
       value: 1,
-      context: { requestId: "req_1", authorization: "[REDACTED]" },
+      context: expect.objectContaining({
+        requestId: "req_1",
+        authorization: "[REDACTED]",
+      }),
     });
     expect(context).toEqual({
       requestId: "req_1",

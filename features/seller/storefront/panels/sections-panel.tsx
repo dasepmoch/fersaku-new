@@ -9,7 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState, type DragEvent } from "react";
-import { demoProducts as products } from "@/features/catalog/mock";
+import { getStorefrontBuilderPreviewProducts } from "@/features/catalog/api";
 import { cn, rupiah } from "@/lib/utils";
 import type { BuilderConfig } from "../types";
 import { PanelTitle } from "../controls/panel-title";
@@ -145,7 +145,7 @@ export function SectionsPanel({
           Choose products promoted at the top of the collection.
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {products.slice(0, 6).map((product) => (
+          {getStorefrontBuilderPreviewProducts().slice(0, 6).map((product) => (
             <button
               key={product.id}
               onClick={() => toggleFeatured(product.id)}

@@ -580,6 +580,19 @@ func (q *Queries) GetRoleByID(ctx context.Context, id string) (Role, error) {
 	return i, err
 }
 
+const getSellerPreferredStoreID = `-- name: GetSellerPreferredStoreID :one
+SELECT preferred_store_id
+FROM seller_store_preferences
+WHERE user_id = $1
+`
+
+func (q *Queries) GetSellerPreferredStoreID(ctx context.Context, userID string) (*string, error) {
+	row := q.db.QueryRow(ctx, getSellerPreferredStoreID, userID)
+	var preferred_store_id *string
+	err := row.Scan(&preferred_store_id)
+	return preferred_store_id, err
+}
+
 const getStaffInvitationByID = `-- name: GetStaffInvitationByID :one
 SELECT id, email_normalized, email_display, inviter_user_id, role_id, token_hash,
        status, expires_at, accepted_at, accepted_user_id, revoked_at, revoked_by,
@@ -1378,6 +1391,80 @@ func (q *Queries) ListStaffInvitations(ctx context.Context, limit int32) ([]Staf
 	return items, nil
 }
 
+const listStoresForMerchant = `-- name: ListStoresForMerchant :many
+
+
+SELECT id, merchant_id, slug, name, status, is_canonical,
+       bio, address, accent_color,
+       onboarding_state, onboarding_step, onboarding_completed_at, onboarding_progress,
+       storefront_revision, published_revision,
+       created_at, updated_at
+FROM stores
+WHERE merchant_id = $1
+  AND status <> 'ARCHIVED'
+ORDER BY is_canonical DESC, created_at ASC, id ASC
+`
+
+type ListStoresForMerchantRow struct {
+	ID                    string             `json:"id"`
+	MerchantID            string             `json:"merchant_id"`
+	Slug                  string             `json:"slug"`
+	Name                  string             `json:"name"`
+	Status                string             `json:"status"`
+	IsCanonical           bool               `json:"is_canonical"`
+	Bio                   string             `json:"bio"`
+	Address               string             `json:"address"`
+	AccentColor           string             `json:"accent_color"`
+	OnboardingState       string             `json:"onboarding_state"`
+	OnboardingStep        string             `json:"onboarding_step"`
+	OnboardingCompletedAt pgtype.Timestamptz `json:"onboarding_completed_at"`
+	OnboardingProgress    []byte             `json:"onboarding_progress"`
+	StorefrontRevision    int64              `json:"storefront_revision"`
+	PublishedRevision     int64              `json:"published_revision"`
+	CreatedAt             time.Time          `json:"created_at"`
+	UpdatedAt             time.Time          `json:"updated_at"`
+}
+
+// InsertAuditEventNote removed: AuthzRepo uses callAppendAuditEvent (BE-530).
+// INT-150 store bootstrap / preference
+func (q *Queries) ListStoresForMerchant(ctx context.Context, merchantID string) ([]ListStoresForMerchantRow, error) {
+	rows, err := q.db.Query(ctx, listStoresForMerchant, merchantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStoresForMerchantRow{}
+	for rows.Next() {
+		var i ListStoresForMerchantRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MerchantID,
+			&i.Slug,
+			&i.Name,
+			&i.Status,
+			&i.IsCanonical,
+			&i.Bio,
+			&i.Address,
+			&i.AccentColor,
+			&i.OnboardingState,
+			&i.OnboardingStep,
+			&i.OnboardingCompletedAt,
+			&i.OnboardingProgress,
+			&i.StorefrontRevision,
+			&i.PublishedRevision,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserRoles = `-- name: ListUserRoles :many
 SELECT ur.user_id, ur.role_id, ur.assigned_at, ur.assigned_by, r.code, r.name, r.is_system
 FROM user_roles ur
@@ -1570,6 +1657,25 @@ func (q *Queries) UpdateRoleOptimistic(ctx context.Context, arg UpdateRoleOptimi
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const upsertSellerPreferredStore = `-- name: UpsertSellerPreferredStore :exec
+INSERT INTO seller_store_preferences (user_id, preferred_store_id, updated_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE
+SET preferred_store_id = EXCLUDED.preferred_store_id,
+    updated_at = EXCLUDED.updated_at
+`
+
+type UpsertSellerPreferredStoreParams struct {
+	UserID           string    `json:"user_id"`
+	PreferredStoreID *string   `json:"preferred_store_id"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+func (q *Queries) UpsertSellerPreferredStore(ctx context.Context, arg UpsertSellerPreferredStoreParams) error {
+	_, err := q.db.Exec(ctx, upsertSellerPreferredStore, arg.UserID, arg.PreferredStoreID, arg.UpdatedAt)
+	return err
 }
 
 const userHasPermission = `-- name: UserHasPermission :one

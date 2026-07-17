@@ -9,7 +9,7 @@ import {
   useSellerProduct,
 } from "@/features/catalog/hooks";
 import { compactRupiah, rupiah } from "@/lib/utils";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import {
   FormGroup,
   Input,
@@ -20,7 +20,8 @@ import {
 } from "./pieces";
 
 export function ProductDetail({ id }: { id: string }) {
-  const { data: product } = useSellerProduct(DEMO_STORE_ID, id);
+  const storeId = useSellerStoreId();
+  const { data: product } = useSellerProduct(storeId, id);
   const publishMutation = usePublishSellerProductMutation();
   const [tab, setTab] = useState("Detail");
   const [archived, setArchived] = useState(false);
@@ -50,7 +51,7 @@ export function ProductDetail({ id }: { id: string }) {
   const publishRelease = async () => {
     try {
       await publishMutation.mutateAsync({
-        storeId: DEMO_STORE_ID,
+        storeId: storeId,
         productId: id,
         reason: "seller_product_release_publish",
       });

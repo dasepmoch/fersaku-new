@@ -6,7 +6,7 @@ import { Network, Pause, Play, Siren } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { emergencySeed } from "./data";
 import { Field, Modal } from "./pieces";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 
 const maintenanceBannerId = "global-maintenance-banner";
 
@@ -41,7 +41,7 @@ export function EmergencySwitchboard() {
           item.id === pending.id ? { ...item, enabled: !item.enabled } : item,
         ),
       );
-      appendMockAuditEvent({
+      appendClientAuditEvent({
         actor: "admin@fersaku.id",
         action: `emergency.${pending.enabled ? "paused" : "enabled"}`,
         target: pending.id,
@@ -55,7 +55,7 @@ export function EmergencySwitchboard() {
     if (!isBannerPending) return;
     const next = !banner;
     setBanner(next);
-    appendMockAuditEvent({
+    appendClientAuditEvent({
       actor: "admin@fersaku.id",
       action: `emergency.banner.${next ? "enabled" : "disabled"}`,
       target: maintenanceBannerId,

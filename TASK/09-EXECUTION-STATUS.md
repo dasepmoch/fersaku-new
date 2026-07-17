@@ -74,10 +74,10 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `INT-110` | P0 | INT-030, INT-100 | FND | completed @nikki/opencode · 2026-07-17 12:25 WIB · claim released | Cookie-forwarding private SSR client | TASK/evidence/INT-110/20260717-1225-nikki.md · shared/api/server-http-client.ts · server-cookie-forward.ts · SERVER-SSR-POLICY.md · tests/unit/server-*.test.ts |
 | `[x]` | `INT-130` | P0 | INT-000, INT-030 | FND | completed @nikki/opencode · 2026-07-17 12:30 WIB · claim released | Recoverable session-bound CSRF | TASK/evidence/INT-130/20260717-1230-nikki.md · shared/api/csrf.ts · middleware/csrf.go · auth RotateSessionCSRF · tests/unit/csrf.test.ts |
 | `[x]` | `INT-120` | P0 | INT-025, INT-100, INT-110, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:33 WIB · claim released | Session/bootstrap/claims/guards | TASK/evidence/INT-120/20260717-1233-nikki.md |
-| `[ ]` | `INT-140` | P0 | INT-120, INT-130 | FND | — | Pre-MFA global gate + recent proof | — |
-| `[ ]` | `INT-150` | P0 | INT-120 | FND | — | Membership capabilities/current store/tenant guards | — |
-| `[ ]` | `INT-160` | P1 | INT-100, INT-120, INT-150 | FND | — | Safe query/cache/mutation/idempotency policy | — |
-| `[ ]` | `INT-170` | P1 | INT-100, INT-120, UI-050 | FND | — | Error/redaction/mock reachability boundary | — |
+| `[x]` | `INT-140` | P0 | INT-120, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:39 WIB · claim released | Pre-MFA global gate + recent proof | TASK/evidence/INT-140/20260717-1239-nikki.md |
+| `[x]` | `INT-150` | P0 | INT-120 | FND | completed @nikki/opencode · 2026-07-17 12:45 WIB · claim released | Membership capabilities/current store/tenant guards | TASK/evidence/INT-150/20260717-1245-nikki.md |
+| `[x]` | `INT-160` | P1 | INT-100, INT-120, INT-150 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Safe query/cache/mutation/idempotency policy | TASK/evidence/INT-160/20260717-1300-nikki.md · shared/query/* · tests/unit/int-160-query-mutation.test.ts |
+| `[x]` | `INT-170` | P1 | INT-100, INT-120, UI-050 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Error/redaction/mock reachability boundary | TASK/evidence/INT-170/20260717-1300-nikki.md · shared/observability/* · shared/data/mock-interaction.ts · shared/api/error-presentation.ts · tests/unit/int-170-error-mock-observability.test.ts · architecture-boundaries.test.ts |
 | `[ ]` | `INT-175` | P1 | INT-000, INT-120; INT-180/185 if capability active | FND/RTM | — | User-scoped personal media contract | — |
 | `[ ]` | `INT-180` | P0 live | INT-000, INT-030 | RTM | — | Real adapters, callback security, truthful G4 | — |
 | `[ ]` | `INT-185` | P0 live | INT-150, INT-180 | RTM | — | HA scheduler/lifecycle jobs | — |

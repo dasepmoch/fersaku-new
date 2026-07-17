@@ -33,6 +33,14 @@ type IdentityStore interface {
 	UpdateSessionCSRFHash(ctx context.Context, sessionID, csrfHash string) error
 	SetSessionMFAVerified(ctx context.Context, sessionID string, at time.Time) error
 
+	// Recent MFA step-up proofs (INT-140): hash at rest, session/purpose bound.
+	InsertRecentMFAProof(ctx context.Context, p auth.RecentMFAProof) error
+	// ConsumeRecentMFAProofByHash marks a matching unconsumed, unexpired proof consumed.
+	// Returns ErrMFAProofInvalid / ErrMFAProofExpired / ErrMFAProofPurpose as appropriate.
+	ConsumeRecentMFAProofByHash(ctx context.Context, userID, sessionID, purpose, proofHash string, now time.Time) error
+	RevokeRecentMFAProofsForSession(ctx context.Context, sessionID string, now time.Time) error
+	RevokeRecentMFAProofsForUser(ctx context.Context, userID string, now time.Time) error
+
 	InsertChallenge(ctx context.Context, c auth.Challenge) error
 	GetChallengeByID(ctx context.Context, id string) (auth.Challenge, error)
 	ConsumeChallenge(ctx context.Context, purpose auth.ChallengePurpose, tokenHash string, now time.Time) (auth.Challenge, error)

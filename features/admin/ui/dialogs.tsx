@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Check, LockKeyhole, X } from "lucide-react";
 import { useState } from "react";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 
 export function ControlDialog({
   title,
@@ -42,7 +42,7 @@ export function ControlDialog({
     try {
       await onConfirm(auditReason);
       if (!auditHandledExternally) {
-        appendMockAuditEvent({
+        appendClientAuditEvent({
           actor: "admin@fersaku.id",
           action: `admin.${title
             .trim()

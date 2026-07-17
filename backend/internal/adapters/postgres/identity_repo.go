@@ -225,6 +225,113 @@ func (r *IdentityRepo) SetSessionMFAVerified(ctx context.Context, tx pgx.Tx, ses
 	})
 }
 
+// InsertRecentMFAProof stores a hashed step-up proof (INT-140).
+func (r *IdentityRepo) InsertRecentMFAProof(ctx context.Context, tx pgx.Tx, p auth.RecentMFAProof) error {
+	const q = `
+INSERT INTO mfa_recent_proofs (
+    id, user_id, session_id, purpose, proof_hash, factor, expires_at, consumed_at, created_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	var consumed any
+	if p.ConsumedAt != nil {
+		consumed = *p.ConsumedAt
+	}
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(ctx, q, p.ID, p.UserID, p.SessionID, p.Purpose, p.ProofHash, string(p.Factor), p.ExpiresAt, consumed, p.CreatedAt)
+	} else {
+		_, err = r.pool.Exec(ctx, q, p.ID, p.UserID, p.SessionID, p.Purpose, p.ProofHash, string(p.Factor), p.ExpiresAt, consumed, p.CreatedAt)
+	}
+	return err
+}
+
+// ConsumeRecentMFAProofByHash single-use consumes a matching proof or returns domain errors.
+func (r *IdentityRepo) ConsumeRecentMFAProofByHash(ctx context.Context, tx pgx.Tx, userID, sessionID, purpose, proofHash string, now time.Time) error {
+	// Inspect first for stable problem codes (expired vs invalid vs purpose).
+	const sel = `
+SELECT id, user_id, session_id, purpose, expires_at, consumed_at
+FROM mfa_recent_proofs
+WHERE proof_hash = $1
+LIMIT 1`
+	var (
+		id, uid, sid, purp string
+		expires            time.Time
+		consumed           *time.Time
+	)
+	var err error
+	if tx != nil {
+		err = tx.QueryRow(ctx, sel, proofHash).Scan(&id, &uid, &sid, &purp, &expires, &consumed)
+	} else {
+		err = r.pool.QueryRow(ctx, sel, proofHash).Scan(&id, &uid, &sid, &purp, &expires, &consumed)
+	}
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return auth.ErrMFAProofInvalid
+		}
+		return err
+	}
+	if uid != userID || sid != sessionID {
+		return auth.ErrMFAProofInvalid
+	}
+	if purp != purpose {
+		return auth.ErrMFAProofPurpose
+	}
+	if consumed != nil {
+		return auth.ErrMFAProofInvalid
+	}
+	if !expires.After(now) {
+		return auth.ErrMFAProofExpired
+	}
+	const upd = `
+UPDATE mfa_recent_proofs
+SET consumed_at = $2
+WHERE id = $1 AND consumed_at IS NULL AND expires_at > $2`
+	var cmd interface{ RowsAffected() int64 }
+	if tx != nil {
+		ct, e := tx.Exec(ctx, upd, id, now)
+		err = e
+		cmd = ct
+	} else {
+		ct, e := r.pool.Exec(ctx, upd, id, now)
+		err = e
+		cmd = ct
+	}
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return auth.ErrMFAProofInvalid
+	}
+	return nil
+}
+
+func (r *IdentityRepo) RevokeRecentMFAProofsForSession(ctx context.Context, tx pgx.Tx, sessionID string, now time.Time) error {
+	const q = `
+UPDATE mfa_recent_proofs
+SET consumed_at = $2
+WHERE session_id = $1 AND consumed_at IS NULL`
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(ctx, q, sessionID, now)
+	} else {
+		_, err = r.pool.Exec(ctx, q, sessionID, now)
+	}
+	return err
+}
+
+func (r *IdentityRepo) RevokeRecentMFAProofsForUser(ctx context.Context, tx pgx.Tx, userID string, now time.Time) error {
+	const q = `
+UPDATE mfa_recent_proofs
+SET consumed_at = $2
+WHERE user_id = $1 AND consumed_at IS NULL`
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(ctx, q, userID, now)
+	} else {
+		_, err = r.pool.Exec(ctx, q, userID, now)
+	}
+	return err
+}
+
 func (r *IdentityRepo) InsertChallenge(ctx context.Context, tx pgx.Tx, c auth.Challenge) error {
 	return r.queries(tx).InsertChallenge(ctx, gen.InsertChallengeParams{
 		ID:          c.ID,

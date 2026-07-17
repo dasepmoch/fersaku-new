@@ -17,7 +17,7 @@ import { useSellerProducts } from "@/features/catalog/hooks";
 import { useSellerOrders } from "@/features/orders/hooks";
 import { useSellerRevenue } from "@/features/finance/hooks";
 import { compactRupiah, rupiah } from "@/lib/utils";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { SectionHead } from "@/shared/ui/section-head";
 import { StatusBadge } from "@/shared/ui/status-badge";
 import { surfaceCard } from "@/shared/ui/styles";
@@ -64,9 +64,10 @@ const metrics: Metric[] = [
 ];
 
 function Overview() {
-  const { data: products = [] } = useSellerProducts(DEMO_STORE_ID);
-  const { data: orderPage } = useSellerOrders(DEMO_STORE_ID);
-  const { data: revenue = [] } = useSellerRevenue(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: products = [] } = useSellerProducts(storeId);
+  const { data: orderPage } = useSellerOrders(storeId);
+  const { data: revenue = [] } = useSellerRevenue(storeId);
   const orders = orderPage?.items ?? [];
 
   return (

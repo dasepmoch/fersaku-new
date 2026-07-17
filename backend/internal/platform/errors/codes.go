@@ -7,6 +7,8 @@ const (
 	CodeAuthInvalidCredentials = "AUTH_INVALID_CREDENTIALS"
 	CodeAuthSessionExpired     = "AUTH_SESSION_EXPIRED"
 	CodeAuthMFARequired        = "AUTH_MFA_REQUIRED"
+	CodeAuthMFAProofInvalid    = "AUTH_MFA_PROOF_INVALID"
+	CodeAuthMFAProofExpired    = "AUTH_MFA_PROOF_EXPIRED"
 	CodeAuthCSRFInvalid        = "AUTH_CSRF_INVALID"
 	CodeForbidden              = "FORBIDDEN"
 	CodeResourceNotFound       = "RESOURCE_NOT_FOUND"

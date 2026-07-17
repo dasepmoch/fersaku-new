@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import type { InventoryField } from "@/features/seller/inventory/mock";
+import type { InventoryField } from "@/features/seller/inventory/contracts";
 
 export function CredentialFormatTab({
   fields,

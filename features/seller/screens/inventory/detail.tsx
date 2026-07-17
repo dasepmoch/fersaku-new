@@ -1,14 +1,11 @@
 "use client";
 
 import { Boxes } from "lucide-react";
-import { useState } from "react";
-import {
-  canvaSchema,
-  stockItems,
-  type InventoryField,
-} from "@/features/seller/inventory/mock";
+import { useMemo, useState } from "react";
+import type { InventoryField } from "@/features/seller/inventory/contracts";
+import { getInventoryDetailLocalSeed } from "@/features/seller/inventory/api";
 import { useSellerInventoryProduct } from "@/features/seller/inventory/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { CredentialFormatTab } from "./credential-format-tab";
 import {
@@ -20,9 +17,13 @@ import { sellerCard } from "./pieces";
 import { StockItemsTab } from "./stock-items-tab";
 
 export function InventoryDetail({ id }: { id: string }) {
-  const { data: product } = useSellerInventoryProduct(DEMO_STORE_ID, id);
+  const storeId = useSellerStoreId();
+  const { data: product } = useSellerInventoryProduct(storeId, id);
   const [tab, setTab] = useState("Stock items");
-  const [fields, setFields] = useState<InventoryField[]>(canvaSchema);
+  const localSeed = useMemo(() => getInventoryDetailLocalSeed(), []);
+  const [fields, setFields] = useState<InventoryField[]>(
+    () => localSeed.fields,
+  );
   const [raw, setRaw] = useState(
     "new.user01@inboxkit.id|Secure#001|https://canva.com/brand/join/NEW01\nnew.user02@inboxkit.id|Secure#002|https://canva.com/brand/join/NEW02",
   );
@@ -30,7 +31,7 @@ export function InventoryDetail({ id }: { id: string }) {
   const [showSecrets, setShowSecrets] = useState(false);
   const [updates, setUpdates] = useState(false);
   const { pageRows: stockPageRows, pagination: stockPagination } =
-    useClientPagination(stockItems);
+    useClientPagination(localSeed.stockItems);
   const addField = () =>
     setFields((current) => [
       ...current,

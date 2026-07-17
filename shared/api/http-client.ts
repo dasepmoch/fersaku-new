@@ -7,7 +7,11 @@ import {
   parseRetryAfterHeader,
 } from "./error-policy";
 import { PROBLEM_CODES } from "./problem-codes";
-import { reportError } from "@/shared/observability/reporter";
+import {
+  METRIC_NAMES,
+  reportOperationMetric,
+  reportTransportError,
+} from "@/shared/observability/reporter";
 
 export { ApiError } from "./api-error";
 
@@ -50,6 +54,11 @@ export type RequestOptions<TBody, TResponse> = Omit<
   idempotencyKey?: string;
   auditReason?: string;
   recentMfaProof?: string;
+  /**
+   * When true, attach memory recent MFA proof via session hooks if explicit
+   * `recentMfaProof` is omitted (INT-140 privileged ops).
+   */
+  requireRecentMfa?: boolean;
   ifMatch?: string;
   /** Skip automatic CSRF injection from session hooks (rare). */
   skipCsrf?: boolean;
@@ -62,6 +71,8 @@ export type RequestOptions<TBody, TResponse> = Omit<
 export type HttpClientSessionHooks = {
   /** Return current CSRF token for cookie-auth unsafe methods, or undefined. */
   getCsrfToken?: () => string | undefined | Promise<string | undefined>;
+  /** Return in-memory recent MFA proof for privileged ops (INT-140). */
+  getRecentMfaProof?: () => string | undefined | Promise<string | undefined>;
   /** Called once per 401 session-expired burst (deduped). */
   onSessionExpired?: (error: ApiError) => void;
 };
@@ -242,20 +253,72 @@ export function resetSessionExpiredDedupe(): void {
 
 function reportTransportDiagnostic(
   error: ApiError,
-  context: Record<string, unknown>,
+  context: {
+    path?: string;
+    phase?: string;
+    operationId?: string;
+    routeTemplate?: string;
+    surface?: string;
+  },
 ): void {
-  // Never attach body/headers/secrets — requestId + codes only
+  // Never attach body/headers/secrets — requestId + codes only (INT-170).
   const classified = classifyApiError(error.status, error.problem, {
     retryAfterSeconds: error.retryAfterSeconds,
   });
-  reportError(error, {
+  // Prefer routeTemplate over raw path with resource IDs when provided.
+  const routeTemplate =
+    context.routeTemplate ||
+    (context.path ? sanitizeRouteTemplate(context.path) : undefined);
+  reportTransportError(error, {
     source: "http-client",
     status: error.status,
     code: error.code,
     requestId: error.requestId,
     kind: classified.kind,
-    ...context,
+    phase: context.phase,
+    operationId: context.operationId,
+    routeTemplate,
+    surface: context.surface,
   });
+  if (
+    error.code === PROBLEM_CODES.INVALID_API_CONTRACT ||
+    error.code === PROBLEM_CODES.INVALID_JSON_RESPONSE
+  ) {
+    reportOperationMetric(METRIC_NAMES.contractInvalid, 1, {
+      source: "http-client",
+      code: error.code,
+      requestId: error.requestId,
+      routeTemplate,
+      phase: context.phase,
+    });
+  } else if (classified.kind === "session_expired") {
+    reportOperationMetric(METRIC_NAMES.sessionExpired, 1, {
+      source: "http-client",
+      code: error.code,
+      requestId: error.requestId,
+      routeTemplate,
+    });
+  } else {
+    reportOperationMetric(METRIC_NAMES.error, 1, {
+      source: "http-client",
+      code: error.code,
+      status: error.status,
+      requestId: error.requestId,
+      routeTemplate,
+      phase: context.phase,
+    });
+  }
+}
+
+/** Collapse UUID/resource segments for bounded-cardinality telemetry. */
+function sanitizeRouteTemplate(pathname: string): string {
+  return pathname
+    .replace(
+      /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+      "/{id}",
+    )
+    .replace(/\/(str|usr|ord|prod|mer|chk|req)_[A-Za-z0-9]+/g, "/{$1}")
+    .replace(/\/\d{3,}/g, "/{n}");
 }
 
 export async function apiRequest<TResponse, TBody = never>(
@@ -272,7 +335,8 @@ export async function apiRequest<TResponse, TBody = never>(
     csrfToken: explicitCsrf,
     idempotencyKey,
     auditReason,
-    recentMfaProof,
+    recentMfaProof: explicitRecentMfa,
+    requireRecentMfa = false,
     ifMatch,
     skipCsrf = false,
     body,
@@ -309,6 +373,18 @@ export async function apiRequest<TResponse, TBody = never>(
   // Sensitive context only when caller opts in (per-operation)
   if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
   if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
+  let recentMfaProof = explicitRecentMfa;
+  if (
+    !recentMfaProof &&
+    requireRecentMfa &&
+    sessionHooks.getRecentMfaProof
+  ) {
+    try {
+      recentMfaProof = await sessionHooks.getRecentMfaProof();
+    } catch {
+      recentMfaProof = undefined;
+    }
+  }
   if (recentMfaProof) {
     headers.set(HTTP_HEADERS.RECENT_MFA_PROOF, recentMfaProof);
   }

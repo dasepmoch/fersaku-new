@@ -3,6 +3,8 @@
 package integration_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -127,6 +129,42 @@ func putSchemaV1(t *testing.T, h http.Handler, cookie *http.Cookie, storeID, pro
 	return ver
 }
 
+// mintInventoryRevealProof issues a single-use X-Recent-MFA-Proof for non-MFA sellers (INT-140).
+func mintInventoryRevealProof(t *testing.T, h http.Handler, cookie *http.Cookie) string {
+	t.Helper()
+	rr := jsonPOST(t, h, "/v1/auth/mfa/step-up", map[string]any{
+		"purpose": "inventory.reveal",
+	}, []*http.Cookie{cookie})
+	if rr.Code != http.StatusOK {
+		t.Fatalf("step-up %d %s", rr.Code, rr.Body.String())
+	}
+	data := envelopeData(t, rr)
+	proof, _ := data["recentMfaProof"].(string)
+	if proof == "" {
+		t.Fatal("missing recentMfaProof")
+	}
+	return proof
+}
+
+func jsonPOSTWithHeaders(t *testing.T, h http.Handler, path string, body any, cookies []*http.Cookie, headers map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+	b, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	out := httptest.NewRecorder()
+	h.ServeHTTP(out, req)
+	return out
+}
+
 func TestInventory_SchemaImportListRevealMask(t *testing.T) {
 	h, _, capture := newInventoryStack(t)
 	cookie, storeID, _ := onboardSellerStore(t, h, capture)
@@ -192,11 +230,22 @@ func TestInventory_SchemaImportListRevealMask(t *testing.T) {
 		t.Fatalf("masked note=%v", masked["note"])
 	}
 
-	// Reveal returns secret once with no-store
+	// Reveal without recent proof must fail closed (INT-140).
 	rr = jsonPOST(t, h, "/v1/stores/"+storeID+"/inventory/items/"+itemID+"/reveal", map[string]any{
 		"reason":      "seller support ticket #1",
-		"mfaVerified": true,
+		"mfaVerified": true, // body boolean must not grant access
 	}, []*http.Cookie{cookie})
+	if rr.Code == http.StatusOK {
+		t.Fatalf("reveal without proof must fail; got %d", rr.Code)
+	}
+
+	// Reveal returns secret once with no-store when proof is valid
+	proof := mintInventoryRevealProof(t, h, cookie)
+	rr = jsonPOSTWithHeaders(t, h, "/v1/stores/"+storeID+"/inventory/items/"+itemID+"/reveal", map[string]any{
+		"reason": "seller support ticket #1",
+	}, []*http.Cookie{cookie}, map[string]string{
+		"X-Recent-MFA-Proof": proof,
+	})
 	if rr.Code != http.StatusOK {
 		t.Fatalf("reveal %d %s", rr.Code, rr.Body.String())
 	}
@@ -342,10 +391,13 @@ func TestInventory_AllocateOnFulfillmentAndRevoke(t *testing.T) {
 	if envelopeData(t, rr)["status"] != "REVOKED" {
 		t.Fatalf("status=%v", envelopeData(t, rr)["status"])
 	}
-	// Reveal revoked denied
-	rr = jsonPOST(t, h, "/v1/stores/"+storeID+"/inventory/items/"+item2ID+"/reveal", map[string]any{
+	// Reveal revoked denied (with valid proof)
+	proof2 := mintInventoryRevealProof(t, h, cookie)
+	rr = jsonPOSTWithHeaders(t, h, "/v1/stores/"+storeID+"/inventory/items/"+item2ID+"/reveal", map[string]any{
 		"reason": "should fail",
-	}, []*http.Cookie{cookie})
+	}, []*http.Cookie{cookie}, map[string]string{
+		"X-Recent-MFA-Proof": proof2,
+	})
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("reveal revoked want 403 got %d %s", rr.Code, rr.Body.String())
 	}

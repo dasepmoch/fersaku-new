@@ -5,7 +5,7 @@ import { Check, ShieldCheck, Zap } from "lucide-react";
 import { rupiah } from "@/lib/utils";
 import type { ProviderCallbackRow } from "./data";
 import { Field, Modal } from "./pieces";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 
 export function ForceFulfillDialog({
   row,
@@ -120,7 +120,7 @@ export function ForceFulfillDialog({
           disabled={!ready}
           onClick={() => {
             if (!ready || !evidence) return;
-            appendMockAuditEvent({
+            appendClientAuditEvent({
               actor: "admin@fersaku.id",
               action: "fulfillment.force_replay",
               target: row.order,

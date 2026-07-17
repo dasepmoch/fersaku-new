@@ -65,7 +65,7 @@ func statusFromCode(code string, kind apperr.Kind) int {
 	switch code {
 	case apperr.CodeAuthRequired, apperr.CodeAuthInvalidCredentials, apperr.CodeAuthSessionExpired:
 		return http.StatusUnauthorized
-	case apperr.CodeAuthMFARequired:
+	case apperr.CodeAuthMFARequired, apperr.CodeAuthMFAProofInvalid, apperr.CodeAuthMFAProofExpired:
 		return http.StatusUnauthorized
 	case apperr.CodeAuthCSRFInvalid:
 		return http.StatusForbidden

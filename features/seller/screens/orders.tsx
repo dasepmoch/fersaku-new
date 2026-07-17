@@ -15,7 +15,7 @@ import { useSellerOrder, useSellerOrders } from "@/features/orders/hooks";
 
 import { rupiah } from "@/lib/utils";
 
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 
 import { SectionHead } from "@/shared/ui/section-head";
 
@@ -52,7 +52,8 @@ function Orders() {
   );
 }
 function OrderTable({ compact = false }: { compact?: boolean }) {
-  const { data } = useSellerOrders(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data } = useSellerOrders(storeId);
   const orders = data?.items ?? [];
   const source = compact ? orders.slice(0, 4) : orders;
   const { pageRows, pagination } = useClientPagination(source);
@@ -115,7 +116,8 @@ function OrderTable({ compact = false }: { compact?: boolean }) {
   );
 }
 function SellerOrderDetail({ id }: { id: string }) {
-  const { data: order } = useSellerOrder(DEMO_STORE_ID, id);
+  const storeId = useSellerStoreId();
+  const { data: order } = useSellerOrder(storeId, id);
   const [resent, setResent] = useState(false);
   if (!order) return null;
   const o = order;

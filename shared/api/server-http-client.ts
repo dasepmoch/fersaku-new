@@ -19,7 +19,7 @@ import {
 } from "./error-policy";
 import { HTTP_HEADERS, parseProblemPayload } from "./http-client";
 import { PROBLEM_CODES } from "./problem-codes";
-import { reportError } from "@/shared/observability/reporter";
+import { reportTransportError } from "@/shared/observability/reporter";
 import {
   buildForwardedCookieHeader,
   pickForwardedRequestHeaders,
@@ -140,19 +140,48 @@ async function readJson(
 
 function reportTransportDiagnostic(
   error: ApiError,
-  context: Record<string, unknown>,
+  context: {
+    path?: string;
+    phase?: string;
+    operationId?: string;
+    routeTemplate?: string;
+    surface?: string;
+    /** Non-sensitive privacy class only — never secrets. */
+    privacy?: string;
+  },
 ): void {
+  // Never attach body/headers/secrets — requestId + codes only (INT-170).
   const classified = classifyApiError(error.status, error.problem, {
     retryAfterSeconds: error.retryAfterSeconds,
   });
-  reportError(error, {
-    source: "server-http-client",
-    status: error.status,
-    code: error.code,
-    requestId: error.requestId,
-    kind: classified.kind,
-    ...context,
-  });
+  const routeTemplate =
+    context.routeTemplate ||
+    (context.path ? sanitizeServerRouteTemplate(context.path) : undefined);
+  reportTransportError(
+    error,
+    {
+      source: "server-http-client",
+      status: error.status,
+      code: error.code,
+      requestId: error.requestId,
+      kind: classified.kind,
+      phase: context.phase,
+      operationId: context.operationId,
+      routeTemplate,
+      surface: context.surface,
+    },
+    context.privacy ? { privacy: context.privacy } : undefined,
+  );
+}
+
+function sanitizeServerRouteTemplate(pathname: string): string {
+  return pathname
+    .replace(
+      /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+      "/{id}",
+    )
+    .replace(/\/(str|usr|ord|prod|mer|chk|req)_[A-Za-z0-9]+/g, "/{$1}")
+    .replace(/\/\d{3,}/g, "/{n}");
 }
 
 /**

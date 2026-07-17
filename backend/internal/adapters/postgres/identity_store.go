@@ -100,6 +100,22 @@ func (s IdentityStore) SetSessionMFAVerified(ctx context.Context, sessionID stri
 	return s.Repo.SetSessionMFAVerified(ctx, s.tx(ctx), sessionID, at)
 }
 
+func (s IdentityStore) InsertRecentMFAProof(ctx context.Context, p auth.RecentMFAProof) error {
+	return s.Repo.InsertRecentMFAProof(ctx, s.tx(ctx), p)
+}
+
+func (s IdentityStore) ConsumeRecentMFAProofByHash(ctx context.Context, userID, sessionID, purpose, proofHash string, now time.Time) error {
+	return s.Repo.ConsumeRecentMFAProofByHash(ctx, s.tx(ctx), userID, sessionID, purpose, proofHash, now)
+}
+
+func (s IdentityStore) RevokeRecentMFAProofsForSession(ctx context.Context, sessionID string, now time.Time) error {
+	return s.Repo.RevokeRecentMFAProofsForSession(ctx, s.tx(ctx), sessionID, now)
+}
+
+func (s IdentityStore) RevokeRecentMFAProofsForUser(ctx context.Context, userID string, now time.Time) error {
+	return s.Repo.RevokeRecentMFAProofsForUser(ctx, s.tx(ctx), userID, now)
+}
+
 func (s IdentityStore) InsertChallenge(ctx context.Context, c auth.Challenge) error {
 	return s.Repo.InsertChallenge(ctx, s.tx(ctx), c)
 }

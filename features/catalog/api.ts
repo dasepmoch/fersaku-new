@@ -6,7 +6,10 @@ import {
   structuralEnvelopeSchema,
 } from "@/shared/api/schemas";
 import type { ApiEnvelope } from "@/shared/api/contracts";
-import { shouldUseMockFixtures } from "@/shared/data/domain-source";
+import {
+  getDomainSource,
+  shouldUseMockFixtures,
+} from "@/shared/data/domain-source";
 import type { CatalogProduct } from "./contracts";
 import { demoProducts, findDemoProduct, getDemoStorefront } from "./mock";
 
@@ -114,4 +117,14 @@ export async function findPublicProduct(
     signal,
   });
   return response.data;
+}
+
+/**
+ * Storefront builder preview seed products.
+ * Mock mode returns fixtures; API/disabled return empty until storefront catalog wire.
+ * Presentation must not import ./mock (INT-170).
+ */
+export function getStorefrontBuilderPreviewProducts(): CatalogProduct[] {
+  if (getDomainSource("sellerCatalog") !== "mock") return [];
+  return demoProducts;
 }

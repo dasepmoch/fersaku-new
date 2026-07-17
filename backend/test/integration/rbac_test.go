@@ -217,12 +217,34 @@ func TestRBAC_SellerMeMerchantRequiresMembership(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := authzSvc.CreateMerchantWithCanonicalStore(context.Background(), p.UserID, "Mine", "mine-"+p.UserID, "Mine"); err != nil {
+	_, store, err := authzSvc.CreateMerchantWithCanonicalStore(context.Background(), p.UserID, "Mine", "mine-"+p.UserID, "Mine")
+	if err != nil {
 		t.Fatal(err)
 	}
 	rr = jsonGET(t, h, "/v1/seller/me/merchant", []*http.Cookie{cookie})
 	if rr.Code != http.StatusOK {
 		t.Fatalf("with membership %d %s", rr.Code, rr.Body.String())
+	}
+	// INT-150 bootstrap fields
+	var env struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &env); err != nil {
+		t.Fatal(err)
+	}
+	if env.Data["canonicalStoreId"] != store.ID && env.Data["currentStoreId"] != store.ID {
+		// either field may be string
+	}
+	cur, _ := env.Data["currentStoreId"].(string)
+	can, _ := env.Data["canonicalStoreId"].(string)
+	if cur == "" || can == "" {
+		t.Fatalf("bootstrap missing store ids: %+v", env.Data)
+	}
+	if cur != store.ID || can != store.ID {
+		t.Fatalf("want store %s current=%s canonical=%s", store.ID, cur, can)
+	}
+	if _, ok := env.Data["memberships"]; !ok {
+		t.Fatalf("memberships missing: %+v", env.Data)
 	}
 }
 

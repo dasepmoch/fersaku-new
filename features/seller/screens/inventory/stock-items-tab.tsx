@@ -4,7 +4,7 @@ import { Eye, EyeOff, MoreHorizontal } from "lucide-react";
 import type {
   InventoryField,
   StockItem,
-} from "@/features/seller/inventory/mock";
+} from "@/features/seller/inventory/contracts";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import type { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { Status } from "./pieces";

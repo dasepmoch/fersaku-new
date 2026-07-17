@@ -30,6 +30,7 @@ export function useSellerFinanceSummary(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.finance(storeId),
     queryFn: (signal) => getSellerFinanceSummary(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerFinance", demoFinanceSummary(storeId)),
   });
 }
@@ -38,6 +39,7 @@ export function useSellerRevenue(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.revenue(storeId),
     queryFn: (signal) => getSellerRevenue(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerFinance", demoSellerRevenue()),
   });
 }
@@ -46,6 +48,7 @@ export function useSellerLedger(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.ledger(storeId),
     queryFn: (signal) => listSellerLedger(storeId, undefined, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerFinance", demoSellerLedger(storeId)),
   });
 }
@@ -54,6 +57,7 @@ export function useSellerWithdrawals(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.withdrawals(storeId),
     queryFn: (signal) => listSellerWithdrawals(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerFinance", demoSellerWithdrawals(storeId)),
   });
 }
@@ -62,6 +66,7 @@ export function useSellerWithdrawalLock(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.withdrawalLock(storeId),
     queryFn: (signal) => getSellerWithdrawalLock(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerFinance", demoWithdrawalLock),
   });
 }

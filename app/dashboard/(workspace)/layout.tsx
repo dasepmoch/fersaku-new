@@ -1,5 +1,6 @@
 import { SellerDashboardFrame } from "@/features/seller/components/seller-dashboard-frame";
 import { PrivateSurfaceShell } from "@/shared/auth/private-surface-shell";
+import { CurrentStoreProvider } from "@/shared/seller/current-store";
 
 export default function SellerWorkspaceLayout({
   children,
@@ -8,7 +9,9 @@ export default function SellerWorkspaceLayout({
 }) {
   return (
     <PrivateSurfaceShell surface="seller">
-      <SellerDashboardFrame>{children}</SellerDashboardFrame>
+      <CurrentStoreProvider>
+        <SellerDashboardFrame>{children}</SellerDashboardFrame>
+      </CurrentStoreProvider>
     </PrivateSurfaceShell>
   );
 }

@@ -18,6 +18,11 @@ var (
 	ErrConflict        = apperr.Conflict(apperr.CodeConflict, "Resource version conflict")
 	ErrPasswordReuse   = apperr.Validation(apperr.CodeValidationFailed, "New password must differ from the current password")
 	ErrMFAFreshRequired = apperr.Unauthorized(apperr.CodeAuthMFARequired, "Fresh multi-factor proof required")
+	// INT-140 recent step-up proof (opaque X-Recent-MFA-Proof).
+	ErrMFAProofInvalid  = apperr.Unauthorized(apperr.CodeAuthMFAProofInvalid, "Recent multi-factor proof is invalid")
+	ErrMFAProofExpired  = apperr.Unauthorized(apperr.CodeAuthMFAProofExpired, "Recent multi-factor proof has expired")
+	ErrMFAProofPurpose  = apperr.Unauthorized(apperr.CodeAuthMFAProofInvalid, "Recent multi-factor proof purpose mismatch")
+	ErrMFAProofRequired = apperr.Unauthorized(apperr.CodeAuthMFARequired, "Recent multi-factor proof required")
 	ErrMandatoryPref   = apperr.Validation(apperr.CodeValidationFailed, "Mandatory notification preferences cannot be disabled")
 	ErrEmailChangeBusy = apperr.Conflict(apperr.CodeConflict, "An email change is already pending")
 	ErrEmailInUse      = apperr.Conflict(apperr.CodeConflict, "Email is not available")

@@ -15,6 +15,7 @@ import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
 import { listSellerProducts } from "@/features/catalog/api";
 import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 const states = {
   success: {
@@ -46,6 +47,8 @@ export default async function OrderStatePage({
   const key = (status in states ? status : "pending") as keyof typeof states;
   const current = states[key];
   const Icon = current.icon;
+  // Mock-only product chrome for order status page; API mode uses capability order result (CHK-130).
+  if (getDomainSource("publicCatalog") !== "mock") notFound();
   const product = (await listSellerProducts(DEMO_STORE_ID))[0];
   if (!product) notFound();
   return (

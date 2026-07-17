@@ -39,7 +39,7 @@ import {
   isImpersonationSessionActive,
   readImpersonationSession,
 } from "@/features/admin/impersonation/session";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 
 const tabs: Array<{ label: BuilderTab; icon: typeof Palette }> = [
   { label: "Templates", icon: Sparkles },
@@ -142,7 +142,7 @@ export function StorefrontBuilder() {
         throw new Error("Unable to persist storefront draft");
       }
       if (supportSession) {
-        appendMockAuditEvent({
+        appendClientAuditEvent({
           actor: supportSession.actor,
           action: IMPERSONATION_COMMANDS.storePresentationSupportUpdate,
           target: supportSession.targetId,

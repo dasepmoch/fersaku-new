@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { Boxes, ChevronRight, FileDown } from "lucide-react";
 import { useSellerInventory } from "@/features/seller/inventory/hooks";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import { useSellerStoreId } from "@/shared/seller/current-store";
 import { FilterButton, MiniStat, SearchBox, sellerCard } from "./pieces";
 
 export function Inventory() {
-  const { data: stockProducts = [] } = useSellerInventory(DEMO_STORE_ID);
+  const storeId = useSellerStoreId();
+  const { data: stockProducts = [] } = useSellerInventory(storeId);
   const totalAvailable = stockProducts.reduce((sum, p) => sum + p.available, 0);
   const low = stockProducts.filter((p) => p.available <= p.lowAt).length;
   return (

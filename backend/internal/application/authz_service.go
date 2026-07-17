@@ -152,7 +152,9 @@ func RequireBuyerOwnsResource(principalUserID, resourceOwnerUserID string) error
 	return authz.BuyerOwnsResource(principalUserID, resourceOwnerUserID)
 }
 
-// GetSellerMerchant returns the first active membership merchant for a seller, or NOT_FOUND.
+// GetSellerMerchant returns the primary active membership merchant for a seller.
+// Primary = earliest active membership (stable ORDER BY created_at ASC from store).
+// No membership → FORBIDDEN (known action, no tenant enumeration).
 func (s *AuthzService) GetSellerMerchant(ctx context.Context, userID string) (authz.Merchant, authz.MerchantMember, error) {
 	if userID == "" {
 		return authz.Merchant{}, authz.MerchantMember{}, authz.DenyCrossTenant()
@@ -162,15 +164,211 @@ func (s *AuthzService) GetSellerMerchant(ctx context.Context, userID string) (au
 		return authz.Merchant{}, authz.MerchantMember{}, apperr.Internal(apperr.CodeInternalError, "Membership lookup failed")
 	}
 	if len(members) == 0 {
-		// Authenticated seller without membership: FORBIDDEN (known action, no tenant).
 		return authz.Merchant{}, authz.MerchantMember{}, authz.ErrForbidden("Seller merchant membership required")
 	}
+	// Deterministic: earliest membership (repo orders created_at ASC).
 	mem := members[0]
+	for _, candidate := range members[1:] {
+		if candidate.CreatedAt.Before(mem.CreatedAt) {
+			mem = candidate
+		} else if candidate.CreatedAt.Equal(mem.CreatedAt) && candidate.MerchantID < mem.MerchantID {
+			mem = candidate
+		}
+	}
 	m, err := s.Store.GetMerchantByID(ctx, mem.MerchantID)
 	if err != nil {
 		return authz.Merchant{}, authz.MerchantMember{}, authz.DenyCrossTenant()
 	}
 	return m, mem, nil
+}
+
+// StoreAccessGuard is the central store-scoped authorization helper (INT-150).
+// Foreign / non-member store IDs → RESOURCE_NOT_FOUND.
+// write=true also requires store.write capability for the membership role.
+func (s *AuthzService) StoreAccessGuard(ctx context.Context, userID, storeID string, write bool) (authz.StoreAccess, error) {
+	if userID == "" || storeID == "" {
+		return authz.StoreAccess{}, authz.DenyCrossTenant()
+	}
+	st, scope, err := s.ResolveStoreMerchant(ctx, userID, storeID)
+	if err != nil {
+		return authz.StoreAccess{}, err
+	}
+	caps := authz.CapabilitiesForMemberRole(scope.MemberRole)
+	access := authz.StoreAccess{
+		Store:        st,
+		Scope:        scope,
+		Capabilities: caps,
+	}
+	if write {
+		if err := authz.RequireStoreCapability(access, authz.StoreCapWrite); err != nil {
+			return authz.StoreAccess{}, err
+		}
+	} else {
+		if err := authz.RequireStoreCapability(access, authz.StoreCapRead); err != nil {
+			return authz.StoreAccess{}, err
+		}
+	}
+	return access, nil
+}
+
+// SellerMembershipDTO is one merchant membership for bootstrap.
+type SellerMembershipDTO struct {
+	MerchantID     string
+	DisplayName    string
+	MerchantStatus string
+	RoleInMerchant string
+	Capabilities   []string
+	StoreIDs       []string
+}
+
+// SellerStoreDTO is a store the seller may access.
+type SellerStoreDTO struct {
+	StoreID    string
+	MerchantID string
+	Slug       string
+	Name       string
+	Status     string
+	Canonical  bool
+}
+
+// SellerBootstrap is GET /v1/seller/me/merchant extended payload (INT-150).
+type SellerBootstrap struct {
+	MerchantID       string
+	DisplayName      string
+	Status           string
+	RoleInMerchant   string
+	OwnerUserID      string
+	Memberships      []SellerMembershipDTO
+	Stores           []SellerStoreDTO
+	CanonicalStoreID string
+	CurrentStoreID   string
+	Capabilities     []string
+}
+
+// GetSellerBootstrap returns merchant, memberships, stores, and server-selected current store.
+// Selection: valid preferred store if member-owned → else canonical → else first stable store ID.
+func (s *AuthzService) GetSellerBootstrap(ctx context.Context, userID string) (SellerBootstrap, error) {
+	m, mem, err := s.GetSellerMerchant(ctx, userID)
+	if err != nil {
+		return SellerBootstrap{}, err
+	}
+	members, err := s.Store.ListActiveMerchantMemberships(ctx, userID)
+	if err != nil {
+		return SellerBootstrap{}, apperr.Internal(apperr.CodeInternalError, "Membership lookup failed")
+	}
+
+	// Collect stores across all memberships (stable order per merchant).
+	allowed := map[string]authz.Store{}
+	var storeOrder []string
+	memberships := make([]SellerMembershipDTO, 0, len(members))
+	for _, mm := range members {
+		merch, mErr := s.Store.GetMerchantByID(ctx, mm.MerchantID)
+		if mErr != nil {
+			continue
+		}
+		stores, sErr := s.Store.ListStoresForMerchant(ctx, mm.MerchantID)
+		if sErr != nil {
+			return SellerBootstrap{}, apperr.Internal(apperr.CodeInternalError, "Store list failed")
+		}
+		caps := authz.CapabilitiesForMemberRole(mm.RoleInMerchant)
+		capStrs := make([]string, 0, len(caps))
+		for _, c := range caps {
+			capStrs = append(capStrs, string(c))
+		}
+		ids := make([]string, 0, len(stores))
+		for _, st := range stores {
+			ids = append(ids, st.ID)
+			if _, ok := allowed[st.ID]; !ok {
+				allowed[st.ID] = st
+				storeOrder = append(storeOrder, st.ID)
+			}
+		}
+		memberships = append(memberships, SellerMembershipDTO{
+			MerchantID:     merch.ID,
+			DisplayName:    merch.DisplayName,
+			MerchantStatus: string(merch.Status),
+			RoleInMerchant: string(mm.RoleInMerchant),
+			Capabilities:   capStrs,
+			StoreIDs:       ids,
+		})
+	}
+
+	// Canonical for primary merchant.
+	canonicalID := ""
+	if can, cErr := s.Store.GetCanonicalStoreForMerchant(ctx, m.ID); cErr == nil {
+		canonicalID = can.ID
+	} else {
+		// Fallback: first store of primary merchant by stable order.
+		for _, sid := range storeOrder {
+			st := allowed[sid]
+			if st.MerchantID == m.ID {
+				canonicalID = st.ID
+				break
+			}
+		}
+	}
+
+	// Preferred store (server-stored); invalid → canonical.
+	preferred, _ := s.Store.GetSellerPreferredStoreID(ctx, userID)
+	currentID := selectCurrentStoreID(preferred, canonicalID, allowed, storeOrder)
+
+	primaryCaps := authz.CapabilitiesForMemberRole(mem.RoleInMerchant)
+	primaryCapStrs := make([]string, 0, len(primaryCaps))
+	for _, c := range primaryCaps {
+		primaryCapStrs = append(primaryCapStrs, string(c))
+	}
+
+	storeDTOs := make([]SellerStoreDTO, 0, len(storeOrder))
+	for _, sid := range storeOrder {
+		st := allowed[sid]
+		storeDTOs = append(storeDTOs, SellerStoreDTO{
+			StoreID:    st.ID,
+			MerchantID: st.MerchantID,
+			Slug:       st.Slug,
+			Name:       st.Name,
+			Status:     string(st.Status),
+			Canonical:  st.IsCanonical,
+		})
+	}
+
+	return SellerBootstrap{
+		MerchantID:       m.ID,
+		DisplayName:      m.DisplayName,
+		Status:           string(m.Status),
+		RoleInMerchant:   string(mem.RoleInMerchant),
+		OwnerUserID:      m.OwnerUserID,
+		Memberships:      memberships,
+		Stores:           storeDTOs,
+		CanonicalStoreID: canonicalID,
+		CurrentStoreID:   currentID,
+		Capabilities:     primaryCapStrs,
+	}, nil
+}
+
+// selectCurrentStoreID: preferred if allowed → canonical if allowed → first stable allowed.
+func selectCurrentStoreID(preferred, canonical string, allowed map[string]authz.Store, order []string) string {
+	if preferred != "" {
+		if _, ok := allowed[preferred]; ok {
+			return preferred
+		}
+	}
+	if canonical != "" {
+		if _, ok := allowed[canonical]; ok {
+			return canonical
+		}
+	}
+	if len(order) > 0 {
+		return order[0]
+	}
+	return ""
+}
+
+// SetSellerPreferredStore validates membership and persists preferred store (optional switch API).
+func (s *AuthzService) SetSellerPreferredStore(ctx context.Context, userID, storeID string) error {
+	if _, err := s.StoreAccessGuard(ctx, userID, storeID, false); err != nil {
+		return err
+	}
+	return s.Store.UpsertSellerPreferredStore(ctx, userID, storeID, s.now())
 }
 
 // CreateMerchantWithCanonicalStore creates merchant + OWNER membership + canonical store (test/onboarding helper).

@@ -46,7 +46,7 @@ export function decideRouteGuard(input: GuardInput): GuardDecision {
       return s === "public" ? null : s;
     })();
 
-  // Public / auth entry: bounce authenticated users of matching surface home.
+  // Public / auth entry: bounce fully authenticated users home; MFA_PENDING stays on login.
   if (isAuthEntryPath(pathname) || required === null) {
     if (snapshot.status === "loading") {
       // Auth entry can render while loading; avoid flash redirect loops.
@@ -76,6 +76,7 @@ export function decideRouteGuard(input: GuardInput): GuardDecision {
         };
       }
     }
+    // MFA_PENDING may use auth-entry shells for verify (no bounce to console).
     return { action: "allow" };
   }
 
@@ -84,7 +85,7 @@ export function decideRouteGuard(input: GuardInput): GuardDecision {
   }
 
   if (
-    snapshot.status !== "authenticated" ||
+    (snapshot.status !== "authenticated" && snapshot.status !== "mfa_pending") ||
     !snapshot.claims ||
     !snapshot.claims.subjectId
   ) {
@@ -105,10 +106,17 @@ export function decideRouteGuard(input: GuardInput): GuardDecision {
     };
   }
 
-  if (input.requireMfaVerified && !snapshot.claims.mfaVerified) {
-    // INT-140 owns full MFA ceremony; here we only mark that console needs verify.
-    // Allow render so existing MFA UI can mount; do not open-redirect.
-    return { action: "allow" };
+  // INT-140: fail-closed — MFA_PENDING cannot use private business shells.
+  const needsMfa =
+    input.requireMfaVerified ||
+    (snapshot.claims.mfaEnabled && !snapshot.claims.mfaVerified) ||
+    snapshot.status === "mfa_pending";
+  if (needsMfa && !snapshot.claims.mfaVerified) {
+    return {
+      action: "redirect",
+      href: buildLoginHref(required, pathWithSearch(pathname, search)),
+      reason: "mfa_pending",
+    };
   }
 
   return { action: "allow" };

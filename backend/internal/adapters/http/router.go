@@ -11,6 +11,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/presenters"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
 	"github.com/dasepmoch/fersaku-new/backend/internal/config"
+	"github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
@@ -151,6 +152,8 @@ func NewRouterWith(d RouterDeps) http.Handler {
 		authCfg.Resolver = middleware.AuthServiceResolver{Svc: d.AuthService}
 	}
 	r.Use(middleware.AuthWith(authCfg))
+	// INT-140: MFA_PENDING fail-closed allowlist (session/verify/logout only).
+	r.Use(middleware.MFAPendingGate)
 	// BE-520: block mutations under READ_ONLY; SUPPORT_WRITE exact two-command allowlist.
 	r.Use(middleware.ImpersonationGate(d.ImpersonationService))
 	r.Use(middleware.CSRF(middleware.CSRFConfig{
@@ -255,6 +258,7 @@ func NewRouterWith(d RouterDeps) http.Handler {
 				pr.Post("/mfa/enroll", ah.MFAEnroll)
 				pr.Post("/mfa/confirm", ah.MFAConfirm)
 				pr.Post("/mfa/verify", ah.MFAVerify)
+				pr.Post("/mfa/step-up", ah.MFAStepUp)
 				pr.Post("/mfa/disable", ah.MFADisable)
 				pr.Post("/mfa/recovery-codes/regenerate", ah.MFARegenerateRecovery)
 			})
@@ -391,6 +395,7 @@ func NewRouterWith(d RouterDeps) http.Handler {
 			r.Route("/v1/seller", func(sr chi.Router) {
 				sr.Use(handlers.RequireAuth)
 				sr.Get("/me/merchant", zh.SellerMeMerchant)
+				sr.Put("/me/current-store", zh.SellerSetCurrentStore)
 				sr.Get("/stores/{storeId}", zh.SellerStoreByID)
 			})
 		}
@@ -517,7 +522,17 @@ func NewRouterWith(d RouterDeps) http.Handler {
 			ir.With(middleware.RequirePermission("seller.store.write")).Put("/products/{productId}/schema", ih.PutSchema)
 			ir.With(middleware.RequirePermission("seller.store.write")).Post("/products/{productId}/items", ih.ImportItems)
 			ir.With(middleware.RequirePermission("seller.store.write")).Post("/items/import", ih.ImportItemsGlobal)
-			ir.With(middleware.RequirePermission("inventory.reveal")).Post("/items/{itemId}/reveal", ih.Reveal)
+			if d.AuthService != nil {
+				ir.With(
+					middleware.RequirePermission("inventory.reveal"),
+					middleware.RequireRecentMFAProof(auth.ProofPurposeInventoryReveal, d.AuthService),
+				).Post("/items/{itemId}/reveal", ih.Reveal)
+			} else {
+				// Fail closed: no proof validator available.
+				ir.With(middleware.RequirePermission("inventory.reveal")).Post("/items/{itemId}/reveal", func(w http.ResponseWriter, r *http.Request) {
+					presenters.WriteAppError(w, r, auth.ErrMFAProofRequired)
+				})
+			}
 			ir.With(middleware.RequirePermission("seller.store.write")).Post("/items/{itemId}/revoke", ih.Revoke)
 		})
 		// Checkout foundation: reserve one stock unit (idempotent).

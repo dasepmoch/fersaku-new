@@ -72,6 +72,10 @@ type AuthzStore interface {
 	InsertStore(ctx context.Context, s authz.Store) error
 	GetStoreByID(ctx context.Context, id string) (authz.Store, error)
 	GetCanonicalStoreForMerchant(ctx context.Context, merchantID string) (authz.Store, error)
+	// INT-150
+	ListStoresForMerchant(ctx context.Context, merchantID string) ([]authz.Store, error)
+	GetSellerPreferredStoreID(ctx context.Context, userID string) (string, error) // empty if none
+	UpsertSellerPreferredStore(ctx context.Context, userID, storeID string, at time.Time) error
 
 	IsNotFound(err error) bool
 }

@@ -10,6 +10,7 @@ export function useSellerOrders(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.orders(storeId, {}),
     queryFn: (signal) => listSellerOrders(storeId, undefined, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerOperations", {
       items: demoOrders(),
       nextCursor: null,
@@ -23,7 +24,7 @@ export function useSellerOrder(storeId: string, orderId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.order(storeId, orderId),
     queryFn: (signal) => getSellerOrder(storeId, orderId, signal),
-    enabled: Boolean(orderId),
+    enabled: Boolean(storeId && orderId),
     placeholderData: mockPlaceholderData("sellerOperations", demoOrders().find((order) => order.id === orderId) || null),
   });
 }

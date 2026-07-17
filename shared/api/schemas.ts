@@ -255,6 +255,8 @@ export const authSessionDataSchema = z.object({
   mfaVerified: z.boolean().optional(),
   emailVerified: z.boolean().optional(),
   status: z.string().optional(),
+  /** AUTHENTICATED | MFA_PENDING (INT-140). */
+  sessionStatus: z.string().optional(),
   csrfToken: z.string().min(1),
   permissions: z.array(z.string()).optional(),
   roles: z.array(z.string()).optional(),
@@ -281,3 +283,50 @@ export type PublicStorefrontDto = z.infer<typeof publicStorefrontDtoSchema>;
 export type FeePolicyDto = z.infer<typeof feePolicySchema>;
 export type AuthLoginDataDto = z.infer<typeof authLoginDataSchema>;
 export type AuthSessionDataDto = z.infer<typeof authSessionDataSchema>;
+
+/** GET /v1/seller/me/merchant — seller bootstrap (INT-150). */
+export const sellerMembershipSchema = z.object({
+  merchantId: z.string().min(1),
+  displayName: z.string().optional(),
+  merchantStatus: z.string().optional(),
+  roleInMerchant: z.string().min(1),
+  capabilities: z.array(z.string()).optional(),
+  storeIds: z.array(z.string()).optional(),
+});
+
+export const sellerStoreSchema = z.object({
+  storeId: z.string().min(1),
+  merchantId: z.string().min(1),
+  slug: z.string().optional(),
+  name: z.string().optional(),
+  status: z.string().optional(),
+  canonical: z.boolean().optional(),
+});
+
+export const sellerBootstrapDataSchema = z.object({
+  merchantId: z.string().min(1),
+  displayName: z.string().optional(),
+  status: z.string().optional(),
+  roleInMerchant: z.string().optional(),
+  ownerUserId: z.string().optional(),
+  memberships: z.array(sellerMembershipSchema).optional(),
+  stores: z.array(sellerStoreSchema).optional(),
+  canonicalStoreId: z.string().optional(),
+  currentStoreId: z.string().optional(),
+  capabilities: z.array(z.string()).optional(),
+});
+
+export const sellerBootstrapEnvelopeSchema = successEnvelopeSchema(
+  sellerBootstrapDataSchema,
+);
+
+export const sellerCurrentStoreDataSchema = z.object({
+  currentStoreId: z.string().min(1),
+  canonicalStoreId: z.string().optional(),
+});
+
+export const sellerCurrentStoreEnvelopeSchema = successEnvelopeSchema(
+  sellerCurrentStoreDataSchema,
+);
+
+export type SellerBootstrapDto = z.infer<typeof sellerBootstrapDataSchema>;

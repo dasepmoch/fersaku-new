@@ -201,8 +201,8 @@ func (h *InventoryHandler) ImportItemsGlobal(w http.ResponseWriter, r *http.Requ
 }
 
 type revealBody struct {
-	Reason      string `json:"reason"`
-	MFAVerified bool   `json:"mfaVerified"`
+	Reason string `json:"reason"`
+	// mfaVerified body boolean is intentionally ignored (INT-140); proof is X-Recent-MFA-Proof.
 }
 
 func (h *InventoryHandler) Reveal(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +220,8 @@ func (h *InventoryHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	res, err := h.Svc.RevealItem(r.Context(), p.SubjectID, chi.URLParam(r, "storeId"), chi.URLParam(r, "itemId"), body.Reason, body.MFAVerified)
+	// Recent MFA already validated + consumed by RequireRecentMFAProof middleware.
+	res, err := h.Svc.RevealItem(r.Context(), p.SubjectID, chi.URLParam(r, "storeId"), chi.URLParam(r, "itemId"), body.Reason, true)
 	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return

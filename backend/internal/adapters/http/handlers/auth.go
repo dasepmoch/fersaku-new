@@ -251,6 +251,21 @@ func (h *AuthHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// INT-120: bootstrap claims for UI navigation only; every endpoint still authorizes server-side.
+	// INT-140: MFA_PENDING must not treat roles/permissions as usable authority.
+	perms := p.Permissions
+	roles := p.RoleCodes
+	sessionStatus := "AUTHENTICATED"
+	if p.MFAEnabled && !p.MFAVerified {
+		sessionStatus = "MFA_PENDING"
+		perms = []string{}
+		roles = []string{}
+	}
+	if perms == nil {
+		perms = []string{}
+	}
+	if roles == nil {
+		roles = []string{}
+	}
 	data := map[string]any{
 		"userId":        p.SubjectID,
 		"sessionId":     p.SessionID,
@@ -261,15 +276,10 @@ func (h *AuthHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		"mfaVerified":   p.MFAVerified,
 		"emailVerified": p.EmailVerified,
 		"status":        p.Status,
+		"sessionStatus": sessionStatus,
 		"csrfToken":     csrfToken,
-		"permissions":   p.Permissions,
-		"roles":         p.RoleCodes,
-	}
-	if p.Permissions == nil {
-		data["permissions"] = []string{}
-	}
-	if p.RoleCodes == nil {
-		data["roles"] = []string{}
+		"permissions":   perms,
+		"roles":         roles,
 	}
 	if p.Impersonating {
 		data["impersonation"] = map[string]any{
@@ -388,17 +398,61 @@ func (h *AuthHandler) MFAVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Code string `json:"code"`
+		Code    string `json:"code"`
+		Purpose string `json:"purpose"`
 	}
 	if err := decode.DecodeJSON(r, &body); err != nil {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	if err := h.Auth.MFAVerify(r.Context(), p.SubjectID, p.SessionID, body.Code); err != nil {
+	res, err := h.Auth.MFAVerifyAndOptionallyMint(r.Context(), p.SubjectID, p.SessionID, body.Code, body.Purpose)
+	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	presenters.WriteData(w, r, http.StatusOK, map[string]any{"mfaVerified": true})
+	w.Header().Set("Cache-Control", "no-store")
+	data := map[string]any{"mfaVerified": true}
+	if res.RawProof != "" {
+		data["recentMfaProof"] = res.RawProof
+		data["purpose"] = res.Purpose
+		data["expiresAt"] = res.ExpiresAt.UTC().Format(time.RFC3339)
+		data["factor"] = string(res.Factor)
+	}
+	presenters.WriteData(w, r, http.StatusOK, data)
+}
+
+// MFAStepUp POST /v1/auth/mfa/step-up — mint purpose-scoped X-Recent-MFA-Proof after factor re-proof.
+func (h *AuthHandler) MFAStepUp(w http.ResponseWriter, r *http.Request) {
+	p, ok := reqctx.PrincipalFrom(r.Context())
+	if !ok {
+		presenters.WriteAppError(w, r, auth.ErrUnauthenticated)
+		return
+	}
+	var body struct {
+		Code    string `json:"code"`
+		Purpose string `json:"purpose"`
+	}
+	if err := decode.DecodeJSON(r, &body); err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	if strings.TrimSpace(body.Purpose) == "" {
+		presenters.WriteAppError(w, r, apperr.Validation(apperr.CodeValidationFailed, "purpose is required"))
+		return
+	}
+	res, err := h.Auth.MintRecentMFAProof(r.Context(), p.SubjectID, p.SessionID, body.Code, body.Purpose)
+	if err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	presenters.WriteData(w, r, http.StatusOK, map[string]any{
+		"mfaVerified":    true,
+		"recentMfaProof": res.RawProof,
+		"purpose":        res.Purpose,
+		"expiresAt":      res.ExpiresAt.UTC().Format(time.RFC3339),
+		"factor":         string(res.Factor),
+	})
 }
 
 func (h *AuthHandler) MFARegenerateRecovery(w http.ResponseWriter, r *http.Request) {

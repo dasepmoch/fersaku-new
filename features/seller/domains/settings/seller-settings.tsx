@@ -23,7 +23,7 @@ import {
   isImpersonationSessionActive,
   readImpersonationSession,
 } from "@/features/admin/impersonation/session";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 import {
   readVersionedStorage,
   writeVersionedStorage,
@@ -169,7 +169,7 @@ export function SellerSettingsPro() {
     if (!persisted) return false;
     setProfile(persistedProfile);
     if (session) {
-      appendMockAuditEvent({
+      appendClientAuditEvent({
         actor: session.actor,
         action: IMPERSONATION_COMMANDS.profileSupportUpdate,
         target: session.targetId,

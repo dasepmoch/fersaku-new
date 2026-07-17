@@ -14,6 +14,7 @@ export function useSellerReviews(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.reviews(storeId),
     queryFn: (signal) => listSellerReviews(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerOperations", demoReviews()),
   });
 }
@@ -22,6 +23,7 @@ export function useSellerRatingSummary(storeId: string) {
   return useAppQuery({
     queryKey: queryKeys.seller.reviewsSummary(storeId),
     queryFn: (signal) => getSellerRatingSummary(storeId, signal),
+    enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerOperations", demoRatingSummary()),
   });
 }

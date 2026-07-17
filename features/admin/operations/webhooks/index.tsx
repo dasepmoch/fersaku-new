@@ -26,7 +26,7 @@ import {
 } from "./data";
 import { ForceFulfillDialog } from "./force-fulfill-dialog";
 import { AdminMetric, StatusPill } from "./pieces";
-import { appendMockAuditEvent } from "@/features/admin/data/mock-audit";
+import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
 
 const sourceStatus = (row: (typeof initialWebhooks)[number]) =>
   row.kind === "PROVIDER_CALLBACK" ? row.providerStatus : row.deliveryStatus;
@@ -91,7 +91,7 @@ export function WebhookOperations() {
                   },
           ),
         );
-        appendMockAuditEvent({
+        appendClientAuditEvent({
           actor: "admin@fersaku.id",
           action:
             row.kind === "PROVIDER_CALLBACK"

@@ -12,6 +12,8 @@ export type SessionStatus =
   | "anonymous"
   | "loading"
   | "authenticated"
+  /** Server session exists but MFA verify not completed (INT-140). */
+  | "mfa_pending"
   | "expired"
   | "error";
 
@@ -141,4 +143,16 @@ export function claimsCacheIdentity(claims: SessionClaims | null): string {
   if (!claims) return "anonymous";
   const imp = claims.impersonation?.id ?? "";
   return `${claims.mode}:${claims.subjectId}:${claims.sessionId}:${claims.surface}:${imp}`;
+}
+
+/** True when server has MFA enrolled but this session is not yet verified. */
+export function isMfaPendingClaims(claims: SessionClaims | null | undefined): boolean {
+  if (!claims) return false;
+  return claims.mfaEnabled && !claims.mfaVerified;
+}
+
+/** Map bootstrap claims to store status (INT-140). */
+export function statusFromClaims(claims: SessionClaims): SessionStatus {
+  if (isMfaPendingClaims(claims)) return "mfa_pending";
+  return "authenticated";
 }

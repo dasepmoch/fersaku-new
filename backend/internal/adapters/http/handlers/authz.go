@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/decode"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/presenters"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/reqctx"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
@@ -30,7 +31,8 @@ func (h *AuthzHandler) AdminPing(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SellerMeMerchant is GET /v1/seller/me/merchant — requires active merchant membership.
+// SellerMeMerchant is GET /v1/seller/me/merchant — seller bootstrap (INT-150).
+// Returns merchant, memberships, stores, canonicalStoreId, currentStoreId.
 func (h *AuthzHandler) SellerMeMerchant(w http.ResponseWriter, r *http.Request) {
 	p, ok := reqctx.PrincipalFrom(r.Context())
 	if !ok {
@@ -41,17 +43,81 @@ func (h *AuthzHandler) SellerMeMerchant(w http.ResponseWriter, r *http.Request) 
 		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Authorization unavailable"))
 		return
 	}
-	m, mem, err := h.Authz.GetSellerMerchant(r.Context(), p.SubjectID)
+	boot, err := h.Authz.GetSellerBootstrap(r.Context(), p.SubjectID)
+	if err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	memberships := make([]map[string]any, 0, len(boot.Memberships))
+	for _, mm := range boot.Memberships {
+		memberships = append(memberships, map[string]any{
+			"merchantId":     mm.MerchantID,
+			"displayName":    mm.DisplayName,
+			"merchantStatus": mm.MerchantStatus,
+			"roleInMerchant": mm.RoleInMerchant,
+			"capabilities":   mm.Capabilities,
+			"storeIds":       mm.StoreIDs,
+		})
+	}
+	stores := make([]map[string]any, 0, len(boot.Stores))
+	for _, st := range boot.Stores {
+		stores = append(stores, map[string]any{
+			"storeId":    st.StoreID,
+			"merchantId": st.MerchantID,
+			"slug":       st.Slug,
+			"name":       st.Name,
+			"status":     st.Status,
+			"canonical":  st.Canonical,
+		})
+	}
+	presenters.WriteData(w, r, http.StatusOK, map[string]any{
+		"merchantId":       boot.MerchantID,
+		"displayName":      boot.DisplayName,
+		"status":           boot.Status,
+		"roleInMerchant":   boot.RoleInMerchant,
+		"ownerUserId":      boot.OwnerUserID,
+		"memberships":      memberships,
+		"stores":           stores,
+		"canonicalStoreId": boot.CanonicalStoreID,
+		"currentStoreId":   boot.CurrentStoreID,
+		"capabilities":     boot.Capabilities,
+	})
+}
+
+// SellerSetCurrentStore is PUT /v1/seller/me/current-store — persist preferred store.
+func (h *AuthzHandler) SellerSetCurrentStore(w http.ResponseWriter, r *http.Request) {
+	p, ok := reqctx.PrincipalFrom(r.Context())
+	if !ok {
+		presenters.WriteAppError(w, r, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required"))
+		return
+	}
+	if h.Authz == nil {
+		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Authorization unavailable"))
+		return
+	}
+	var body struct {
+		StoreID string `json:"storeId"`
+	}
+	if err := decode.DecodeJSON(r, &body); err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	if body.StoreID == "" {
+		presenters.WriteAppError(w, r, apperr.Validation(apperr.CodeValidationFailed, "storeId required"))
+		return
+	}
+	if err := h.Authz.SetSellerPreferredStore(r.Context(), p.SubjectID, body.StoreID); err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	boot, err := h.Authz.GetSellerBootstrap(r.Context(), p.SubjectID)
 	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{
-		"merchantId":     m.ID,
-		"displayName":    m.DisplayName,
-		"status":         string(m.Status),
-		"roleInMerchant": string(mem.RoleInMerchant),
-		"ownerUserId":    m.OwnerUserID,
+		"currentStoreId":   boot.CurrentStoreID,
+		"canonicalStoreId": boot.CanonicalStoreID,
 	})
 }
 

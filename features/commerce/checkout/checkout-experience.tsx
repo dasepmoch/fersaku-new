@@ -8,6 +8,10 @@ import type {
   CatalogProduct,
   PublicStorefront,
 } from "@/features/catalog/contracts";
+import {
+  createIdempotencyIntentHolder,
+  createPendingDedupe,
+} from "@/shared/query/create-mutation";
 import { CheckoutDetailsStep } from "./details-step";
 import { useSimulateCheckoutPaymentMutation } from "./mutations";
 import { CheckoutOrderSummary } from "./order-summary";
@@ -34,6 +38,9 @@ export function CheckoutExperience({
   const [paying, setPaying] = useState(false);
   const [notification, setNotification] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  /** One opaque key per logical pay intent; double-click reuses the same key. */
+  const idempotencyRef = useRef(createIdempotencyIntentHolder());
+  const pendingDedupeRef = useRef(createPendingDedupe());
   const upsellProduct = store.products.find(
     (p) => p.slug === "cursor-rules-kit",
   );
@@ -66,8 +73,10 @@ export function CheckoutExperience({
     .toString()
     .padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
   const simulate = () => {
+    if (!pendingDedupeRef.current.tryBegin()) return;
     setPaying(true);
     setNotification(false);
+    const idempotencyKey = idempotencyRef.current.getKey();
     void paymentMutation
       .mutateAsync({
         productId: product.id,
@@ -76,9 +85,10 @@ export function CheckoutExperience({
         total,
         tip,
         upsell,
-        idempotencyKey: `checkout_${product.id}_${email}`,
+        idempotencyKey,
       })
       .catch(() => {
+        pendingDedupeRef.current.end();
         setPaying(false);
         setNotification(false);
       });
@@ -86,6 +96,8 @@ export function CheckoutExperience({
     schedule(() => {
       setStep("paid");
       setPaying(false);
+      pendingDedupeRef.current.end();
+      idempotencyRef.current.reset();
     }, 1850);
     schedule(
       () =>

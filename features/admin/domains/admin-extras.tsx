@@ -24,9 +24,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import {
-  appendMockAuditEvent,
+  appendClientAuditEvent,
   verifyMockAuditIntegrity,
-} from "@/features/admin/data/mock-audit";
+} from "@/features/admin/data/client-audit";
 
 const categoryOf = (actor: string) =>
   actor === "system"
@@ -122,7 +122,7 @@ export function AdminAuditExplorer() {
   );
   const exportRows = useCallback(() => {
     if (!downloadAuditCsv(rows)) return;
-    appendMockAuditEvent({
+    appendClientAuditEvent({
       actor: "admin@fersaku.id",
       action: "audit.export.csv",
       target: "filtered-audit-events",
@@ -242,7 +242,7 @@ export function AdminAuditExplorer() {
                       aria-label={`Inspect audit event ${event.id}`}
                       onClick={() => {
                         setSelected(event);
-                        appendMockAuditEvent({
+                        appendClientAuditEvent({
                           actor: "admin@fersaku.id",
                           action: "audit.event.inspect",
                           target: event.id,

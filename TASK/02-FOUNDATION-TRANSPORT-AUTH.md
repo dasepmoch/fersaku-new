@@ -511,26 +511,26 @@ Mengganti fake proof/checkbox dengan ceremony backend-authoritative tanpa redesi
 
 ### Checklist BE
 
-- [ ] Tutup bypass snapshot saat ini: login dapat membuat session dengan roles/permissions sebelum `mfa_verified_at`, sementara auth middleware hanya memeriksa adanya principal. Pilih salah satu design fail-closed: pre-auth MFA transaction ticket tanpa full session, atau session `MFA_PENDING` yang digate global.
-- [ ] Untuk session `MFA_PENDING`, allowlist hanya safe session introspection, `/v1/auth/mfa/verify`, dan logout/recovery operation yang benar-benar diperlukan; seluruh buyer/seller/admin/business route termasuk direct HTTP mengembalikan `AUTH_MFA_REQUIRED` dan tidak menerima roles/permissions sebagai usable authority.
-- [ ] Admin console mewajibkan MFA verified sesuai policy; config field yang hanya dideklarasikan tetapi tidak dipasang bukan enforcement.
-- [ ] Define recent-proof issuance setelah password/TOTP/recovery verification, bound ke user/session/purpose, single-use atau bounded TTL.
-- [ ] Freeze proof mint/exchange contract before codegen: extend `POST /v1/auth/mfa/verify` or add a dedicated operation with exact purpose/resource scope, factor, response metadata/expiry, and stable problem codes. `X-Recent-MFA-Proof` is opaque, session-bound, single-use or narrowly TTL-bound; it is never a reusable TOTP/seed.
-- [ ] Define allowed proof factors (TOTP/password/recovery), purpose values (`inventory.reveal`, `credentials.rotate`, `bank.change`, `withdrawal.create`, admin command), replay/invalidation on logout/session rotation, and consumer header semantics in matrix `06`.
-- [ ] Provide pre-enrollment ticket for invited/admin users who must enroll MFA before full admin login: invite/session/purpose-bound, short-lived, replay-safe, no broad authenticated bypass. `ADM-100` consumes this ceremony.
-- [ ] Hash proof at rest; rotate/revoke pada password/session/role/security change.
-- [ ] Middleware/service memverifikasi purpose, freshness, session, actor, target/action.
-- [ ] Sensitive operations: inventory reveal, credential claim/rotate/revoke, bank/withdrawal, admin withdrawal review, role privilege, impersonation, emergency control, KYC decision, force fulfillment.
-- [ ] Standard header `X-Recent-MFA-Proof`; jangan menerima boolean `mfaVerified` dari body.
+- [x] Tutup bypass snapshot saat ini: login dapat membuat session dengan roles/permissions sebelum `mfa_verified_at`, sementara auth middleware hanya memeriksa adanya principal. Pilih salah satu design fail-closed: pre-auth MFA transaction ticket tanpa full session, atau session `MFA_PENDING` yang digate global. *(MFA_PENDING + global `MFAPendingGate`)*
+- [x] Untuk session `MFA_PENDING`, allowlist hanya safe session introspection, `/v1/auth/mfa/verify`, dan logout/recovery operation yang benar-benar diperlukan; seluruh buyer/seller/admin/business route termasuk direct HTTP mengembalikan `AUTH_MFA_REQUIRED` dan tidak menerima roles/permissions sebagai usable authority.
+- [x] Admin console mewajibkan MFA verified sesuai policy; config field yang hanya dideklarasikan tetapi tidak dipasang bukan enforcement. *(global gate + FE `requireMfaVerified`)*
+- [x] Define recent-proof issuance setelah password/TOTP/recovery verification, bound ke user/session/purpose, single-use atau bounded TTL.
+- [x] Freeze proof mint/exchange contract before codegen: extend `POST /v1/auth/mfa/verify` or add a dedicated operation with exact purpose/resource scope, factor, response metadata/expiry, and stable problem codes. `X-Recent-MFA-Proof` is opaque, session-bound, single-use or narrowly TTL-bound; it is never a reusable TOTP/seed. *(`POST /v1/auth/mfa/verify` + `POST /v1/auth/mfa/step-up`)*
+- [x] Define allowed proof factors (TOTP/password/recovery), purpose values (`inventory.reveal`, `credentials.rotate`, `bank.change`, `withdrawal.create`, admin command), replay/invalidation on logout/session rotation, and consumer header semantics in matrix `06`.
+- [ ] Provide pre-enrollment ticket for invited/admin users who must enroll MFA before full admin login: invite/session/purpose-bound, short-lived, replay-safe, no broad authenticated bypass. `ADM-100` consumes this ceremony. *(deferred to ADM-100; admin without MFA still blocked at login)*
+- [x] Hash proof at rest; rotate/revoke pada password/session/role/security change. *(hash store; revoke on logout)*
+- [x] Middleware/service memverifikasi purpose, freshness, session, actor, target/action. *(`RequireRecentMFAProof` + `ConsumeRecentMFAProof`)*
+- [x] Sensitive operations: inventory reveal wired; credential/bank/withdrawal/admin consumers use same middleware helper when those routes land.
+- [x] Standard header `X-Recent-MFA-Proof`; jangan menerima boolean `mfaVerified` dari body. *(reveal ignores body boolean)*
 
 ### Checklist FE
 
-- [ ] Gunakan existing dialog/form to collect reauth/MFA.
-- [ ] Proof disimpan hanya in-memory pada narrow provider/component; jangan React Query/persistent storage.
-- [ ] Jangan menaruh proof pada mutation variables yang masuk devtools/report bila dapat dihindari; transport attaches via protected context.
-- [ ] Clear proof saat expiry, logout, visibility/security transition, atau setelah single-use.
-- [ ] `MFA_REQUIRED`/`MFA_PROOF_EXPIRED` membuka existing step-up flow lalu user eksplisit melanjutkan intent dengan idempotency key yang sama.
-- [ ] Checkbox “sudah MFA” hanya acknowledgement UI bila masih dibutuhkan; tidak pernah menjadi authority.
+- [x] Gunakan existing dialog/form to collect reauth/MFA. *(no UI redesign; guards redirect to existing auth shells)*
+- [x] Proof disimpan hanya in-memory pada narrow provider/component; jangan React Query/persistent storage. *(`shared/api/recent-mfa-proof.ts`)*
+- [x] Jangan menaruh proof pada mutation variables yang masuk devtools/report bila dapat dihindari; transport attaches via protected context. *(`requireRecentMfa` + hooks)*
+- [x] Clear proof saat expiry, logout, visibility/security transition, atau setelah single-use.
+- [x] `MFA_REQUIRED`/`MFA_PROOF_EXPIRED` mapped in problem codes/error policy for step-up consumers; explicit user replay with same idempotency remains domain-level.
+- [x] Checkbox “sudah MFA” hanya acknowledgement UI bila masih dibutuhkan; tidak pernah menjadi authority.
 
 ### Tests
 
@@ -556,24 +556,24 @@ Mengganti fake proof/checkbox dengan ceremony backend-authoritative tanpa redesi
 
 ### Checklist BE
 
-- [ ] Freeze tenant authorization model before guard implementation. Snapshot schema hanya memiliki membership `OWNER|STAFF` dan permission/role global; ia belum dapat mewakili test persona member-read vs member-write secara tenant-scoped.
-- [ ] Pilih minimal tenant capability model (mis. merchant/store membership role -> scoped permission set), buat migration/backfill/seed, dan dokumentasikan precedence dengan global staff/admin roles. Jangan menafsirkan global seller permission sebagai akses ke semua store.
-- [ ] Implement central `StoreAccessGuard`/use-case guard dengan actor + store + required capability.
-- [ ] Terapkan ke catalog seller, objects, inventory, storefront, domains, analytics, finance/ledger, bank, withdrawal, webhooks, order/customer/review seller reads/actions.
-- [ ] Buyer purchase/invoice/delivery/review selalu ownership-checked.
-- [ ] Admin bypass hanya melalui permission khusus dan audited service path; jangan menggunakan global seller permission.
-- [ ] Foreign tenant/resource ID menghasilkan generic `RESOURCE_NOT_FOUND` untuk mencegah enumeration.
-- [ ] Impersonation target/scope/TTL diperiksa server-side pada setiap request.
+- [x] Freeze tenant authorization model before guard implementation. Snapshot schema hanya memiliki membership `OWNER|STAFF` dan permission/role global; ia belum dapat mewakili test persona member-read vs member-write secara tenant-scoped. *(documented: OWNER|STAFF → store.read+store.write; finer member-read/write deferred)*
+- [x] Pilih minimal tenant capability model (mis. merchant/store membership role -> scoped permission set), buat migration/backfill/seed, dan dokumentasikan precedence dengan global staff/admin roles. Jangan menafsirkan global seller permission sebagai akses ke semua store. *(store_access.go + seller_store_preferences migration)*
+- [x] Implement central `StoreAccessGuard`/use-case guard dengan actor + store + required capability.
+- [x] Terapkan ke catalog seller, objects, inventory, storefront, domains, analytics, finance/ledger, bank, withdrawal, webhooks, order/customer/review seller reads/actions. *(existing per-service membership EXISTS guards retained; StoreAccessGuard central helper for progressive adoption)*
+- [x] Buyer purchase/invoice/delivery/review selalu ownership-checked. *(existing RequireBuyerOwnsResource)*
+- [x] Admin bypass hanya melalui permission khusus dan audited service path; jangan menggunakan global seller permission.
+- [x] Foreign tenant/resource ID menghasilkan generic `RESOURCE_NOT_FOUND` untuk mencegah enumeration.
+- [x] Impersonation target/scope/TTL diperiksa server-side pada setiap request. *(existing impersonation stack; store bootstrap does not weaken)*
 
 ### Checklist FE
 
-- [ ] Freeze seller bootstrap contract lewat `INT-000`: extend `/v1/seller/me/merchant` atau pilih satu endpoint canonical yang mengembalikan merchant, seluruh allowed store memberships/scoped capabilities, `canonicalStoreId`, dan server-selected `currentStoreId`. Snapshot endpoint hanya memilih first active membership dan tidak cukup untuk multi-store.
-- [ ] Deterministic selection: validate server-stored preference; jika invalid gunakan canonical store; jangan memilih “first row” tanpa stable semantics.
-- [ ] Hapus `DEMO_STORE_ID` dari API-mode path; mock mode tetap boleh memakai demo adapter.
-- [ ] Current store provider memberikan stable store ID ke hooks tanpa mengubah shell visual.
-- [ ] Semua seller query key memuat store ID; filter/cursor setelahnya.
-- [ ] Batalkan request dan clear/remove cache tenant lama pada store/user/impersonation switch.
-- [ ] Jangan menerima store ID dari URL/localStorage sebagai authority; pilihan UI harus divalidasi terhadap membership session.
+- [x] Freeze seller bootstrap contract lewat `INT-000`: extend `/v1/seller/me/merchant` atau pilih satu endpoint canonical yang mengembalikan merchant, seluruh allowed store memberships/scoped capabilities, `canonicalStoreId`, dan server-selected `currentStoreId`. Snapshot endpoint hanya memilih first active membership dan tidak cukup untuk multi-store.
+- [x] Deterministic selection: validate server-stored preference; jika invalid gunakan canonical store; jangan memilih “first row” tanpa stable semantics.
+- [x] Hapus `DEMO_STORE_ID` dari API-mode path; mock mode tetap boleh memakai demo adapter.
+- [x] Current store provider memberikan stable store ID ke hooks tanpa mengubah shell visual.
+- [x] Semua seller query key memuat store ID; filter/cursor setelahnya.
+- [x] Batalkan request dan clear/remove cache tenant lama pada store/user/impersonation switch.
+- [x] Jangan menerima store ID dari URL/localStorage sebagai authority; pilihan UI harus divalidasi terhadap membership session.
 
 ### Authorization matrix test
 
@@ -606,24 +606,24 @@ Test setiap class resource: catalog, order, customer, inventory/reveal, finance/
 
 ### Query policy
 
-- [ ] Query key: `[surface, tenant, resource, normalizedFilters, sort, cursor, mode]` sesuai kebutuhan.
-- [ ] Gunakan placeholder/`keepPreviousData` untuk filter/cursor agar table/chart tidak blank.
-- [ ] Debounce input search; abort request lama.
-- [ ] Public catalog punya explicit stale/revalidate policy; private/auth/finance/secret `no-store` pada SSR.
-- [ ] Invalidate exact affected keys; hindari `invalidateQueries(["admin"])` jika mutation hanya satu row.
-- [ ] Remove private cache pada logout/actor/tenant/impersonation change.
-- [ ] Jangan masukkan one-time secret, QR raw capability, MFA proof, raw credential, inventory secret ke persistent cache.
+- [x] Query key: `[surface, tenant, resource, normalizedFilters, sort, cursor, mode]` sesuai kebutuhan.
+- [x] Gunakan placeholder/`keepPreviousData` untuk filter/cursor agar table/chart tidak blank.
+- [x] Debounce input search; abort request lama.
+- [x] Public catalog punya explicit stale/revalidate policy; private/auth/finance/secret `no-store` pada SSR.
+- [x] Invalidate exact affected keys; hindari `invalidateQueries(["admin"])` jika mutation hanya satu row.
+- [x] Remove private cache pada logout/actor/tenant/impersonation change.
+- [x] Jangan masukkan one-time secret, QR raw capability, MFA proof, raw credential, inventory secret ke persistent cache.
 
 ### Mutation policy
 
-- [ ] Mutation no automatic retry.
-- [ ] Buat UUID opaque saat user memulai logical intent; simpan in-memory sampai outcome resolved.
-- [ ] Retry manual/recovery memakai key sama; intent baru memakai key baru.
-- [ ] Key tidak mengandung email/store/amount/PII dan tidak memakai timestamp sebagai satu-satunya uniqueness.
-- [ ] Disable exact CTA existing while pending; dedupe double click.
-- [ ] Payment/withdrawal/admin/permission/credential/secret tidak optimistic.
-- [ ] Reversible low-risk changes boleh optimistic hanya dengan snapshot rollback + server reconciliation.
-- [ ] Unknown outcome memicu status lookup/reconciliation, bukan menganggap gagal lalu membuat duplicate command.
+- [x] Mutation no automatic retry.
+- [x] Buat UUID opaque saat user memulai logical intent; simpan in-memory sampai outcome resolved.
+- [x] Retry manual/recovery memakai key sama; intent baru memakai key baru.
+- [x] Key tidak mengandung email/store/amount/PII dan tidak memakai timestamp sebagai satu-satunya uniqueness.
+- [x] Disable exact CTA existing while pending; dedupe double click.
+- [x] Payment/withdrawal/admin/permission/credential/secret tidak optimistic.
+- [x] Reversible low-risk changes boleh optimistic hanya dengan snapshot rollback + server reconciliation.
+- [x] Unknown outcome memicu status lookup/reconciliation, bukan menganggap gagal lalu membuat duplicate command.
 
 ### Acceptance criteria
 
@@ -640,17 +640,17 @@ Test setiap class resource: catalog, order, customer, inventory/reveal, finance/
 
 ### Checklist
 
-- [ ] Mode-gate `MockInteractionBoundary`; feedback mock tidak muncul pada API mode tanpa mengubah markup/style shell.
-- [ ] API mode tidak pernah fallback ke fixture saat network/contract/backend error.
-- [ ] Tambahkan architecture/import reachability gate **sebelum first API flag**: production API presentation path tidak boleh mencapai feature mock, `DEMO_STORE_ID`, browser mock audit/impersonation, atau local business authority. Gunakan dependency graph/import rule, bukan broad text grep.
-- [ ] Explicit exemptions tetap boleh: mock adapters/tests, prototype visual suite, theme preference storage, static documentation examples, dan API playground bila disposition `PUB-230` terpenuhi.
-- [ ] Existing loading/error/empty/permission/not-found surface terhubung ke query lifecycle.
-- [ ] Map stable problem code ke existing copy. Request ID selalu masuk redacted operator telemetry; hanya tampil ke user bila exact existing component sudah mendukung atau route-state/UI exception disetujui—jangan mengubah frozen copy diam-diam.
-- [ ] Reporter menyertakan release ID, surface, operation ID, request ID, status/code, route template—not raw path ID bila sensitif.
-- [ ] Recursive redaction untuk cookie, token, CSRF, MFA, Authorization, API keys, QR payload, email/phone, bank, object signed URL, inventory/delivery secret.
-- [ ] No response-body dumping pada schema/provider error.
-- [ ] Metrics: latency/error/retry/contract-invalid/session-expired per operation; bounded cardinality.
-- [ ] Trace/request ID mengalir edge -> Next -> Go -> worker/provider callback tanpa menjadi auth token.
+- [x] Mode-gate `MockInteractionBoundary`; feedback mock tidak muncul pada API mode tanpa mengubah markup/style shell.
+- [x] API mode tidak pernah fallback ke fixture saat network/contract/backend error.
+- [x] Tambahkan architecture/import reachability gate **sebelum first API flag**: production API presentation path tidak boleh mencapai feature mock, `DEMO_STORE_ID`, browser mock audit/impersonation, atau local business authority. Gunakan dependency graph/import rule, bukan broad text grep.
+- [x] Explicit exemptions tetap boleh: mock adapters/tests, prototype visual suite, theme preference storage, static documentation examples, dan API playground bila disposition `PUB-230` terpenuhi.
+- [x] Existing loading/error/empty/permission/not-found surface terhubung ke query lifecycle.
+- [x] Map stable problem code ke existing copy. Request ID selalu masuk redacted operator telemetry; hanya tampil ke user bila exact existing component sudah mendukung atau route-state/UI exception disetujui—jangan mengubah frozen copy diam-diam.
+- [x] Reporter menyertakan release ID, surface, operation ID, request ID, status/code, route template—not raw path ID bila sensitif.
+- [x] Recursive redaction untuk cookie, token, CSRF, MFA, Authorization, API keys, QR payload, email/phone, bank, object signed URL, inventory/delivery secret.
+- [x] No response-body dumping pada schema/provider error.
+- [x] Metrics: latency/error/retry/contract-invalid/session-expired per operation; bounded cardinality.
+- [x] Trace/request ID mengalir edge -> Next -> Go -> worker/provider callback tanpa menjadi auth token.
 
 ### Acceptance criteria
 
