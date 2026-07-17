@@ -510,6 +510,10 @@ func productDTO(p catalog.Product, seller bool) map[string]any {
 	if p.StoreSlug != "" {
 		out["storeSlug"] = p.StoreSlug
 	}
+	// storeId is required for checkout quote (CHK-100); not a secret.
+	if p.StoreID != "" {
+		out["storeId"] = p.StoreID
+	}
 	if p.Badge != "" {
 		out["badge"] = p.Badge
 	}
@@ -525,7 +529,6 @@ func productDTO(p catalog.Product, seller bool) map[string]any {
 	}
 	if seller {
 		out["status"] = string(p.Status)
-		out["storeId"] = p.StoreID
 		out["merchantId"] = p.MerchantID
 		if p.PublishedAt != nil {
 			out["publishedAt"] = p.PublishedAt.UTC().Format("2006-01-02T15:04:05Z07:00")
@@ -564,6 +567,13 @@ func publicStorefrontDTO(sf catalog.PublicStorefront) map[string]any {
 		"rating":             sf.Rating,
 		"reviewCount":        sf.ReviewCount,
 		"products":           products,
+	}
+	// Surface storeId for checkout quote bootstrap when products carry it (CHK-100).
+	for _, p := range sf.Products {
+		if p.StoreID != "" {
+			out["storeId"] = p.StoreID
+			break
+		}
 	}
 	if sf.Announcement != "" {
 		out["announcement"] = sf.Announcement

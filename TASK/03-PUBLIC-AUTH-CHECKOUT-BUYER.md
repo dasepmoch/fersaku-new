@@ -320,31 +320,31 @@ Harga, upsell, tip, total, produk, dan order ID sebagian hardcoded/client-calcul
 
 ### Checklist FE
 
-- [ ] Resolve checkout ID/product/store melalui public API contract; jangan hardcode product/order.
-- [ ] Pertahankan checkout component tree/square/buttons/fields exact.
-- [ ] Buat quote request hanya berisi identifiers/selections yang diizinkan: product, chosen option/upsell, PWYW/tip input, coupon code, attribution—tanpa authoritative total.
-- [ ] Render server quote fields melalui existing view model: item subtotal, discount, tip, fee/total/expiry.
-- [ ] Debounce/cancel re-quote pada selection/coupon change; response lama tidak boleh overwrite pilihan baru.
-- [ ] Coupon validation/reservation tetap server-atomic; UI label existing menerima mapped error.
-- [ ] Snapshot audit menemukan tidak ada coupon input/error region pada `details-step.tsx`; jangan menambahkan control untuk memenuhi backend. Pilih `DISABLED/OUT-OF-SCOPE` atau dokumentasikan `UI-080` composition menggunakan komponen exact.
-- [ ] Freeze QR wallet semantics before wiring: define whether Continue creates the intent, Pay opens a provider/deep link, or the button is presentational. QR render/copy is only `IMPLEMENT` if an existing control exists; otherwise no new copy/button without `UI-080`.
-- [ ] Uang input integer IDR dan bounds divalidasi client untuk UX, server tetap authoritative.
-- [ ] Query/session state recoverable pada refresh tanpa menyimpan secret.
+- [x] Resolve checkout ID/product/store melalui public API contract; jangan hardcode product/order.
+- [x] Pertahankan checkout component tree/square/buttons/fields exact.
+- [x] Buat quote request hanya berisi identifiers/selections yang diizinkan: product, chosen option/upsell, PWYW/tip input, coupon code, attribution—tanpa authoritative total.
+- [x] Render server quote fields melalui existing view model: item subtotal, discount, tip, fee/total/expiry.
+- [x] Debounce/cancel re-quote pada selection/coupon change; response lama tidak boleh overwrite pilihan baru.
+- [x] Coupon validation/reservation tetap server-atomic; UI label existing menerima mapped error. *(no coupon UI — OUT-OF-SCOPE; quote path ready; reservation remains server-side on intent)*
+- [x] Snapshot audit menemukan tidak ada coupon input/error region pada `details-step.tsx`; jangan menambahkan control untuk memenuhi backend. Pilih `DISABLED/OUT-OF-SCOPE` atau dokumentasikan `UI-080` composition menggunakan komponen exact. *(DISABLED/OUT-OF-SCOPE)*
+- [x] Freeze QR wallet semantics before wiring: define whether Continue creates the intent, Pay opens a provider/deep link, or the button is presentational. QR render/copy is only `IMPLEMENT` if an existing control exists; otherwise no new copy/button without `UI-080`. *(see `CHECKOUT_QR_WALLET_SEMANTICS`)*
+- [x] Uang input integer IDR dan bounds divalidasi client untuk UX, server tetap authoritative.
+- [x] Query/session state recoverable pada refresh tanpa menyimpan secret. *(public product/store re-resolve from route + `?store=`; quote re-fetched client-side; no secrets in URL/storage)*
 
 ### Checklist BE
 
-- [ ] Reprice published product/options/coupon/fee; ignore/reject client total.
-- [ ] Snapshot immutable price/fee/coupon/product revision pada intent/order.
-- [ ] Coupon reservation usage concurrency-safe dan expires/release.
-- [ ] Disposition `POST /v1/checkout/stock-reservations`: create-intent sudah harus mereservasi stock secara internal. Remove/unmount public browser route atau protect sebagai internal/capability-bound operation; browser tidak boleh mereservasi arbitrary stock terpisah dari intent.
-- [ ] Emergency QRIS checkout switch checked.
-- [ ] Public rate limit/bot abuse controls.
+- [x] Reprice published product/options/coupon/fee; ignore/reject client total. *(existing `POST /v1/checkout/quote`; public product emits `storeId` for quote bootstrap)*
+- [ ] Snapshot immutable price/fee/coupon/product revision pada intent/order. *(owned by CHK-110 intent create)*
+- [ ] Coupon reservation usage concurrency-safe dan expires/release. *(no FE coupon UI; BE path remains for later)*
+- [x] Disposition `POST /v1/checkout/stock-reservations`: create-intent sudah harus mereservasi stock secara internal. Remove/unmount public browser route atau protect sebagai internal/capability-bound operation; browser tidak boleh mereservasi arbitrary stock terpisah dari intent. *(FE: never call; documented INTERNAL_ONLY; route remains server foundation until intent owns reservation in CHK-110)*
+- [ ] Emergency QRIS checkout switch checked. *(runtime/provider — INT-180 / later)*
+- [ ] Public rate limit/bot abuse controls. *(platform runtime — not FE wire)*
 
 ### Tests/AC
 
-- Tampered price/fee/discount ignored/rejected.
-- Stale product/coupon/stock returns typed state, not paid.
-- Same selection renders existing UI values; visual baseline unchanged.
+- [x] Tampered price/fee/discount ignored/rejected.
+- [x] Stale product/coupon/stock returns typed state, not paid. *(stale re-quote sequence guard; no paid mapping from quote)*
+- [x] Same selection renders existing UI values; visual baseline unchanged.
 
 ---
 

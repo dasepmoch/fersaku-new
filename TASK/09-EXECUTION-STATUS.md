@@ -97,7 +97,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[ ]` | `PUB-210` | P1 | PUB-100 | PUB | — | Store search and safe social links | — |
 | `[ ]` | `PUB-220` | P1/P2 | INT-180 **if live status dependency**, QLT-320 framework; `public-catalog` QLT-320 cell before canary | PUB/RTM | — | Truthful public platform status | — |
 | `[ ]` | `PUB-230` | P1 decision | INT-025, UI-080 | PUB/UX | — | Static/help/careers/playground disposition | — |
-| `[ ]` | `CHK-100` | P0 | INT-160, INT-190, PUB-100; INT-180 **if live provider** | PUB/RTM | — | Server quote + reservation decision | — |
+| `[x]` | `CHK-100` | P0 | INT-160, INT-190, PUB-100; INT-180 **if live provider** | PUB/RTM | completed @nikki/opencode · main · 2026-07-17 · claim released | Server quote + reservation decision | TASK/evidence/CHK-100/20260717-1428-nikki.md · features/commerce/checkout · app/checkout · tests/unit/chk-100-checkout-quote.test.ts |
 | `[ ]` | `CHK-110` | P0 | CHK-100, INT-180 | PUB/RTM | — | Idempotent real checkout intent (G5 start) | — |
 | `[ ]` | `CHK-120` | P0 | CHK-110 | PUB | — | Authoritative QR polling/terminal recovery | — |
 | `[ ]` | `CHK-130` | P0 | CHK-110, INT-120 | PUB | — | Safe order-result capability | — |

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CatalogProduct,
   PublicStorefront,
@@ -13,8 +13,10 @@ import {
   createPendingDedupe,
 } from "@/shared/query/create-mutation";
 import { CheckoutDetailsStep } from "./details-step";
+import { useCheckoutQuote } from "./hooks";
 import { useSimulateCheckoutPaymentMutation } from "./mutations";
 import { CheckoutOrderSummary } from "./order-summary";
+import { clampIntegerIdr } from "./mappers";
 import type { CheckoutStep } from "./pieces";
 import { CheckoutPaidStep, CheckoutQrisStep } from "./qris-step";
 
@@ -44,12 +46,44 @@ export function CheckoutExperience({
   const upsellProduct = store.products.find(
     (p) => p.slug === "cursor-rules-kit",
   );
+  /** Existing offer price (UI freeze); amount sent to quote as upsell line. */
   const upsellPrice = 39000;
-  const base = product.allowPayWhatYouWant
-    ? Math.max(product.minimumPrice || product.price, customPrice)
+  const minPrice = product.minimumPrice || product.price;
+  const pwywMerchandise = product.allowPayWhatYouWant
+    ? clampIntegerIdr(customPrice, minPrice)
     : product.price;
-  const total = base + tip + (upsell ? upsellPrice : 0);
+
+  const storeId = product.storeId || store.storeId || "";
+  const quoteSelection = useMemo(
+    () =>
+      storeId
+        ? {
+            storeId,
+            productId: product.id,
+            merchandise: pwywMerchandise,
+            tip,
+            upsell: upsell ? upsellPrice : 0,
+          }
+        : null,
+    [storeId, product.id, pwywMerchandise, tip, upsell, upsellPrice],
+  );
+
+  const { quote } = useCheckoutQuote(quoteSelection, {
+    catalogPrice: product.price,
+    enabled: Boolean(storeId),
+  });
+
+  /**
+   * Display money from server quote when present.
+   * Provisional catalog math is UX-only until first quote lands — never authority.
+   */
+  const merchandise = quote?.merchandise ?? pwywMerchandise;
+  const displayTip = quote?.tip ?? tip;
+  const displayUpsell = quote?.upsell ?? (upsell ? upsellPrice : 0);
+  const total = quote?.gross ?? merchandise + displayTip + displayUpsell;
+  const base = merchandise;
   const valid = name.trim().length > 2 && /.+@.+\..+/.test(email);
+
   useEffect(() => {
     if (step !== "qris") return;
     const interval = setInterval(
@@ -83,7 +117,7 @@ export function CheckoutExperience({
         storeSlug: store.slug,
         customer: { name, email },
         total,
-        tip,
+        tip: displayTip,
         upsell,
         idempotencyKey,
       })
@@ -102,7 +136,7 @@ export function CheckoutExperience({
     schedule(
       () =>
         router.push(
-          `/orders/FRS-240712-1848/success?total=${total}&tip=${tip}&upsell=${upsell ? 1 : 0}`,
+          `/orders/FRS-240712-1848/success?total=${total}&tip=${displayTip}&upsell=${upsell ? 1 : 0}`,
         ),
       3000,
     );
@@ -125,10 +159,10 @@ export function CheckoutExperience({
           product={product}
           store={store}
           base={base}
-          tip={tip}
-          upsell={upsell}
+          tip={displayTip}
+          upsell={upsell && displayUpsell > 0}
           upsellProduct={upsellProduct}
-          upsellPrice={upsellPrice}
+          upsellPrice={displayUpsell > 0 ? displayUpsell : upsellPrice}
           total={total}
         />
         <section className="hairline shadow-float rounded-[32px] border bg-[#fbfaf7] p-5 sm:p-8">

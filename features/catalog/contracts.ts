@@ -15,6 +15,8 @@ export type CatalogProduct = {
   includes: string[];
   /** Canonical owning store slug for public featured/product links (PUB-100). */
   storeSlug?: string;
+  /** Owning store id for checkout quote (CHK-100); not a secret. */
+  storeId?: string;
   allowPayWhatYouWant?: boolean;
   minimumPrice?: number;
   updatesEnabled?: boolean;
@@ -32,6 +34,8 @@ export type PublicProductMatch = {
 };
 
 export type PublicStorefront = {
+  /** Store id when known (checkout quote); optional on mock/legacy. */
+  storeId?: string;
   slug: string;
   name: string;
   monogram: string;

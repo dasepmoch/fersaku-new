@@ -8727,8 +8727,10 @@ components:
           description: Seller-only field
         storeId:
           type: string
+          description: Owning store id (public product/storefront for checkout quote; seller status still seller-only)
         merchantId:
           type: string
+          description: Seller-only field
     CreateProductRequest:
       type: object
       required:

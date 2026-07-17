@@ -273,6 +273,8 @@ export const publicStorefrontDtoSchema = z.object({
   products: z.array(catalogProductDtoSchema),
   revision: z.number().int().optional(),
   etag: z.string().optional(),
+  /** Optional store id for checkout quote bootstrap (CHK-100). */
+  storeId: z.string().min(1).optional(),
 });
 
 export const publicStorefrontEnvelopeSchema = successEnvelopeSchema(
@@ -343,6 +345,48 @@ export type PublicReviewSummaryDto = z.infer<
 export type FeePolicyDto = z.infer<typeof feePolicySchema>;
 export type AuthLoginDataDto = z.infer<typeof authLoginDataSchema>;
 export type AuthSessionDataDto = z.infer<typeof authSessionDataSchema>;
+
+// --- Checkout quote (CHK-100) — server-authoritative price snapshot ---
+
+/** Request body for POST /v1/checkout/quote. No authoritative total. */
+export const checkoutQuoteRequestSchema = z.object({
+  storeId: z.string().min(1),
+  productId: z.string().min(1),
+  merchandise: moneyIdrSchema.optional(),
+  tip: moneyIdrSchema.optional(),
+  upsell: moneyIdrSchema.optional(),
+  couponCode: z.string().optional(),
+  /** Never authoritative — included only to prove ignore path in tests. */
+  clientDiscount: moneyIdrSchema.optional(),
+  discount: moneyIdrSchema.optional(),
+  buyerIdentityHash: z.string().optional(),
+});
+
+export const checkoutPriceDtoSchema = z.object({
+  storeId: z.string().optional(),
+  productId: z.string().optional(),
+  merchandise: moneyIdrSchema,
+  tip: moneyIdrSchema.optional(),
+  upsell: moneyIdrSchema.optional(),
+  eligibleSubtotal: moneyIdrSchema.optional(),
+  discount: moneyIdrSchema,
+  gross: moneyIdrSchema,
+  couponApplied: z.boolean(),
+  couponUnavailable: z.boolean().optional(),
+  clientDiscountIgnored: z.boolean(),
+  couponId: z.string().optional(),
+  couponCode: z.string().optional(),
+  couponPolicyVersion: z.number().int().optional(),
+  discountKind: z.string().optional(),
+  discountValue: moneyIdrSchema.optional(),
+});
+
+export const checkoutPriceEnvelopeSchema = successEnvelopeSchema(
+  checkoutPriceDtoSchema,
+);
+
+export type CheckoutQuoteRequestDto = z.infer<typeof checkoutQuoteRequestSchema>;
+export type CheckoutPriceDto = z.infer<typeof checkoutPriceDtoSchema>;
 
 /** GET /v1/seller/me/merchant — seller bootstrap (INT-150). */
 export const sellerMembershipSchema = z.object({

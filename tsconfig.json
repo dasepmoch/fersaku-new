@@ -35,11 +35,10 @@
     ".next/types/**/*.ts",
     ".next-dev/types/**/*.ts",
     ".next-dev/dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    ".next-e2e-api/types/**/*.ts",
-    ".next-e2e-api/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
+    ".next-e2e-api",
     "node_modules"
   ]
 }

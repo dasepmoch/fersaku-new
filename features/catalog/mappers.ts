@@ -130,6 +130,9 @@ export function mapCatalogProductDto(dto: CatalogProductDto): CatalogProduct {
   if (dto.storeSlug !== undefined && dto.storeSlug !== "") {
     view.storeSlug = dto.storeSlug;
   }
+  if (dto.storeId !== undefined && dto.storeId !== "") {
+    view.storeId = dto.storeId;
+  }
   if (dto.badge !== undefined) view.badge = dto.badge;
   if (dto.allowPayWhatYouWant !== undefined) {
     view.allowPayWhatYouWant = dto.allowPayWhatYouWant;
@@ -184,9 +187,16 @@ export function mapPublicStorefrontDtoWithStoreSlug(
   dto: PublicStorefrontDto,
 ): PublicStorefront {
   const view = mapPublicStorefrontDto(dto);
-  view.products = view.products.map((p) =>
-    p.storeSlug ? p : { ...p, storeSlug: view.slug },
-  );
+  const storeIdFromProducts = view.products.find((p) => p.storeId)?.storeId;
+  if (storeIdFromProducts && !view.storeId) {
+    view.storeId = storeIdFromProducts;
+  }
+  view.products = view.products.map((p) => {
+    let next = p;
+    if (!next.storeSlug) next = { ...next, storeSlug: view.slug };
+    if (!next.storeId && view.storeId) next = { ...next, storeId: view.storeId };
+    return next;
+  });
   return view;
 }
 
@@ -220,7 +230,7 @@ export function mapPublicStorefrontDto(
     socials.youtube = socialsRaw.youtube;
   }
 
-  return {
+  const view: PublicStorefront = {
     slug: dto.slug,
     name: dto.name,
     monogram: dto.monogram,
@@ -252,4 +262,8 @@ export function mapPublicStorefrontDto(
     reviewCount: dto.reviewCount ?? 0,
     products: mapCatalogProductListDto(dto.products),
   };
+  if (dto.storeId !== undefined && dto.storeId !== "") {
+    view.storeId = dto.storeId;
+  }
+  return view;
 }

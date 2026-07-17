@@ -6,26 +6,41 @@ import {
 } from "@/lib/storefront-mock-data";
 import type { CatalogProduct, PublicStorefront } from "./contracts";
 
-function withStoreSlug(
+/** Deterministic mock store ids for checkout quote (CHK-100). */
+const DEMO_STORE_IDS: Record<string, string> = {
+  "asep-ai-tools": "store_demo_asep_ai_tools",
+  "designkit-studio": "store_demo_designkit_studio",
+};
+
+function withStoreIdentity(
   products: CatalogProduct[],
   storeSlug: string,
 ): CatalogProduct[] {
-  return products.map((p) => ({ ...p, storeSlug: p.storeSlug || storeSlug }));
+  const storeId = DEMO_STORE_IDS[storeSlug];
+  return products.map((p) => ({
+    ...p,
+    storeSlug: p.storeSlug || storeSlug,
+    ...(storeId && !p.storeId ? { storeId } : {}),
+  }));
 }
 
 /** Deterministic catalog fixtures. Presentation must consume these via api/hooks. */
 export const demoProducts: CatalogProduct[] = (() => {
   const asep = storefronts["asep-ai-tools"];
-  if (asep) return withStoreSlug(fixtureProducts as CatalogProduct[], asep.slug);
+  if (asep) {
+    return withStoreIdentity(fixtureProducts as CatalogProduct[], asep.slug);
+  }
   return fixtureProducts as CatalogProduct[];
 })();
 
 export function getDemoStorefront(slug: string): PublicStorefront | null {
   const storefront = getFixtureStorefront(slug);
   if (!storefront) return null;
+  const storeId = DEMO_STORE_IDS[storefront.slug];
   return {
     ...storefront,
-    products: withStoreSlug(
+    ...(storeId ? { storeId } : {}),
+    products: withStoreIdentity(
       storefront.products as CatalogProduct[],
       storefront.slug,
     ),
@@ -36,10 +51,12 @@ export function findDemoProduct(productIdOrSlug: string) {
   const match = findFixtureProduct(productIdOrSlug);
   if (!match) return null;
   const storeSlug = match.store.slug;
+  const storeId = DEMO_STORE_IDS[storeSlug];
   return {
     store: {
       ...match.store,
-      products: withStoreSlug(
+      ...(storeId ? { storeId } : {}),
+      products: withStoreIdentity(
         match.store.products as CatalogProduct[],
         storeSlug,
       ),
@@ -47,6 +64,7 @@ export function findDemoProduct(productIdOrSlug: string) {
     product: {
       ...(match.product as CatalogProduct),
       storeSlug,
+      ...(storeId ? { storeId } : {}),
     },
   };
 }
