@@ -588,12 +588,12 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist
 
-- [ ] Use seller notification alias and session/current-store mapped identity.
-- [ ] Preserve dashboard shell menus and all classes/copy.
-- [ ] Mark read/read-all and logout actual backend actions.
-- [ ] Mode-gate mock interaction feedback.
-- [ ] Store suspension/impersonation banner derives server session state, not URL/sessionStorage.
-- [ ] Clear seller cache/secret claims on logout/actor/store switch.
+- [x] Use seller notification alias and session/current-store mapped identity.
+- [x] Preserve dashboard shell menus and all classes/copy.
+- [x] Mark read/read-all and logout actual backend actions.
+- [x] Mode-gate mock interaction feedback.
+- [x] Store suspension/impersonation banner derives server session state, not URL/sessionStorage.
+- [x] Clear seller cache/secret claims on logout/actor/store switch.
 
 ### Tests/AC
 

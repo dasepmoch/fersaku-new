@@ -131,7 +131,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `SEL-340` | P1 | SEL-100, AUT-120, BUY-140; INT-175 if avatar active | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller profile/security/banks/preferences | TASK/evidence/SEL-340/20260717-1700-nikki.md · features/seller/settings · tests/unit/sel-340-seller-settings.test.ts |
 | `[x]` | `SEL-400` | P0 auth/P1 wire | SEL-100, INT-150 | SEL | @nikki/opencode · main · 2026-07-17 · files: finance/ledger, TASK/evidence/SEL-400 | Finance/ledger read authority | TASK/evidence/SEL-400/20260717-1538-nikki.md · features/finance · tests/unit/sel-400-seller-finance-ledger.test.ts |
 | `[ ]` | `SEL-410` | P0 money | SEL-340, SEL-400, INT-140, INT-180, INT-185 | SEL/RTM | — | Secure withdrawal lifecycle | — |
-| `[ ]` | `SEL-420` | P1 | SEL-100, BUY-140, INT-120 | SEL | — | Seller shell notifications/profile/logout | — |
+| `[x]` | `SEL-420` | P1 | SEL-100, BUY-140, INT-120 | SEL | completed @nikki/opencode · main · 2026-07-17 · claim released | Seller shell notifications/profile/logout | TASK/evidence/SEL-420/20260717-1702-nikki.md · features/seller/components/dashboard-shell.tsx · tests/unit/sel-420-seller-shell.test.ts |
 
 ### 3.5 Admin console
 

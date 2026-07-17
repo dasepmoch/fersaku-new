@@ -32,6 +32,9 @@ import { MockInteractionBoundary } from "@/components/mock-interaction-boundary"
 import { ThemeToggle } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { NotificationCenter, ProfileMenu } from "@/shared/ui/account-controls";
+import { useSession } from "@/shared/auth/session-provider";
+import { getDomainSource } from "@/shared/data/domain-source";
+import { useCurrentStore } from "@/shared/seller/current-store";
 import { readVersionedStorage } from "@/shared/storage/versioned-storage";
 import { z } from "zod";
 import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
@@ -42,6 +45,46 @@ import {
   type ImpersonationSession,
 } from "@/features/admin/impersonation/session";
 import { ImpersonationPolicyBoundary } from "@/features/admin/impersonation/policy-boundary";
+
+const MOCK_STORE_CHROME = {
+  name: "Asep AI Tools",
+  slug: "asep",
+  initial: "A",
+  storefrontHref: "/@asep-ai-tools",
+} as const;
+
+function sellerStoreChrome(
+  bootstrap: ReturnType<typeof useCurrentStore>["bootstrap"],
+  storeId: string | null,
+  isApi: boolean,
+) {
+  const store =
+    bootstrap?.stores?.find((s) => s.storeId === storeId) ??
+    bootstrap?.stores?.find((s) => s.canonical) ??
+    bootstrap?.stores?.[0];
+  const name =
+    store?.name?.trim() ||
+    bootstrap?.displayName?.trim() ||
+    (isApi ? "" : MOCK_STORE_CHROME.name);
+  const slug =
+    store?.slug?.trim() || (isApi ? "" : MOCK_STORE_CHROME.slug);
+  const initial = (name.trim()[0] || "·").toUpperCase();
+  const storefrontHref = slug
+    ? `/@${slug}`
+    : isApi
+      ? "/dashboard/storefront"
+      : MOCK_STORE_CHROME.storefrontHref;
+  return {
+    name: name || (isApi ? "·" : MOCK_STORE_CHROME.name),
+    slugLine: slug
+      ? `fersaku.id/@${slug}`
+      : isApi
+        ? ""
+        : `fersaku.id/@${MOCK_STORE_CHROME.slug}`,
+    initial: name ? initial : isApi ? "·" : MOCK_STORE_CHROME.initial,
+    storefrontHref,
+  };
+}
 
 const nav = [
   ["Overview", "/dashboard", LayoutDashboard],
@@ -125,6 +168,22 @@ export function DashboardShell({
 }) {
   const path = usePathname();
   const router = useRouter();
+  const { claims } = useSession();
+  const { bootstrap, storeId } = useCurrentStore();
+  const sellerCatalogApi = (() => {
+    try {
+      return getDomainSource("sellerCatalog") === "api";
+    } catch {
+      return false;
+    }
+  })();
+  const storeChrome = useMemo(
+    () => sellerStoreChrome(bootstrap, storeId, sellerCatalogApi),
+    [bootstrap, storeId, sellerCatalogApi],
+  );
+  const sessionImpersonation = claims?.impersonation?.active
+    ? claims.impersonation
+    : null;
   const impersonationQuery = useSyncExternalStore(
     (onChange) => {
       window.addEventListener("popstate", onChange);
@@ -170,11 +229,17 @@ export function DashboardShell({
       return null;
     }
   }, [impersonationSessionSnapshot]);
-  const activeImpersonationSession =
+  const localImpersonationSession =
     impersonationSession && isImpersonationSessionActive(impersonationSession)
       ? impersonationSession
       : null;
+  // Server session impersonation is authority when present; local mock chrome is fallback.
+  const activeImpersonationSession = sessionImpersonation
+    ? null
+    : localImpersonationSession;
   useEffect(() => {
+    // API/session-bound impersonation does not use URL/sessionStorage binding.
+    if (sessionImpersonation) return;
     const stored = readImpersonationSession();
     const runtimeParams = new URLSearchParams(window.location.search);
     const runtimeSessionId = runtimeParams.get("session");
@@ -216,7 +281,12 @@ export function DashboardShell({
     clearImpersonationSession();
     window.dispatchEvent(new Event("fersaku-impersonation-updated"));
     router.replace(destination);
-  }, [impersonationSessionId, impersonationTargetId, router]);
+  }, [
+    impersonationSessionId,
+    impersonationTargetId,
+    router,
+    sessionImpersonation,
+  ]);
   useEffect(() => {
     if (!activeImpersonationSession) return;
     const expireSession = () => {
@@ -243,11 +313,19 @@ export function DashboardShell({
     const timer = window.setTimeout(expireSession, remaining);
     return () => window.clearTimeout(timer);
   }, [activeImpersonationSession, router]);
-  const impersonating = Boolean(activeImpersonationSession);
-  const impersonationSearch = activeImpersonationSession
-    ? `?impersonate=${encodeURIComponent(activeImpersonationSession.targetId)}&session=${encodeURIComponent(activeImpersonationSession.sessionId)}`
-    : "";
+  const impersonating = Boolean(
+    sessionImpersonation || activeImpersonationSession,
+  );
+  const impersonationSearch =
+    !sessionImpersonation && activeImpersonationSession
+      ? `?impersonate=${encodeURIComponent(activeImpersonationSession.targetId)}&session=${encodeURIComponent(activeImpersonationSession.sessionId)}`
+      : "";
   const endImpersonation = () => {
+    if (sessionImpersonation) {
+      // Server-authoritative impersonation ends via admin logout/end API (not local storage).
+      router.replace("/admin/users");
+      return;
+    }
     if (!impersonationSession) return;
     appendClientAuditEvent({
       actor: impersonationSession.actor,
@@ -322,17 +400,19 @@ export function DashboardShell({
             )}
           >
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#d7ff64] text-xs font-black text-[#173f2c]">
-              A
+              {storeChrome.initial}
             </span>
             {!collapsed && (
               <>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-extrabold">
-                    Asep AI Tools
+                    {storeChrome.name}
                   </span>
-                  <span className="block text-[9px] text-white/35">
-                    fersaku.id/@asep
-                  </span>
+                  {storeChrome.slugLine ? (
+                    <span className="block text-[9px] text-white/35">
+                      {storeChrome.slugLine}
+                    </span>
+                  ) : null}
                 </span>
                 <ChevronDown className="size-3.5 text-white/40" />
               </>
@@ -400,24 +480,43 @@ export function DashboardShell({
           collapsed ? "lg:pl-[76px]" : "lg:pl-[244px]",
         )}
       >
-        {impersonating && activeImpersonationSession && (
+        {impersonating && (sessionImpersonation || activeImpersonationSession) && (
           <div className="sticky top-0 z-[60] flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 bg-[#fff0bf] px-4 py-2 text-[9px] font-extrabold text-[#6e5518] sm:px-6 lg:px-8">
             <Eye className="size-3.5 shrink-0" />
             <span>
-              ADMIN IMPERSONATION • {activeImpersonationSession.targetName} •{" "}
-              {activeImpersonationSession.scope === "read-only"
+              ADMIN IMPERSONATION •{" "}
+              {sessionImpersonation
+                ? (sessionImpersonation.actorId ??
+                  sessionImpersonation.id ??
+                  "session")
+                : activeImpersonationSession!.targetName}{" "}
+              •{" "}
+              {(sessionImpersonation?.scope ??
+                activeImpersonationSession?.scope) === "read-only"
                 ? "Read-only session"
                 : "Support-write session"}
             </span>
             <span className="font-normal text-[#8d742d]">
-              Expires{" "}
-              {new Date(
-                activeImpersonationSession.expiresAt,
-              ).toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              • Audit {activeImpersonationSession.sessionId.slice(0, 8)}
+              {sessionImpersonation?.expiresAt ||
+              activeImpersonationSession?.expiresAt ? (
+                <>
+                  Expires{" "}
+                  {new Date(
+                    (sessionImpersonation?.expiresAt ||
+                      activeImpersonationSession!.expiresAt) as string,
+                  ).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  •{" "}
+                </>
+              ) : null}
+              Audit{" "}
+              {(
+                sessionImpersonation?.id ||
+                activeImpersonationSession?.sessionId ||
+                ""
+              ).slice(0, 8)}
             </span>
             <button
               type="button"
@@ -507,7 +606,7 @@ export function DashboardShell({
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
             <Link
-              href="/@asep-ai-tools"
+              href={storeChrome.storefrontHref}
               className="hairline hidden items-center gap-2 rounded-xl border bg-white px-3 py-2.5 text-[11px] font-bold sm:flex"
             >
               <Globe2 className="size-3.5" /> Lihat toko
