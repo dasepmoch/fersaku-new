@@ -7,6 +7,8 @@ import {
   buyerPurchaseDetailEnvelopeSchema,
   buyerPurchaseListEnvelopeSchema,
   buyerReviewEnvelopeSchema,
+  buyerSessionListEnvelopeSchema,
+  buyerSessionRevokeEnvelopeSchema,
   structuralEnvelopeSchema,
   type BuyerCreateReviewRequest,
   type BuyerPatchReviewRequest,
@@ -17,6 +19,7 @@ import {
   getDomainSource,
   shouldUseMockFixtures,
 } from "@/shared/data/domain-source";
+import { logoutSession } from "@/shared/auth/session-store";
 import type {
   BuyerProfile,
   BuyerPurchase,
@@ -30,23 +33,44 @@ import {
   mapBuyerPurchaseDetailDto,
   mapBuyerPurchaseSummaryListDto,
   mapBuyerReviewDto,
+  mapBuyerSessionListDto,
 } from "./mappers";
 import { demoProfile, demoPurchases, demoSessions } from "./mock";
 
 type PurchaseListEnvelope = z.infer<typeof buyerPurchaseListEnvelopeSchema>;
 type PurchaseDetailEnvelope = z.infer<typeof buyerPurchaseDetailEnvelopeSchema>;
 type BuyerReviewEnvelope = z.infer<typeof buyerReviewEnvelopeSchema>;
+type BuyerSessionListEnvelope = z.infer<typeof buyerSessionListEnvelopeSchema>;
+type BuyerSessionRevokeEnvelope = z.infer<
+  typeof buyerSessionRevokeEnvelopeSchema
+>;
 
 export type RevokeBuyerSessionInput = {
   sessionId: string;
   reason?: string;
   idempotencyKey?: string;
+  /** Claims session id — used to detect revoke-current (server clears cookie). */
+  currentSessionId?: string;
 };
 
 export type RevokeBuyerSessionResult = {
   accepted: boolean;
   sessionId: string;
-  requestId: string;
+  /** True when the revoked session was the caller's current cookie session. */
+  revokedCurrent: boolean;
+  requestId?: string;
+};
+
+export type RevokeBuyerOtherSessionsResult = {
+  accepted: boolean;
+  revokedCount: number;
+};
+
+export type RevokeAllBuyerSessionsResult = {
+  accepted: boolean;
+  revokedCount: number;
+  /** Always true on success — cookie cleared server-side. */
+  clearedCookie: boolean;
 };
 
 /** Launch BoundedNoPaging: first page only; no cursor UI (UI-080 for expansion). */
@@ -81,29 +105,118 @@ function matchesClientFilter(
   );
 }
 
+/**
+ * Revoke one own session.
+ * POST /v1/buyer/sessions/{sessionId}/revoke
+ * Pass currentSessionId from claims so revokedCurrent is authoritative (not device guess).
+ * When current is revoked, BE clears cookie — caller must clear private cache + redirect.
+ */
 export async function revokeBuyerSession(
   input: RevokeBuyerSessionInput,
   signal?: AbortSignal,
 ): Promise<RevokeBuyerSessionResult> {
+  const sessionId = input.sessionId.trim();
+  if (!sessionId) {
+    throw new Error("sessionId required");
+  }
+  const revokedCurrent = Boolean(
+    input.currentSessionId && input.currentSessionId === sessionId,
+  );
+
+  if (shouldUseMockFixtures("buyer")) {
+    const isCurrent =
+      revokedCurrent ||
+      demoSessions().some((s) => s.id === sessionId && s.current);
+    return {
+      accepted: true,
+      sessionId,
+      revokedCurrent: isCurrent,
+      requestId: `mock_revoke_${sessionId}`,
+    };
+  }
+
+  const response = await apiRequest<BuyerSessionRevokeEnvelope>(
+    `/v1/buyer/sessions/${encodeURIComponent(sessionId)}/revoke`,
+    {
+      schema: buyerSessionRevokeEnvelopeSchema,
+      method: "POST",
+      signal,
+      idempotencyKey: input.idempotencyKey,
+      auditReason: input.reason,
+    },
+  );
+  return {
+    accepted: response.data.revoked !== false,
+    sessionId,
+    revokedCurrent,
+    requestId: response.meta.requestId,
+  };
+}
+
+/**
+ * Bulk revoke every other session in one call (no per-session loop).
+ * POST /v1/buyer/sessions/revoke-others
+ */
+export async function revokeOtherBuyerSessions(
+  signal?: AbortSignal,
+): Promise<RevokeBuyerOtherSessionsResult> {
+  if (shouldUseMockFixtures("buyer")) {
+    const others = demoSessions().filter((s) => !s.current).length;
+    return { accepted: true, revokedCount: others };
+  }
+
+  const response = await apiRequest<BuyerSessionRevokeEnvelope>(
+    "/v1/buyer/sessions/revoke-others",
+    {
+      schema: buyerSessionRevokeEnvelopeSchema,
+      method: "POST",
+      signal,
+    },
+  );
+  return {
+    accepted: true,
+    revokedCount: Math.max(0, Math.trunc(response.data.revokedCount ?? 0)),
+  };
+}
+
+/**
+ * Revoke all sessions including current; BE clears cookie.
+ * POST /v1/buyer/sessions/revoke-all
+ * Caller must clear private cache and redirect (INT-120 logout local path).
+ */
+export async function revokeAllBuyerSessions(
+  signal?: AbortSignal,
+): Promise<RevokeAllBuyerSessionsResult> {
   if (shouldUseMockFixtures("buyer")) {
     return {
       accepted: true,
-      sessionId: input.sessionId,
-      requestId: `mock_revoke_${input.sessionId}`,
+      revokedCount: demoSessions().length,
+      clearedCookie: true,
     };
   }
-  const response = await apiRequest<
-    ApiEnvelope<RevokeBuyerSessionResult>,
-    RevokeBuyerSessionInput
-  >(`/v1/buyer/sessions/${input.sessionId}/revoke`, {
-    schema: structuralEnvelopeSchema,
-    method: "POST",
-    body: input,
-    signal,
-    idempotencyKey: input.idempotencyKey,
-    auditReason: input.reason,
-  });
-  return response.data;
+
+  const response = await apiRequest<BuyerSessionRevokeEnvelope>(
+    "/v1/buyer/sessions/revoke-all",
+    {
+      schema: buyerSessionRevokeEnvelopeSchema,
+      method: "POST",
+      signal,
+    },
+  );
+  return {
+    accepted: true,
+    revokedCount: Math.max(0, Math.trunc(response.data.revokedCount ?? 0)),
+    clearedCookie: true,
+  };
+}
+
+/**
+ * After revoke-current or revoke-all: clear local session/private cache and
+ * redirect to buyer login. Prefer dedicated revoke-all endpoint (cookie already
+ * cleared); skip second logout POST to avoid 401 noise — use local clear path.
+ */
+export async function clearBuyerSessionAfterRevoke(): Promise<void> {
+  await logoutSession({ surface: "buyer", redirect: true });
 }
 
 /**
@@ -173,19 +286,29 @@ export async function getBuyerProfile(
   return response.data;
 }
 
+/**
+ * List own sessions only (cookie session-bound).
+ * GET /v1/buyer/sessions → `{ sessions: SessionView[] }` mapped to BuyerSession.
+ * current is BE session-id equality — never client device guess.
+ */
 export async function listBuyerSessions(
   signal?: AbortSignal,
 ): Promise<BuyerSession[]> {
   if (shouldUseMockFixtures("buyer")) return demoSessions();
 
-  const response = await apiRequest<ApiEnvelope<BuyerSession[]>>(
+  const response = await apiRequest<BuyerSessionListEnvelope>(
     "/v1/buyer/sessions",
     {
-      schema: structuralEnvelopeSchema,
+      schema: buyerSessionListEnvelopeSchema,
       signal,
     },
   );
-  return response.data;
+  return mapBuyerSessionListDto(response.data.sessions);
+}
+
+/** Domain gate: buyer session security surface when buyer domain is api. */
+export function isBuyerSessionApiDomain(): boolean {
+  return getDomainSource("buyer") === "api";
 }
 
 /** Domain gate: buyer review mutations only when buyer domain is api. */

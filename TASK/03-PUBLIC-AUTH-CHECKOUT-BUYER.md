@@ -605,14 +605,14 @@ Screen menginisialisasi local sessions sebelum async query selesai dan tidak syn
 
 ### Checklist
 
-- [ ] Map backend `{sessions:[...]}` dan fields ke existing `BuyerSession` view.
-- [ ] Render authoritative query state; hindari stale copied local array.
-- [ ] Current session ditentukan backend session ID, bukan device guess.
-- [ ] Single revoke, bulk revoke others, revoke all menggunakan endpoint khusus.
-- [ ] Revoking current/all clears session/private cache dan redirects safely.
-- [ ] Mutation no optimistic removal untuk security; update after success, exact invalidate.
-- [ ] Wire password/MFA dari `AUT-120` using existing panels.
-- [ ] Session location/device text treated untrusted and escaped; no full raw IP if UI/privacy contract masks it.
+- [x] Map backend `{sessions:[...]}` dan fields ke existing `BuyerSession` view.
+- [x] Render authoritative query state; hindari stale copied local array.
+- [x] Current session ditentukan backend session ID, bukan device guess.
+- [x] Single revoke, bulk revoke others, revoke all menggunakan endpoint khusus.
+- [x] Revoking current/all clears session/private cache dan redirects safely.
+- [x] Mutation no optimistic removal untuk security; update after success, exact invalidate.
+- [x] Wire password/MFA dari `AUT-120` using existing panels. *(passwordless buyer: static passwordless copy retained; MFA/password panels remain AUT-120 — no password/MFA UI on buyer security snapshot)*
+- [x] Session location/device text treated untrusted and escaped; no full raw IP if UI/privacy contract masks it.
 
 ### Tests/AC
 

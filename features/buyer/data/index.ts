@@ -11,13 +11,25 @@ export type {
 
 export {
   BUYER_PURCHASE_BOUNDED_LIMIT,
+  clearBuyerSessionAfterRevoke,
   createBuyerReview,
   getBuyerProfile,
   getBuyerPurchase,
   isBuyerReviewApiDomain,
+  isBuyerSessionApiDomain,
   listBuyerPurchases,
   listBuyerSessions,
   patchBuyerReview,
+  revokeAllBuyerSessions,
+  revokeBuyerSession,
+  revokeOtherBuyerSessions,
+} from "./api";
+
+export type {
+  RevokeAllBuyerSessionsResult,
+  RevokeBuyerOtherSessionsResult,
+  RevokeBuyerSessionInput,
+  RevokeBuyerSessionResult,
 } from "./api";
 
 export { demoProfile, demoPurchases, demoSessions } from "./mock";
@@ -27,8 +39,12 @@ export {
   mapBuyerPurchaseSummaryDto,
   mapBuyerPurchaseSummaryListDto,
   mapBuyerReviewDto,
+  mapBuyerSessionDto,
+  mapBuyerSessionListDto,
   mapDeliveryKindToType,
   assertNoDeliverySecretsInListItem,
+  formatSessionActiveLabel,
+  sanitizeSessionDisplayText,
 } from "./mappers";
 
 export {
@@ -38,5 +54,7 @@ export {
   useBuyerSessions,
   useCreateBuyerReviewMutation,
   usePatchBuyerReviewMutation,
+  useRevokeAllBuyerSessionsMutation,
   useRevokeBuyerSessionMutation,
+  useRevokeOtherBuyerSessionsMutation,
 } from "./hooks";

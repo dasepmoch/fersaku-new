@@ -102,7 +102,16 @@ describe("queryKeys", () => {
       "FRS-1",
     ]);
     expect(queryKeys.buyer.profile()).toEqual(["buyer", "profile"]);
-    expect(queryKeys.buyer.sessions()).toEqual(["buyer", "sessions"]);
+    expect(queryKeys.buyer.sessions("usr_a:ses_1")).toEqual([
+      "buyer",
+      "usr_a:ses_1",
+      "sessions",
+    ]);
+    expect(queryKeys.buyer.sessions("usr_b:ses_9")).toEqual([
+      "buyer",
+      "usr_b:ses_9",
+      "sessions",
+    ]);
     expect(queryKeys.buyer.review("usr_a:ses_1", "oi_1")).toEqual([
       "buyer",
       "usr_a:ses_1",

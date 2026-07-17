@@ -106,7 +106,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 14:35 WIB · claim released | Buyer purchase list/detail/search | TASK/evidence/BUY-100/20260717-1435-nikki.md · tests/unit/buy-100-buyer-purchases.test.ts |
 | `[x]` | `BUY-110` | P1 | BUY-100 | PUB | completed @nikki/opencode · main · 2026-07-17 15:32 WIB · claim released | Buyer review and purchase commands | TASK/evidence/BUY-110/20260717-1532-nikki.md · features/buyer · tests/unit/buy-110-buyer-reviews.test.ts |
 | `[ ]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | — | Buyer profile/preferences/avatar | — |
-| `[ ]` | `BUY-130` | P1 | AUT-110, INT-120 | PUB | — | Buyer sessions/revoke/security | — |
+| `[x]` | `BUY-130` | P1 | AUT-110, INT-120 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Buyer sessions/revoke/security | TASK/evidence/BUY-130/20260717-1605-nikki.md · features/buyer · tests/unit/buy-130-buyer-sessions.test.ts |
 | `[ ]` | `BUY-140` | P1 shared | INT-120, INT-160 | PUB/FND | — | Canonical notification/profile-shell authority | — |
 
 ### 3.4 Seller workspace

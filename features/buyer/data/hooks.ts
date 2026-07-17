@@ -10,13 +10,16 @@ import { useAppMutation } from "@/shared/query/create-mutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionClaims } from "@/shared/auth/session-provider";
 import {
+  clearBuyerSessionAfterRevoke,
   createBuyerReview,
   getBuyerProfile,
   getBuyerPurchase,
   listBuyerPurchases,
   listBuyerSessions,
   patchBuyerReview,
+  revokeAllBuyerSessions,
   revokeBuyerSession,
+  revokeOtherBuyerSessions,
   type RevokeBuyerSessionInput,
 } from "./api";
 import type {
@@ -107,24 +110,83 @@ export function useBuyerProfile() {
   });
 }
 
+/** BUY-130: authoritative session list — no stale local copy. */
 export function useBuyerSessions() {
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
   return useAppQuery({
-    queryKey: queryKeys.buyer.sessions(),
+    queryKey: queryKeys.buyer.sessions(subject),
     queryFn: (signal) => listBuyerSessions(signal),
+    surface: "private",
     placeholderData: mockPlaceholderData("buyer", demoSessions()),
+    enabled: buyerQueryEnabled(Boolean(claims?.subjectId)),
   });
 }
 
+/**
+ * BUY-130: single revoke — no optimistic removal.
+ * Revoking current clears session/private cache and redirects.
+ */
 export function useRevokeBuyerSessionMutation() {
   const queryClient = useQueryClient();
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
   return useAppMutation({
-    mutationKey: ["buyer", "sessions", "revoke"],
-    mutationFn: (input: RevokeBuyerSessionInput, signal) =>
-      revokeBuyerSession(input, signal),
+    mutationKey: ["buyer", subject, "sessions", "revoke"],
+    mutationFn: (
+      input: RevokeBuyerSessionInput,
+      signal,
+    ) =>
+      revokeBuyerSession(
+        {
+          ...input,
+          currentSessionId: claims?.sessionId,
+        },
+        signal,
+      ),
+    onSuccess: async (result) => {
+      if (result.revokedCurrent) {
+        await clearBuyerSessionAfterRevoke();
+        return;
+      }
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.buyer.sessions(subject),
+      });
+    },
+  });
+}
+
+/**
+ * BUY-130: dedicated bulk revoke-others endpoint (never loop single revoke).
+ * No optimistic removal; invalidate after success.
+ */
+export function useRevokeOtherBuyerSessionsMutation() {
+  const queryClient = useQueryClient();
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
+  return useAppMutation({
+    mutationKey: ["buyer", subject, "sessions", "revoke-others"],
+    mutationFn: (_input: void, signal) => revokeOtherBuyerSessions(signal),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.buyer.sessions(),
+        queryKey: queryKeys.buyer.sessions(subject),
       });
+    },
+  });
+}
+
+/**
+ * BUY-130: revoke-all including current — clears cookie + private cache + redirect.
+ * No optimistic removal.
+ */
+export function useRevokeAllBuyerSessionsMutation() {
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
+  return useAppMutation({
+    mutationKey: ["buyer", subject, "sessions", "revoke-all"],
+    mutationFn: (_input: void, signal) => revokeAllBuyerSessions(signal),
+    onSuccess: async () => {
+      await clearBuyerSessionAfterRevoke();
     },
   });
 }

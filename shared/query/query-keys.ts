@@ -126,7 +126,12 @@ export const queryKeys = {
     review: (subjectKey: string, orderItemId: string) =>
       ["buyer", subjectKey, "reviews", orderItemId] as const,
     profile: () => ["buyer", "profile"] as const,
-    sessions: () => ["buyer", "sessions"] as const,
+    /**
+     * BUY-130: session list is subject/session-bound (own sessions only).
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.
+     */
+    sessions: (subjectKey = "anon") =>
+      ["buyer", subjectKey, "sessions"] as const,
   },
   /**
    * Public product review list/summary — invalidated after buyer review success.

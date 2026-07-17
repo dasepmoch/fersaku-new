@@ -7,22 +7,32 @@ import {
   ShieldCheck,
   Smartphone,
 } from "lucide-react";
-import { useState } from "react";
 import {
   useBuyerSessions,
+  useRevokeAllBuyerSessionsMutation,
   useRevokeBuyerSessionMutation,
+  useRevokeOtherBuyerSessionsMutation,
 } from "@/features/buyer/data";
 
 const card = "rounded-[24px] border hairline bg-white shadow-card";
 
 export function BuyerSecurity() {
   const { data } = useBuyerSessions();
-  const [sessions, setSessions] = useState(data ?? []);
+  const sessions = data ?? [];
   const revokeMutation = useRevokeBuyerSessionMutation();
-  const revoke = (id: string) =>
-    void revokeMutation
-      .mutateAsync({ sessionId: id, reason: "buyer_session_revoke" })
-      .then(() => setSessions((current) => current.filter((s) => s.id !== id)));
+  const revokeOthersMutation = useRevokeOtherBuyerSessionsMutation();
+  const revokeAllMutation = useRevokeAllBuyerSessionsMutation();
+  const busy =
+    revokeMutation.isPending ||
+    revokeOthersMutation.isPending ||
+    revokeAllMutation.isPending;
+  const revoke = (id: string) => {
+    if (busy) return;
+    void revokeMutation.mutateAsync({
+      sessionId: id,
+      reason: "buyer_session_revoke",
+    });
+  };
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
       <section className={`${card} overflow-hidden`}>
@@ -38,20 +48,12 @@ export function BuyerSecurity() {
               </p>
             </div>
             <button
-              onClick={() =>
-                void Promise.all(
-                  sessions
-                    .filter((session) => !session.current)
-                    .map((session) =>
-                      revokeMutation.mutateAsync({
-                        sessionId: session.id,
-                        reason: "buyer_revoke_other_sessions",
-                      }),
-                    ),
-                ).then(() =>
-                  setSessions((current) => current.filter((s) => s.current)),
-                )
-              }
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (busy) return;
+                void revokeOthersMutation.mutateAsync();
+              }}
               className="hairline ml-auto hidden rounded-xl border px-3 py-2 text-[8px] font-bold sm:block"
             >
               Keluar dari perangkat lain
@@ -87,6 +89,8 @@ export function BuyerSecurity() {
               </div>
               {!session.current && (
                 <button
+                  type="button"
+                  disabled={busy}
                   onClick={() => revoke(session.id)}
                   className="ml-auto text-[8px] font-extrabold text-[#b2573c]"
                 >
@@ -121,7 +125,15 @@ export function BuyerSecurity() {
             ))}
           </div>
         </section>
-        <button className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#efc8c0] bg-[#fff5f4] text-[9px] font-extrabold text-[#a44f3b]">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (busy) return;
+            void revokeAllMutation.mutateAsync();
+          }}
+          className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#efc8c0] bg-[#fff5f4] text-[9px] font-extrabold text-[#a44f3b]"
+        >
           <LogOut className="size-4" /> Keluar dari semua sesi
         </button>
       </aside>

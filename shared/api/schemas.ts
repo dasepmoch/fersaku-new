@@ -822,6 +822,41 @@ export const buyerPatchReviewRequestSchema = z.object({
 });
 
 export type BuyerReviewDto = z.infer<typeof buyerReviewDtoSchema>;
+
+// --- Buyer sessions (BUY-130) — alias of auth sessions; session-bound only ---
+
+/** BE auth.SessionView (buyer list). current is server session-id equality. */
+export const buyerSessionDtoSchema = z.object({
+  id: z.string().min(1),
+  surface: z.string().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  lastSeenAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  current: z.boolean(),
+  mfaVerified: z.boolean().optional(),
+  deviceLabel: z.string().optional(),
+});
+
+/** GET /v1/buyer/sessions → `{ sessions: SessionView[] }` */
+export const buyerSessionListDataSchema = z.object({
+  sessions: z.array(buyerSessionDtoSchema),
+});
+
+export const buyerSessionListEnvelopeSchema = successEnvelopeSchema(
+  buyerSessionListDataSchema,
+);
+
+export const buyerSessionRevokeDataSchema = z.object({
+  revoked: z.boolean().optional(),
+  revokedCount: z.number().int().min(0).optional(),
+});
+
+export const buyerSessionRevokeEnvelopeSchema = successEnvelopeSchema(
+  buyerSessionRevokeDataSchema,
+);
+
+export type BuyerSessionDto = z.infer<typeof buyerSessionDtoSchema>;
+export type BuyerSessionListDataDto = z.infer<typeof buyerSessionListDataSchema>;
 export type BuyerCreateReviewRequest = z.infer<
   typeof buyerCreateReviewRequestSchema
 >;

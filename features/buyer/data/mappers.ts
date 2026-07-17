@@ -8,6 +8,7 @@ import type {
   BuyerPurchaseItemDto,
   BuyerPurchaseSummaryDto,
   BuyerReviewDto,
+  BuyerSessionDto,
 } from "@/shared/api/schemas";
 import {
   invalidApiContract,
@@ -17,6 +18,7 @@ import type {
   BuyerPurchase,
   BuyerPurchaseDeliveryType,
   BuyerReview,
+  BuyerSession,
 } from "./contracts";
 
 const DISPLAY_PALETTE = "#eef3e9";
@@ -224,4 +226,64 @@ export function assertNoDeliverySecretsInListItem(
       issues: [{ path: "code.value", message: "secret present" }],
     });
   }
+}
+
+/** Untrusted device/location text: strip control chars; React still escapes render. */
+export function sanitizeSessionDisplayText(raw: string | undefined): string {
+  if (!raw) return "";
+  return raw.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+}
+
+/**
+ * Relative last-seen label for existing security UI (`active` field).
+ * Uses id-ID style phrases matching mock geometry ("Sekarang", "N jam lalu").
+ */
+export function formatSessionActiveLabel(
+  lastSeenAt: string,
+  nowMs: number = Date.now(),
+): string {
+  const d = new Date(lastSeenAt);
+  if (Number.isNaN(d.getTime())) return "—";
+  const diffMs = Math.max(0, nowMs - d.getTime());
+  if (diffMs < 60_000) return "Sekarang";
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) return `${minutes} menit lalu`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} jam lalu`;
+  const days = Math.floor(hours / 24);
+  return `${days} hari lalu`;
+}
+
+/**
+ * BE SessionView → existing BuyerSession view.
+ * current is backend session-id equality only (never device guess).
+ * location/ip: privacy mask — BE buyer list has no raw IP; show "—".
+ */
+export function mapBuyerSessionDto(dto: BuyerSessionDto): BuyerSession {
+  const id = dto.id.trim();
+  if (!id) {
+    return invalidApiContract("Buyer session missing id", {
+      issues: [{ path: "id", message: "empty" }],
+    });
+  }
+  const device =
+    sanitizeSessionDisplayText(dto.deviceLabel) || "Perangkat tidak dikenal";
+  return {
+    id,
+    device,
+    location: "—",
+    ip: "—",
+    active: formatSessionActiveLabel(
+      typeof dto.lastSeenAt === "string"
+        ? dto.lastSeenAt
+        : String(dto.lastSeenAt),
+    ),
+    current: Boolean(dto.current),
+  };
+}
+
+export function mapBuyerSessionListDto(
+  sessions: BuyerSessionDto[],
+): BuyerSession[] {
+  return sessions.map(mapBuyerSessionDto);
 }
