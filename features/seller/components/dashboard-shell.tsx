@@ -38,9 +38,11 @@ import { useCurrentStore } from "@/shared/seller/current-store";
 import { readVersionedStorage } from "@/shared/storage/versioned-storage";
 import { z } from "zod";
 import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
+import { endImpersonation } from "@/features/admin/impersonation/api";
 import {
   clearImpersonationSession,
   isImpersonationSessionActive,
+  mapClaimsImpersonationToSession,
   readImpersonationSession,
   type ImpersonationSession,
 } from "@/features/admin/impersonation/session";
@@ -184,6 +186,17 @@ export function DashboardShell({
   const sessionImpersonation = claims?.impersonation?.active
     ? claims.impersonation
     : null;
+  const serverImpersonationSession = useMemo(
+    () =>
+      mapClaimsImpersonationToSession(sessionImpersonation, {
+        targetId: claims?.subjectId ?? undefined,
+        targetName: claims?.name ?? claims?.email ?? claims?.subjectId ?? undefined,
+        targetEmail: claims?.email ?? undefined,
+        targetType: "user",
+        actor: sessionImpersonation?.actorId ?? undefined,
+      }),
+    [sessionImpersonation, claims?.subjectId, claims?.name, claims?.email],
+  );
   const impersonationQuery = useSyncExternalStore(
     (onChange) => {
       window.addEventListener("popstate", onChange);
@@ -209,8 +222,10 @@ export function DashboardShell({
       };
     },
     () => {
+      // API path: never treat sessionStorage as authority when server claims exist.
+      if (sessionImpersonation) return "";
       const stored = readImpersonationSession();
-      if (!stored) return "";
+      if (!stored || stored.serverIssued) return "";
       const hasUrlBinding = Boolean(
         impersonationSessionId || impersonationTargetId,
       );
@@ -234,12 +249,15 @@ export function DashboardShell({
       ? impersonationSession
       : null;
   // Server session impersonation is authority when present; local mock chrome is fallback.
-  const activeImpersonationSession = sessionImpersonation
-    ? null
-    : localImpersonationSession;
+  const activeImpersonationSession =
+    serverImpersonationSession ?? localImpersonationSession;
   useEffect(() => {
     // API/session-bound impersonation does not use URL/sessionStorage binding.
-    if (sessionImpersonation) return;
+    if (sessionImpersonation) {
+      // Strip legacy mock storage if present while on server-issued session.
+      clearImpersonationSession();
+      return;
+    }
     const stored = readImpersonationSession();
     const runtimeParams = new URLSearchParams(window.location.search);
     const runtimeSessionId = runtimeParams.get("session");
@@ -249,6 +267,7 @@ export function DashboardShell({
 
     const bindingIsValid = Boolean(
       stored &&
+      !stored.serverIssued &&
       runtimeSessionId &&
       runtimeTargetId &&
       stored.sessionId === runtimeSessionId &&
@@ -288,7 +307,9 @@ export function DashboardShell({
     sessionImpersonation,
   ]);
   useEffect(() => {
-    if (!activeImpersonationSession) return;
+    // Server expiry is enforced by bootstrap/middleware; client timer is mock-only.
+    if (sessionImpersonation || !activeImpersonationSession) return;
+    if (activeImpersonationSession.serverIssued) return;
     const expireSession = () => {
       const stored = readImpersonationSession();
       if (
@@ -310,34 +331,37 @@ export function DashboardShell({
     };
     const remaining =
       new Date(activeImpersonationSession.expiresAt).getTime() - Date.now();
-    const timer = window.setTimeout(expireSession, remaining);
+    const timer = window.setTimeout(expireSession, Math.max(remaining, 0));
     return () => window.clearTimeout(timer);
-  }, [activeImpersonationSession, router]);
-  const impersonating = Boolean(
-    sessionImpersonation || activeImpersonationSession,
-  );
+  }, [activeImpersonationSession, router, sessionImpersonation]);
+  const impersonating = Boolean(activeImpersonationSession);
+  // Mock path only: keep URL binding for prototype nav; API path has no session in URL.
   const impersonationSearch =
-    !sessionImpersonation && activeImpersonationSession
+    !sessionImpersonation &&
+    activeImpersonationSession &&
+    !activeImpersonationSession.serverIssued
       ? `?impersonate=${encodeURIComponent(activeImpersonationSession.targetId)}&session=${encodeURIComponent(activeImpersonationSession.sessionId)}`
       : "";
-  const endImpersonation = () => {
-    if (sessionImpersonation) {
-      // Server-authoritative impersonation ends via admin logout/end API (not local storage).
-      router.replace("/admin/users");
-      return;
-    }
-    if (!impersonationSession) return;
-    appendClientAuditEvent({
-      actor: impersonationSession.actor,
-      action: "impersonation.ended",
-      target: impersonationSession.targetId,
-      ip: "mock-admin-session",
-      result: "Success",
-    });
-    const destination = impersonationReturnPath(impersonationSession);
-    clearImpersonationSession();
-    window.dispatchEvent(new Event("fersaku-impersonation-updated"));
-    router.replace(destination);
+  const [ending, setEnding] = useState(false);
+  const handleEndImpersonation = () => {
+    if (!activeImpersonationSession || ending) return;
+    setEnding(true);
+    void endImpersonation({
+      sessionId: activeImpersonationSession.sessionId,
+      targetType: activeImpersonationSession.targetType,
+      targetId: activeImpersonationSession.targetId,
+      actor: activeImpersonationSession.actor,
+    })
+      .then((result) => {
+        router.replace(result.redirectPath);
+      })
+      .catch(() => {
+        // Fail closed: clear local mock and leave seller surface.
+        clearImpersonationSession();
+        window.dispatchEvent(new Event("fersaku-impersonation-updated"));
+        router.replace(impersonationReturnPath(activeImpersonationSession));
+      })
+      .finally(() => setEnding(false));
   };
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -480,30 +504,21 @@ export function DashboardShell({
           collapsed ? "lg:pl-[76px]" : "lg:pl-[244px]",
         )}
       >
-        {impersonating && (sessionImpersonation || activeImpersonationSession) && (
+        {impersonating && activeImpersonationSession && (
           <div className="sticky top-0 z-[60] flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 bg-[#fff0bf] px-4 py-2 text-[9px] font-extrabold text-[#6e5518] sm:px-6 lg:px-8">
             <Eye className="size-3.5 shrink-0" />
             <span>
-              ADMIN IMPERSONATION •{" "}
-              {sessionImpersonation
-                ? (sessionImpersonation.actorId ??
-                  sessionImpersonation.id ??
-                  "session")
-                : activeImpersonationSession!.targetName}{" "}
-              •{" "}
-              {(sessionImpersonation?.scope ??
-                activeImpersonationSession?.scope) === "read-only"
+              ADMIN IMPERSONATION • {activeImpersonationSession.targetName} •{" "}
+              {activeImpersonationSession.scope === "read-only"
                 ? "Read-only session"
                 : "Support-write session"}
             </span>
             <span className="font-normal text-[#8d742d]">
-              {sessionImpersonation?.expiresAt ||
-              activeImpersonationSession?.expiresAt ? (
+              {activeImpersonationSession.expiresAt ? (
                 <>
                   Expires{" "}
                   {new Date(
-                    (sessionImpersonation?.expiresAt ||
-                      activeImpersonationSession!.expiresAt) as string,
+                    activeImpersonationSession.expiresAt,
                   ).toLocaleTimeString("id-ID", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -511,19 +526,15 @@ export function DashboardShell({
                   •{" "}
                 </>
               ) : null}
-              Audit{" "}
-              {(
-                sessionImpersonation?.id ||
-                activeImpersonationSession?.sessionId ||
-                ""
-              ).slice(0, 8)}
+              Audit {activeImpersonationSession.sessionId.slice(0, 8)}
             </span>
             <button
               type="button"
-              onClick={endImpersonation}
-              className="ml-auto rounded-lg bg-[#6e5518] px-3 py-1.5 text-white"
+              onClick={handleEndImpersonation}
+              disabled={ending}
+              className="ml-auto rounded-lg bg-[#6e5518] px-3 py-1.5 text-white disabled:opacity-60"
             >
-              End session
+              {ending ? "Ending..." : "End session"}
             </button>
           </div>
         )}

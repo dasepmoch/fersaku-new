@@ -3,13 +3,15 @@
 import { Check, Eye, LockKeyhole, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
+import { startImpersonation } from "@/features/admin/impersonation/api";
 import {
-  createImpersonationSession,
   IMPERSONATION_TTLS,
-  persistImpersonationSession,
   type ImpersonationScope,
 } from "@/features/admin/impersonation/session";
+import { claimsHavePermission } from "@/features/admin/config/permissions";
+import { useSession } from "@/shared/auth/session-provider";
+import { getDomainSource } from "@/shared/data/domain-source";
+import { ApiError } from "@/shared/api/api-error";
 
 type ImpersonationDialogProps = {
   merchant: string;
@@ -27,13 +29,28 @@ export function ImpersonationDialog({
   onClose,
 }: ImpersonationDialogProps) {
   const router = useRouter();
+  const { claims } = useSession();
+  const isApi = (() => {
+    try {
+      return getDomainSource("adminWrite") === "api";
+    } catch {
+      return false;
+    }
+  })();
+  const canStartPermission =
+    !isApi ||
+    claimsHavePermission(claims?.permissions, "impersonation.start");
+  const canSupportWrite =
+    !isApi ||
+    claimsHavePermission(claims?.permissions, "impersonation.support_write");
+
   const [scope, setScope] = useState<ImpersonationScope>("read-only");
   const [reason, setReason] = useState("");
   const [duration, setDuration] =
     useState<(typeof IMPERSONATION_TTLS)[number]>(15);
   const [starting, setStarting] = useState(false);
   const [recentMfaVerified, setRecentMfaVerified] = useState(false);
-  const [storageError, setStorageError] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const scopePolicy = useMemo(
     () =>
       ({
@@ -66,38 +83,48 @@ export function ImpersonationDialog({
       >,
     [],
   )[scope];
-  const canStart = reason.trim().length >= 12 && recentMfaVerified && !starting;
+  const canStart =
+    canStartPermission &&
+    reason.trim().length >= 12 &&
+    recentMfaVerified &&
+    !starting &&
+    (scope === "read-only" || canSupportWrite);
 
-  const startSession = () => {
+  const startSession = async () => {
     if (!canStart) return;
     setStarting(true);
-    setStorageError(false);
-    const session = createImpersonationSession({
-      targetId: merchantId,
-      targetName: merchant,
-      targetEmail,
-      targetType,
-      scope,
-      reason,
-      ttlMinutes: duration,
-    });
-    if (!session || !persistImpersonationSession(session)) {
+    setStartError(null);
+    try {
+      const result = await startImpersonation({
+        targetId: merchantId,
+        targetName: merchant,
+        targetEmail,
+        targetType,
+        scope,
+        reason,
+        ttlMinutes: duration,
+        actor: claims?.email ?? claims?.subjectId ?? undefined,
+      });
+      router.push(result.redirectPath);
+    } catch (error) {
       setStarting(false);
-      setStorageError(true);
-      return;
+      if (error instanceof ApiError) {
+        if (error.status === 403) {
+          setStartError(
+            error.message ||
+              "Permission denied: impersonation.start or support_write required.",
+          );
+          return;
+        }
+        setStartError(error.message || "Could not start impersonation session.");
+        return;
+      }
+      setStartError(
+        error instanceof Error
+          ? error.message
+          : "Could not start impersonation session.",
+      );
     }
-    appendClientAuditEvent({
-      actor: session.actor,
-      action: "impersonation.started",
-      target: merchantId,
-      ip: "mock-admin-session",
-      result: "Success",
-      context: reason.trim(),
-    });
-    window.dispatchEvent(new Event("fersaku-impersonation-updated"));
-    router.push(
-      `/dashboard?impersonate=${encodeURIComponent(merchantId)}&scope=${encodeURIComponent(scope)}&session=${encodeURIComponent(session.sessionId)}`,
-    );
   };
 
   return (
@@ -141,7 +168,9 @@ export function ImpersonationDialog({
               className="h-11 rounded-xl border border-[#dce1e9] px-3 text-[10px]"
             >
               <option value="read-only">Read-only investigation</option>
-              <option value="support-write">Support write access</option>
+              <option value="support-write" disabled={!canSupportWrite}>
+                Support write access
+              </option>
             </select>
           </label>
           <label className="flex gap-3 rounded-xl border border-[#dce1e9] bg-[#f7f8fa] p-4 text-[8px] leading-4 text-[#65718b]">
@@ -152,7 +181,8 @@ export function ImpersonationDialog({
               className="mt-0.5"
             />
             Recent administrator MFA re-authentication is verified for this
-            impersonation session (mock).
+            impersonation session
+            {isApi ? " (server enforces recent MFA)." : " (mock)."}
           </label>
           <div className="grid gap-3 rounded-2xl border border-[#e2e6ed] bg-[#f7f8fa] p-4 sm:grid-cols-2">
             <div>
@@ -214,8 +244,8 @@ export function ImpersonationDialog({
               className="resize-none rounded-xl border border-[#dce1e9] p-3 text-[10px] font-normal outline-none"
             />
             <span className="text-[7px] font-normal text-[#8993a6]">
-              Minimum 12 characters. Stored only in the mock session and audit
-              context; never placed in the URL.
+              Minimum 12 characters. Stored in server audit context only; never
+              placed in the URL.
             </span>
           </label>
         </div>
@@ -225,10 +255,14 @@ export function ImpersonationDialog({
           other command is blocked. Production must enforce the same allowlist
           server-side.
         </div>
-        {storageError && (
+        {!canStartPermission && (
           <p className="mt-3 rounded-xl border border-[#efc8c4] bg-[#fff4f2] p-3 text-[8px] text-[#a34d46]">
-            Could not create a secure mock session in this browser. Enable
-            session storage and try again.
+            Missing permission impersonation.start. This action is denied.
+          </p>
+        )}
+        {startError && (
+          <p className="mt-3 rounded-xl border border-[#efc8c4] bg-[#fff4f2] p-3 text-[8px] text-[#a34d46]">
+            {startError}
           </p>
         )}
         <div className="mt-6 flex gap-2">
@@ -241,7 +275,7 @@ export function ImpersonationDialog({
           </button>
           <button
             type="button"
-            onClick={startSession}
+            onClick={() => void startSession()}
             disabled={!canStart}
             className="h-10 flex-1 rounded-xl bg-[#11182a] text-[9px] font-extrabold text-white disabled:cursor-not-allowed disabled:bg-[#9aa2b2]"
           >

@@ -2493,6 +2493,72 @@ export const adminDeliveryGrantEnvelopeSchema = successEnvelopeSchema(
 /** Re-export seller reveal schema for admin facade (same secret bag; no-store). */
 export const adminInventoryRevealEnvelopeSchema = inventoryRevealEnvelopeSchema;
 
+/**
+ * ADM-390 — server-issued impersonation start/terminate.
+ * Wire never includes raw session cookie/token; CSRF is memory-only via INT-130.
+ */
+export const impersonationBannerDtoSchema = z.object({
+  sessionId: z.string().min(1),
+  actorAdminId: z.string().min(1),
+  targetUserId: z.string().min(1),
+  targetName: z.string().optional(),
+  targetEmail: z.string().optional(),
+  scope: z.string().min(1),
+  reason: z.string().optional(),
+  ticket: z.string().optional(),
+  startedAt: z.string().optional(),
+  expiresAt: z.string().min(1),
+  ttlMinutes: z.number().int().optional(),
+});
+
+export const impersonationStartDataSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    banner: impersonationBannerDtoSchema.optional(),
+    scope: z.string().min(1),
+    expiresAt: z.string().min(1),
+    csrfToken: z.string().min(1),
+    targetUserId: z.string().min(1),
+    targetSurface: z.string().optional(),
+    actorAdminId: z.string().min(1),
+  })
+  .superRefine((val, ctx) => {
+    const blob = JSON.stringify(val).toLowerCase();
+    if (
+      blob.includes("rawtoken") ||
+      blob.includes("raw_token") ||
+      blob.includes("sessiontoken") ||
+      blob.includes("session_token")
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Impersonation start must not include raw session token",
+      });
+    }
+  });
+
+export const impersonationStartEnvelopeSchema = successEnvelopeSchema(
+  impersonationStartDataSchema,
+);
+
+export const impersonationTerminateDataSchema = z.object({
+  sessionId: z.string().min(1),
+  status: z.string().min(1),
+  endedAt: z.union([z.string(), z.null()]).optional(),
+});
+
+export const impersonationTerminateEnvelopeSchema = successEnvelopeSchema(
+  impersonationTerminateDataSchema,
+);
+
+export type ImpersonationBannerDto = z.infer<typeof impersonationBannerDtoSchema>;
+export type ImpersonationStartDataDto = z.infer<
+  typeof impersonationStartDataSchema
+>;
+export type ImpersonationTerminateDataDto = z.infer<
+  typeof impersonationTerminateDataSchema
+>;
+
 /** Default/max page size for admin bounded list reads (matches BE MaxListLimit). */
 export const ADMIN_LIST_DEFAULT_LIMIT = 50;
 export const ADMIN_LIST_MAX_LIMIT = 100;

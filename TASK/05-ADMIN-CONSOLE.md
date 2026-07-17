@@ -68,7 +68,7 @@ Admin login hanya link/default value; permission boundary selalu mock session. R
 - [x] Unknown/missing permission fails closed.
 - [x] Permission changes trigger session/cache revalidation; stale tabs cannot continue mutation. *(INT-120 broadcast `session-changed` + force bootstrap; FE re-reads claims)*
 - [x] Add route permission contract test: every active admin route has declared permission and matching backend operation.
-- [ ] Impersonation scope cannot inherit unrestricted admin permission into seller/buyer request. *(ADM-390)*
+- [x] Impersonation scope cannot inherit unrestricted admin permission into seller/buyer request. *(ADM-390)*
 
 ### Snapshot permission drift that must be resolved atomically
 
@@ -543,13 +543,13 @@ FE stores session in `sessionStorage` and exposes target/session identifiers in 
 
 ### Checklist FE
 
-- [ ] Start through backend with target type/ID, allowed scope (`READ_ONLY` default or bounded support-write), TTL, reason, actual recent MFA, idempotency.
-- [ ] Backend rotates/sets scoped server session; frontend stores no raw session token/ID in URL/storage.
-- [ ] Redirect target through safe internal route; banner reads session impersonation metadata.
-- [ ] Read-only/support-write controls continue using existing boundary, but backend gate enforces every mutation.
-- [ ] Terminate backend-side, clear target caches, restore/require admin session per secure design, redirect admin.
-- [ ] Expiry detected server-side; stale browser automatically loses access and clears client state.
-- [ ] No full privileged scope option.
+- [x] Start through backend with target type/ID, allowed scope (`READ_ONLY` default or bounded support-write), TTL, reason, actual recent MFA, idempotency.
+- [x] Backend rotates/sets scoped server session; frontend stores no raw session token/ID in URL/storage.
+- [x] Redirect target through safe internal route; banner reads session impersonation metadata.
+- [x] Read-only/support-write controls continue using existing boundary, but backend gate enforces every mutation.
+- [x] Terminate backend-side, clear target caches, restore/require admin session per secure design, redirect admin.
+- [x] Expiry detected server-side; stale browser automatically loses access and clears client state.
+- [x] No full privileged scope option.
 
 ### Checklist BE
 
