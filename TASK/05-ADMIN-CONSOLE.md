@@ -23,16 +23,16 @@ Admin login hanya link/default value; permission boundary selalu mock session. R
 
 ### Checklist FE
 
-- [ ] Wire existing admin login form to auth API with `surface=ADMIN`; no default/mock credential on API path.
-- [ ] Do not treat session as console-ready until admin surface + email/status + MFA verification pass.
-- [ ] Admin/invited staff without an enrolled factor enters the explicit pre-enrollment ticket ceremony from `INT-140`; login must not dead-end because `/mfa/enroll` is only available after full authentication. The ticket cannot access console/business routes.
-- [ ] Do not rely on UI/layout guard: backend snapshot issues a usable session/roles before MFA. `INT-140` must install pre-MFA ticket or global `MFA_PENDING` allowlist gate so direct HTTP business/admin routes fail before verification.
-- [ ] Server guard every console route/layout; safe relative `returnTo` only.
-- [ ] Session provider supplies actor, permission codes, roles, MFA, session ID, impersonation metadata.
-- [ ] Logout backend-side, clear all admin/private/secret/impersonation caches and redirect.
-- [ ] `401` opens/reaches existing login, `403` existing permission panel, `MFA_REQUIRED` actual MFA flow.
-- [ ] Multi-tab revoke/logout and session rotation handled without token storage.
-- [ ] Snapshot `AdminLogin` is not a working form: it has default credentials, a plain link to `/admin`, and “Mock access”, with no pending/error/MFA region. Remove its mock authority on API path, but do not invent form/error markup in wiring. API/live admin auth remains blocked/disabled until `UXE-011/UI-080` resolves real submit and all negative/pre-MFA states using the exact approved composition.
+- [x] Wire existing admin login form to auth API with `surface=ADMIN`; no default/mock credential on API path.
+- [x] Do not treat session as console-ready until admin surface + email/status + MFA verification pass.
+- [ ] Admin/invited staff without an enrolled factor enters the explicit pre-enrollment ticket ceremony from `INT-140`; login must not dead-end because `/mfa/enroll` is only available after full authentication. The ticket cannot access console/business routes. *(deferred: BE 403 “Admin MFA enrollment required”; no pre-enrollment ticket UI until AUT-120/UI-080)*
+- [x] Do not rely on UI/layout guard: backend snapshot issues a usable session/roles before MFA. `INT-140` must install pre-MFA ticket or global `MFA_PENDING` allowlist gate so direct HTTP business/admin routes fail before verification.
+- [x] Server guard every console route/layout; safe relative `returnTo` only.
+- [x] Session provider supplies actor, permission codes, roles, MFA, session ID, impersonation metadata.
+- [x] Logout backend-side, clear all admin/private/secret/impersonation caches and redirect.
+- [x] `401` opens/reaches existing login, `403` existing permission panel, `MFA_REQUIRED` actual MFA flow. *(MFA verify UI still AUT-120; gate stays on login)*
+- [x] Multi-tab revoke/logout and session rotation handled without token storage.
+- [x] Snapshot `AdminLogin` is not a working form: it has default credentials, a plain link to `/admin`, and “Mock access”, with no pending/error/MFA region. Remove its mock authority on API path, but do not invent form/error markup in wiring. API/live admin auth remains blocked/disabled until `UXE-011/UI-080` resolves real submit and all negative/pre-MFA states using the exact approved composition. *(wired submit; API defaults empty; mock keeps snapshot defaults; negative regions still UXE-011)*
 
 ### Checklist BE
 

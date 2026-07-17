@@ -1,4 +1,10 @@
 export type {
+  AdminAuthField,
+  AdminAuthFieldError,
+  AdminAuthSurface,
+  AdminLoginRequest,
+  AdminLoginResult,
+  AdminLogoutResult,
   BuyerMagicLinkConsumeRequest,
   BuyerMagicLinkConsumeResult,
   BuyerMagicLinkRequest,
@@ -18,7 +24,9 @@ export type {
 export {
   consumeBuyerMagicLink,
   forgotSellerPassword,
+  loginAdmin,
   loginSeller,
+  logoutAdmin,
   logoutSeller,
   registerSeller,
   requestBuyerMagicLink,
@@ -29,6 +37,8 @@ export {
   forgotSuccessMessage,
   hasForbiddenTokenInLocation,
   magicLinkRequestSuccessMessage,
+  mapAdminLoginDataToResult,
+  mapAdminLoginThrown,
   mapFieldViolationsToAuthFields,
   mapLoginDataToResult,
   mapLoginThrown,
@@ -41,9 +51,11 @@ export {
   objectContainsPasswordLeak,
   parseMagicLinkFragmentToken,
   registerSuccessMessage,
+  resolveAdminPostAuthPath,
   resolveBuyerPostAuthPath,
   resolveSellerPostAuthPath,
   scrubUrlFragment,
+  toAdminLoginRequest,
   toBuyerMagicLinkConsumeRequest,
   toBuyerMagicLinkRequest,
   toSellerForgotPasswordRequest,
@@ -52,8 +64,11 @@ export {
 } from "./mappers";
 
 export {
+  ADMIN_AUTH_MUTATION_KEYS,
   BUYER_AUTH_MUTATION_KEYS,
   SELLER_AUTH_MUTATION_KEYS,
+  useAdminLoginMutation,
+  useAdminLogoutMutation,
   useBuyerMagicLinkConsumeMutation,
   useBuyerMagicLinkRequestMutation,
   useSellerForgotPasswordMutation,

@@ -22,6 +22,9 @@ import {
   refreshSessionAfterLogin,
 } from "@/shared/auth";
 import type {
+  AdminLoginRequest,
+  AdminLoginResult,
+  AdminLogoutResult,
   BuyerMagicLinkConsumeRequest,
   BuyerMagicLinkConsumeResult,
   BuyerMagicLinkRequest,
@@ -37,6 +40,8 @@ import type {
 import {
   forgotSuccessMessage,
   magicLinkRequestSuccessMessage,
+  mapAdminLoginDataToResult,
+  mapAdminLoginThrown,
   mapForgotThrown,
   mapLoginDataToResult,
   mapLoginThrown,
@@ -45,6 +50,7 @@ import {
   mapMagicLinkRequestThrown,
   mapRegisterThrown,
   registerSuccessMessage,
+  resolveAdminPostAuthPath,
   resolveSellerPostAuthPath,
 } from "./mappers";
 
@@ -202,6 +208,69 @@ export async function forgotSellerPassword(
 export async function logoutSeller(): Promise<SellerLogoutResult> {
   const { loginHref } = await logoutSession({
     surface: "seller",
+    redirect: true,
+  });
+  return { ok: true, loginHref };
+}
+
+/**
+ * POST /v1/auth/login surface=ADMIN — session cookie + CSRF; MFA_PENDING is not console-ready.
+ * ADM-100: mock fixtures only when domain auth is mock; API never invents admin identity.
+ */
+export async function loginAdmin(
+  input: AdminLoginRequest,
+  options?: { returnTo?: string | null; signal?: AbortSignal },
+): Promise<AdminLoginResult> {
+  assertAuthEnabled();
+  try {
+    if (shouldUseMockFixtures("auth")) {
+      await delay(200, options?.signal);
+      applyLoginCsrf(undefined);
+      await refreshSessionAfterLogin("admin");
+      return {
+        ok: true,
+        kind: "authenticated",
+        mfaRequired: false,
+        csrfToken: undefined,
+        redirectTo: resolveAdminPostAuthPath({
+          returnTo: options?.returnTo,
+        }),
+      };
+    }
+
+    const response = await apiRequest<
+      ApiEnvelope<AuthLoginDataDto>,
+      AdminLoginRequest
+    >("/v1/auth/login", {
+      method: "POST",
+      body: {
+        email: input.email,
+        password: input.password,
+        surface: input.surface,
+      },
+      schema: authLoginEnvelopeSchema,
+      skipCsrf: true,
+      signal: options?.signal,
+    });
+
+    const mapped = mapAdminLoginDataToResult(response.data, options?.returnTo);
+    applyLoginCsrf(mapped.csrfToken);
+
+    // MFA_PENDING or full auth: bootstrap claims; never treat MFA as console-ready.
+    await refreshSessionAfterLogin("admin");
+    return mapped;
+  } catch (error) {
+    if (error instanceof DomainDisabledError) {
+      return { ok: false, kind: "blocked", code: "DOMAIN_DISABLED" };
+    }
+    return mapAdminLoginThrown(error);
+  }
+}
+
+/** Logout admin surface via shared session store. */
+export async function logoutAdmin(): Promise<AdminLogoutResult> {
+  const { loginHref } = await logoutSession({
+    surface: "admin",
     redirect: true,
   });
   return { ok: true, loginHref };

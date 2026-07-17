@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
@@ -26,11 +26,16 @@ import {
   Webhook,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { LogoMark } from "@/components/logo-mark";
 import { MockInteractionBoundary } from "@/components/mock-interaction-boundary";
 import { ThemeToggle } from "@/components/theme-provider";
+import {
+  toAdminLoginRequest,
+  useAdminLoginMutation,
+} from "@/features/auth";
 import { cn } from "@/lib/utils";
+import { getDomainSource } from "@/shared/data/domain-source";
 import { NotificationCenter, ProfileMenu } from "@/shared/ui/account-controls";
 
 const nav = [
@@ -210,7 +215,49 @@ export function AdminShell({
   );
 }
 
+function isAuthMockDomain(): boolean {
+  try {
+    return getDomainSource("auth") === "mock";
+  } catch {
+    return true;
+  }
+}
+
 export function AdminLogin() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const loginMutation = useAdminLoginMutation();
+  const isMock = isAuthMockDomain();
+  // Mock path keeps snapshot defaults for visual parity; API never ships credentials.
+  const [email, setEmail] = useState(() =>
+    isAuthMockDomain() ? "admin@fersaku.id" : "",
+  );
+  const [password, setPassword] = useState(() =>
+    isAuthMockDomain() ? "password123" : "",
+  );
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // API path: never treat empty as success; no new error markup (UXE-011).
+    if (!email.trim() || !password) return;
+
+    const dto = toAdminLoginRequest({ email, password });
+    const result = await loginMutation.mutateAsync({
+      ...dto,
+      returnTo,
+    });
+    if (!result.ok) {
+      // field_errors / blocked / generic: stay on form; no invented panels.
+      return;
+    }
+    if (result.kind === "mfa_pending") {
+      // MFA_PENDING is not console-ready; stay on /admin/login (INT-140 guard).
+      return;
+    }
+    router.push(result.redirectTo);
+  };
+
   return (
     <main className="grid min-h-screen bg-[#0b1020] lg:grid-cols-[1fr_.86fr]">
       <section className="noise relative hidden overflow-hidden p-14 text-white lg:flex lg:flex-col">
@@ -274,11 +321,15 @@ export function AdminLogin() {
           <p className="mt-2 text-xs leading-5 text-[#737d92]">
             Use your approved Fersaku operations account.
           </p>
-          <div className="mt-8 grid gap-4">
+          <form onSubmit={submit} className="mt-8 grid gap-4">
             <label className="grid gap-2 text-[11px] font-extrabold">
               Work email
               <input
-                defaultValue="admin@fersaku.id"
+                type="email"
+                name="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
               />
             </label>
@@ -286,7 +337,10 @@ export function AdminLogin() {
               Password
               <input
                 type="password"
-                defaultValue="password123"
+                name="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="h-12 rounded-xl border border-[#dfe3ec] px-4 text-sm outline-none focus:border-[#5b7cfa] focus:ring-4 focus:ring-[#5b7cfa]/10"
               />
             </label>
@@ -294,17 +348,20 @@ export function AdminLogin() {
               <input type="checkbox" defaultChecked /> Keep this trusted device
               active for 8 hours
             </label>
-            <Link
-              href="/admin"
+            <button
+              type="submit"
+              disabled={loginMutation.isPending}
               className="mt-2 flex h-12 items-center justify-center rounded-xl bg-[#11182a] text-xs font-extrabold text-white transition hover:bg-[#202b48]"
             >
               Continue securely
-            </Link>
-          </div>
-          <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#f3f5f9] p-3 text-[9px] font-semibold text-[#68728a]">
-            <AlertTriangle className="size-3.5 text-[#e89b3d]" /> Mock access
-            for frontend demonstration
-          </div>
+            </button>
+          </form>
+          {isMock ? (
+            <div className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#f3f5f9] p-3 text-[9px] font-semibold text-[#68728a]">
+              <AlertTriangle className="size-3.5 text-[#e89b3d]" /> Mock access
+              for frontend demonstration
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

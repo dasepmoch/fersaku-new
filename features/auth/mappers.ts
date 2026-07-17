@@ -12,6 +12,10 @@ import {
   sanitizeReturnToForSurface,
 } from "@/shared/auth/return-to";
 import type {
+  AdminAuthField,
+  AdminAuthFieldError,
+  AdminLoginRequest,
+  AdminLoginResult,
   BuyerMagicLinkConsumeRequest,
   BuyerMagicLinkConsumeResult,
   BuyerMagicLinkRequest,
@@ -72,6 +76,18 @@ export function toSellerLoginRequest(input: {
     email: input.email.trim().toLowerCase(),
     password: input.password,
     surface: "SELLER",
+  };
+}
+
+/** Build exact admin login DTO (ADM-100). */
+export function toAdminLoginRequest(input: {
+  email: string;
+  password: string;
+}): AdminLoginRequest {
+  return {
+    email: input.email.trim().toLowerCase(),
+    password: input.password,
+    surface: "ADMIN",
   };
 }
 
@@ -194,6 +210,13 @@ export function resolveBuyerPostAuthPath(options?: {
   return resolvePostLoginPath("buyer", options?.returnTo ?? null);
 }
 
+/** Safe admin post-login path: allowlisted /admin/*, else /admin. */
+export function resolveAdminPostAuthPath(options?: {
+  returnTo?: string | null;
+}): string {
+  return resolvePostLoginPath("admin", options?.returnTo ?? null);
+}
+
 export function mapLoginDataToResult(
   data: AuthLoginDataDto,
   returnTo?: string | null,
@@ -212,6 +235,28 @@ export function mapLoginDataToResult(
     mfaRequired: false,
     csrfToken: data.csrfToken,
     redirectTo: resolveSellerPostAuthPath({ returnTo }),
+  };
+}
+
+/** Map admin login response; MFA_PENDING never includes console redirect. */
+export function mapAdminLoginDataToResult(
+  data: AuthLoginDataDto,
+  returnTo?: string | null,
+): Extract<AdminLoginResult, { ok: true }> {
+  if (data.mfaRequired) {
+    return {
+      ok: true,
+      kind: "mfa_pending",
+      mfaRequired: true,
+      csrfToken: data.csrfToken,
+    };
+  }
+  return {
+    ok: true,
+    kind: "authenticated",
+    mfaRequired: false,
+    csrfToken: data.csrfToken,
+    redirectTo: resolveAdminPostAuthPath({ returnTo }),
   };
 }
 
@@ -349,6 +394,39 @@ export function mapLoginThrown(error: unknown): SellerLoginResult {
   const mapped = mapSellerAuthThrown(error, "login");
   if (mapped.kind === "field_errors") {
     return { ok: false, kind: "field_errors", fields: mapped.fields };
+  }
+  if (mapped.kind === "blocked") {
+    return { ok: false, kind: "blocked", code: mapped.code };
+  }
+  return {
+    ok: false,
+    kind: "generic",
+    message: mapped.message,
+    code: mapped.code,
+  };
+}
+
+/**
+ * Admin login errors: reuse seller field mapping (email/password only).
+ * No AdminLogin error region yet (UXE-011) — callers must not invent panels.
+ */
+export function mapAdminLoginThrown(error: unknown): AdminLoginResult {
+  const mapped = mapSellerAuthThrown(error, "login");
+  if (mapped.kind === "field_errors") {
+    const fields: AdminAuthFieldError[] = mapped.fields
+      .filter(
+        (f): f is { field: AdminAuthField; message: string } =>
+          f.field === "email" || f.field === "password",
+      )
+      .map((f) => ({ field: f.field, message: f.message }));
+    if (fields.length === 0) {
+      return {
+        ok: false,
+        kind: "field_errors",
+        fields: [{ field: "password", message: GENERIC_INVALID }],
+      };
+    }
+    return { ok: false, kind: "field_errors", fields };
   }
   if (mapped.kind === "blocked") {
     return { ok: false, kind: "blocked", code: mapped.code };

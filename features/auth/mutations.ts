@@ -9,12 +9,15 @@ import { useAppMutation } from "@/shared/query/create-mutation";
 import {
   consumeBuyerMagicLink,
   forgotSellerPassword,
+  loginAdmin,
   loginSeller,
+  logoutAdmin,
   logoutSeller,
   registerSeller,
   requestBuyerMagicLink,
 } from "./api";
 import type {
+  AdminLoginRequest,
   BuyerMagicLinkConsumeRequest,
   BuyerMagicLinkRequest,
   SellerForgotPasswordRequest,
@@ -27,6 +30,8 @@ const REGISTER_KEY = ["auth", "seller", "register"] as const;
 const LOGIN_KEY = ["auth", "seller", "login"] as const;
 const FORGOT_KEY = ["auth", "seller", "forgot"] as const;
 const LOGOUT_KEY = ["auth", "seller", "logout"] as const;
+const ADMIN_LOGIN_KEY = ["auth", "admin", "login"] as const;
+const ADMIN_LOGOUT_KEY = ["auth", "admin", "logout"] as const;
 const MAGIC_REQUEST_KEY = ["auth", "buyer", "magic-link", "request"] as const;
 const MAGIC_CONSUME_KEY = ["auth", "buyer", "magic-link", "consume"] as const;
 
@@ -34,6 +39,8 @@ assertAuthMutationKeySafe(REGISTER_KEY);
 assertAuthMutationKeySafe(LOGIN_KEY);
 assertAuthMutationKeySafe(FORGOT_KEY);
 assertAuthMutationKeySafe(LOGOUT_KEY);
+assertAuthMutationKeySafe(ADMIN_LOGIN_KEY);
+assertAuthMutationKeySafe(ADMIN_LOGOUT_KEY);
 assertAuthMutationKeySafe(MAGIC_REQUEST_KEY);
 assertAuthMutationKeySafe(MAGIC_CONSUME_KEY);
 
@@ -77,6 +84,28 @@ export function useSellerLogoutMutation() {
   });
 }
 
+export function useAdminLoginMutation() {
+  return useAppMutation({
+    mutationKey: [...ADMIN_LOGIN_KEY],
+    gcTime: 0,
+    mutationFn: (
+      input: AdminLoginRequest & { returnTo?: string | null },
+      signal,
+    ) => {
+      const { returnTo, ...body } = input;
+      return loginAdmin(body, { returnTo, signal });
+    },
+  });
+}
+
+export function useAdminLogoutMutation() {
+  return useAppMutation({
+    mutationKey: [...ADMIN_LOGOUT_KEY],
+    gcTime: 0,
+    mutationFn: async () => logoutAdmin(),
+  });
+}
+
 export function useBuyerMagicLinkRequestMutation() {
   return useAppMutation({
     mutationKey: [...MAGIC_REQUEST_KEY],
@@ -105,6 +134,11 @@ export const SELLER_AUTH_MUTATION_KEYS = {
   login: LOGIN_KEY,
   forgot: FORGOT_KEY,
   logout: LOGOUT_KEY,
+} as const;
+
+export const ADMIN_AUTH_MUTATION_KEYS = {
+  login: ADMIN_LOGIN_KEY,
+  logout: ADMIN_LOGOUT_KEY,
 } as const;
 
 export const BUYER_AUTH_MUTATION_KEYS = {
