@@ -83,6 +83,7 @@ func newWithdrawalStack(t *testing.T) (
 		IDs:                   ids,
 		Clock:                 observability.SystemClock{},
 		Log:                   log,
+		Authz:                 authzSvc,
 		ForceImmediateRelease: true,
 		DefaultPaymentMode:    payments.PaymentModeSandbox,
 	}

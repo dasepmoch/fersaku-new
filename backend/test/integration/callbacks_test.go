@@ -110,6 +110,7 @@ func newCallbackStack(t *testing.T) (http.Handler, *application.CallbackService,
 		IDs:                   ids,
 		Clock:                 observability.SystemClock{},
 		Log:                   log,
+		Authz:                 authzSvc,
 		ForceImmediateRelease: true,
 		DefaultPaymentMode:    payments.PaymentModeSandbox,
 	}

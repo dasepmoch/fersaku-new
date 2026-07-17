@@ -472,6 +472,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			IDs:                   ids,
 			Clock:                 clock,
 			Log:                   log,
+			Authz:                 authzSvc,
 			ForceImmediateRelease: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
 			DefaultPaymentMode:    paymentMode,
 		}

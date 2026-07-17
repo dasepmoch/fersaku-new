@@ -1,5 +1,6 @@
 import type { FinanceSource } from "@/shared/finance/source-badge";
 
+/** Server-authoritative finance summary (integer IDR). Never recompute in UI. */
 export type SellerFinanceSummary = {
   storeId: string;
   availableAmount: number;
@@ -16,12 +17,28 @@ export type SellerFinanceSummary = {
   >;
   currency: "IDR";
   asOf: string;
+  feePolicy?: {
+    transactionPercentBps: number;
+    transactionFixedIdr: number;
+    withdrawalPercentBps: number;
+    minimumWithdrawalIdr: number;
+  };
+  withdrawalAllocationPolicy?: string;
 };
+
+/** Includes SETTLEMENT_RELEASE (SEL-400 exhaustive handling). */
+export type SellerLedgerType =
+  | "SALE"
+  | "PLATFORM_FEE"
+  | "PROVIDER_FEE"
+  | "WITHDRAWAL"
+  | "ADJUSTMENT"
+  | "SETTLEMENT_RELEASE";
 
 export type SellerLedgerItem = {
   id: string;
   storeId: string;
-  type: "SALE" | "PLATFORM_FEE" | "PROVIDER_FEE" | "WITHDRAWAL" | "ADJUSTMENT";
+  type: SellerLedgerType;
   description: string;
   amount: number;
   direction: "CREDIT" | "DEBIT";

@@ -31,7 +31,12 @@ export function useSellerFinanceSummary(storeId: string) {
     queryKey: queryKeys.seller.finance(storeId),
     queryFn: (signal) => getSellerFinanceSummary(storeId, signal),
     enabled: Boolean(storeId),
-    placeholderData: mockPlaceholderData("sellerFinance", demoFinanceSummary(storeId)),
+    surface: "finance",
+    keepPrevious: true,
+    placeholderData: mockPlaceholderData(
+      "sellerFinance",
+      demoFinanceSummary(storeId),
+    ),
   });
 }
 
@@ -47,12 +52,33 @@ export function useSellerRevenue(storeId: string, days = 7) {
   });
 }
 
-export function useSellerLedger(storeId: string) {
+/** First-page ledger (CursorList profile; balance UI has no paging control). */
+export function useSellerLedger(
+  storeId: string,
+  filters: { source?: string; cursor?: string } = {},
+) {
   return useAppQuery({
-    queryKey: queryKeys.seller.ledger(storeId),
-    queryFn: (signal) => listSellerLedger(storeId, undefined, signal),
+    queryKey: queryKeys.seller.ledger(storeId, {
+      source: filters.source ?? null,
+      cursor: filters.cursor ?? null,
+      profile: "cursor-first",
+    }),
+    queryFn: (signal) =>
+      listSellerLedger(storeId, filters.cursor, signal, {
+        source: filters.source as
+          | "STOREFRONT"
+          | "QRIS_API"
+          | "MIXED"
+          | "SYSTEM"
+          | undefined,
+      }),
     enabled: Boolean(storeId),
-    placeholderData: mockPlaceholderData("sellerFinance", demoSellerLedger(storeId)),
+    surface: "finance",
+    keepPrevious: true,
+    placeholderData: mockPlaceholderData(
+      "sellerFinance",
+      demoSellerLedger(storeId),
+    ),
   });
 }
 
@@ -94,6 +120,9 @@ export function useCreateSellerWithdrawalMutation() {
       });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.seller.finance(withdrawal.storeId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["seller", withdrawal.storeId, "ledger"],
       });
     },
   });

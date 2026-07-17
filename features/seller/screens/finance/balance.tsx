@@ -24,6 +24,7 @@ const ledgerIcon: Record<string, LucideIcon> = {
   PLATFORM_FEE: ArrowDownLeft,
   PROVIDER_FEE: ArrowDownLeft,
   ADJUSTMENT: ArrowDownLeft,
+  SETTLEMENT_RELEASE: ArrowDownLeft,
 };
 
 export function Balance() {

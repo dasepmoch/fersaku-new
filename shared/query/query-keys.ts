@@ -18,7 +18,12 @@ export const queryKeys = {
       ["seller", storeId, "inventory", productId, "detail"] as const,
     inventorySchema: (storeId: string, productId: string) =>
       ["seller", storeId, "inventory", productId, "schema"] as const,
-    ledger: (storeId: string) => ["seller", storeId, "ledger"] as const,
+    /**
+     * SEL-400: store + optional source/cursor + CursorList first-page profile.
+     * Prefix ["seller", storeId, "ledger"] still matches invalidate/clear.
+     */
+    ledger: (storeId: string, filters: Record<string, unknown> = {}) =>
+      ["seller", storeId, "ledger", filters] as const,
     withdrawals: (storeId: string) =>
       ["seller", storeId, "withdrawals"] as const,
     withdrawalLock: (storeId: string) =>

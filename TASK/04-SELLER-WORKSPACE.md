@@ -521,17 +521,17 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Checklist BE
 
-- [ ] Apply actor/store tenant guard to summary/ledger/revenue; permission-only is insufficient.
-- [ ] Read model integer IDR from authoritative ledger, with source (`STOREFRONT`, `QRIS_API`, mixed allocation).
-- [ ] Stable ordering and filter/range/source under the declared pagination profile; no mutable derived client totals.
+- [x] Apply actor/store tenant guard to summary/ledger/revenue; permission-only is insufficient.
+- [x] Read model integer IDR from authoritative ledger, with source (`STOREFRONT`, `QRIS_API`, mixed allocation).
+- [x] Stable ordering and filter/range/source under the declared pagination profile; no mutable derived client totals.
 
 ### Checklist FE
 
-- [ ] Schema/mapper for summary/revenue/ledger including `SETTLEMENT_RELEASE` and future exhaustive status handling.
-- [ ] Normalize backend pagination shape to existing ledger UI.
-- [ ] Query key store/range/source and selected pagination profile.
-- [ ] Money formatting via existing formatter; never float/recompute balance.
-- [ ] Keep previous chart/table during refresh; no zero fallback on error.
+- [x] Schema/mapper for summary/revenue/ledger including `SETTLEMENT_RELEASE` and future exhaustive status handling.
+- [x] Normalize backend pagination shape to existing ledger UI.
+- [x] Query key store/range/source and selected pagination profile.
+- [x] Money formatting via existing formatter; never float/recompute balance.
+- [x] Keep previous chart/table during refresh; no zero fallback on error.
 
 ### Tests/AC
 

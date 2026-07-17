@@ -18,10 +18,28 @@ type LedgerService struct {
 	IDs         ports.IDGenerator
 	Clock       ports.Clock
 	Log         ports.Logger
+	// Authz when set enforces actor/store membership on finance reads (SEL-400 / INT-150).
+	Authz *AuthzService
 	// ForceImmediateRelease when true (local/test) posts capture+release with delay 0.
 	ForceImmediateRelease bool
 	// DefaultPaymentMode for seller reads when not specified (SANDBOX|LIVE).
 	DefaultPaymentMode string
+}
+
+// requireStoreRead enforces membership for finance read surfaces (foreign → 404).
+func (s *LedgerService) requireStoreRead(ctx context.Context, actorUserID, storeID string) error {
+	if actorUserID == "" {
+		return apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required")
+	}
+	if storeID == "" {
+		return apperr.NotFound(apperr.CodeResourceNotFound, "Store not found")
+	}
+	if s.Authz == nil {
+		// Fail closed when guard is not wired (production always sets Authz).
+		return apperr.Internal(apperr.CodeInternalError, "Finance authorization unavailable")
+	}
+	_, err := s.Authz.StoreAccessGuard(ctx, actorUserID, storeID, false)
+	return err
 }
 
 // PostPaymentCapture posts PAYMENT_CAPTURE (+ optional SETTLEMENT_RELEASE) and settlement lot.
@@ -310,6 +328,9 @@ func (s *LedgerService) GetFinanceSummary(ctx context.Context, actorUserID, stor
 	if paymentMode == "" {
 		paymentMode = s.defaultMode()
 	}
+	if err := s.requireStoreRead(ctx, actorUserID, storeID); err != nil {
+		return ledger.FinanceSummary{}, err
+	}
 	_, merchantID, err := s.Store.GetStoreMerchant(ctx, storeID)
 	if err != nil {
 		if s.Store.IsNotFound(err) {
@@ -317,7 +338,6 @@ func (s *LedgerService) GetFinanceSummary(ctx context.Context, actorUserID, stor
 		}
 		return ledger.FinanceSummary{}, err
 	}
-	_ = actorUserID // membership enforced by route permission + store scope in handlers later
 
 	bal, err := s.Store.GetBalance(ctx, merchantID, paymentMode)
 	if err != nil {
@@ -364,9 +384,13 @@ func (s *LedgerService) GetFinanceSummary(ctx context.Context, actorUserID, stor
 }
 
 // ListLedger returns cursor-paginated seller ledger items (merchant-level journals).
-func (s *LedgerService) ListLedger(ctx context.Context, storeID, paymentMode string, source *string, cursorAt *time.Time, cursorID *string, limit int32) ([]ledger.LedgerListItem, *time.Time, *string, bool, error) {
+// actorUserID is required for tenant membership (SEL-400); foreign store → 404.
+func (s *LedgerService) ListLedger(ctx context.Context, actorUserID, storeID, paymentMode string, source *string, cursorAt *time.Time, cursorID *string, limit int32) ([]ledger.LedgerListItem, *time.Time, *string, bool, error) {
 	if paymentMode == "" {
 		paymentMode = s.defaultMode()
+	}
+	if err := s.requireStoreRead(ctx, actorUserID, storeID); err != nil {
+		return nil, nil, nil, false, err
 	}
 	_, merchantID, err := s.Store.GetStoreMerchant(ctx, storeID)
 	if err != nil {
@@ -411,7 +435,8 @@ func (s *LedgerService) ListLedger(ctx context.Context, storeID, paymentMode str
 }
 
 // ListRevenue returns daily revenue points for the store merchant.
-func (s *LedgerService) ListRevenue(ctx context.Context, storeID, paymentMode string, days int) ([]ledger.RevenuePoint, error) {
+// actorUserID is required for tenant membership (SEL-400); foreign store → 404.
+func (s *LedgerService) ListRevenue(ctx context.Context, actorUserID, storeID, paymentMode string, days int) ([]ledger.RevenuePoint, error) {
 	if paymentMode == "" {
 		paymentMode = s.defaultMode()
 	}
@@ -420,6 +445,9 @@ func (s *LedgerService) ListRevenue(ctx context.Context, storeID, paymentMode st
 	}
 	if days > 90 {
 		days = 90
+	}
+	if err := s.requireStoreRead(ctx, actorUserID, storeID); err != nil {
+		return nil, err
 	}
 	_, merchantID, err := s.Store.GetStoreMerchant(ctx, storeID)
 	if err != nil {

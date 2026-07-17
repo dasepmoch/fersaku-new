@@ -66,6 +66,7 @@ func newLedgerStack(t *testing.T) (http.Handler, *application.LedgerService, *po
 		IDs:                   ids,
 		Clock:                 observability.SystemClock{},
 		Log:                   log,
+		Authz:                 authzSvc,
 		ForceImmediateRelease: true,
 		DefaultPaymentMode:    payments.PaymentModeSandbox,
 	}
@@ -272,6 +273,7 @@ func TestLedgerPendingThenRelease(t *testing.T) {
 		IDs:                   ids,
 		Clock:                 observability.SystemClock{},
 		Log:                   observability.NewSlogLogger("error", "test"),
+		Authz:                 nil, // internal release path; no seller read
 		ForceImmediateRelease: false,
 		DefaultPaymentMode:    payments.PaymentModeSandbox,
 	}

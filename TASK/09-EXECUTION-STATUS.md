@@ -129,7 +129,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[ ]` | `SEL-320` | P1 | SEL-100; INT-180/185 **if webhook delivery active** | SEL/RTM | — | Seller outbound webhooks/secret claims | — |
 | `[ ]` | `SEL-330` | P1 | SEL-100, INT-140; INT-180/185 **if credential/KYC runtime active** | SEL/RTM | — | API credentials + seller KYC capability | — |
 | `[ ]` | `SEL-340` | P1 | SEL-100, AUT-120, BUY-140; INT-175 if avatar active | SEL | — | Seller profile/security/banks/preferences | — |
-| `[ ]` | `SEL-400` | P0 auth/P1 wire | SEL-100, INT-150 | SEL | — | Finance/ledger read authority | — |
+| `[x]` | `SEL-400` | P0 auth/P1 wire | SEL-100, INT-150 | SEL | @nikki/opencode · main · 2026-07-17 · files: finance/ledger, TASK/evidence/SEL-400 | Finance/ledger read authority | TASK/evidence/SEL-400/20260717-1538-nikki.md · features/finance · tests/unit/sel-400-seller-finance-ledger.test.ts |
 | `[ ]` | `SEL-410` | P0 money | SEL-340, SEL-400, INT-140, INT-180, INT-185 | SEL/RTM | — | Secure withdrawal lifecycle | — |
 | `[ ]` | `SEL-420` | P1 | SEL-100, BUY-140, INT-120 | SEL | — | Seller shell notifications/profile/logout | — |
 

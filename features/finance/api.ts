@@ -1,7 +1,10 @@
+import type { z } from "zod";
 import { apiRequest } from "@/shared/api/http-client";
 import {
+  financeLedgerEnvelopeSchema,
+  financeRevenueEnvelopeSchema,
+  financeSummaryEnvelopeSchema,
   structuralEnvelopeSchema,
-  structuralCursorPageEnvelopeSchema,
 } from "@/shared/api/schemas";
 import type { ApiEnvelope, CursorPage } from "@/shared/api/contracts";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
@@ -29,61 +32,104 @@ import {
   persistMockCreatedWithdrawal,
   readMockCreatedWithdrawals,
 } from "./mock-withdrawals";
+import {
+  mapFinanceLedgerPageDto,
+  mapFinanceRevenueDto,
+  mapFinanceSummaryDto,
+} from "./mappers";
 
 const mockQuotes = new Map<string, SellerWithdrawalQuote>();
 
+type SummaryEnvelope = z.infer<typeof financeSummaryEnvelopeSchema>;
+type RevenueEnvelope = z.infer<typeof financeRevenueEnvelopeSchema>;
+type LedgerEnvelope = z.infer<typeof financeLedgerEnvelopeSchema>;
+
+function isSellerFinanceMock(): boolean {
+  return shouldUseMockFixtures("sellerFinance");
+}
+
+export type ListSellerLedgerParams = {
+  storeId: string;
+  cursor?: string;
+  source?: "STOREFRONT" | "QRIS_API" | "MIXED" | "SYSTEM";
+  limit?: number;
+  signal?: AbortSignal;
+};
+
+/**
+ * Daily revenue series from authoritative payment-capture journals.
+ * Never derive from UI order rows.
+ */
 export async function getSellerRevenue(
   storeId: string,
   signal?: AbortSignal,
   days = 7,
 ): Promise<SellerRevenuePoint[]> {
-  if (shouldUseMockFixtures("sellerFinance")) return demoSellerRevenue();
+  if (isSellerFinanceMock()) return demoSellerRevenue();
   const safeDays = Math.min(90, Math.max(1, Math.trunc(days) || 7));
-  const response = await apiRequest<ApiEnvelope<SellerRevenuePoint[]>>(
+  const response = await apiRequest<RevenueEnvelope>(
     `/v1/stores/${encodeURIComponent(storeId)}/finance/revenue`,
     {
-      schema: structuralEnvelopeSchema,
+      schema: financeRevenueEnvelopeSchema,
       query: { days: safeDays },
       signal,
     },
   );
-  return response.data;
+  return mapFinanceRevenueDto(response.data);
 }
 
+/**
+ * Store-scoped finance summary (available/pending/held + month buckets).
+ * Money fields are server integers; UI only formats.
+ */
 export async function getSellerFinanceSummary(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerFinanceSummary> {
-  if (shouldUseMockFixtures("sellerFinance")) return demoFinanceSummary(storeId);
+  if (isSellerFinanceMock()) return demoFinanceSummary(storeId);
 
-  const response = await apiRequest<ApiEnvelope<SellerFinanceSummary>>(
-    `/v1/stores/${storeId}/finance/summary`,
+  const response = await apiRequest<SummaryEnvelope>(
+    `/v1/stores/${encodeURIComponent(storeId)}/finance/summary`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: financeSummaryEnvelopeSchema,
+      signal,
+    },
   );
-  return response.data;
+  return mapFinanceSummaryDto(response.data, response.meta.timestamp);
 }
 
+/**
+ * Cursor-paginated ledger journals. UI balance screen uses first page only
+ * (no TablePagination control → bounded first result).
+ */
 export async function listSellerLedger(
   storeId: string,
   cursor?: string,
   signal?: AbortSignal,
+  opts?: Pick<ListSellerLedgerParams, "source" | "limit">,
 ): Promise<CursorPage<SellerLedgerItem>> {
-  if (shouldUseMockFixtures("sellerFinance")) return demoSellerLedger(storeId);
+  if (isSellerFinanceMock()) return demoSellerLedger(storeId);
 
-  const response = await apiRequest<ApiEnvelope<CursorPage<SellerLedgerItem>>>(
-    `/v1/stores/${storeId}/finance/ledger`,
+  const response = await apiRequest<LedgerEnvelope>(
+    `/v1/stores/${encodeURIComponent(storeId)}/finance/ledger`,
     {
-    schema: structuralCursorPageEnvelopeSchema, query: { cursor }, signal },
+      schema: financeLedgerEnvelopeSchema,
+      query: {
+        ...(cursor ? { cursor } : {}),
+        ...(opts?.source ? { source: opts.source } : {}),
+        limit: opts?.limit ?? 50,
+      },
+      signal,
+    },
   );
-  return response.data;
+  return mapFinanceLedgerPageDto(response.data);
 }
 
 export async function listSellerWithdrawals(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal[]> {
-  if (shouldUseMockFixtures("sellerFinance")) {
+  if (isSellerFinanceMock()) {
     return [
       ...readMockCreatedWithdrawals(storeId),
       ...demoSellerWithdrawals(storeId),
@@ -91,9 +137,11 @@ export async function listSellerWithdrawals(
   }
 
   const response = await apiRequest<ApiEnvelope<SellerWithdrawal[]>>(
-    `/v1/stores/${storeId}/withdrawals`,
+    `/v1/stores/${encodeURIComponent(storeId)}/withdrawals`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: structuralEnvelopeSchema,
+      signal,
+    },
   );
   return response.data;
 }
@@ -102,7 +150,7 @@ export async function requestSellerWithdrawalQuote(
   input: RequestSellerWithdrawalQuoteInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalQuote> {
-  if (shouldUseMockFixtures("sellerFinance")) {
+  if (isSellerFinanceMock()) {
     const summary = demoFinanceSummary(input.storeId);
     if (
       !canRequestSellerWithdrawal({
@@ -153,7 +201,7 @@ export async function createSellerWithdrawal(
   input: CreateSellerWithdrawalInput,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawal> {
-  if (shouldUseMockFixtures("sellerFinance")) {
+  if (isSellerFinanceMock()) {
     const quote = mockQuotes.get(input.quoteId);
     if (
       !quote ||
@@ -204,12 +252,14 @@ export async function getSellerWithdrawalLock(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWithdrawalLock> {
-  if (shouldUseMockFixtures("sellerFinance")) return demoWithdrawalLock;
+  if (isSellerFinanceMock()) return demoWithdrawalLock;
 
   const response = await apiRequest<ApiEnvelope<SellerWithdrawalLock>>(
-    `/v1/stores/${storeId}/withdrawals/lock`,
+    `/v1/stores/${encodeURIComponent(storeId)}/withdrawals/lock`,
     {
-    schema: structuralEnvelopeSchema, signal },
+      schema: structuralEnvelopeSchema,
+      signal,
+    },
   );
   return response.data;
 }

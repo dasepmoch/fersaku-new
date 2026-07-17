@@ -52,7 +52,8 @@ func (h *FinanceHandler) Summary(w http.ResponseWriter, r *http.Request) {
 
 // Ledger is GET /v1/stores/{storeId}/finance/ledger
 func (h *FinanceHandler) Ledger(w http.ResponseWriter, r *http.Request) {
-	if _, ok := reqctx.PrincipalFrom(r.Context()); !ok {
+	p, ok := reqctx.PrincipalFrom(r.Context())
+	if !ok {
 		presenters.WriteAppError(w, r, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required"))
 		return
 	}
@@ -90,7 +91,7 @@ func (h *FinanceHandler) Ledger(w http.ResponseWriter, r *http.Request) {
 	if n, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && n > 0 && n <= 100 {
 		limit = int32(n)
 	}
-	items, nextAt, nextID, hasMore, err := h.Svc.ListLedger(r.Context(), storeID, mode, source, cursorAt, cursorID, limit)
+	items, nextAt, nextID, hasMore, err := h.Svc.ListLedger(r.Context(), p.SubjectID, storeID, mode, source, cursorAt, cursorID, limit)
 	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return
@@ -118,7 +119,8 @@ func (h *FinanceHandler) Ledger(w http.ResponseWriter, r *http.Request) {
 
 // Revenue is GET /v1/stores/{storeId}/finance/revenue
 func (h *FinanceHandler) Revenue(w http.ResponseWriter, r *http.Request) {
-	if _, ok := reqctx.PrincipalFrom(r.Context()); !ok {
+	p, ok := reqctx.PrincipalFrom(r.Context())
+	if !ok {
 		presenters.WriteAppError(w, r, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required"))
 		return
 	}
@@ -139,7 +141,7 @@ func (h *FinanceHandler) Revenue(w http.ResponseWriter, r *http.Request) {
 	if n, err := strconv.Atoi(r.URL.Query().Get("days")); err == nil && n > 0 {
 		days = n
 	}
-	points, err := h.Svc.ListRevenue(r.Context(), storeID, mode, days)
+	points, err := h.Svc.ListRevenue(r.Context(), p.SubjectID, storeID, mode, days)
 	if err != nil {
 		presenters.WriteAppError(w, r, err)
 		return

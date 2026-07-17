@@ -1139,6 +1139,116 @@ export type AnalyticsChannelBreakdownDto = z.infer<
 export type AnalyticsTrafficRowDto = z.infer<typeof analyticsTrafficRowSchema>;
 export type AnalyticsTrafficPageDto = z.infer<typeof analyticsTrafficPageSchema>;
 
+// --- Seller finance summary / revenue / ledger (SEL-400) ---
+
+/** Non-negative whole IDR for balance buckets (server-authoritative). */
+export const moneyIdrNonNegSchema = moneyIdrSchema.refine((v) => v >= 0, {
+  message: "MoneyIdr must be non-negative",
+});
+
+export const financeSourceWireSchema = z.enum([
+  "STOREFRONT",
+  "QRIS_API",
+  "MIXED",
+  "SYSTEM",
+]);
+
+export const financeLedgerTypeSchema = z.enum([
+  "SALE",
+  "PLATFORM_FEE",
+  "PROVIDER_FEE",
+  "WITHDRAWAL",
+  "ADJUSTMENT",
+  "SETTLEMENT_RELEASE",
+]);
+
+export const financeLedgerDirectionSchema = z.enum(["CREDIT", "DEBIT"]);
+
+export const financeSourceAmountsSchema = z
+  .object({
+    availableAmount: moneyIdrNonNegSchema.optional(),
+    pendingAmount: moneyIdrNonNegSchema.optional(),
+    available: moneyIdrNonNegSchema.optional(),
+    pending: moneyIdrNonNegSchema.optional(),
+  })
+  .transform((v) => ({
+    availableAmount: v.availableAmount ?? v.available ?? 0,
+    pendingAmount: v.pendingAmount ?? v.pending ?? 0,
+  }));
+
+export const financeSummaryFeePolicySchema = z
+  .object({
+    transactionPercentBps: z.number().int().optional(),
+    transactionFixedIdr: moneyIdrNonNegSchema.optional(),
+    withdrawalPercentBps: z.number().int().optional(),
+    minimumWithdrawalIdr: moneyIdrNonNegSchema.optional(),
+  })
+  .optional();
+
+export const financeSummaryDataSchema = z.object({
+  storeId: z.string().min(1),
+  availableAmount: moneyIdrNonNegSchema,
+  pendingAmount: moneyIdrNonNegSchema,
+  heldAmount: moneyIdrNonNegSchema,
+  lifetimeGrossAmount: moneyIdrNonNegSchema.optional(),
+  monthGrossAmount: moneyIdrNonNegSchema.optional(),
+  monthPlatformFeeAmount: moneyIdrNonNegSchema.optional(),
+  monthProviderFeeAmount: moneyIdrNonNegSchema.optional(),
+  monthNetAmount: moneyIdrNonNegSchema.optional(),
+  sources: z.record(z.string(), financeSourceAmountsSchema),
+  currency: z.literal("IDR"),
+  asOf: rfc3339TimestampSchema,
+  feePolicy: financeSummaryFeePolicySchema,
+  withdrawalAllocationPolicy: z.string().optional(),
+});
+
+export const financeSummaryEnvelopeSchema = successEnvelopeSchema(
+  financeSummaryDataSchema,
+);
+
+export const financeRevenuePointSchema = z.object({
+  day: z.string().min(1),
+  revenue: moneyIdrNonNegSchema,
+  orders: z.number().int().min(0),
+});
+
+export const financeRevenueEnvelopeSchema = successEnvelopeSchema(
+  z.array(financeRevenuePointSchema),
+);
+
+export const financeLedgerItemSchema = z.object({
+  id: z.string().min(1),
+  storeId: z.string().min(1),
+  type: financeLedgerTypeSchema,
+  description: z.string().optional(),
+  amount: moneyIdrNonNegSchema,
+  direction: financeLedgerDirectionSchema,
+  source: financeSourceWireSchema,
+  occurredAt: rfc3339TimestampSchema,
+  orderId: z.string().optional(),
+  withdrawalId: z.string().optional(),
+});
+
+/** OpenAPI FinanceLedgerPage nested in SuccessEnvelope data. */
+export const financeLedgerPageSchema = z.object({
+  items: z.array(financeLedgerItemSchema),
+  nextCursor: z.string().nullable().optional(),
+  previousCursor: z.string().nullable().optional(),
+  hasMore: z.boolean(),
+});
+
+export const financeLedgerEnvelopeSchema = successEnvelopeSchema(
+  financeLedgerPageSchema,
+);
+
+export type FinanceSummaryDto = z.infer<typeof financeSummaryDataSchema>;
+export type FinanceSourceAmountsDto = z.infer<typeof financeSourceAmountsSchema>;
+export type FinanceRevenuePointDto = z.infer<typeof financeRevenuePointSchema>;
+export type FinanceLedgerItemDto = z.infer<typeof financeLedgerItemSchema>;
+export type FinanceLedgerPageDto = z.infer<typeof financeLedgerPageSchema>;
+export type FinanceLedgerTypeDto = z.infer<typeof financeLedgerTypeSchema>;
+export type FinanceSourceWireDto = z.infer<typeof financeSourceWireSchema>;
+
 // --- Seller inventory (SEL-240) — masked list/detail; reveal is no-store ---
 
 export const inventoryFieldDefSchema = z.object({
