@@ -15,7 +15,12 @@ import type {
   AdminOrderDto,
   AdminOverviewDto,
   AdminPaymentDto,
+  AdminPermissionRegistryItemDto,
   AdminReviewDto,
+  AdminRoleDto,
+  AdminStaffInvitationDto,
+  AdminUserLookupDto,
+  AdminUserRoleAssignmentDto,
   AdminWithdrawalDto,
   AdminBoundedListMeta,
   AdminInventorySnapshotDto,
@@ -33,7 +38,13 @@ import type {
   AdminOrder,
   AdminPaymentIntent,
   AdminPaymentSource,
+  AdminPermissionGroup,
   AdminReview,
+  AdminRole,
+  AdminStaffInvitation,
+  AdminStaffMember,
+  AdminUserLookup,
+  AdminUserRoleAssignment,
   AdminWithdrawal,
   AdminWithdrawalSource,
 } from "./contracts";
@@ -529,4 +540,134 @@ export function overviewMetricLabels(overview: AdminOverview): {
     paymentSuccess: formatSuccessRateBps(overview.paymentSuccessRateBps),
     pendingWithdrawals: formatCountId(overview.pendingWithdrawalCount),
   };
+}
+
+/** Presentational role color — never from backend. */
+const ROLE_COLOR_PALETTE = [
+  "#5b7cfa",
+  "#28a566",
+  "#e59633",
+  "#9a6de2",
+  "#738099",
+  "#4f6fe1",
+  "#c6534c",
+  "#31875a",
+] as const;
+
+export function mapAdminRoleColor(idOrCode: string): string {
+  let hash = 0;
+  for (let i = 0; i < idOrCode.length; i += 1) {
+    hash = (hash * 31 + idOrCode.charCodeAt(i)) >>> 0;
+  }
+  return ROLE_COLOR_PALETTE[hash % ROLE_COLOR_PALETTE.length]!;
+}
+
+/** ADM-220 — BE RoleDTO → existing AdminRole chrome. */
+export function mapAdminRoleDto(dto: AdminRoleDto): AdminRole {
+  return {
+    id: dto.id,
+    name: dto.name,
+    description: dto.description ?? "",
+    permissions: [...(dto.permissions ?? [])].sort(),
+    members: 0,
+    system: Boolean(dto.isSystem),
+    color: mapAdminRoleColor(dto.code || dto.id),
+    version: dto.version,
+    code: dto.code,
+    archivedAt: dto.archivedAt ?? null,
+  };
+}
+
+/** Flat permission registry → grouped AdminPermissionGroup presentation. */
+export function mapPermissionRegistryToGroups(
+  items: AdminPermissionRegistryItemDto[],
+): AdminPermissionGroup[] {
+  const byCategory = new Map<string, Array<[string, string]>>();
+  for (const item of items) {
+    const group = item.category?.trim() || "Platform";
+    const list = byCategory.get(group) ?? [];
+    list.push([item.code, item.description ?? ""]);
+    byCategory.set(group, list);
+  }
+  return [...byCategory.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, permissions]) => ({
+      group,
+      permissions: permissions.sort(([a], [b]) => a.localeCompare(b)),
+    }));
+}
+
+export function mapAdminUserLookupDto(dto: AdminUserLookupDto): AdminUserLookup {
+  return {
+    id: dto.id,
+    name: dto.name,
+    email: dto.email,
+    status: dto.status,
+    isAdmin: Boolean(dto.isAdmin),
+    ownerMerchantId: dto.ownerMerchantId ?? null,
+    impersonatable: Boolean(dto.impersonatable),
+    createdAt: dto.createdAt ?? "",
+  };
+}
+
+export function mapAdminUserRoleAssignmentDto(
+  dto: AdminUserRoleAssignmentDto,
+): AdminUserRoleAssignment {
+  return {
+    userId: dto.userId,
+    roleId: dto.roleId,
+    roleCode: dto.roleCode ?? "",
+    roleName: dto.roleName ?? "",
+    isSystem: Boolean(dto.isSystem),
+    assignedAt: dto.assignedAt ?? "",
+    assignedBy: dto.assignedBy,
+  };
+}
+
+/**
+ * List invitation DTO → view model. Token must never appear on list items;
+ * create response token is stripped before caching.
+ */
+export function mapAdminStaffInvitationDto(
+  dto: AdminStaffInvitationDto,
+): AdminStaffInvitation {
+  return {
+    id: dto.id,
+    email: dto.email,
+    roleId: dto.roleId,
+    status: dto.status,
+    expiresAt: dto.expiresAt ?? "",
+    createdAt: dto.createdAt ?? "",
+  };
+}
+
+/** Compose users-screen staff row from lookup (+ optional role labels). */
+export function mapAdminStaffMember(
+  user: AdminUserLookup,
+  roleNames: string[] = [],
+): AdminStaffMember {
+  const statusRaw = user.status?.trim() || "Active";
+  const status =
+    statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase();
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    roleLabel: roleNames.filter(Boolean).join(", ") || (user.isAdmin ? "Staff" : "User"),
+    status,
+    lastActive: user.createdAt || "—",
+    mfaEnabled: user.isAdmin,
+    isAdmin: user.isAdmin,
+  };
+}
+
+/** Stable role code for create from display name (custom roles). */
+export function slugifyRoleCode(name: string): string {
+  const base = name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48);
+  return base.length >= 2 ? base : `CUSTOM_${Date.now().toString(36).toUpperCase()}`;
 }

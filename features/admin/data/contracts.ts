@@ -169,6 +169,54 @@ export type AdminRole = {
   members: number;
   system: boolean;
   color: string;
+  /** Wire concurrency token (expectedVersion on PATCH/archive). */
+  version?: number;
+  code?: string;
+  archivedAt?: string | null;
+};
+
+/** ADM-220 — user lookup (impersonation / staff composition). */
+export type AdminUserLookup = {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  isAdmin: boolean;
+  ownerMerchantId?: string | null;
+  impersonatable: boolean;
+  createdAt: string;
+};
+
+/** Staff row for users screen (lookup + optional role labels). */
+export type AdminStaffMember = {
+  id: string;
+  name: string;
+  email: string;
+  roleLabel: string;
+  status: string;
+  lastActive: string;
+  mfaEnabled: boolean;
+  isAdmin: boolean;
+};
+
+export type AdminUserRoleAssignment = {
+  userId: string;
+  roleId: string;
+  roleCode: string;
+  roleName: string;
+  isSystem: boolean;
+  assignedAt: string;
+  assignedBy?: string;
+};
+
+/** Staff invitation list item — never carries raw invite token. */
+export type AdminStaffInvitation = {
+  id: string;
+  email: string;
+  roleId: string;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
 };
 
 export type AdminBuyer = {

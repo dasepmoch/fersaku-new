@@ -4,11 +4,19 @@ import { adminPanel, Metric, PanelHead } from "@/features/admin/ui";
 
 import Link from "next/link";
 import { AlertTriangle, KeyRound, MoreHorizontal, Users } from "lucide-react";
-import { useAdminRoles } from "@/features/admin/data";
+import { useAdminRoles, useAdminStaffDirectory } from "@/features/admin/data";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 function RolesPage() {
+  const isMock = getDomainSource("adminRead") === "mock";
   const { data } = useAdminRoles();
+  const { data: staff } = useAdminStaffDirectory();
   const adminRoles = data ?? [];
+  const staffCount = staff?.length;
+  const grantCount = adminRoles.reduce(
+    (sum, role) => sum + (role.permissions?.length ?? 0),
+    0,
+  );
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -19,12 +27,24 @@ function RolesPage() {
         />
         <Metric
           label="Staff accounts"
-          value="18"
-          note="16 active • 2 invited"
+          value={
+            staffCount !== undefined
+              ? String(staffCount)
+              : isMock
+                ? "18"
+                : "—"
+          }
+          note={
+            staff
+              ? `${staff.filter((s) => s.status.toLowerCase() === "active").length} active • ${staff.filter((s) => s.status.toLowerCase() === "invited").length} invited`
+              : isMock
+                ? "16 active • 2 invited"
+                : "users.read"
+          }
         />
         <Metric
           label="Permission grants"
-          value="142"
+          value={grantCount > 0 ? String(grantCount) : isMock ? "142" : "—"}
           note="Across all assignments"
         />
       </div>

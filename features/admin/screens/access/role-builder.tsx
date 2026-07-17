@@ -18,9 +18,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  saveMockAdminRole,
   useAdminPermissionGroups,
   useAdminRoles,
+  useAdminRolesWriteEnabled,
+  useSaveAdminRoleMutation,
 } from "@/features/admin/data";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,8 @@ import { queryKeys } from "@/shared/query/query-keys";
 function RoleBuilder({ id }: { id: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const canWrite = useAdminRolesWriteEnabled();
+  const saveMutation = useSaveAdminRoleMutation();
   const { data: roles } = useAdminRoles();
   const { data: groups } = useAdminPermissionGroups();
   const adminRoles = roles ?? [];
@@ -53,6 +56,9 @@ function RoleBuilder({ id }: { id: string }) {
   const [saved, setSaved] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [persistedRoleId, setPersistedRoleId] = useState<string | null>(null);
+  const [expectedVersion, setExpectedVersion] = useState<number | undefined>(
+    role?.version,
+  );
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const permissions = defaultPermissionsSignature
@@ -61,16 +67,22 @@ function RoleBuilder({ id }: { id: string }) {
       setName(defaultName);
       setDescription(defaultDescription);
       setSelected(new Set(permissions));
+      setExpectedVersion(role?.version);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [defaultDescription, defaultName, defaultPermissionsSignature]);
+  }, [
+    defaultDescription,
+    defaultName,
+    defaultPermissionsSignature,
+    role?.version,
+  ]);
   if (!isNew && !role) return null;
   const roleForView =
     role ??
     adminRoles.find((candidate) => candidate.id === persistedRoleId) ??
     adminRoles[1];
   const togglePermission = (permission: string) => {
-    if (isProtected) return;
+    if (isProtected || !canWrite) return;
     setSaved(false);
     setSelected((current) => {
       const next = new Set(current);
@@ -80,7 +92,7 @@ function RoleBuilder({ id }: { id: string }) {
     });
   };
   const toggleGroup = (permissions: string[]) => {
-    if (isProtected) return;
+    if (isProtected || !canWrite) return;
     setSaved(false);
     setSelected((current) => {
       const next = new Set(current);
@@ -91,25 +103,42 @@ function RoleBuilder({ id }: { id: string }) {
       return next;
     });
   };
-  const persistRole = () => {
+  const persistRole = async (reason: string) => {
     if (isProtected) throw new Error("Protected roles are read-only");
+    if (!canWrite) throw new Error("Requires roles.write permission");
     const normalizedName = name.trim();
     const normalizedDescription = description.trim();
     if (normalizedName.length < 3 || normalizedDescription.length < 12) {
       throw new Error("Role name or description is incomplete");
     }
-    const persisted = saveMockAdminRole({
-      id: isNew ? (persistedRoleId ?? undefined) : role?.id,
-      name: normalizedName,
-      description: normalizedDescription,
-      permissions: [...selected],
-    });
-    queryClient.setQueryData(queryKeys.admin.roles(), persisted.roles);
-    setPersistedRoleId(persisted.role.id);
-    setName(normalizedName);
-    setDescription(normalizedDescription);
-    setSaved(true);
+    try {
+      const result = await saveMutation.mutateAsync({
+        id: isNew ? (persistedRoleId ?? undefined) : role?.id,
+        name: normalizedName,
+        description: normalizedDescription,
+        permissions: [...selected],
+        expectedVersion,
+        reason,
+      });
+      if (result.roles) {
+        queryClient.setQueryData(queryKeys.admin.roles(), result.roles);
+      } else {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.roles(),
+        });
+      }
+      setPersistedRoleId(result.role.id);
+      setExpectedVersion(result.role.version);
+      setName(normalizedName);
+      setDescription(normalizedDescription);
+      setSaved(true);
+    } catch (error) {
+      // Preserve form selections on conflict (409) — do not clear selected.
+      setSaved(false);
+      throw error;
+    }
   };
+  const writeBlocked = isProtected || !canWrite;
   return (
     <>
       <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
@@ -121,7 +150,7 @@ function RoleBuilder({ id }: { id: string }) {
             <div className="flex-1">
               <input
                 value={name}
-                readOnly={isProtected}
+                readOnly={writeBlocked}
                 onChange={(event) => {
                   setName(event.target.value);
                   setSaved(false);
@@ -130,7 +159,7 @@ function RoleBuilder({ id }: { id: string }) {
               />
               <textarea
                 value={description}
-                readOnly={isProtected}
+                readOnly={writeBlocked}
                 onChange={(event) => {
                   setDescription(event.target.value);
                   setSaved(false);
@@ -151,11 +180,13 @@ function RoleBuilder({ id }: { id: string }) {
               </div>
               <button
                 type="button"
-                disabled={isProtected}
+                disabled={writeBlocked}
                 title={
                   isProtected
                     ? "Protected system roles are read-only"
-                    : undefined
+                    : !canWrite
+                      ? "Requires roles.write permission"
+                      : undefined
                 }
                 onClick={() => {
                   setSelected(new Set());
@@ -193,7 +224,7 @@ function RoleBuilder({ id }: { id: string }) {
                       </div>
                       <Toggle
                         value={all}
-                        disabled={isProtected}
+                        disabled={writeBlocked}
                         onChange={() => toggleGroup(keys)}
                       />
                     </div>
@@ -201,11 +232,11 @@ function RoleBuilder({ id }: { id: string }) {
                       {group.permissions.map(([permission, description]) => (
                         <label
                           key={permission}
-                          className={`flex items-center gap-3 border-t border-[#e8eaf0] px-4 py-3.5 ${isProtected ? "cursor-default" : "cursor-pointer"}`}
+                          className={`flex items-center gap-3 border-t border-[#e8eaf0] px-4 py-3.5 ${writeBlocked ? "cursor-default" : "cursor-pointer"}`}
                         >
                           <input
                             type="checkbox"
-                            disabled={isProtected}
+                            disabled={writeBlocked}
                             checked={selected.has(permission)}
                             onChange={() => togglePermission(permission)}
                             className="size-4 accent-[#5b7cfa]"
@@ -231,9 +262,13 @@ function RoleBuilder({ id }: { id: string }) {
               Cancel
             </AdminButton>
             <AdminButton
-              disabled={isProtected}
+              disabled={writeBlocked}
               title={
-                isProtected ? "Protected system roles are read-only" : undefined
+                isProtected
+                  ? "Protected system roles are read-only"
+                  : !canWrite
+                    ? "Requires roles.write permission"
+                    : undefined
               }
               onClick={() => setSaveOpen(true)}
             >
@@ -249,7 +284,7 @@ function RoleBuilder({ id }: { id: string }) {
               <button
                 type="button"
                 disabled
-                title="Staff assignment is available after the backend role service is connected"
+                title="Staff assignment uses roles.assign on the users surface"
                 className="text-[8px] font-extrabold text-[#4f6fe1]"
               >
                 + Assign staff
@@ -317,7 +352,7 @@ function RoleBuilder({ id }: { id: string }) {
           )}
         </aside>
       </div>
-      {saveOpen && !isProtected && (
+      {saveOpen && !writeBlocked && (
         <ControlDialog
           title="Save role permissions"
           target={role?.id ?? persistedRoleId ?? "new-role"}

@@ -14,29 +14,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ADMIN_ACTION_PERMISSIONS } from "@/features/admin/config/permissions";
-import { useAdminRoles } from "@/features/admin/data";
-import { useRouter } from "next/navigation";
-import { appendClientAuditEvent } from "@/features/admin/data/client-audit";
-import { useHasPermission } from "@/shared/auth/session-provider";
 import {
-  readVersionedStorage,
-  writeVersionedStorage,
-} from "@/shared/storage/versioned-storage";
-import { z } from "zod";
-
-const staffInvitationStorageKey = "fersaku-admin-staff-invitations";
-const staffInvitationSchema = z.array(
-  z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string().email(),
-    roleId: z.string(),
-    roleName: z.string(),
-    hardwareMfa: z.boolean(),
-    invitedAt: z.string().datetime(),
-    reason: z.string(),
-  }),
-);
+  createStaffInvitation,
+  useAdminRoles,
+} from "@/features/admin/data";
+import { useRouter } from "next/navigation";
+import { useHasPermission } from "@/shared/auth/session-provider";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/query/query-keys";
 
 export function AdminAction({ section }: { section: string }) {
   const router = useRouter();
@@ -129,6 +114,7 @@ export function AdminAction({ section }: { section: string }) {
   );
 }
 function StaffInviteDialog({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
   const { data: roles } = useAdminRoles();
   const adminRoles = (roles ?? []).filter(
     (role) => !role.system && role.id !== "role_superadmin",
@@ -143,7 +129,7 @@ function StaffInviteDialog({ onClose }: { onClose: () => void }) {
     name.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
     roleId.length > 0;
-  const confirmInvitation = (reason: string) => {
+  const confirmInvitation = async (reason: string) => {
     if (!canSend) throw new Error("Invitation data is incomplete");
     const selectedRole = adminRoles.find((role) => role.id === roleId);
     if (
@@ -153,40 +139,19 @@ function StaffInviteDialog({ onClose }: { onClose: () => void }) {
     ) {
       throw new Error("Protected roles cannot be assigned by invitation");
     }
-    const normalizedEmail = email.trim().toLowerCase();
-    const invitations = readVersionedStorage({
-      key: staffInvitationStorageKey,
-      version: 1,
-      schema: staffInvitationSchema,
-      fallback: () => [],
-    });
-    const invitation = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      email: normalizedEmail,
+    const result = await createStaffInvitation({
+      email: email.trim().toLowerCase(),
       roleId: selectedRole.id,
-      roleName: selectedRole.name,
-      hardwareMfa,
-      invitedAt: new Date().toISOString(),
+      name: name.trim(),
       reason,
-    };
-    const persisted = writeVersionedStorage({
-      key: staffInvitationStorageKey,
-      version: 1,
-      data: [
-        invitation,
-        ...invitations.filter((item) => item.email !== normalizedEmail),
-      ],
+      hardwareMfa,
     });
-    if (!persisted) throw new Error("Unable to persist mock invitation");
-    appendClientAuditEvent({
-      actor: "admin@fersaku.id",
-      action: "staff.invitation.create",
-      target: normalizedEmail,
-      ip: "mock-admin-session",
-      result: "Success",
-      context: `${reason}; role ${selectedRole.id}; hardware MFA ${hardwareMfa ? "required" : "optional"}`,
+    // Never put delivery token into React Query list cache.
+    void result.deliveryToken;
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.staffInvitations(),
     });
+    void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     setSent(true);
   };
   return (

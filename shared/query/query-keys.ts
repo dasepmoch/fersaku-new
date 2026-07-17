@@ -116,8 +116,15 @@ export const queryKeys = {
     webhooks: (filters: Record<string, unknown> = {}) =>
       ["admin", "webhooks", "bounded", filters] as const,
     roles: () => ["admin", "roles"] as const,
+    /** ADM-220 role detail (roles.read). */
+    role: (roleId: string) => ["admin", "roles", roleId] as const,
     users: (filters: Record<string, unknown> = {}) =>
       ["admin", "users", "bounded", filters] as const,
+    /** ADM-220 user detail + role assignments. */
+    user: (userId: string) => ["admin", "users", userId] as const,
+    userRoles: (userId: string) =>
+      ["admin", "users", userId, "roles"] as const,
+    staffInvitations: () => ["admin", "invitations", "staff"] as const,
     campaigns: (filters: Record<string, unknown> = {}) =>
       ["admin", "campaigns", "bounded", filters] as const,
     providers: () => ["admin", "providers"] as const,

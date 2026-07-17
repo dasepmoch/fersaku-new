@@ -14,46 +14,46 @@ import { useState } from "react";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { ImpersonationDialog } from "@/features/admin/screens/merchants/impersonation-dialog";
+import {
+  demoSellerUsers,
+  useAdminRoles,
+  useAdminStaffDirectory,
+} from "@/features/admin/data";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 function UsersPage() {
-  const admins = [
-    ["Dinda Kusuma", "dinda@fersaku.id", "Super admin", "Active", "Now"],
-    [
-      "Raka Mahendra",
-      "raka@fersaku.id",
-      "Merchant support",
-      "Active",
-      "8m ago",
-    ],
-    ["Salsa Putri", "salsa@fersaku.id", "Finance ops", "Active", "42m ago"],
-    ["Kevin Tan", "kevin@fersaku.id", "Support", "Invited", "Never"],
-    ["Niko Aditya", "niko@fersaku.id", "Support", "Active", "1h ago"],
-    ["Fara Anindya", "fara@fersaku.id", "Merchant support", "Active", "2h ago"],
-  ];
-  const sellerUsers = [
-    ["usr_01H8A2", "Asep Kurnia", "asep@ai.tools", "Asep AI Tools", "Active"],
-    ["usr_01H8K1", "Sinta Dewi", "sinta@uipack.id", "UI Pack House", "Active"],
-    [
-      "usr_01H8L8",
-      "Raka Firmansyah",
-      "raka@automation.club",
-      "Automation Club",
-      "Restricted",
-    ],
-  ] as const;
+  const isMock = getDomainSource("adminRead") === "mock";
+  const { data: staffRows } = useAdminStaffDirectory();
+  const { data: roles } = useAdminRoles();
+  const admins = staffRows ?? [];
+  const sellerUsers = isMock ? demoSellerUsers() : demoSellerUsers();
   const [impersonationTarget, setImpersonationTarget] = useState<
     (typeof sellerUsers)[number] | null
   >(null);
   const { pageRows, pagination } = useClientPagination(admins);
+  const adminCount = admins.length || (isMock ? 12 : admins.length);
+  const roleCount = (roles ?? []).length || (isMock ? 4 : 0);
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
-        <Metric label="Seller users" value="1.947" note="1,284 stores" />
-        <Metric label="Administrators" value="12" note="4 roles" />
-        <Metric label="Active sessions" value="286" note="Across all users" />
+        <Metric
+          label="Seller users"
+          value={isMock ? "1.947" : "—"}
+          note={isMock ? "1,284 stores" : "Lookup via users.read"}
+        />
+        <Metric
+          label="Administrators"
+          value={String(adminCount)}
+          note={`${roleCount} roles`}
+        />
+        <Metric
+          label="Active sessions"
+          value={isMock ? "286" : "—"}
+          note="Across all users"
+        />
         <Metric
           label="Locked accounts"
-          value="7"
+          value={isMock ? "7" : "—"}
           note="Review required"
           tone="danger"
         />
@@ -77,37 +77,41 @@ function UsersPage() {
             />
             <tbody>
               {pageRows.map((a) => (
-                <tr key={a[1]} className="border-t border-[#e8eaf0] text-[9px]">
+                <tr key={a.email} className="border-t border-[#e8eaf0] text-[9px]">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <span className="grid size-9 place-items-center rounded-full bg-[#e8ecf8] font-black text-[#52617e]">
-                        {a[0]
+                        {a.name
                           .split(" ")
                           .map((x) => x[0])
                           .join("")}
                       </span>
                       <div>
-                        <b className="text-[10px]">{a[0]}</b>
+                        <b className="text-[10px]">{a.name}</b>
                         <span className="block text-[8px] text-[#8993a6]">
-                          {a[1]}
+                          {a.email}
                         </span>
                       </div>
                     </div>
                   </td>
                   <td>
                     <span className="rounded-lg bg-[#eef1f6] px-2.5 py-1.5 font-bold">
-                      {a[2]}
+                      {a.roleLabel}
                     </span>
                   </td>
                   <td>
-                    <span className="flex items-center gap-1 text-[#31875a]">
-                      <ShieldCheck className="size-3" /> Enabled
-                    </span>
+                    {a.mfaEnabled ? (
+                      <span className="flex items-center gap-1 text-[#31875a]">
+                        <ShieldCheck className="size-3" /> Enabled
+                      </span>
+                    ) : (
+                      <span className="text-[#8993a6]">Pending</span>
+                    )}
                   </td>
                   <td>
-                    <AdminStatus status={a[3]} />
+                    <AdminStatus status={a.status} />
                   </td>
-                  <td>{a[4]}</td>
+                  <td>{a.lastActive}</td>
                   <td>
                     <MoreHorizontal className="size-4" />
                   </td>
@@ -160,8 +164,9 @@ function UsersPage() {
         <div className="flex items-center gap-3 border-t border-[#e8eaf0] p-5 text-[8px] text-[#8993a6]">
           <Users className="size-4 text-[#a1a9b8]" />
           <span>
-            Showing a mock lookup result. Production impersonation requires a
-            server-issued, time-limited session and immutable audit event.
+            {isMock
+              ? "Showing a mock lookup result. Production impersonation requires a server-issued, time-limited session and immutable audit event."
+              : "Seller lookup uses users.read. Impersonation requires a server-issued session (ADM-390)."}
           </span>
         </div>
       </section>

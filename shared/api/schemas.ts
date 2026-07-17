@@ -2322,6 +2322,171 @@ export const adminCredentialAuthorizeEnvelopeSchema = successEnvelopeSchema(
   adminCredentialAuthorizeDataSchema,
 );
 
+// --- ADM-220 staff / roles / permissions / invitations ---
+
+/** GET /v1/admin/roles item (RoleDTO). */
+export const adminRoleDtoSchema = z.object({
+  id: z.string().min(1),
+  code: z.string().min(1),
+  name: z.string(),
+  description: z.string().optional().default(""),
+  isSystem: z.boolean(),
+  version: z.number().int().min(0),
+  permissions: z.array(z.string()).default([]),
+  createdAt: rfc3339TimestampSchema.optional(),
+  updatedAt: rfc3339TimestampSchema.optional(),
+  archivedAt: rfc3339TimestampSchema.nullable().optional(),
+});
+
+export const adminRoleListDataSchema = z.object({
+  items: z.array(adminRoleDtoSchema),
+});
+
+export const adminRoleListEnvelopeSchema = successEnvelopeSchema(
+  adminRoleListDataSchema,
+);
+
+export const adminRoleEnvelopeSchema =
+  successEnvelopeSchema(adminRoleDtoSchema);
+
+/** GET /v1/admin/permissions — flat registry; FE groups by category. */
+export const adminPermissionRegistryItemSchema = z.object({
+  code: z.string().min(1),
+  description: z.string().optional().default(""),
+  category: z.string().optional().default("Platform"),
+});
+
+export const adminPermissionRegistryDataSchema = z.object({
+  items: z.array(adminPermissionRegistryItemSchema),
+});
+
+export const adminPermissionRegistryEnvelopeSchema = successEnvelopeSchema(
+  adminPermissionRegistryDataSchema,
+);
+
+/** GET /v1/admin/users — UserLookup[] in data (array, not items). */
+export const adminUserLookupDtoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  email: z.string(),
+  status: z.string(),
+  isAdmin: z.boolean(),
+  ownerMerchantId: z.string().nullable().optional(),
+  impersonatable: z.boolean().optional().default(false),
+  createdAt: z.string().optional().default(""),
+});
+
+export const adminUserLookupListEnvelopeSchema = successEnvelopeSchema(
+  z.array(adminUserLookupDtoSchema),
+);
+
+export const adminUserLookupEnvelopeSchema = successEnvelopeSchema(
+  adminUserLookupDtoSchema,
+);
+
+/** GET /v1/admin/users/{id}/roles */
+export const adminUserRoleAssignmentDtoSchema = z.object({
+  userId: z.string().min(1),
+  roleId: z.string().min(1),
+  roleCode: z.string().optional().default(""),
+  roleName: z.string().optional().default(""),
+  isSystem: z.boolean().optional().default(false),
+  assignedAt: z.string().optional().default(""),
+  assignedBy: z.string().optional(),
+});
+
+export const adminUserRoleAssignmentListDataSchema = z.object({
+  items: z.array(adminUserRoleAssignmentDtoSchema),
+});
+
+export const adminUserRoleAssignmentListEnvelopeSchema = successEnvelopeSchema(
+  adminUserRoleAssignmentListDataSchema,
+);
+
+export const adminAssignUserRoleDataSchema = z.object({
+  assigned: z.boolean(),
+});
+
+export const adminAssignUserRoleEnvelopeSchema = successEnvelopeSchema(
+  adminAssignUserRoleDataSchema,
+);
+
+export const adminRemoveUserRoleDataSchema = z.object({
+  removed: z.boolean(),
+});
+
+export const adminRemoveUserRoleEnvelopeSchema = successEnvelopeSchema(
+  adminRemoveUserRoleDataSchema,
+);
+
+/**
+ * Staff invitation list item — never includes raw token.
+ * Create response may include token once (delivery boundary only).
+ */
+export const adminStaffInvitationDtoSchema = z.object({
+  id: z.string().min(1),
+  email: z.string(),
+  roleId: z.string().min(1),
+  status: z.string(),
+  expiresAt: z.string().optional().default(""),
+  createdAt: z.string().optional().default(""),
+});
+
+export const adminStaffInvitationListDataSchema = z.object({
+  items: z.array(adminStaffInvitationDtoSchema),
+});
+
+export const adminStaffInvitationListEnvelopeSchema = successEnvelopeSchema(
+  adminStaffInvitationListDataSchema,
+);
+
+/** Create may return token once; strip before list cache. */
+export const adminStaffInvitationCreateDataSchema =
+  adminStaffInvitationDtoSchema.extend({
+    token: z.string().optional(),
+  });
+
+export const adminStaffInvitationCreateEnvelopeSchema = successEnvelopeSchema(
+  adminStaffInvitationCreateDataSchema,
+);
+
+export const adminStaffInvitationRevokeDataSchema = z.object({
+  id: z.string().min(1),
+  status: z.string(),
+});
+
+export const adminStaffInvitationRevokeEnvelopeSchema = successEnvelopeSchema(
+  adminStaffInvitationRevokeDataSchema,
+);
+
+export const adminRoleArchiveDataSchema = z.object({
+  id: z.string().min(1),
+  code: z.string().optional(),
+  version: z.number().int().min(0),
+  archivedAt: z.string().nullable().optional(),
+});
+
+export const adminRoleArchiveEnvelopeSchema = successEnvelopeSchema(
+  adminRoleArchiveDataSchema,
+);
+
+/** POST /v1/invitations/staff/accept (public ceremony). */
+export const staffInvitationAcceptDataSchema = z.object({
+  invitationId: z.string().optional(),
+  kind: z.string().optional(),
+  userId: z.string().optional(),
+  existingUser: z.boolean().optional(),
+  requiresMfa: z.boolean().optional(),
+  activationHeld: z.boolean().optional(),
+  message: z.string().optional(),
+  roleId: z.string().optional(),
+  merchantId: z.string().optional(),
+});
+
+export const staffInvitationAcceptEnvelopeSchema = successEnvelopeSchema(
+  staffInvitationAcceptDataSchema,
+);
+
 export type AdminOverviewDto = z.infer<typeof adminOverviewDataSchema>;
 export type AdminMerchantDto = z.infer<typeof adminMerchantDtoSchema>;
 export type AdminBuyerDto = z.infer<typeof adminBuyerDtoSchema>;
@@ -2341,5 +2506,19 @@ export type AdminMerchantFinanceSummaryDto = z.infer<
 >;
 export type AdminMaskedCredentialDto = z.infer<
   typeof adminMaskedCredentialDtoSchema
+>;
+export type AdminRoleDto = z.infer<typeof adminRoleDtoSchema>;
+export type AdminPermissionRegistryItemDto = z.infer<
+  typeof adminPermissionRegistryItemSchema
+>;
+export type AdminUserLookupDto = z.infer<typeof adminUserLookupDtoSchema>;
+export type AdminUserRoleAssignmentDto = z.infer<
+  typeof adminUserRoleAssignmentDtoSchema
+>;
+export type AdminStaffInvitationDto = z.infer<
+  typeof adminStaffInvitationDtoSchema
+>;
+export type StaffInvitationAcceptDto = z.infer<
+  typeof staffInvitationAcceptDataSchema
 >;
 

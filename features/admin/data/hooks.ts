@@ -26,8 +26,15 @@ import {
 import {
   demoAdminRoles,
   demoPermissionGroups,
+  demoStaffMembers,
   listAdminRoles,
+  listAdminStaffDirectory,
+  listAdminUsers,
   listPermissionGroups,
+  listStaffInvitations,
+  listUserRoles,
+  getAdminRole,
+  getAdminUser,
 } from "./access";
 import {
   demoAdminOverview,
@@ -295,6 +302,20 @@ export function useAdminRoles() {
   });
 }
 
+export function useAdminRole(roleId: string) {
+  const enabled = useAdminReadEnabled("roles.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.role(roleId),
+    queryFn: (signal) => getAdminRole(roleId, signal),
+    enabled: Boolean(roleId) && roleId !== "new" && enabled,
+    surface: "private",
+    placeholderData: mockPlaceholderData(
+      "adminRead",
+      demoAdminRoles().find((r) => r.id === roleId) || null,
+    ),
+  });
+}
+
 export function useAdminPermissionGroups() {
   const enabled = useAdminReadEnabled("roles.read");
   return useAppQuery({
@@ -304,6 +325,81 @@ export function useAdminPermissionGroups() {
     enabled,
     placeholderData: mockPlaceholderData("adminRead", demoPermissionGroups()),
   });
+}
+
+/** ADM-220 — user lookup (users.read). */
+export function useAdminUsers(filters: { q?: string; limit?: number } = {}) {
+  const enabled = useAdminReadEnabled("users.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.users(filters),
+    queryFn: (signal) => listAdminUsers(filters, signal),
+    surface: "private",
+    keepPrevious: true,
+    enabled,
+  });
+}
+
+export function useAdminUser(userId: string) {
+  const enabled = useAdminReadEnabled("users.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.user(userId),
+    queryFn: (signal) => getAdminUser(userId, signal),
+    enabled: Boolean(userId) && enabled,
+    surface: "private",
+  });
+}
+
+export function useAdminUserRoles(userId: string) {
+  const enabled = useAdminReadEnabled("roles.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.userRoles(userId),
+    queryFn: (signal) => listUserRoles(userId, signal),
+    enabled: Boolean(userId) && enabled,
+    surface: "private",
+  });
+}
+
+/**
+ * ADM-220 staff directory for users screen.
+ * users.read for lookup; invitations require roles.assign on BE (fail soft).
+ */
+export function useAdminStaffDirectory() {
+  const enabled = useAdminReadEnabled("users.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.users({ scope: "staff-directory" }),
+    queryFn: (signal) => listAdminStaffDirectory(signal),
+    surface: "private",
+    enabled,
+    placeholderData: mockPlaceholderData("adminRead", demoStaffMembers()),
+  });
+}
+
+/** Staff invitations list — BE gate roles.assign. */
+export function useAdminStaffInvitations() {
+  const claims = useSessionClaims();
+  const isMock = getDomainSource("adminRead") === "mock";
+  const enabled =
+    isMock || claimsHavePermission(claims?.permissions, "roles.assign");
+  return useAppQuery({
+    queryKey: queryKeys.admin.staffInvitations(),
+    queryFn: (signal) => listStaffInvitations(signal),
+    surface: "private",
+    enabled,
+  });
+}
+
+/** Write gate for role create/update/archive (roles.write). */
+export function useAdminRolesWriteEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "roles.write");
+}
+
+/** Write gate for assign + staff invite (roles.assign). */
+export function useAdminRolesAssignEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "roles.assign");
 }
 
 export function useAdminInventory(filters: AdminListFilters = {}) {

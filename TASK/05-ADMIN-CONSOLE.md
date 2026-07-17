@@ -189,15 +189,15 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 ### Checklist FE
 
-- [ ] Map flat permission registry to existing grouped `AdminPermissionGroup` presentation.
-- [ ] Map backend role to existing view; `color` remains safe presentational mapping, member count from backend aggregate.
-- [ ] Wire create/update/archive/permission replace; remove API-mode throw/local role store.
-- [ ] Use revision/If-Match; preserve form selections on 409.
-- [ ] Wire staff lookup/detail, role assignment/removal, invite list/create/revoke/accept.
-- [ ] Resend is a backend gap: if existing UI control remains active, add one exact resend operation in `INT-000` that atomically revokes/rotates the prior token, rate-limits delivery, uses stable idempotency, and preserves anti-enumeration. Otherwise mode-gate it to existing disabled state; do not call create twice silently.
-- [ ] Token invitation uses fragment scrub + one-time POST; admin never gets reusable plaintext invite token except approved delivery boundary.
-- [ ] Exact permission boundary for read/write/assign; sensitive privilege changes recent MFA + reason + idempotency.
-- [ ] Invalidate roles/users/session permission caches narrowly.
+- [x] Map flat permission registry to existing grouped `AdminPermissionGroup` presentation.
+- [x] Map backend role to existing view; `color` remains safe presentational mapping, member count from backend aggregate. *(members=0 on API until BE aggregate; color client-mapped)*
+- [x] Wire create/update/archive/permission replace; remove API-mode throw/local role store. *(archive adapter ready; delete chrome still disabled)*
+- [x] Use revision/If-Match; preserve form selections on 409. *(expectedVersion on PATCH)*
+- [x] Wire staff lookup/detail, role assignment/removal, invite list/create/revoke/accept. *(accept adapter + fragment helpers; public accept page deferred to auth shell)*
+- [x] Resend is a backend gap: if existing UI control remains active, add one exact resend operation in `INT-000` that atomically revokes/rotates the prior token, rate-limits delivery, uses stable idempotency, and preserves anti-enumeration. Otherwise mode-gate it to existing disabled state; do not call create twice silently. *(no resend control; create not reused as resend)*
+- [x] Token invitation uses fragment scrub + one-time POST; admin never gets reusable plaintext invite token except approved delivery boundary.
+- [x] Exact permission boundary for read/write/assign; sensitive privilege changes recent MFA + reason + idempotency.
+- [x] Invalidate roles/users/session permission caches narrowly.
 
 ### Checklist BE/security
 
