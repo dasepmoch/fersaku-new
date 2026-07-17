@@ -125,7 +125,14 @@ export const queryKeys = {
      */
     review: (subjectKey: string, orderItemId: string) =>
       ["buyer", subjectKey, "reviews", orderItemId] as const,
-    profile: () => ["buyer", "profile"] as const,
+    /**
+     * BUY-120: profile + prefs are subject/session-bound (own account only).
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.
+     */
+    profile: (subjectKey = "anon") =>
+      ["buyer", subjectKey, "profile"] as const,
+    notificationPreferences: (subjectKey = "anon") =>
+      ["buyer", subjectKey, "notification-preferences"] as const,
     /**
      * BUY-130: session list is subject/session-bound (own sessions only).
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.

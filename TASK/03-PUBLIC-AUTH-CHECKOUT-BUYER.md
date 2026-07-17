@@ -576,14 +576,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist
 
-- [ ] `buyer-profile.tsx` menggunakan hook actual; jangan init hardcoded state sebagai truth.
-- [ ] GET/PATCH schema + mapper; field/form names exact.
-- [ ] Use revision/`If-Match`; 409 keeps user input and uses existing error surface.
-- [ ] Email change melalui dual-confirm flow, bukan direct arbitrary patch.
-- [ ] Do not attach a new handler/panel to “Mulai perubahan email” in this wiring slice; its canonical disposition is disabled/out-of-scope until `AUT-120` has an approved existing composition/UI-080 and negative-state evidence.
+- [x] `buyer-profile.tsx` menggunakan hook actual; jangan init hardcoded state sebagai truth.
+- [x] GET/PATCH schema + mapper; field/form names exact.
+- [x] Use revision/`If-Match`; 409 keeps user input and uses existing error surface.
+- [x] Email change melalui dual-confirm flow, bukan direct arbitrary patch.
+- [x] Do not attach a new handler/panel to “Mulai perubahan email” in this wiring slice; its canonical disposition is disabled/out-of-scope until `AUT-120` has an approved existing composition/UI-080 and negative-state evidence.
 - [x] Avatar/photo launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Do not use store-scoped object endpoint, data URL, or localStorage for personal media.
-- [ ] Preferences server-persisted; theme local non-sensitive tetap boleh.
-- [ ] Validate locale/timezone/phone/server constraints; PII redaction.
+- [x] Preferences server-persisted; theme local non-sensitive tetap boleh.
+- [x] Validate locale/timezone/phone/server constraints; PII redaction.
 
 ### Tests/AC
 

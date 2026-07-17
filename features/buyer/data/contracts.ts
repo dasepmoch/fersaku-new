@@ -83,12 +83,49 @@ export type BuyerSession = {
   current: boolean;
 };
 
+/**
+ * Buyer profile view model (existing /account/profile geometry).
+ * revision = BE optimistic version for PATCH expectedVersion.
+ * Avatar upload is DISABLED (INT-175) — initials only.
+ */
 export type BuyerProfile = {
   name: string;
   email: string;
   phone: string;
+  /** BCP-47 locale wire value (e.g. id-ID). */
   locale: string;
+  /** Locale label for existing Bahasa field display. */
+  localeLabel: string;
   timezone: string;
+  /** Optimistic concurrency revision from BE. */
+  revision: number;
+  /** Initials for static circle (no photo upload). */
+  initials: string;
+  /** Optional "Buyer sejak …" label; mock only when BE has no member-since. */
+  memberSinceLabel: string;
+  /**
+   * Notification prefs mapped to existing Preference toggles.
+   * receiptEmail is always true (PAYMENT_RECEIPT mandatory).
+   * marketingEmail ↔ MARKETING_NEWSLETTER EMAIL.
+   * productUpdatesEmail: no closed BE event — local draft only (not claimed as server truth).
+   */
+  receiptEmail: boolean;
+  productUpdatesEmail: boolean;
+  marketingEmail: boolean;
+};
+
+/** BUY-120 patch profile input (exact fields; never email). */
+export type PatchBuyerProfileInput = {
+  expectedVersion: number;
+  displayName?: string;
+  phone?: string;
+  locale?: string;
+  timezone?: string;
+};
+
+/** BUY-120 preference patch for existing marketing toggle (closed schema). */
+export type PatchBuyerNotificationPreferencesInput = {
+  marketingEmail: boolean;
 };
 
 /** Filters accepted by purchase list query (existing UI controls). */

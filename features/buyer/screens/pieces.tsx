@@ -168,16 +168,25 @@ export function BuyerReviewCard({
 export function ProfileField({
   label,
   value,
+  onChange,
+  readOnly = false,
+  disabled = false,
 }: {
   label: string;
   value: string;
+  onChange?: (value: string) => void;
+  readOnly?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <label className="grid gap-2 text-[10px] font-extrabold">
       {label}
       <input
-        defaultValue={value}
-        className="hairline h-11 rounded-xl border bg-white px-3 text-[10px] font-normal outline-none"
+        value={value}
+        readOnly={readOnly || !onChange}
+        disabled={disabled}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="hairline h-11 rounded-xl border bg-white px-3 text-[10px] font-normal outline-none disabled:opacity-60"
       />
     </label>
   );

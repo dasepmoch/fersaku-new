@@ -4,17 +4,20 @@
  */
 
 import type {
+  BuyerProfileDto,
   BuyerPurchaseDetailDto,
   BuyerPurchaseItemDto,
   BuyerPurchaseSummaryDto,
   BuyerReviewDto,
   BuyerSessionDto,
+  NotificationPrefDto,
 } from "@/shared/api/schemas";
 import {
   invalidApiContract,
   requireSafeMoneyIdr,
 } from "@/shared/api/mappers";
 import type {
+  BuyerProfile,
   BuyerPurchase,
   BuyerPurchaseDeliveryType,
   BuyerReview,
@@ -286,4 +289,99 @@ export function mapBuyerSessionListDto(
   sessions: BuyerSessionDto[],
 ): BuyerSession[] {
   return sessions.map(mapBuyerSessionDto);
+}
+
+/** Initials from display name for static avatar circle (no photo — INT-175). */
+export function profileInitials(displayName: string): string {
+  const parts = displayName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) {
+    const w = parts[0];
+    return (w.slice(0, 2) || "—").toUpperCase();
+  }
+  return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
+}
+
+/** Map BCP-47 locale to existing Bahasa field label. */
+export function localeToDisplayLabel(locale: string): string {
+  const l = locale.trim().toLowerCase();
+  if (l === "id-id" || l === "id" || l.startsWith("id-")) {
+    return "Bahasa Indonesia";
+  }
+  if (l === "en-us" || l === "en" || l.startsWith("en-")) {
+    return "English";
+  }
+  return locale.trim() || "Bahasa Indonesia";
+}
+
+/** Map display label back to wire locale for PATCH. */
+export function displayLabelToLocale(label: string): string {
+  const t = label.trim().toLowerCase();
+  if (t.includes("indonesia") || t === "id" || t === "id-id") return "id-ID";
+  if (t.includes("english") || t === "en" || t === "en-us") return "en-US";
+  return label.trim() || "id-ID";
+}
+
+/**
+ * Closed-schema prefs → existing buyer Preference toggles.
+ * PAYMENT_RECEIPT EMAIL is mandatory (always on).
+ * MARKETING_NEWSLETTER EMAIL is the only optional marketing toggle.
+ * Product-update toggle has no BE event — default true local only.
+ */
+export function mapNotificationPrefsToBuyerToggles(
+  prefs: NotificationPrefDto[],
+): Pick<
+  BuyerProfile,
+  "receiptEmail" | "marketingEmail" | "productUpdatesEmail"
+> {
+  let marketingEmail = false;
+  for (const p of prefs) {
+    if (p.channel !== "EMAIL") continue;
+    if (p.eventCode === "MARKETING_NEWSLETTER") {
+      marketingEmail = Boolean(p.enabled);
+    }
+  }
+  return {
+    receiptEmail: true, // mandatory PAYMENT_RECEIPT — never disable in UI
+    marketingEmail,
+    productUpdatesEmail: true, // no closed BE event; local non-server draft default
+  };
+}
+
+/**
+ * BE ProfileData → existing BuyerProfile view.
+ * Does not invent avatar upload or email-change flow.
+ */
+export function mapBuyerProfileDto(
+  dto: BuyerProfileDto,
+  prefs?: NotificationPrefDto[],
+): BuyerProfile {
+  const name = (dto.displayName || dto.name || "").trim();
+  if (!name) {
+    return invalidApiContract("Buyer profile missing displayName", {
+      issues: [{ path: "displayName", message: "empty" }],
+    });
+  }
+  const version = Math.trunc(dto.version);
+  if (version < 1) {
+    return invalidApiContract("Buyer profile version invalid", {
+      issues: [{ path: "version", message: String(dto.version) }],
+    });
+  }
+  const toggles = mapNotificationPrefsToBuyerToggles(prefs ?? []);
+  return {
+    name,
+    email: dto.email.trim(),
+    phone: (dto.phone ?? "").trim(),
+    locale: dto.locale.trim() || "id-ID",
+    localeLabel: localeToDisplayLabel(dto.locale),
+    timezone: dto.timezone.trim() || "Asia/Jakarta",
+    revision: version,
+    initials: profileInitials(name),
+    memberSinceLabel: "",
+    ...toggles,
+  };
 }

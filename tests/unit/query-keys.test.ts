@@ -101,7 +101,21 @@ describe("queryKeys", () => {
       "purchases",
       "FRS-1",
     ]);
-    expect(queryKeys.buyer.profile()).toEqual(["buyer", "profile"]);
+    expect(queryKeys.buyer.profile("usr_a:ses_1")).toEqual([
+      "buyer",
+      "usr_a:ses_1",
+      "profile",
+    ]);
+    expect(queryKeys.buyer.profile("usr_b:ses_9")).toEqual([
+      "buyer",
+      "usr_b:ses_9",
+      "profile",
+    ]);
+    expect(queryKeys.buyer.notificationPreferences("usr_a:ses_1")).toEqual([
+      "buyer",
+      "usr_a:ses_1",
+      "notification-preferences",
+    ]);
     expect(queryKeys.buyer.sessions("usr_a:ses_1")).toEqual([
       "buyer",
       "usr_a:ses_1",

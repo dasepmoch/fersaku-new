@@ -3,17 +3,21 @@ import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   BUYER_PURCHASE_LIST_LIMIT,
   buyerCreateReviewRequestSchema,
+  buyerPatchProfileRequestSchema,
   buyerPatchReviewRequestSchema,
+  buyerProfileEnvelopeSchema,
   buyerPurchaseDetailEnvelopeSchema,
   buyerPurchaseListEnvelopeSchema,
   buyerReviewEnvelopeSchema,
   buyerSessionListEnvelopeSchema,
   buyerSessionRevokeEnvelopeSchema,
-  structuralEnvelopeSchema,
+  notificationPreferencesEnvelopeSchema,
+  notificationPreferencesPatchRequestSchema,
   type BuyerCreateReviewRequest,
+  type BuyerPatchProfileRequest,
   type BuyerPatchReviewRequest,
+  type NotificationPreferencesPatchRequest,
 } from "@/shared/api/schemas";
-import type { ApiEnvelope } from "@/shared/api/contracts";
 import { classifyApiError } from "@/shared/api/error-policy";
 import {
   getDomainSource,
@@ -27,13 +31,18 @@ import type {
   BuyerReview,
   BuyerSession,
   CreateBuyerReviewInput,
+  PatchBuyerNotificationPreferencesInput,
+  PatchBuyerProfileInput,
   PatchBuyerReviewInput,
 } from "./contracts";
 import {
+  mapBuyerProfileDto,
   mapBuyerPurchaseDetailDto,
   mapBuyerPurchaseSummaryListDto,
   mapBuyerReviewDto,
   mapBuyerSessionListDto,
+  mapNotificationPrefsToBuyerToggles,
+  profileInitials,
 } from "./mappers";
 import { demoProfile, demoPurchases, demoSessions } from "./mock";
 
@@ -43,6 +52,10 @@ type BuyerReviewEnvelope = z.infer<typeof buyerReviewEnvelopeSchema>;
 type BuyerSessionListEnvelope = z.infer<typeof buyerSessionListEnvelopeSchema>;
 type BuyerSessionRevokeEnvelope = z.infer<
   typeof buyerSessionRevokeEnvelopeSchema
+>;
+type BuyerProfileEnvelope = z.infer<typeof buyerProfileEnvelopeSchema>;
+type NotificationPreferencesEnvelope = z.infer<
+  typeof notificationPreferencesEnvelopeSchema
 >;
 
 export type RevokeBuyerSessionInput = {
@@ -271,19 +284,146 @@ export async function getBuyerPurchase(
   }
 }
 
+/**
+ * Session-bound buyer profile + notification preferences (BUY-120).
+ * GET /v1/buyer/profile + GET /v1/me/notification-preferences.
+ * Avatar/personal media: INT-175 DISABLED — no upload path.
+ */
 export async function getBuyerProfile(
   signal?: AbortSignal,
 ): Promise<BuyerProfile> {
   if (shouldUseMockFixtures("buyer")) return demoProfile();
 
-  const response = await apiRequest<ApiEnvelope<BuyerProfile>>(
-    "/v1/buyer/profile",
-    {
-      schema: structuralEnvelopeSchema,
+  const [profileRes, prefsRes] = await Promise.all([
+    apiRequest<BuyerProfileEnvelope>("/v1/buyer/profile", {
+      schema: buyerProfileEnvelopeSchema,
       signal,
-    },
+    }),
+    apiRequest<NotificationPreferencesEnvelope>(
+      "/v1/me/notification-preferences",
+      {
+        schema: notificationPreferencesEnvelopeSchema,
+        signal,
+      },
+    ),
+  ]);
+  return mapBuyerProfileDto(
+    profileRes.data,
+    prefsRes.data.preferences,
   );
-  return response.data;
+}
+
+/**
+ * PATCH /v1/buyer/profile with expectedVersion.
+ * Email never patched here (dual-confirm AUT-120).
+ * 409 rethrows — caller keeps draft and may refetch.
+ */
+export async function patchBuyerProfile(
+  input: PatchBuyerProfileInput,
+  signal?: AbortSignal,
+): Promise<BuyerProfile> {
+  if (input.expectedVersion < 1) {
+    throw new Error("expectedVersion required");
+  }
+
+  if (shouldUseMockFixtures("buyer")) {
+    const base = demoProfile();
+    const name = input.displayName?.trim() || base.name;
+    return {
+      ...base,
+      name,
+      phone: input.phone !== undefined ? input.phone.trim() : base.phone,
+      locale: input.locale?.trim() || base.locale,
+      localeLabel:
+        input.locale?.trim() === "en-US" ? "English" : base.localeLabel,
+      timezone: input.timezone?.trim() || base.timezone,
+      revision: base.revision + 1,
+      initials: profileInitials(name),
+    };
+  }
+
+  const body: BuyerPatchProfileRequest = buyerPatchProfileRequestSchema.parse({
+    expectedVersion: input.expectedVersion,
+    displayName: input.displayName,
+    phone: input.phone,
+    locale: input.locale,
+    timezone: input.timezone,
+  });
+
+  const response = await apiRequest<
+    BuyerProfileEnvelope,
+    BuyerPatchProfileRequest
+  >("/v1/buyer/profile", {
+    schema: buyerProfileEnvelopeSchema,
+    method: "PATCH",
+    body,
+    signal,
+  });
+  // Prefs unchanged on profile-only patch — re-fetch prefs for full view.
+  let prefs: Parameters<typeof mapBuyerProfileDto>[1];
+  try {
+    const prefsRes = await apiRequest<NotificationPreferencesEnvelope>(
+      "/v1/me/notification-preferences",
+      {
+        schema: notificationPreferencesEnvelopeSchema,
+        signal,
+      },
+    );
+    prefs = prefsRes.data.preferences;
+  } catch {
+    prefs = undefined;
+  }
+  return mapBuyerProfileDto(response.data, prefs);
+}
+
+/**
+ * PATCH /v1/me/notification-preferences for marketing EMAIL only.
+ * PAYMENT_RECEIPT is mandatory and never disabled.
+ * Product-update toggle has no closed BE event — not persisted here.
+ */
+export async function patchBuyerNotificationPreferences(
+  input: PatchBuyerNotificationPreferencesInput,
+  signal?: AbortSignal,
+): Promise<
+  Pick<
+    BuyerProfile,
+    "receiptEmail" | "marketingEmail" | "productUpdatesEmail"
+  >
+> {
+  if (shouldUseMockFixtures("buyer")) {
+    return {
+      receiptEmail: true,
+      marketingEmail: Boolean(input.marketingEmail),
+      productUpdatesEmail: true,
+    };
+  }
+
+  const body: NotificationPreferencesPatchRequest =
+    notificationPreferencesPatchRequestSchema.parse({
+      preferences: [
+        {
+          eventCode: "MARKETING_NEWSLETTER",
+          channel: "EMAIL",
+          enabled: Boolean(input.marketingEmail),
+        },
+      ],
+    });
+
+  const response = await apiRequest<
+    NotificationPreferencesEnvelope,
+    NotificationPreferencesPatchRequest
+  >("/v1/me/notification-preferences", {
+    schema: notificationPreferencesEnvelopeSchema,
+    method: "PATCH",
+    body,
+    signal,
+  });
+  return mapNotificationPrefsToBuyerToggles(response.data.preferences);
+}
+
+/** Domain gate: buyer profile when buyer domain is api. */
+export function isBuyerProfileApiDomain(): boolean {
+  return getDomainSource("buyer") === "api";
 }
 
 /**

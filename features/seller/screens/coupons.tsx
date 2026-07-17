@@ -24,13 +24,13 @@ import {
   computeCouponListMetrics,
   parseCouponEndsAtInput,
 } from "@/features/seller/coupons/mappers";
-import { demoCoupons } from "@/features/seller/coupons/mock";
 import { createIdempotencyKey } from "@/shared/query/mutation-policy";
 
 function Coupons() {
   const storeId = useSellerStoreId();
-  const { data: items } = useSellerCoupons(storeId);
-  const coupons = items ?? demoCoupons(storeId || "demo");
+  // Hook owns mock placeholder via mockPlaceholderData; screen never imports mock.
+  const { data: items = [] } = useSellerCoupons(storeId);
+  const coupons = items;
   const metrics = useMemo(() => computeCouponListMetrics(coupons), [coupons]);
   const { pageRows, pagination } = useClientPagination(coupons);
 

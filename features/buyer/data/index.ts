@@ -6,6 +6,8 @@ export type {
   BuyerReview,
   BuyerSession,
   CreateBuyerReviewInput,
+  PatchBuyerNotificationPreferencesInput,
+  PatchBuyerProfileInput,
   PatchBuyerReviewInput,
 } from "./contracts";
 
@@ -15,10 +17,13 @@ export {
   createBuyerReview,
   getBuyerProfile,
   getBuyerPurchase,
+  isBuyerProfileApiDomain,
   isBuyerReviewApiDomain,
   isBuyerSessionApiDomain,
   listBuyerPurchases,
   listBuyerSessions,
+  patchBuyerNotificationPreferences,
+  patchBuyerProfile,
   patchBuyerReview,
   revokeAllBuyerSessions,
   revokeBuyerSession,
@@ -35,6 +40,7 @@ export type {
 export { demoProfile, demoPurchases, demoSessions } from "./mock";
 
 export {
+  mapBuyerProfileDto,
   mapBuyerPurchaseDetailDto,
   mapBuyerPurchaseSummaryDto,
   mapBuyerPurchaseSummaryListDto,
@@ -42,8 +48,12 @@ export {
   mapBuyerSessionDto,
   mapBuyerSessionListDto,
   mapDeliveryKindToType,
+  mapNotificationPrefsToBuyerToggles,
   assertNoDeliverySecretsInListItem,
+  displayLabelToLocale,
   formatSessionActiveLabel,
+  localeToDisplayLabel,
+  profileInitials,
   sanitizeSessionDisplayText,
 } from "./mappers";
 
@@ -53,6 +63,8 @@ export {
   useBuyerPurchases,
   useBuyerSessions,
   useCreateBuyerReviewMutation,
+  usePatchBuyerNotificationPreferencesMutation,
+  usePatchBuyerProfileMutation,
   usePatchBuyerReviewMutation,
   useRevokeAllBuyerSessionsMutation,
   useRevokeBuyerSessionMutation,

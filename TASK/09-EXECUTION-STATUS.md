@@ -105,7 +105,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `CHK-150` | P1 | CHK-130 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Invoice read/print/download/verify | TASK/evidence/CHK-150/20260717-1510-nikki.md · features/commerce/invoice · tests/unit/chk-150-invoice.test.ts |
 | `[x]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 14:35 WIB · claim released | Buyer purchase list/detail/search | TASK/evidence/BUY-100/20260717-1435-nikki.md · tests/unit/buy-100-buyer-purchases.test.ts |
 | `[x]` | `BUY-110` | P1 | BUY-100 | PUB | completed @nikki/opencode · main · 2026-07-17 15:32 WIB · claim released | Buyer review and purchase commands | TASK/evidence/BUY-110/20260717-1532-nikki.md · features/buyer · tests/unit/buy-110-buyer-reviews.test.ts |
-| `[ ]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | — | Buyer profile/preferences/avatar | — |
+| `[x]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Buyer profile/preferences/avatar | TASK/evidence/BUY-120/20260717-1617-nikki.md · features/buyer · tests/unit/buy-120-buyer-profile.test.ts |
 | `[x]` | `BUY-130` | P1 | AUT-110, INT-120 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Buyer sessions/revoke/security | TASK/evidence/BUY-130/20260717-1605-nikki.md · features/buyer · tests/unit/buy-130-buyer-sessions.test.ts |
 | `[ ]` | `BUY-140` | P1 shared | INT-120, INT-160 | PUB/FND | — | Canonical notification/profile-shell authority | — |
 

@@ -864,6 +864,89 @@ export type BuyerPatchReviewRequest = z.infer<
   typeof buyerPatchReviewRequestSchema
 >;
 
+// --- Buyer / me profile + notification preferences (BUY-120) ---
+
+/** BE ProfileData (GET/PATCH /v1/buyer/profile alias of /v1/me/profile). */
+export const buyerProfileDtoSchema = z.object({
+  userId: z.string().min(1).optional(),
+  email: z.string().min(1),
+  emailVerified: z.boolean().optional(),
+  displayName: z.string(),
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  locale: z.string().min(1),
+  timezone: z.string().min(1),
+  /** Personal media ref — never upload via store objects (INT-175 DISABLED). */
+  avatarRef: z.string().optional(),
+  version: z.number().int().min(1),
+  mfaEnabled: z.boolean().optional(),
+  status: z.string().optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const buyerProfileEnvelopeSchema = successEnvelopeSchema(
+  buyerProfileDtoSchema,
+);
+
+/** PATCH body: expectedVersion required; email never patched here (dual-confirm AUT-120). */
+export const buyerPatchProfileRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  displayName: z.string().optional(),
+  phone: z.string().optional(),
+  locale: z.string().optional(),
+  timezone: z.string().optional(),
+  // avatarRef intentionally omitted — INT-175 personal media DISABLED at launch
+});
+
+export const notificationEventCodeSchema = z.enum([
+  "SECURITY_ALERT",
+  "PAYMENT_RECEIPT",
+  "KYC_UPDATE",
+  "WITHDRAWAL_UPDATE",
+  "MARKETING_NEWSLETTER",
+]);
+
+export const notificationChannelSchema = z.enum(["EMAIL", "IN_APP"]);
+
+export const notificationPrefDtoSchema = z.object({
+  eventCode: notificationEventCodeSchema,
+  channel: notificationChannelSchema,
+  enabled: z.boolean(),
+  mandatory: z.boolean().optional(),
+});
+
+export const notificationPreferencesDataSchema = z.object({
+  preferences: z.array(notificationPrefDtoSchema),
+});
+
+export const notificationPreferencesEnvelopeSchema = successEnvelopeSchema(
+  notificationPreferencesDataSchema,
+);
+
+export const notificationPreferencesPatchRequestSchema = z.object({
+  preferences: z
+    .array(
+      z.object({
+        eventCode: notificationEventCodeSchema,
+        channel: notificationChannelSchema,
+        enabled: z.boolean(),
+      }),
+    )
+    .min(1),
+});
+
+export type BuyerProfileDto = z.infer<typeof buyerProfileDtoSchema>;
+export type BuyerPatchProfileRequest = z.infer<
+  typeof buyerPatchProfileRequestSchema
+>;
+export type NotificationPrefDto = z.infer<typeof notificationPrefDtoSchema>;
+export type NotificationPreferencesDataDto = z.infer<
+  typeof notificationPreferencesDataSchema
+>;
+export type NotificationPreferencesPatchRequest = z.infer<
+  typeof notificationPreferencesPatchRequestSchema
+>;
+
 // --- Seller reviews (SEL-270) — store-scoped list/summary/reply/report ---
 
 /** Launch BoundedNoPaging first-result limit (no paging control on snapshot). */

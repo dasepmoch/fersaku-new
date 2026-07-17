@@ -16,6 +16,8 @@ import {
   getBuyerPurchase,
   listBuyerPurchases,
   listBuyerSessions,
+  patchBuyerNotificationPreferences,
+  patchBuyerProfile,
   patchBuyerReview,
   revokeAllBuyerSessions,
   revokeBuyerSession,
@@ -23,8 +25,11 @@ import {
   type RevokeBuyerSessionInput,
 } from "./api";
 import type {
+  BuyerProfile,
   BuyerPurchaseListFilters,
   CreateBuyerReviewInput,
+  PatchBuyerNotificationPreferencesInput,
+  PatchBuyerProfileInput,
   PatchBuyerReviewInput,
 } from "./contracts";
 import { demoProfile, demoPurchases, demoSessions } from "./mock";
@@ -102,11 +107,63 @@ export function useBuyerPurchase(orderId: string) {
   });
 }
 
+/** BUY-120: authoritative profile + prefs — no hardcoded truth. */
 export function useBuyerProfile() {
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
   return useAppQuery({
-    queryKey: queryKeys.buyer.profile(),
+    queryKey: queryKeys.buyer.profile(subject),
     queryFn: (signal) => getBuyerProfile(signal),
+    surface: "private",
     placeholderData: mockPlaceholderData("buyer", demoProfile()),
+    enabled: buyerQueryEnabled(Boolean(claims?.subjectId)),
+  });
+}
+
+/**
+ * BUY-120: patch profile with expectedVersion.
+ * 409 keeps user input (no optimistic overwrite); invalidate after success.
+ */
+export function usePatchBuyerProfileMutation() {
+  const queryClient = useQueryClient();
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
+  return useAppMutation({
+    mutationKey: ["buyer", subject, "profile", "patch"],
+    mutationFn: (input: PatchBuyerProfileInput, signal) =>
+      patchBuyerProfile(input, signal),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(queryKeys.buyer.profile(subject), profile);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.buyer.profile(subject),
+      });
+    },
+  });
+}
+
+/**
+ * BUY-120: patch marketing EMAIL preference only (closed schema).
+ * Receipt remains mandatory; product-updates is local-only (no BE event).
+ */
+export function usePatchBuyerNotificationPreferencesMutation() {
+  const queryClient = useQueryClient();
+  const claims = useSessionClaims();
+  const subject = buyerSubjectKey(claims);
+  return useAppMutation({
+    mutationKey: ["buyer", subject, "notification-preferences", "patch"],
+    mutationFn: (input: PatchBuyerNotificationPreferencesInput, signal) =>
+      patchBuyerNotificationPreferences(input, signal),
+    onSuccess: (toggles) => {
+      const key = queryKeys.buyer.profile(subject);
+      const prev = queryClient.getQueryData<BuyerProfile>(key);
+      if (prev) {
+        queryClient.setQueryData(key, { ...prev, ...toggles });
+      }
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.buyer.notificationPreferences(subject),
+      });
+    },
   });
 }
 
