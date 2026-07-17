@@ -103,7 +103,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[ ]` | `CHK-130` | P0 | CHK-110, INT-120 | PUB | — | Safe order-result capability | — |
 | `[ ]` | `CHK-140` | P0/P1 | CHK-130, INT-180, INT-185 | PUB/RTM | — | Delivery access/resend/download lifecycle | — |
 | `[ ]` | `CHK-150` | P1 | CHK-130 | PUB | — | Invoice read/print/download/verify | — |
-| `[ ]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | — | Buyer purchase list/detail/search | — |
+| `[x]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 14:35 WIB · claim released | Buyer purchase list/detail/search | TASK/evidence/BUY-100/20260717-1435-nikki.md · tests/unit/buy-100-buyer-purchases.test.ts |
 | `[ ]` | `BUY-110` | P1 | BUY-100 | PUB | — | Buyer review and purchase commands | — |
 | `[ ]` | `BUY-120` | P1 | AUT-110; INT-175 if avatar active, otherwise disabled disposition | PUB | — | Buyer profile/preferences/avatar | — |
 | `[ ]` | `BUY-130` | P1 | AUT-110, INT-120 | PUB | — | Buyer sessions/revoke/security | — |

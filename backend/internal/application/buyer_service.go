@@ -29,32 +29,40 @@ func (s *BuyerService) now() time.Time {
 
 // PurchaseSummary is a buyer-facing order list row (no secrets).
 type PurchaseSummary struct {
-	OrderID       string     `json:"orderId"`
-	OrderNumber   string     `json:"orderNumber"`
-	StoreID       string     `json:"storeId"`
-	StoreName     string     `json:"storeName,omitempty"`
-	PaymentStatus string     `json:"paymentStatus"`
-	Source        string     `json:"source"`
-	Currency      string     `json:"currency"`
-	GrossIDR      int64      `json:"grossIdr"`
-	PaidAt        *time.Time `json:"paidAt,omitempty"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	ItemCount     int        `json:"itemCount"`
-	DeliveryStatus string    `json:"deliveryStatus,omitempty"`
+	OrderID          string     `json:"orderId"`
+	OrderNumber      string     `json:"orderNumber"`
+	StoreID          string     `json:"storeId"`
+	StoreName        string     `json:"storeName,omitempty"`
+	StoreSlug        string     `json:"storeSlug,omitempty"`
+	PaymentStatus    string     `json:"paymentStatus"`
+	Source           string     `json:"source"`
+	Currency         string     `json:"currency"`
+	GrossIDR         int64      `json:"grossIdr"`
+	PaidAt           *time.Time `json:"paidAt,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	ItemCount        int        `json:"itemCount"`
+	DeliveryStatus   string     `json:"deliveryStatus,omitempty"`
+	// Primary line snapshot for list cards (no delivery secrets).
+	ProductID        string `json:"productId,omitempty"`
+	ProductTitle     string `json:"productTitle,omitempty"`
+	ProductType      string `json:"productType,omitempty"`
+	ProductVersion   string `json:"productVersion,omitempty"`
+	DeliveryKind     string `json:"deliveryKind,omitempty"`
 }
 
 // PurchaseItemView is a safe line snapshot for buyer detail.
 type PurchaseItemView struct {
-	OrderItemID   string `json:"orderItemId"`
-	ProductID     string `json:"productId"`
-	ProductTitle  string `json:"productTitle"`
-	ProductType   string `json:"productType"`
-	UnitPriceIDR  int64  `json:"unitPriceIdr"`
-	Quantity      int32  `json:"quantity"`
-	LineTotalIDR  int64  `json:"lineTotalIdr"`
-	DeliveryKind  string `json:"deliveryKind"`
+	OrderItemID    string `json:"orderItemId"`
+	ProductID      string `json:"productId"`
+	ProductTitle   string `json:"productTitle"`
+	ProductType    string `json:"productType"`
+	ProductVersion string `json:"productVersion,omitempty"`
+	UnitPriceIDR   int64  `json:"unitPriceIdr"`
+	Quantity       int32  `json:"quantity"`
+	LineTotalIDR   int64  `json:"lineTotalIdr"`
+	DeliveryKind   string `json:"deliveryKind"`
 	DeliveryStatus string `json:"deliveryStatus,omitempty"`
-	GrantID       string `json:"grantId,omitempty"`
+	GrantID        string `json:"grantId,omitempty"`
 }
 
 // PurchaseDetail is buyer-owned order detail (no delivery secrets).
@@ -63,6 +71,7 @@ type PurchaseDetail struct {
 	OrderNumber   string             `json:"orderNumber"`
 	StoreID       string             `json:"storeId"`
 	StoreName     string             `json:"storeName,omitempty"`
+	StoreSlug     string             `json:"storeSlug,omitempty"`
 	MerchantID    string             `json:"merchantId"`
 	PaymentStatus string             `json:"paymentStatus"`
 	Source        string             `json:"source"`
@@ -118,12 +127,13 @@ func (s *BuyerService) ListPurchases(ctx context.Context, buyerUserID, rawCursor
 	for _, o := range rows {
 		items, _ := s.Purchases.ListOrderItems(ctx, o.ID)
 		grants, _ := s.Purchases.ListGrantsByOrder(ctx, o.ID)
-		storeName, _ := s.Purchases.GetStoreName(ctx, o.StoreID)
+		storeName, storeSlug, _ := s.Purchases.GetStoreIdentity(ctx, o.StoreID)
 		sum := PurchaseSummary{
 			OrderID:       o.ID,
 			OrderNumber:   o.OrderNumber,
 			StoreID:       o.StoreID,
 			StoreName:     storeName,
+			StoreSlug:     storeSlug,
 			PaymentStatus: o.PaymentStatus,
 			Source:        o.Source,
 			Currency:      o.Currency,
@@ -131,6 +141,14 @@ func (s *BuyerService) ListPurchases(ctx context.Context, buyerUserID, rawCursor
 			PaidAt:        o.PaidAt,
 			CreatedAt:     o.CreatedAt,
 			ItemCount:     len(items),
+		}
+		if len(items) > 0 {
+			it := items[0]
+			sum.ProductID = it.ProductID
+			sum.ProductTitle = it.ProductTitle
+			sum.ProductType = it.ProductType
+			sum.ProductVersion = it.ProductVersion
+			sum.DeliveryKind = it.DeliveryKind
 		}
 		if len(grants) > 0 {
 			sum.DeliveryStatus = grants[0].Status
@@ -176,18 +194,19 @@ func (s *BuyerService) GetPurchase(ctx context.Context, buyerUserID, orderID str
 	for _, g := range grants {
 		grantByItem[g.OrderItemID] = g
 	}
-	storeName, _ := s.Purchases.GetStoreName(ctx, o.StoreID)
+	storeName, storeSlug, _ := s.Purchases.GetStoreIdentity(ctx, o.StoreID)
 	views := make([]PurchaseItemView, 0, len(items))
 	for _, it := range items {
 		v := PurchaseItemView{
-			OrderItemID:  it.ID,
-			ProductID:    it.ProductID,
-			ProductTitle: it.ProductTitle,
-			ProductType:  it.ProductType,
-			UnitPriceIDR: it.UnitPriceIDR,
-			Quantity:     it.Quantity,
-			LineTotalIDR: it.LineTotalIDR,
-			DeliveryKind: it.DeliveryKind,
+			OrderItemID:    it.ID,
+			ProductID:      it.ProductID,
+			ProductTitle:   it.ProductTitle,
+			ProductType:    it.ProductType,
+			ProductVersion: it.ProductVersion,
+			UnitPriceIDR:   it.UnitPriceIDR,
+			Quantity:       it.Quantity,
+			LineTotalIDR:   it.LineTotalIDR,
+			DeliveryKind:   it.DeliveryKind,
 		}
 		if g, ok := grantByItem[it.ID]; ok {
 			v.DeliveryStatus = g.Status
@@ -200,6 +219,7 @@ func (s *BuyerService) GetPurchase(ctx context.Context, buyerUserID, orderID str
 		OrderNumber:   o.OrderNumber,
 		StoreID:       o.StoreID,
 		StoreName:     storeName,
+		StoreSlug:     storeSlug,
 		MerchantID:    o.MerchantID,
 		PaymentStatus: o.PaymentStatus,
 		Source:        o.Source,

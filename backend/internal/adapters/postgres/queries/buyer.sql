@@ -39,4 +39,4 @@ WHERE order_id = $1
 ORDER BY created_at ASC, id ASC;
 
 -- name: BuyerGetStoreName :one
-SELECT id, name FROM stores WHERE id = $1;
+SELECT id, name, slug FROM stores WHERE id = $1;

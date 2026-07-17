@@ -70,8 +70,16 @@ export const queryKeys = {
       ["admin", "audit-logs", filters] as const,
   },
   buyer: {
-    purchases: () => ["buyer", "purchases"] as const,
-    purchase: (orderId: string) => ["buyer", "purchases", orderId] as const,
+    /**
+     * BUY-100: subject/session boundary + filters + bounded list profile.
+     * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.
+     */
+    purchases: (
+      subjectKey = "anon",
+      filters: Record<string, unknown> = {},
+    ) => ["buyer", subjectKey, "purchases", "bounded", filters] as const,
+    purchase: (subjectKey: string, orderId: string) =>
+      ["buyer", subjectKey, "purchases", orderId] as const,
     profile: () => ["buyer", "profile"] as const,
     sessions: () => ["buyer", "sessions"] as const,
   },

@@ -79,18 +79,19 @@ func (q *Queries) BuyerGetOrderByID(ctx context.Context, arg BuyerGetOrderByIDPa
 }
 
 const buyerGetStoreName = `-- name: BuyerGetStoreName :one
-SELECT id, name FROM stores WHERE id = $1
+SELECT id, name, slug FROM stores WHERE id = $1
 `
 
 type BuyerGetStoreNameRow struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 func (q *Queries) BuyerGetStoreName(ctx context.Context, id string) (BuyerGetStoreNameRow, error) {
 	row := q.db.QueryRow(ctx, buyerGetStoreName, id)
 	var i BuyerGetStoreNameRow
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
 	return i, err
 }
 

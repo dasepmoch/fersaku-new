@@ -2,6 +2,7 @@
  * SEL-110 — onboarding transport (GET/POST/PATCH complete + slug availability).
  */
 
+import type { z } from "zod";
 import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   onboardingProgressEnvelopeSchema,
@@ -25,6 +26,9 @@ import {
 } from "./mock";
 import { normalizeStoreSlug } from "./slug";
 
+type OnboardingProgressEnvelope = z.infer<typeof onboardingProgressEnvelopeSchema>;
+type SlugAvailabilityEnvelope = z.infer<typeof slugAvailabilityEnvelopeSchema>;
+
 function isSellerMock(): boolean {
   return shouldUseMockFixtures("sellerCatalog");
 }
@@ -34,7 +38,7 @@ export async function getOnboardingProgress(
 ): Promise<OnboardingProgress> {
   if (isSellerMock()) return getMockOnboardingProgress();
 
-  const response = await apiRequest("/v1/onboarding", {
+  const response = await apiRequest<OnboardingProgressEnvelope>("/v1/onboarding", {
     schema: onboardingProgressEnvelopeSchema,
     signal,
   });
@@ -63,13 +67,16 @@ export async function createOnboardingStore(
       : {}),
   };
 
-  const response = await apiRequest("/v1/onboarding/store", {
-    method: "POST",
-    body,
-    schema: onboardingProgressEnvelopeSchema,
-    signal: options?.signal,
-    idempotencyKey: options?.idempotencyKey ?? createIdempotencyKey(),
-  });
+  const response = await apiRequest<OnboardingProgressEnvelope, typeof body>(
+    "/v1/onboarding/store",
+    {
+      method: "POST",
+      body,
+      schema: onboardingProgressEnvelopeSchema,
+      signal: options?.signal,
+      idempotencyKey: options?.idempotencyKey ?? createIdempotencyKey(),
+    },
+  );
   return mapOnboardingProgressDto(response.data);
 }
 
@@ -89,12 +96,15 @@ export async function patchOnboardingStore(
   if (input.accentColor !== undefined) body.accentColor = input.accentColor;
   if (input.step !== undefined) body.step = input.step;
 
-  const response = await apiRequest("/v1/onboarding/store", {
-    method: "PATCH",
-    body,
-    schema: onboardingProgressEnvelopeSchema,
-    signal,
-  });
+  const response = await apiRequest<OnboardingProgressEnvelope, Record<string, string>>(
+    "/v1/onboarding/store",
+    {
+      method: "PATCH",
+      body,
+      schema: onboardingProgressEnvelopeSchema,
+      signal,
+    },
+  );
   return mapOnboardingProgressDto(response.data);
 }
 
@@ -107,7 +117,10 @@ export async function completeOnboarding(
 ): Promise<OnboardingProgress> {
   if (isSellerMock()) return completeMockOnboarding();
 
-  const response = await apiRequest("/v1/onboarding/complete", {
+  const response = await apiRequest<
+    OnboardingProgressEnvelope,
+    { skipProduct: boolean }
+  >("/v1/onboarding/complete", {
     method: "POST",
     body: { skipProduct: options?.skipProduct ?? true },
     schema: onboardingProgressEnvelopeSchema,
@@ -129,11 +142,14 @@ export async function checkSlugAvailability(
   if (isSellerMock()) return mockSlugAvailability(slug);
 
   try {
-    const response = await apiRequest("/v1/stores/slug-availability", {
-      schema: slugAvailabilityEnvelopeSchema,
-      query: { slug },
-      signal,
-    });
+    const response = await apiRequest<SlugAvailabilityEnvelope>(
+      "/v1/stores/slug-availability",
+      {
+        schema: slugAvailabilityEnvelopeSchema,
+        query: { slug },
+        signal,
+      },
+    );
     return {
       slug: response.data.slug,
       available: response.data.available,

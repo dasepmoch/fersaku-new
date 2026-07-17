@@ -1,13 +1,28 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   getBuyerProfile,
   getBuyerPurchase,
   listBuyerPurchases,
   listBuyerSessions,
 } from "@/features/buyer/data";
+import {
+  clearDomainSourceSnapshot,
+  evaluateDomainSources,
+  installDomainSourceSnapshot,
+} from "@/shared/data/domain-source";
+
+afterEach(() => {
+  clearDomainSourceSnapshot();
+});
 
 describe("buyer data api (mock mode)", () => {
   it("lists purchases and finds one by order id", async () => {
+    installDomainSourceSnapshot(
+      evaluateDomainSources({
+        stage: "prototype",
+        bootstrapSource: "mock",
+      }),
+    );
     const purchases = await listBuyerPurchases();
     expect(purchases.length).toBeGreaterThan(0);
     const first = purchases[0];
@@ -17,6 +32,12 @@ describe("buyer data api (mock mode)", () => {
   });
 
   it("returns buyer profile and sessions", async () => {
+    installDomainSourceSnapshot(
+      evaluateDomainSources({
+        stage: "prototype",
+        bootstrapSource: "mock",
+      }),
+    );
     const profile = await getBuyerProfile();
     const sessions = await listBuyerSessions();
     expect(profile.email).toContain("@");

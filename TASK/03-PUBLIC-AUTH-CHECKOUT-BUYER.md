@@ -525,14 +525,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist
 
-- [ ] Create DTO/schema/mapper from backend aggregate to existing `BuyerPurchase` view.
-- [ ] Refactor view contract so base purchase has redacted delivery metadata, not raw secret.
-- [ ] Server filter/search with bounded result; use cursor/page only when an existing/approved paging control exists.
-- [ ] Query keys include buyer subject/session boundary + filters and selected pagination profile.
-- [ ] Detail SSR uses server client/cookie/no-store or safe hydration.
-- [ ] Expected `RESOURCE_NOT_FOUND` -> not-found; `401` opens login, while `403` is not an auth flow—use backend safe-404 where enumeration-safe or block behind an approved existing unavailable composition/UI-080.
-- [ ] Keep previous page data during navigation/filter; abort stale queries.
-- [ ] Delivery/invoice/review action delegated to explicit adapters.
+- [x] Create DTO/schema/mapper from backend aggregate to existing `BuyerPurchase` view.
+- [x] Refactor view contract so base purchase has redacted delivery metadata, not raw secret.
+- [x] Server filter/search with bounded result; use cursor/page only when an existing/approved paging control exists.
+- [x] Query keys include buyer subject/session boundary + filters and selected pagination profile.
+- [x] Detail SSR uses server client/cookie/no-store or safe hydration.
+- [x] Expected `RESOURCE_NOT_FOUND` -> not-found; `401` opens login, while `403` is not an auth flow—use backend safe-404 where enumeration-safe or block behind an approved existing unavailable composition/UI-080.
+- [x] Keep previous page data during navigation/filter; abort stale queries.
+- [x] Delivery/invoice/review action delegated to explicit adapters.
 
 ### Tests/AC
 

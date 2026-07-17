@@ -321,7 +321,7 @@ function sanitizeRouteTemplate(pathname: string): string {
     .replace(/\/\d{3,}/g, "/{n}");
 }
 
-export async function apiRequest<TResponse, TBody = never>(
+export async function apiRequest<TResponse, TBody = unknown>(
   pathname: string,
   options: RequestOptions<TBody, TResponse> = {},
 ): Promise<TResponse> {

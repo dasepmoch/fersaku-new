@@ -59,7 +59,10 @@ export async function requestCheckoutQuote(
     clientDiscount: options?.clientDiscount,
   });
 
-  const response = await apiRequest(
+  const response = await apiRequest<
+    { data: Parameters<typeof mapCheckoutPriceDto>[0] },
+    typeof body
+  >(
     "/v1/checkout/quote",
     {
       schema: checkoutPriceEnvelopeSchema,

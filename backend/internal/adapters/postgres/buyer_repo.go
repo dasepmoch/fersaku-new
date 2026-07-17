@@ -81,12 +81,12 @@ func (r *BuyerRepo) ListGrantsByOrder(ctx context.Context, orderID string) ([]de
 	return out, nil
 }
 
-func (r *BuyerRepo) GetStoreName(ctx context.Context, storeID string) (string, error) {
+func (r *BuyerRepo) GetStoreIdentity(ctx context.Context, storeID string) (string, string, error) {
 	row, err := r.q.BuyerGetStoreName(ctx, storeID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return row.Name, nil
+	return row.Name, row.Slug, nil
 }
 
 func mapBuyerOrderRow(row gen.BuyerListOrdersRow) orders.Order {

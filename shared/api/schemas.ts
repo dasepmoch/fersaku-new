@@ -388,6 +388,82 @@ export const checkoutPriceEnvelopeSchema = successEnvelopeSchema(
 export type CheckoutQuoteRequestDto = z.infer<typeof checkoutQuoteRequestSchema>;
 export type CheckoutPriceDto = z.infer<typeof checkoutPriceDtoSchema>;
 
+// --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
+
+/** Launch bounded page size; PurchaseLibrary has no paging control (BoundedNoPaging). */
+export const BUYER_PURCHASE_LIST_LIMIT = 20;
+
+export const buyerPurchaseSummaryDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().min(1),
+  storeId: z.string().min(1),
+  storeName: z.string().optional(),
+  storeSlug: z.string().optional(),
+  paymentStatus: z.string().min(1),
+  source: z.string().optional(),
+  currency: z.string().optional(),
+  grossIdr: moneyIdrSchema,
+  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  itemCount: z.number().int().min(0).optional(),
+  deliveryStatus: z.string().optional(),
+  productId: z.string().optional(),
+  productTitle: z.string().optional(),
+  productType: z.string().optional(),
+  productVersion: z.string().optional(),
+  deliveryKind: z.string().optional(),
+});
+
+export const buyerPurchaseItemDtoSchema = z.object({
+  orderItemId: z.string().min(1),
+  productId: z.string().min(1),
+  productTitle: z.string().min(1),
+  productType: z.string().optional(),
+  productVersion: z.string().optional(),
+  unitPriceIdr: moneyIdrSchema,
+  quantity: z.number().int().min(1),
+  lineTotalIdr: moneyIdrSchema,
+  deliveryKind: z.string().min(1),
+  deliveryStatus: z.string().optional(),
+  grantId: z.string().optional(),
+});
+
+export const buyerPurchaseDetailDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().min(1),
+  storeId: z.string().min(1),
+  storeName: z.string().optional(),
+  storeSlug: z.string().optional(),
+  merchantId: z.string().optional(),
+  paymentStatus: z.string().min(1),
+  source: z.string().optional(),
+  currency: z.string().optional(),
+  subtotalIdr: moneyIdrSchema.optional(),
+  discountIdr: moneyIdrSchema.optional(),
+  tipIdr: moneyIdrSchema.optional(),
+  feeIdr: moneyIdrSchema.optional(),
+  grossIdr: moneyIdrSchema,
+  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+  items: z.array(buyerPurchaseItemDtoSchema),
+});
+
+export const buyerPurchaseListEnvelopeSchema = cursorListEnvelopeSchema(
+  buyerPurchaseSummaryDtoSchema,
+);
+
+export const buyerPurchaseDetailEnvelopeSchema = successEnvelopeSchema(
+  buyerPurchaseDetailDtoSchema,
+);
+
+export type BuyerPurchaseSummaryDto = z.infer<
+  typeof buyerPurchaseSummaryDtoSchema
+>;
+export type BuyerPurchaseItemDto = z.infer<typeof buyerPurchaseItemDtoSchema>;
+export type BuyerPurchaseDetailDto = z.infer<
+  typeof buyerPurchaseDetailDtoSchema
+>;
+
 /** GET /v1/seller/me/merchant — seller bootstrap (INT-150). */
 export const sellerMembershipSchema = z.object({
   merchantId: z.string().min(1),

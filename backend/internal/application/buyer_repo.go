@@ -14,6 +14,7 @@ type BuyerPurchaseStore interface {
 	GetOrderByBuyer(ctx context.Context, orderID, buyerUserID string) (orders.Order, error)
 	ListOrderItems(ctx context.Context, orderID string) ([]orders.OrderItem, error)
 	ListGrantsByOrder(ctx context.Context, orderID string) ([]delivery.Grant, error)
-	GetStoreName(ctx context.Context, storeID string) (string, error)
+	// GetStoreIdentity returns display name + public slug for store links.
+	GetStoreIdentity(ctx context.Context, storeID string) (name string, slug string, err error)
 	IsNotFound(err error) bool
 }

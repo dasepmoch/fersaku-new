@@ -80,10 +80,17 @@ describe("queryKeys", () => {
     expect(queryKeys.admin.auditLogs()).toEqual(["admin", "audit-logs", {}]);
   });
 
-  it("builds buyer domain keys", () => {
-    expect(queryKeys.buyer.purchases()).toEqual(["buyer", "purchases"]);
-    expect(queryKeys.buyer.purchase("FRS-1")).toEqual([
+  it("builds buyer domain keys with subject boundary + filters", () => {
+    expect(queryKeys.buyer.purchases("usr_a:ses_1", { q: "", filter: "Semua" })).toEqual([
       "buyer",
+      "usr_a:ses_1",
+      "purchases",
+      "bounded",
+      { q: "", filter: "Semua" },
+    ]);
+    expect(queryKeys.buyer.purchase("usr_a:ses_1", "FRS-1")).toEqual([
+      "buyer",
+      "usr_a:ses_1",
       "purchases",
       "FRS-1",
     ]);

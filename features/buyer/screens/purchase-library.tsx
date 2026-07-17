@@ -9,19 +9,13 @@ import { ProductArt } from "@/components/product-art";
 const card = "rounded-[24px] border hairline bg-white shadow-card";
 
 export function PurchaseLibrary() {
-  const { data } = useBuyerPurchases();
-  const buyerPurchases = data ?? [];
   const [filter, setFilter] = useState("Semua");
   const [query, setQuery] = useState("");
-  const filtered = buyerPurchases.filter(
-    (p) =>
-      (filter === "Semua" ||
-        (filter === "Update tersedia" && p.updateAvailable) ||
-        (filter === "File" && p.deliveryType === "download") ||
-        (filter === "Akses & kode" && p.deliveryType !== "download")) &&
-      (p.product.toLowerCase().includes(query.toLowerCase()) ||
-        p.seller.toLowerCase().includes(query.toLowerCase())),
-  );
+  const { data } = useBuyerPurchases({
+    q: query,
+    filter: filter as "Semua" | "File" | "Akses & kode" | "Update tersedia",
+  });
+  const filtered = data ?? [];
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row">
