@@ -297,15 +297,23 @@ Homepage dan pricing page memiliki fee/minimum hardcoded. Checkout tetap server-
 
 ### API playground rules
 
-- [ ] In `mock/prototype` source, preserve visible “Frontend mock • no network request” semantics and deterministic fake IDs; this is an explicit documentation exception, not commerce authority.
-- [ ] In `api/live` source, the playground must call an isolated sandbox with a strict allowlist or be `DISABLED`; it must never render the prototype timer/fake response as if live. Any label change requires UI-080.
-- [ ] If real sandbox execution is enabled, use isolated sandbox account, user-supplied short-lived credential in component memory, abuse limits, no credential storage/log/proxy leakage.
-- [ ] Architecture reachability gate must keep playground/mock imports isolated from checkout/seller/admin business paths.
+- [x] In `mock/prototype` source, preserve visible “Frontend mock • no network request” semantics and deterministic fake IDs; this is an explicit documentation exception, not commerce authority.
+- [x] In `api/live` source, the playground must call an isolated sandbox with a strict allowlist or be `DISABLED`; it must never render the prototype timer/fake response as if live. Any label change requires UI-080. *(launch: `DISABLED` when `publicCatalog` ≠ mock; sandbox IMPLEMENT deferred)*
+- [x] If real sandbox execution is enabled, use isolated sandbox account, user-supplied short-lived credential in component memory, abuse limits, no credential storage/log/proxy leakage. *(launch DISABLED — re-open criteria only)*
+- [x] Architecture reachability gate must keep playground/mock imports isolated from checkout/seller/admin business paths.
+
+### Static page disposition (launch)
+
+- [x] Help: local client filter on static category index; no backend search.
+- [x] Careers: role rows are real `mailto:careers@fersaku.id` apply links.
+- [x] Blog: repository `posts` + `notFound` for unknown slug; article links STATIC.
+- [x] `/api`: marketing static + docs link STATIC.
+- [x] `/docs/api`: real TOC anchors + functional copy; no `href="#"`.
 
 ### Tests/AC
 
-- Every visible static control has a documented local/static/external/disabled behavior.
-- Static/help/playground exemption cannot be imported by checkout/seller/admin business paths.
+- [x] Every visible static control has a documented local/static/external/disabled behavior.
+- [x] Static/help/playground exemption cannot be imported by checkout/seller/admin business paths.
 
 ---
 

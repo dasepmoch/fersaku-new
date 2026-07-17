@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -11,15 +14,66 @@ import {
 } from "lucide-react";
 import { ContentPage } from "@/components/content-page";
 
+/** PUB-230: static help index — local filter only; no backend search. */
+const HELP_CATEGORIES = [
+  {
+    id: "memulai-toko",
+    Icon: Store,
+    title: "Memulai toko",
+    count: "7 artikel",
+    keywords: "mulai toko storefront onboarding setup",
+  },
+  {
+    id: "produk-delivery",
+    Icon: Package,
+    title: "Produk & delivery",
+    count: "12 artikel",
+    keywords: "produk product delivery file digital",
+  },
+  {
+    id: "qris-pesanan",
+    Icon: CreditCard,
+    title: "QRIS & pesanan",
+    count: "9 artikel",
+    keywords: "qris pesanan order pembayaran payment",
+  },
+  {
+    id: "saldo-penarikan",
+    Icon: WalletCards,
+    title: "Saldo & penarikan",
+    count: "8 artikel",
+    keywords: "saldo balance penarikan withdraw payout",
+  },
+  {
+    id: "api-webhook",
+    Icon: Code2,
+    title: "API & webhook",
+    count: "14 artikel",
+    keywords: "api webhook gateway developer",
+  },
+  {
+    id: "akun-keamanan",
+    Icon: BookOpen,
+    title: "Akun & keamanan",
+    count: "6 artikel",
+    keywords: "akun account keamanan security mfa",
+  },
+] as const;
+
 export default function HelpPage() {
-  const cats = [
-    [Store, "Memulai toko", "7 artikel"],
-    [Package, "Produk & delivery", "12 artikel"],
-    [CreditCard, "QRIS & pesanan", "9 artikel"],
-    [WalletCards, "Saldo & penarikan", "8 artikel"],
-    [Code2, "API & webhook", "14 artikel"],
-    [BookOpen, "Akun & keamanan", "6 artikel"],
-  ];
+  const [query, setQuery] = useState("");
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+
+  const normalized = query.trim().toLowerCase();
+  const visible = useMemo(() => {
+    return HELP_CATEGORIES.filter((cat) => {
+      if (activeCategoryId && cat.id !== activeCategoryId) return false;
+      if (!normalized) return true;
+      const haystack = `${cat.title} ${cat.keywords} ${cat.count}`.toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [normalized, activeCategoryId]);
+
   return (
     <ContentPage
       eyebrow="Help center"
@@ -35,28 +89,45 @@ export default function HelpPage() {
           <div className="hairline shadow-float mx-auto -mt-8 flex h-14 max-w-2xl items-center gap-3 rounded-2xl border bg-white px-5">
             <Search className="size-5 text-[#718078]" />
             <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActiveCategoryId(null);
+              }}
               placeholder="Cari panduan, topik, atau error..."
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              aria-label="Cari panduan"
             />
             <kbd className="rounded-lg bg-[#eef0eb] px-2 py-1 text-[9px]">
               ⌘K
             </kbd>
           </div>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {cats.map(([Icon, t, n]) => (
+            {visible.map(({ id, Icon, title, count }) => (
               <button
-                key={t as string}
+                key={id}
+                type="button"
+                id={id}
+                onClick={() => {
+                  setActiveCategoryId(id);
+                  setQuery(title);
+                }}
                 className="group hairline shadow-card rounded-[26px] border bg-white p-6 text-left transition hover:-translate-y-1"
               >
                 <Icon className="size-5 text-[#315d47]" />
-                <b className="mt-10 block text-sm">{t as string}</b>
+                <b className="mt-10 block text-sm">{title}</b>
                 <span className="mt-2 flex items-center text-[9px] text-[#718078]">
-                  {n as string}
+                  {count}
                   <ArrowRight className="ml-auto size-3.5 transition group-hover:translate-x-1" />
                 </span>
               </button>
             ))}
           </div>
+          {visible.length === 0 ? (
+            <p className="mt-8 text-center text-xs text-[#718078]">
+              Tidak ada topik yang cocok. Coba kata kunci lain.
+            </p>
+          ) : null}
           <div className="mt-16 rounded-[30px] bg-[#173f2c] p-8 text-center text-white">
             <h2 className="font-display text-4xl">
               Belum menemukan jawabannya?

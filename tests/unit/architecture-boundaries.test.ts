@@ -547,6 +547,92 @@ describe("module architecture boundaries", () => {
     );
   });
 
+  it("PUB-230: static help/careers/docs/playground disposition + isolation", () => {
+    /**
+     * Help/blog/company/legal may stay static. Active no-ops become real
+     * local/static/external behavior. API playground mock keeps labeled
+     * no-network timer; api/disabled disables Send — never fake live network.
+     * Playground must not be imported by checkout/seller/admin business paths.
+     */
+    const helpPage = path.join(root, "app/(resources)/help/page.tsx");
+    const helpSource = readFileSync(helpPage, "utf8");
+    expect(helpSource).toMatch(/useState/);
+    expect(helpSource).toMatch(/setQuery|query/);
+    expect(helpSource).toMatch(/HELP_CATEGORIES|onClick/);
+    expect(helpSource).not.toMatch(
+      /apiRequest|\/v1\/help|fetch\(|searchHelp/i,
+    );
+
+    const careersPage = path.join(root, "app/(company)/careers/page.tsx");
+    const careersSource = readFileSync(careersPage, "utf8");
+    expect(careersSource).toMatch(/CAREERS_APPLY_MAIL\s*=\s*["']careers@fersaku\.id["']/);
+    expect(careersSource).toMatch(/mailto:\$\{CAREERS_APPLY_MAIL\}/);
+    expect(careersSource).toMatch(/Application:/);
+    expect(careersSource).not.toMatch(/roles\.map\(\(r\)\s*=>\s*\(\s*<button/);
+
+    const blogPage = path.join(root, "app/(resources)/blog/page.tsx");
+    const blogSource = readFileSync(blogPage, "utf8");
+    expect(blogSource).toMatch(/href=\{`\/blog\/\$\{/);
+    expect(blogSource).toMatch(/posts/);
+
+    const docsPage = path.join(root, "app/docs/api/page.tsx");
+    const docsSource = readFileSync(docsPage, "utf8");
+    expect(docsSource).toMatch(/href=\{`#\$\{sectionId\(x\)\}`\}|#autentikasi|#api-playground|#errors/);
+    expect(docsSource).not.toMatch(/href="#"/);
+    expect(docsSource).toMatch(/navigator\.clipboard|writeText/);
+    expect(docsSource).toMatch(/id="errors"/);
+    expect(docsSource).toMatch(/id="mulai-cepat"/);
+
+    const playground = path.join(root, "components/api-playground.tsx");
+    const playgroundSource = readFileSync(playground, "utf8");
+    expect(playgroundSource).toMatch(
+      /Frontend mock • no network request/,
+    );
+    expect(playgroundSource).toMatch(/getDomainSource\(["']publicCatalog["']\)/);
+    expect(playgroundSource).toMatch(/playgroundSendEnabled/);
+    expect(playgroundSource).toMatch(
+      /disabled=\{!playgroundSendEnabled \|\| sending\}/,
+    );
+    expect(playgroundSource).toMatch(
+      /API playground sandbox is out of scope for launch \(PUB-230 deferred\)/,
+    );
+    expect(playgroundSource).toMatch(
+      /if\s*\(\s*!playgroundSendEnabled\s*\)\s*return/,
+    );
+    // Send path is timer-only; sample cURL/JS tabs may mention fetch as documentation text
+    expect(playgroundSource).toMatch(
+      /const send = \(\) => \{[\s\S]*?setTimeout\s*\(/,
+    );
+    expect(playgroundSource).not.toMatch(
+      /from ["']@\/shared\/api|apiRequest\s*\(|httpClient/,
+    );
+
+    // Isolation: business paths must not import playground
+    const businessRoots = [
+      path.join(root, "features/commerce"),
+      path.join(root, "features/seller"),
+      path.join(root, "features/admin"),
+      path.join(root, "features/buyer"),
+      path.join(root, "features/finance"),
+      path.join(root, "features/auth"),
+    ];
+    const playgroundImport =
+      /api-playground|ApiPlayground|components\/api-playground/;
+    const isolationViolations: string[] = [];
+    for (const dir of businessRoots) {
+      for (const file of sourceFiles(dir)) {
+        const content = readFileSync(file, "utf8");
+        if (playgroundImport.test(content)) {
+          isolationViolations.push(relativeSource(file));
+        }
+      }
+    }
+    expect(
+      isolationViolations,
+      "checkout/seller/admin/buyer/auth must not import api-playground",
+    ).toEqual([]);
+  });
+
   it("AUT-130: seller Google OAuth is authoritatively disabled in API mode", () => {
     /**
      * OAuth is OUT-OF-SCOPE for launch. Seller AuthShell Google control must be

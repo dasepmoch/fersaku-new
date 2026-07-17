@@ -10,6 +10,16 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getDomainSource } from "@/shared/data/domain-source";
+
+/**
+ * PUB-230 — documentation sandbox exemption (not production payment authority).
+ * mock/prototype: deterministic labeled no-network response only.
+ * api/disabled: Send is DISABLED; never render timer/fake IDs as live network.
+ * Domain key: publicCatalog (public docs surface; no separate playground domain).
+ */
+const PLAYGROUND_SEND_DISABLED_TITLE =
+  "API playground sandbox is out of scope for launch (PUB-230 deferred)";
 
 const presets: Record<string, string> = {
   "POST /v1/gateway/payment-intents":
@@ -30,7 +40,19 @@ export function ApiPlayground() {
     body: string;
   }>(null);
   const [copied, setCopied] = useState(false);
+
+  const publicSource = (() => {
+    try {
+      return getDomainSource("publicCatalog");
+    } catch {
+      return "api";
+    }
+  })();
+  // Mock may keep deterministic prototype timer; API/disabled must not fake live.
+  const playgroundSendEnabled = publicSource === "mock";
+
   const send = () => {
+    if (!playgroundSendEnabled) return;
     setSending(true);
     setResponse(null);
     setTimeout(() => {
@@ -77,7 +99,10 @@ export function ApiPlayground() {
     }, 850);
   };
   return (
-    <section className="hairline shadow-float my-10 overflow-hidden rounded-[28px] border bg-[#0f1914] text-white">
+    <section
+      id="api-playground"
+      className="hairline shadow-float my-10 overflow-hidden rounded-[28px] border bg-[#0f1914] text-white"
+    >
       <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <span className="grid size-9 place-items-center rounded-xl bg-[#d7ff64] text-[#173f2c]">
@@ -106,9 +131,13 @@ export function ApiPlayground() {
           ))}
         </select>
         <button
+          type="button"
           onClick={send}
-          disabled={sending}
-          className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#d7ff64] px-4 text-[9px] font-extrabold text-[#173f2c]"
+          disabled={!playgroundSendEnabled || sending}
+          title={
+            playgroundSendEnabled ? undefined : PLAYGROUND_SEND_DISABLED_TITLE
+          }
+          className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#d7ff64] px-4 text-[9px] font-extrabold text-[#173f2c] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {sending ? (
             <LoaderCircle className="size-4 animate-spin" />
@@ -124,6 +153,7 @@ export function ApiPlayground() {
             {["Body", "cURL", "JavaScript"].map((x) => (
               <button
                 key={x}
+                type="button"
                 onClick={() => setTab(x)}
                 className={cn(
                   "border-b-2 py-3 text-[8px] font-extrabold",
@@ -178,6 +208,7 @@ export function ApiPlayground() {
               </>
             )}
             <button
+              type="button"
               onClick={() => {
                 if (response) navigator.clipboard?.writeText(response.body);
                 setCopied(true);

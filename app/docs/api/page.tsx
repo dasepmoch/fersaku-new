@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { ChevronRight, Copy, Search } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronRight, Copy, Search } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { ApiPlayground } from "@/components/api-playground";
 
@@ -20,6 +23,10 @@ const fields = [
   ["expiresInMinutes", "integer", "optional", "Between 5 and 60 minutes."],
   ["metadata", "object", "optional", "Your own reference data."],
 ];
+
+function sectionId(label: string) {
+  return label.toLowerCase().replaceAll(" ", "-");
+}
 
 export default function DocsPage() {
   return (
@@ -45,7 +52,7 @@ export default function DocsPage() {
           <nav className="mt-4 grid gap-1">
             {sections.map((x, i) => (
               <a
-                href={`#${x.toLowerCase().replaceAll(" ", "-")}`}
+                href={`#${sectionId(x)}`}
                 key={x}
                 className={`rounded-lg px-3 py-2 text-xs font-semibold ${i === 2 ? "bg-[#e9ff9b] text-[#173f2c]" : "text-[#68756d] hover:bg-[#f0f1ec]"}`}
               >
@@ -59,7 +66,10 @@ export default function DocsPage() {
             <div className="flex items-center gap-2 text-[11px] font-bold text-[#7a867f]">
               API reference <ChevronRight className="size-3" /> Payments
             </div>
-            <h1 className="font-display mt-5 text-6xl tracking-[-.04em]">
+            <h1
+              id="mulai-cepat"
+              className="font-display mt-5 text-6xl tracking-[-.04em]"
+            >
               Create a QRIS payment
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-[#647169]">
@@ -103,12 +113,42 @@ export default function DocsPage() {
                 </div>
               ))}
             </div>
+            <h2 id="payment-status" className="mt-10 text-xl font-extrabold">
+              Payment status
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Poll the payment intent or subscribe to signed webhooks. Status
+              values are server-authoritative; never treat client timers as
+              paid.
+            </p>
+            <h2 id="idempotency" className="mt-10 text-xl font-extrabold">
+              Idempotency
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Send a unique Idempotency-Key on create. Same key and body return
+              the same intent; a changed body conflicts.
+            </p>
+            <h2 id="webhooks" className="mt-10 text-xl font-extrabold">
+              Webhooks
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Delivery is signed and retryable. Verify signatures before
+              updating merchant state.
+            </p>
             <h2 className="mt-10 text-xl font-extrabold">Example response</h2>
             <CodeBlock
               code={
                 '{\n  "paymentIntentId": "qris_2Yc91p",\n  "status": "PENDING",\n  "amount": 99000,\n  "currency": "IDR",\n  "paymentMode": "SANDBOX",\n  "qrImageUrl": "https://...",\n  "expiresAt": "2026-07-12T12:30:00.000Z"\n}'
               }
             />
+            <h2 id="errors" className="mt-10 text-xl font-extrabold">
+              Errors
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Errors use a consistent problem payload with a machine-readable
+              code. Invalid JSON and validation failures return 400; auth
+              failures return 401.
+            </p>
           </div>
         </article>
         <aside className="hidden p-6 xl:block">
@@ -118,22 +158,34 @@ export default function DocsPage() {
           <div className="mt-4 grid gap-3 text-xs text-[#6f7b74]">
             <a href="#autentikasi">Authentication</a>
             <a href="#qris-payments">Request</a>
-            <a href="#">Playground</a>
-            <a href="#">Errors</a>
+            <a href="#api-playground">Playground</a>
+            <a href="#errors">Errors</a>
           </div>
         </aside>
       </div>
     </main>
   );
 }
+
 function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
   return (
     <div className="group shadow-card relative mt-4 overflow-x-auto rounded-2xl bg-[#14241c] p-5 text-white">
       <button
+        type="button"
         className="absolute top-3 right-3 rounded-lg border border-white/10 bg-white/5 p-2 text-white/50"
         aria-label="Copy"
+        onClick={() => {
+          void navigator.clipboard?.writeText(code);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1200);
+        }}
       >
-        <Copy className="size-3.5" />
+        {copied ? (
+          <Check className="size-3.5" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
       </button>
       <pre className="text-[11px] leading-6 text-white/72">
         <code>{code}</code>

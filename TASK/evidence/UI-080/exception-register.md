@@ -61,7 +61,7 @@ The following are **pre-catalogued gaps** from disposition matrix §6 — resolu
 | `UXE-004` | Domain `disabled` user-visible behavior | Existing error/disabled control only | **open** — INT-025/QLT-400 |
 | `UXE-005` | Visible request ID / support ref | Reporter/log only by default | **open** — visible copy needs approval |
 | `UXE-006` | Numbered pagination vs cursor backend | Keep `TablePagination`; NumberedPageList adapter | Process constraint — INT-020 |
-| `UXE-007` | Static/no-op marketing controls | Same element static behavior or disabled | **open** — PUB-230 |
+| `UXE-007` | Static/no-op marketing controls | Same element static behavior or disabled | **closed (PUB-230 surfaces)** — help local filter, careers mailto, docs anchors/copy, playground mock/DISABLED gate; other inventory rows remain owner-task driven |
 | `UXE-008` | Onboarding outside workspace boundaries | Form state / root error; no maintenance banner | **closed** — SEL-110 (form fieldError only; no maintenance panel) |
 | `UXE-009` | Public home/store empty arrays | Non-empty launch invariant or approved composition | **open** — product/UX decision |
 | `UXE-010` | Contact form missing error/pending regions | Disable submit or approved composition | **open** — PUB-200 chose launch DISABLED; UI-080 still required before IMPLEMENT |
