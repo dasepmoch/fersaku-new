@@ -13,7 +13,7 @@ Configure repository **Settings → Branches → Branch protection** (or Ruleset
 | `frontend-static (format, lint, typecheck, unit, security-negative)` | Format, lint, typecheck, unit/coverage, FE security/contract/tenant/idempotency negatives |
 | `frontend-build (production + bundle budget)` | Production build + bundle budget |
 | `frontend-mock-e2e (smoke/critical/a11y/visual)` | Mock Playwright smoke, critical, a11y, visual |
-| `cross-stack-api-e2e (API stack + harness + INT-190)` | Disposable stack + API harness + INT-190 |
+| `cross-stack-api-e2e (API stack + harness + INT-190 + QLT-220)` | Disposable stack + API harness + INT-190 + QLT-220 parent |
 
 ### Workflow: `Backend CI` (`.github/workflows/backend-ci.yml`)
 
@@ -48,7 +48,7 @@ These gates use **ephemeral local credentials only** (compose Postgres/Redis, fa
 - Dirty sqlc `gen/`
 - Cross-tenant / CSRF / idempotency negative test failures
 - Missing mock visual baselines or empty e2e/unit suites
-- API stack fail (migrate/seed/health) or harness/INT-190 failure
+- API stack fail (migrate/seed/health) or harness/INT-190/QLT-220 parent failure
 - Integration suite with `DATABASE_URL` unset under `CI=1`
 
 ## Operator checklist

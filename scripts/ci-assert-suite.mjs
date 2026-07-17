@@ -197,10 +197,136 @@ switch (suite) {
     minLines(join(root, "scripts/e2e-api-stack.sh"), 30);
     minLines(join(root, "tests/e2e/api/harness-health.spec.ts"), 20);
     minLines(join(root, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 50);
+    minLines(join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 40);
+    minLines(join(root, "tests/e2e/api/helpers/auth.ts"), 40);
     if (!existsSync(join(root, "TASK/evidence/QLT-110/seed-ids.json"))) {
       fail("missing QLT-110 seed-ids.json");
     }
-    ok("API harness config + stack script + health + INT-190 specs + seed");
+    // Mock must stay isolated from API suite registration.
+    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    if (!mockCfg.includes("**/api/**")) {
+      fail("playwright.config.ts must testIgnore **/api/** (mock vs API isolation)");
+    }
+    const apiCfg = readFileSync(join(root, "playwright.api.config.ts"), "utf8");
+    if (!apiCfg.includes("api-desktop-chromium")) {
+      fail("playwright.api.config.ts missing api-desktop-chromium project");
+    }
+    if (!apiCfg.includes("NEXT_PUBLIC_DATA_SOURCE")) {
+      fail("playwright.api.config.ts must force NEXT_PUBLIC_DATA_SOURCE=api");
+    }
+    const apiSpecs = countFiles(join(root, "tests/e2e/api"), (name) =>
+      name.endsWith(".spec.ts"),
+    );
+    if (apiSpecs < 3) {
+      fail(`API e2e specs=${apiSpecs} (need >= 3: health + INT-190 + QLT-220 parent)`);
+    }
+    ok(
+      `API harness + stack + health + INT-190 + QLT-220 parent + auth helper + seed (specs=${apiSpecs})`,
+    );
+    break;
+  }
+
+  case "qlt-220-api-e2e": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-220 continuous).
+    minLines(join(root, "docs/QLT-220-API-E2E-COEVOLUTION.md"), 40);
+    minLines(join(root, "playwright.api.config.ts"), 40);
+    minLines(join(root, "playwright.config.ts"), 20);
+    minLines(join(root, "scripts/e2e-api-stack.sh"), 40);
+    minLines(join(root, "tests/e2e/api/harness-health.spec.ts"), 40);
+    minLines(join(root, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 80);
+    minLines(join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 80);
+    minLines(join(root, "tests/e2e/api/helpers/auth.ts"), 80);
+    minLines(join(root, "tests/e2e/api/helpers/env.ts"), 30);
+    minLines(join(root, "tests/e2e/api/helpers/mailpit.ts"), 40);
+    minLines(join(root, "tests/e2e/api/helpers/callback.ts"), 40);
+
+    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    for (const needle of [
+      'testIgnore: ["**/api/**"]',
+      "desktop-chromium",
+      "mobile-chromium",
+    ]) {
+      if (!mockCfg.includes(needle)) {
+        fail(`playwright.config.ts missing mock registration marker: ${needle}`);
+      }
+    }
+
+    const apiCfg = readFileSync(join(root, "playwright.api.config.ts"), "utf8");
+    for (const needle of [
+      "api-desktop-chromium",
+      "NEXT_PUBLIC_DATA_SOURCE",
+      "retain-on-failure",
+      "tests/e2e/api",
+    ]) {
+      if (!apiCfg.includes(needle)) {
+        fail(`playwright.api.config.ts missing API registration marker: ${needle}`);
+      }
+    }
+
+    const authSrc = readFileSync(
+      join(root, "tests/e2e/api/helpers/auth.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "loginViaApi",
+      "writeEphemeralStorageState",
+      "clearEphemeralAuthState",
+      "sanitizeAuthSummary",
+      "isBlockedMockUrl",
+      "test-results",
+      ".auth",
+    ]) {
+      if (!authSrc.includes(needle)) {
+        fail(`helpers/auth.ts missing parent marker: ${needle}`);
+      }
+    }
+
+    const parentSrc = readFileSync(
+      join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"),
+      "utf8",
+    );
+    for (const needle of [
+      "QLT-220",
+      "loginViaApi",
+      "isBlockedMockUrl",
+      "harness-health",
+      "int-190",
+    ]) {
+      if (!parentSrc.includes(needle)) {
+        fail(`qlt-220-parent-framework.spec.ts missing marker: ${needle}`);
+      }
+    }
+
+    const coevo = readFileSync(
+      join(root, "docs/QLT-220-API-E2E-COEVOLUTION.md"),
+      "utf8",
+    );
+    for (const needle of [
+      "co-evolution",
+      "capability cell",
+      "tests/e2e/api",
+      "INT-190",
+      "harness-health",
+    ]) {
+      if (!coevo.toLowerCase().includes(needle.toLowerCase())) {
+        fail(`QLT-220 co-evolution doc missing marker: ${needle}`);
+      }
+    }
+
+    if (!existsSync(join(root, "TASK/evidence/QLT-110/seed-ids.json"))) {
+      fail("missing QLT-110 seed-ids.json");
+    }
+
+    const apiSpecs = countFiles(join(root, "tests/e2e/api"), (name) =>
+      name.endsWith(".spec.ts"),
+    );
+    if (apiSpecs < 3) {
+      fail(`API e2e specs=${apiSpecs} (need >= 3)`);
+    }
+
+    ok(
+      `qlt-220 parent harness + mock/API registration + auth + INT-190/health samples + co-evolution (specs=${apiSpecs})`,
+    );
     break;
   }
 

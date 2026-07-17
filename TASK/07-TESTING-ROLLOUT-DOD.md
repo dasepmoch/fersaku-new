@@ -281,17 +281,22 @@ Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QL
 **Priority:** P0 before domain rollout
 **Depends on:** QLT-215, INT-190; co-evolve with the domain implementation and its quality instance (domain task must not wait for a global QLT-220 parent row).
 
-### Project setup
+Parent framework (harness registration/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-220-API-E2E-COEVOLUTION.md` and `TASK/evidence/QLT-220/`. Parent `[x]` does **not** mark every public/buyer/seller/admin flow bullet or §3.7 capability cell complete; cells co-evolve with domain FE↔BE slices.
 
-- [ ] Add distinct Playwright project/config/env for mock and API mode; register each capability instance in `09-EXECUTION-STATUS.md`.
-- [ ] API project starts/reuses isolated stack, migrations, seed, backend health/readiness, Next.
-- [ ] Authentication setup uses actual UI/API flow; state files contain only ephemeral test cookies and are secured/cleaned.
-- [ ] Tests do not call internal DB to force success except fixture setup/provider callback helper with explicit test-only boundary.
-- [ ] Trace/screenshot excludes secret reveal/claim raw values or masks them.
+### Parent framework (done)
 
-### Public/checkout flow
+- [x] Distinct Playwright project/config/env for mock (`playwright.config.ts` + `testIgnore **/api/**`) and API (`playwright.api.config.ts` → `api-desktop-chromium`); parent registered in `09-EXECUTION-STATUS.md` (capability cells remain separate).
+- [x] API project starts/reuses isolated stack, migrations, QLT-110 seed, backend health/readiness, Next (`scripts/e2e-api-stack.sh` + webServer).
+- [x] Authentication via real API flow (`helpers/auth.ts` loginViaApi / optional UI); storage state under gitignored `test-results/api/.auth/` (ephemeral cookies only; cleaned).
+- [x] Tests do not call internal DB to force success except declared seed/setup + provider callback helper (`helpers/callback.ts`) with test-only boundary.
+- [x] Trace/screenshot retain-on-failure only; tokens masked (`maskToken` / `sanitizeAuthSummary`); no raw secret annotations.
+- [x] Required samples stay green: `harness-health.spec.ts` + `int-190-vertical-slice.spec.ts` + `qlt-220-parent-framework.spec.ts`.
+- [x] Suite guards: `ci-assert-suite.mjs` `cross-stack-api-e2e` + `qlt-220-api-e2e`; CI job `cross-stack-api-e2e`.
+- [x] Continuous co-evolution rule documented — domain slices add `tests/e2e/api/*` in same PR as live paths.
 
-- public storefront/product;
+### Public/checkout flow (capability cells / domain co-evolution — not claimed by parent alone)
+
+- public storefront/product; *(INT-190 public slice sample [x]; full checkout cells remain open)*
 - create intent, QR pending, signed test callback, paid;
 - failure never paid;
 - tampered total ignored;
@@ -299,26 +304,26 @@ Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QL
 - refresh/offline/expiry recovery;
 - order result capability, delivery access, invoice verify.
 
-### Buyer flow
+### Buyer flow (capability cells)
 
-- magic request/mail fragment consume;
+- magic request/mail fragment consume; *(INT-190 buyer magic request sample)*
 - purchases/detail/delivery/review;
 - profile conflict;
 - sessions revoke/logout;
 - owner vs other buyer denial.
 
-### Seller flow
+### Seller flow (capability cells)
 
-- register/verify/login/MFA;
+- register/verify/login/MFA; *(INT-190 seller login/session/logout sample)*
 - onboarding/current store;
 - product create/upload/inventory/publish;
 - order/customer/review;
 - storefront draft conflict/publish;
 - finance/withdrawal quote/reauth/create;
 - webhook/key one-time claim cleanup;
-- foreign store denial.
+- foreign store denial. *(INT-190 foreign store negative sample)*
 
-### Admin flow
+### Admin flow (capability cells)
 
 - login/MFA/route permission;
 - merchant/status/API capability;
@@ -334,9 +339,10 @@ Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QL
 
 ### Acceptance criteria
 
-- API mode has no network request to mock simulator/fixture endpoint.
-- Tests assert backend state/response and user-visible existing state.
-- Negative security cases are first-class, not only happy path.
+- [x] API mode has no network request to mock simulator/fixture endpoint. *(parent probe + blocklist + DATA_SOURCE=api)*
+- [x] Tests assert backend state/response and user-visible existing state. *(INT-190 + parent samples)*
+- [x] Negative security cases are first-class, not only happy path. *(INT-190 negatives; domain cells expand)*
+- [ ] Full public/buyer/seller/admin matrix bullets — **capability cells** (§3.7)
 
 ---
 

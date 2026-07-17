@@ -26,7 +26,7 @@
     "ci:assert:openapi": "node scripts/ci-assert-suite.mjs openapi-contract",
     "ci:assert:integration": "node scripts/ci-assert-suite.mjs backend-integration",
     "ci:assert:mock-e2e": "node scripts/ci-assert-suite.mjs frontend-mock-e2e",
-    "ci:assert:api-e2e": "node scripts/ci-assert-suite.mjs cross-stack-api-e2e",
+    "ci:assert:api-e2e": "node scripts/ci-assert-suite.mjs cross-stack-api-e2e && node scripts/ci-assert-suite.mjs qlt-220-api-e2e",
     "ci:assert:security": "node scripts/ci-assert-suite.mjs security-negative",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

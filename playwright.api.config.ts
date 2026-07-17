@@ -2,9 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 
 /**
- * QLT-215 — API-mode Playwright harness (disposable stack).
- * Separate from mock projects in playwright.config.ts.
- * No mock commerce fallback: NEXT_PUBLIC_DATA_SOURCE=api + domain registry api.
+ * QLT-215 / QLT-220 — API-mode Playwright (disposable stack).
+ * Distinct from mock projects in playwright.config.ts (which testIgnore api specs).
+ * No mock commerce: NEXT_PUBLIC_DATA_SOURCE=api. Traces retain-on-failure only;
+ * auth storage under test-results/api/.auth (gitignored; ephemeral cookies).
+ * Domain specs co-evolve — see docs/QLT-220-API-E2E-COEVOLUTION.md.
  */
 const port = Number(process.env.PLAYWRIGHT_API_PORT || 3120);
 const baseURL =
@@ -20,6 +22,8 @@ const hasNextEdge =
 
 export default defineConfig({
   testDir: path.join(process.cwd(), "tests/e2e/api"),
+  // Never pull mock smoke/visual/critical into API mode.
+  testMatch: "**/*.spec.ts",
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,
   workers: 1,
@@ -32,6 +36,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   use: {
     baseURL,
+    // Secret flows: retain only on failure; helpers must mask tokens in annotations.
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -44,6 +49,7 @@ export default defineConfig({
   },
   projects: [
     {
+      // QLT-220: single API project — distinct name from mock desktop-chromium.
       name: "api-desktop-chromium",
       use: { ...devices["Desktop Chrome"] },
     },
@@ -66,7 +72,7 @@ export default defineConfig({
             NEXT_PUBLIC_DATA_SOURCE: "api",
             NEXT_PUBLIC_APP_STAGE: "prototype",
             API_INTERNAL_URL: apiOrigin,
-            DOMAIN_SOURCE_RELEASE_ID: "qlt-215-api-harness",
+            DOMAIN_SOURCE_RELEASE_ID: "qlt-220-api-e2e",
             E2E_API_HAS_NEXT: "1",
           },
         },

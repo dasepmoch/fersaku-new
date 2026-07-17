@@ -1,8 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * Mock-mode Playwright (smoke / critical / a11y / visual).
+ * QLT-220: distinct from API-mode — see playwright.api.config.ts + docs/QLT-220-API-E2E-COEVOLUTION.md.
+ * API specs under tests/e2e/api are excluded here and run only via test:e2e:api.
+ */
 export default defineConfig({
   testDir: "./tests/e2e",
-  // QLT-215 API harness lives under tests/e2e/api (playwright.api.config.ts).
+  // Cross-stack API suite is registered only on playwright.api.config.ts.
   testIgnore: ["**/api/**"],
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,

@@ -1,0 +1,38 @@
+=== ci-assert-suite cross-stack-api-e2e ===
+ci-assert-suite: OK — API harness + stack + health + INT-190 + QLT-220 parent + auth helper + seed (specs=3)
+=== ci-assert-suite qlt-220-api-e2e ===
+ci-assert-suite: OK — qlt-220 parent harness + mock/API registration + auth + INT-190/health samples + co-evolution (specs=3)
+=== playwright (backend-only skip next) ===
+
+Running 27 tests using 1 worker
+
+  ✓   1 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:20:7 › QLT-215 API harness health › backend health/live is up (23ms)
+  ✓   2 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:26:7 › QLT-215 API harness health › backend health/ready is up (9ms)
+  ✓   3 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:32:7 › QLT-215 API harness health › public featured endpoint responds without mock fallback (14ms)
+  -   4 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:48:7 › QLT-215 API harness health › Next same-origin rewrite proxies public featured
+  -   5 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:63:7 › QLT-215 API harness health › Next process is up (rewrite proves same-origin edge)
+  ✓   6 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:78:7 › QLT-215 API harness health › mailpit is reachable for token helpers (19ms)
+  ✓   7 [api-desktop-chromium] › tests/e2e/api/harness-health.spec.ts:85:7 › QLT-215 optional auth probe › seller seed persona can login via API (57ms)
+  ✓   8 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:97:7 › INT-190 public catalog vertical slice (live API) › featured → storefront → product with stable QLT-110 seed IDs (22ms)
+  -   9 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:171:7 › INT-190 public catalog vertical slice (live API) › Next same-origin rewrite serves public featured (when Next edge up)
+  ✓  10 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:199:7 › INT-190 authenticated seller vertical slice (live API) › login → session → merchant bootstrap → seller product read → logout (108ms)
+  ✓  11 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:288:7 › INT-190 buyer session path (live API) › buyer magic-link request + optional password session path (75ms)
+  ✓  12 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:341:7 › INT-190 negative probes (live API) › 401 without session on seller bootstrap (5ms)
+  ✓  13 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:350:7 › INT-190 negative probes (live API) › CSRF invalid on logout without token (70ms)
+  ✓  14 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:365:7 › INT-190 negative probes (live API) › foreign store product list → RESOURCE_NOT_FOUND (68ms)
+  ✓  15 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:383:7 › INT-190 negative probes (live API) › unknown public store → RESOURCE_NOT_FOUND (4ms)
+  ✓  16 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:392:7 › INT-190 negative probes (live API) › invalid credentials → AUTH_INVALID_CREDENTIALS (no session) (53ms)
+  ✓  17 [api-desktop-chromium] › tests/e2e/api/int-190-vertical-slice.spec.ts:413:7 › INT-190 seed identity stability › QLT-110 password helper matches seed persona password (0ms)
+  ✓  18 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:30:7 › QLT-220 parent — project registration + isolation › mock and API Playwright configs are distinct (3ms)
+  ✓  19 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:61:7 › QLT-220 parent — project registration + isolation › required parent sample specs exist (1ms)
+  ✓  20 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:75:7 › QLT-220 parent — project registration + isolation › API process env is not mock commerce mode (0ms)
+  ✓  21 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:97:7 › QLT-220 parent — real auth + ephemeral cookies › seller login via real API writes only ephemeral storage state (72ms)
+  ✓  22 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:139:7 › QLT-220 parent — real auth + ephemeral cookies › buyer login via real API (seed persona) (57ms)
+  ✓  23 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:152:7 › QLT-220 parent — no mock simulator network › public featured hits live API origin only (7ms)
+  ✓  24 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:165:7 › QLT-220 parent — no mock simulator network › blocklist rejects mock simulator hosts (1ms)
+  -  25 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:177:7 › QLT-220 parent — no mock simulator network › Next same-origin rewrite has no mock network (when Next up)
+  ✓  26 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:200:7 › QLT-220 parent — secret hygiene › maskToken never echoes full secret (1ms)
+  ✓  27 [api-desktop-chromium] › tests/e2e/api/qlt-220-parent-framework.spec.ts:209:7 › QLT-220 parent — secret hygiene › webhook helper summary omits token (16ms)
+
+  4 skipped
+  23 passed (1.6s)
