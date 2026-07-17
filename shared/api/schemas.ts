@@ -499,6 +499,50 @@ export const orderResultEnvelopeSchema = successEnvelopeSchema(
 
 export type OrderResultDto = z.infer<typeof orderResultDtoSchema>;
 
+// --- Delivery access (CHK-140) — claim/reveal only; never list/detail base ---
+
+/**
+ * POST delivery/access response (buyer session or order token exchange).
+ * Secrets only at this boundary; Cache-Control no-store on wire.
+ * downloadObjectId is opaque — not a signed URL (download exchange gap).
+ */
+export const deliveryAccessDtoSchema = z.object({
+  grantId: z.string().min(1),
+  orderId: z.string().min(1),
+  orderItemId: z.string().min(1),
+  deliveryKind: z.enum([
+    "DOWNLOAD",
+    "PROTECTED_LINK",
+    "CREDENTIAL",
+    "CODE",
+  ]),
+  status: z.string().min(1),
+  accessCount: z.number().int().min(0).optional(),
+  maxAccesses: z.number().int().min(0).optional(),
+  expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  downloadObjectId: z.string().min(1).optional(),
+  secrets: z.record(z.string(), z.string()).optional(),
+});
+
+export const deliveryAccessEnvelopeSchema = successEnvelopeSchema(
+  deliveryAccessDtoSchema,
+);
+
+/** Buyer resend queues email; never returns secrets. */
+export const deliveryResendDtoSchema = z.object({
+  grantId: z.string().min(1).optional(),
+  orderId: z.string().min(1).optional(),
+  status: z.string().optional(),
+  queued: z.boolean().optional(),
+});
+
+export const deliveryResendEnvelopeSchema = successEnvelopeSchema(
+  deliveryResendDtoSchema,
+);
+
+export type DeliveryAccessDto = z.infer<typeof deliveryAccessDtoSchema>;
+export type DeliveryResendDto = z.infer<typeof deliveryResendDtoSchema>;
+
 // --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
 
 /** Launch bounded page size; PurchaseLibrary has no paging control (BoundedNoPaging). */

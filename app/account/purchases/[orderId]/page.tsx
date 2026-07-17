@@ -24,7 +24,10 @@ export default async function PurchasePage({
       title="Detail pembelian."
       description="Akses produk, receipt, update seller, dan riwayat delivery."
     >
-      <PurchaseDetail purchase={purchase} />
+      <PurchaseDetail
+        key={purchase.internalOrderId || purchase.orderId}
+        purchase={purchase}
+      />
     </BuyerShell>
   );
 }

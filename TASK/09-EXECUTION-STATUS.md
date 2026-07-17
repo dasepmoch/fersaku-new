@@ -101,7 +101,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `CHK-110` | P0 | CHK-100, INT-180 | PUB/RTM | completed @nikki/opencode · main · 2026-07-17 · claim released | Idempotent real checkout intent (G5 start) | TASK/evidence/CHK-110/20260717-1443-nikki.md · features/commerce/checkout · tests/unit/chk-110-checkout-intent.test.ts |
 | `[x]` | `CHK-120` | P0 | CHK-110 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Authoritative QR polling/terminal recovery | TASK/evidence/CHK-120/20260717-1505-nikki.md · features/commerce/checkout · tests/unit/chk-120-checkout-poll.test.ts |
 | `[x]` | `CHK-130` | P0 | CHK-110, INT-120 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Safe order-result capability | TASK/evidence/CHK-130/20260717-1500-nikki.md · features/commerce/order-result · tests/unit/chk-130-order-result.test.ts |
-| `[ ]` | `CHK-140` | P0/P1 | CHK-130, INT-180, INT-185 | PUB/RTM | — | Delivery access/resend/download lifecycle | — |
+| `[x]` | `CHK-140` | P0/P1 | CHK-130, INT-180, INT-185 | PUB/RTM | completed @nikki/opencode · main · 2026-07-17 · claim released | Delivery access/resend/download lifecycle | TASK/evidence/CHK-140/20260717-1505-nikki.md · features/commerce/delivery-access · tests/unit/chk-140-delivery-access.test.ts |
 | `[ ]` | `CHK-150` | P1 | CHK-130 | PUB | — | Invoice read/print/download/verify | — |
 | `[x]` | `BUY-100` | P1 | AUT-110, INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 14:35 WIB · claim released | Buyer purchase list/detail/search | TASK/evidence/BUY-100/20260717-1435-nikki.md · tests/unit/buy-100-buyer-purchases.test.ts |
 | `[ ]` | `BUY-110` | P1 | BUY-100 | PUB | — | Buyer review and purchase commands | — |

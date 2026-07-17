@@ -467,14 +467,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist FE
 
-- [ ] Base purchase/order query contains redacted delivery metadata only.
-- [ ] Fetch credential/code/link/signed download only after explicit existing user action.
-- [ ] Secret response tidak menggunakan React Query persistent/global cache; keep in component memory.
-- [ ] Clear secret on expiry, unmount, logout, visibility change where policy requires, and actor/order switch.
-- [ ] Signed URL opened directly; do not log/proxy/persist/copy automatically.
-- [ ] Reuse existing code/link/credential UI; do not render secret in server HTML.
-- [ ] Resend uses stable idempotency + rate limit; existing success/error state only after server result.
-- [ ] Revoke/expired/consumed grant handled fail closed.
+- [x] Base purchase/order query contains redacted delivery metadata only.
+- [x] Fetch credential/code/link/signed download only after explicit existing user action.
+- [x] Secret response tidak menggunakan React Query persistent/global cache; keep in component memory.
+- [x] Clear secret on expiry, unmount, logout, visibility change where policy requires, and actor/order switch.
+- [x] Signed URL opened directly; do not log/proxy/persist/copy automatically.
+- [x] Reuse existing code/link/credential UI; do not render secret in server HTML.
+- [x] Resend uses stable idempotency + rate limit; existing success/error state only after server result.
+- [x] Revoke/expired/consumed grant handled fail closed.
 
 ### Checklist BE
 

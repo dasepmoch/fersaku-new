@@ -19,6 +19,7 @@ import {
   type OrderResult,
   type OrderResultDisplayState,
 } from "@/features/commerce/order-result";
+import { OrderResultDeliveryDownloadButton } from "@/features/commerce/order-result/delivery-download-button";
 import { getOrderResultServer } from "@/features/commerce/order-result/server";
 import { getDomainSource } from "@/shared/data/domain-source";
 import { rupiah } from "@/shared/format/money";
@@ -80,6 +81,7 @@ export default async function OrderStatePage({
   return (
     <OrderResultChrome
       orderId={result.orderNumber || result.orderId}
+      accessOrderId={result.orderId}
       displayState={result.displayState}
       productTitle={result.productTitle}
       productPriceLabel={rupiah(result.gross)}
@@ -96,6 +98,7 @@ export default async function OrderStatePage({
 /** Existing order status chrome — markup/class/copy frozen; data via props only. */
 function OrderResultChrome({
   orderId,
+  accessOrderId,
   displayState,
   productTitle,
   productPriceLabel,
@@ -107,6 +110,8 @@ function OrderResultChrome({
   showDeliveryShell,
 }: {
   orderId: string;
+  /** Backend order ULID for delivery access (CHK-140). */
+  accessOrderId: string;
   displayState: OrderResultDisplayState;
   productTitle: string;
   productPriceLabel: string;
@@ -171,12 +176,10 @@ function OrderResultChrome({
                   <p className="mt-2 text-xs leading-5 text-[#65736b]">
                     Link aktif selama 7 hari dengan maksimal 5 kali unduhan.
                   </p>
-                  <button
-                    type="button"
-                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white"
-                  >
-                    Unduh {productTitle} <ArrowRight className="size-4" />
-                  </button>
+                  <OrderResultDeliveryDownloadButton
+                    orderId={accessOrderId}
+                    productTitle={productTitle}
+                  />
                 </div>
               )}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
