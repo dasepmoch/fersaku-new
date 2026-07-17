@@ -1,5 +1,22 @@
 export type ProductType = "download" | "link" | "code";
 
+/** Seller lifecycle (wire + view). Public projections omit status. */
+export type ProductStatus = "draft" | "published" | "archived";
+
+/**
+ * SEL-210 — product list filters (BoundedNoPaging).
+ * BE list has no search/status query yet; adapter maps filters client-side
+ * over the store-scoped response and caps at SELLER_PRODUCT_LIST_LIMIT.
+ */
+export type SellerProductListFilters = {
+  q?: string;
+  status?: ProductStatus | "all";
+  type?: ProductType | "all";
+};
+
+/** Launch bound; list UI has no TablePagination (UI-080 for expansion). */
+export const SELLER_PRODUCT_LIST_LIMIT = 50;
+
 export type CatalogProduct = {
   id: string;
   slug: string;
@@ -13,6 +30,8 @@ export type CatalogProduct = {
   palette: string;
   glyph: string;
   includes: string[];
+  /** Seller-only lifecycle; public DTOs omit. */
+  status?: ProductStatus;
   /** Canonical owning store slug for public featured/product links (PUB-100). */
   storeSlug?: string;
   /** Owning store id for checkout quote (CHK-100); not a secret. */

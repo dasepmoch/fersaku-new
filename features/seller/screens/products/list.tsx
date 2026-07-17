@@ -1,19 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { ProductArt } from "@/components/product-art";
-import { useSellerProducts } from "@/features/catalog/hooks";
+import {
+  useDebouncedProductSearch,
+  useSellerProducts,
+} from "@/features/catalog/hooks";
+import { productStatusListLabel } from "@/features/catalog/mappers";
 import { rupiah } from "@/lib/utils";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 import { FilterButton, SearchBox, sellerCard } from "./pieces";
 
 export function Products() {
   const storeId = useSellerStoreId();
-  const { data: products = [] } = useSellerProducts(storeId);
+  const [query, setQuery] = useState("");
+  const debouncedQ = useDebouncedProductSearch(query);
+  const { data: products = [] } = useSellerProducts(storeId, {
+    q: debouncedQ,
+  });
   return (
     <section className={sellerCard}>
       <div className="hairline flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center">
-        <SearchBox placeholder="Cari produk..." />
+        <SearchBox
+          placeholder="Cari produk..."
+          value={query}
+          onChange={setQuery}
+        />
         <div className="sm:ml-auto">
           <FilterButton />
         </div>
@@ -40,7 +53,7 @@ export function Products() {
                     <span className="size-1.5 shrink-0 rounded-full bg-[#43a66d]" />
                   </div>
                   <p className="mt-1 text-[10px] font-semibold tracking-wider text-[#7d8982] uppercase">
-                    {p.type} • Published
+                    {p.type} • {productStatusListLabel(p.status)}
                   </p>
                 </div>
                 <button>

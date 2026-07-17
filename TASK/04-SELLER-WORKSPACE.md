@@ -107,14 +107,14 @@ Sebagian query ada, tetapi metrics/traffic/chart filters masih hardcoded dan sel
 
 ### Checklist
 
-- [ ] Request query: normalized search, status/type filter, sort, bounded limit; cursor/page is allowed only after the actual product screen receives an approved paging composition (`UI-080`), because snapshot `products/list.tsx` has no `TablePagination`.
-- [ ] Schema + mapper to existing `CatalogProduct` view; do not import fixture in presentation.
-- [ ] Keep existing table/card/filter. Snapshot product list has no pagination control; do not add one. If product volume requires navigation, block the flag or obtain `UI-080`, then use `NumberedPageList` authoritative (`page/pageSize/totalCount/pageCount`) from `INT-020`.
-- [ ] Debounce/cancel search and keep previous data.
-- [ ] Stable ordering + ID tie-breaker prevents duplicate/skipped rows.
-- [ ] Status enum exhaustive; unknown is not mapped to published/live.
-- [ ] Query key includes store/filter/sort and the selected pagination profile only when a real control exists.
-- [ ] Snapshot product grid has no empty composition. Because a new store can legitimately have zero products, API activation needs a product-owner-approved non-empty launch invariant or `UXE-012/UI-080`; never inject fixtures, silently collapse the card, or add empty copy in wiring.
+- [x] Request query: normalized search, status/type filter, sort, bounded limit; cursor/page is allowed only after the actual product screen receives an approved paging composition (`UI-080`), because snapshot `products/list.tsx` has no `TablePagination`. *(FE: `SELLER_PRODUCT_LIST_LIMIT` + client filter map; BE list has no search/limit query yet — no invented page control.)*
+- [x] Schema + mapper to existing `CatalogProduct` view; do not import fixture in presentation.
+- [x] Keep existing table/card/filter. Snapshot product list has no pagination control; do not add one. If product volume requires navigation, block the flag or obtain `UI-080`, then use `NumberedPageList` authoritative (`page/pageSize/totalCount/pageCount`) from `INT-020`.
+- [x] Debounce/cancel search and keep previous data.
+- [x] Stable ordering + ID tie-breaker prevents duplicate/skipped rows. *(Preserve BE `created_at DESC, id DESC` order; bound first N after filter.)*
+- [x] Status enum exhaustive; unknown is not mapped to published/live.
+- [x] Query key includes store/filter/sort and the selected pagination profile only when a real control exists. *(profile: `bounded` only — no cursor/page key.)*
+- [x] Snapshot product grid has no empty composition. Because a new store can legitimately have zero products, API activation needs a product-owner-approved non-empty launch invariant or `UXE-012/UI-080`; never inject fixtures, silently collapse the card, or add empty copy in wiring. *(Empty array → empty grid geometry only; no demo inject / no new empty copy.)*
 
 ### Tests/AC
 

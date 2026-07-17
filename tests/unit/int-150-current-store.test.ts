@@ -31,8 +31,10 @@ describe("INT-150 current-store / cache", () => {
   it("query keys include storeId (no old-store bleed shape)", () => {
     const a = queryKeys.seller.products("store_a");
     const b = queryKeys.seller.products("store_b");
-    expect(a).toEqual(["seller", "store_a", "products"]);
-    expect(b).toEqual(["seller", "store_b", "products"]);
+    expect(a[0]).toBe("seller");
+    expect(a[1]).toBe("store_a");
+    expect(a[2]).toBe("products");
+    expect(b[1]).toBe("store_b");
     expect(a[1]).not.toBe(b[1]);
   });
 

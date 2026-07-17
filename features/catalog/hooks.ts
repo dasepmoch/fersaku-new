@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { mockPlaceholderData } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { useAppQuery } from "@/shared/query/create-query";
@@ -11,13 +12,37 @@ import {
   publishSellerProduct,
   type PublishProductInput,
 } from "./api";
+import type { SellerProductListFilters } from "./contracts";
+import { normalizeProductSearch } from "./mappers";
 import { demoProducts } from "./mock";
 
-export function useSellerProducts(storeId: string) {
+const SEARCH_DEBOUNCE_MS = 300;
+
+/** Debounce search string for list query key (cancel via React Query signal). */
+export function useDebouncedProductSearch(q: string, ms = SEARCH_DEBOUNCE_MS) {
+  const [debounced, setDebounced] = useState(q);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(q), ms);
+    return () => window.clearTimeout(t);
+  }, [q, ms]);
+  return debounced;
+}
+
+export function useSellerProducts(
+  storeId: string,
+  filters?: SellerProductListFilters,
+) {
+  const q = normalizeProductSearch(filters?.q);
+  const status = filters?.status ?? "all";
+  const type = filters?.type ?? "all";
+  const listFilters: SellerProductListFilters = { q, status, type };
+
   return useAppQuery({
-    queryKey: queryKeys.seller.products(storeId),
-    queryFn: (signal) => listSellerProducts(storeId, signal),
+    queryKey: queryKeys.seller.products(storeId, listFilters),
+    queryFn: (signal) => listSellerProducts(storeId, signal, listFilters),
     enabled: Boolean(storeId),
+    surface: "private",
+    keepPrevious: true,
     placeholderData: mockPlaceholderData("sellerCatalog", demoProducts),
   });
 }
@@ -42,7 +67,7 @@ export function usePublishSellerProductMutation() {
       publishSellerProduct(input, signal),
     onSuccess: (_result, input) => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.seller.products(input.storeId),
+        queryKey: ["seller", input.storeId, "products"],
       });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.seller.product(input.storeId, input.productId),

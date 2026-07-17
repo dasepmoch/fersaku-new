@@ -17,16 +17,25 @@ import {
 import type {
   CatalogProduct,
   FeaturedCatalogProduct,
+  ProductStatus,
   ProductType,
   PublicProductMatch,
   PublicStorefront,
+  SellerProductListFilters,
 } from "./contracts";
+import { SELLER_PRODUCT_LIST_LIMIT } from "./contracts";
 
 const PRODUCT_TYPE_MAP = {
   download: "download",
   link: "link",
   code: "code",
 } as const satisfies Record<string, ProductType>;
+
+const PRODUCT_STATUS_MAP = {
+  draft: "draft",
+  published: "published",
+  archived: "archived",
+} as const satisfies Record<string, ProductStatus>;
 
 const PRESET = {
   atelier: "atelier",
@@ -96,6 +105,57 @@ function mapProductType(value: string): ProductType {
   );
 }
 
+/** Exhaustive status map; unknown never becomes published/live. */
+export function mapProductStatus(value: string): ProductStatus {
+  return mapExhaustiveEnum(
+    value as keyof typeof PRODUCT_STATUS_MAP,
+    PRODUCT_STATUS_MAP,
+    "product.status",
+  );
+}
+
+/** Existing list chrome label; unknown status never reaches here. */
+export function productStatusListLabel(
+  status: ProductStatus | undefined,
+): string {
+  if (status === "draft") return "Draft";
+  if (status === "archived") return "Archived";
+  return "Published";
+}
+
+/** Normalize search for list filter (trim + collapse space + lower). */
+export function normalizeProductSearch(q: string | undefined): string {
+  return (q ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * Apply search/status/type filters and hard bound (no local full-catalog paging).
+ * Preserves input order (BE: created_at DESC, id DESC).
+ */
+export function applySellerProductListFilters(
+  items: CatalogProduct[],
+  filters?: SellerProductListFilters,
+  limit: number = SELLER_PRODUCT_LIST_LIMIT,
+): CatalogProduct[] {
+  const q = normalizeProductSearch(filters?.q);
+  const status = filters?.status ?? "all";
+  const type = filters?.type ?? "all";
+  const max = Math.max(0, Math.min(limit, SELLER_PRODUCT_LIST_LIMIT));
+
+  const out: CatalogProduct[] = [];
+  for (const p of items) {
+    if (status !== "all" && p.status !== status) continue;
+    if (type !== "all" && p.type !== type) continue;
+    if (q) {
+      const hay = `${p.title} ${p.slug} ${p.short}`.toLowerCase();
+      if (!hay.includes(q)) continue;
+    }
+    out.push(p);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 function mapOptionalEnum<TTable extends Record<string, string>>(
   value: string | undefined,
   table: TTable,
@@ -127,6 +187,9 @@ export function mapCatalogProductDto(dto: CatalogProductDto): CatalogProduct {
     glyph: dto.glyph,
     includes: [...dto.includes],
   };
+  if (dto.status !== undefined) {
+    view.status = mapProductStatus(dto.status);
+  }
   if (dto.storeSlug !== undefined && dto.storeSlug !== "") {
     view.storeSlug = dto.storeSlug;
   }

@@ -18,8 +18,11 @@ import type {
   FeaturedCatalogProduct,
   PublicProductMatch,
   PublicStorefront,
+  SellerProductListFilters,
 } from "./contracts";
+import { SELLER_PRODUCT_LIST_LIMIT } from "./contracts";
 import {
+  applySellerProductListFilters,
   mapCatalogProductDto,
   mapCatalogProductListDto,
   mapFeaturedCatalogProductListDto,
@@ -113,20 +116,34 @@ export async function publishSellerProduct(
   return response.data;
 }
 
+/**
+ * SEL-210 — store-scoped seller product list (BoundedNoPaging).
+ * BE GET /v1/stores/{storeId}/products has no search/status/limit query yet;
+ * client maps existing SearchBox filter + hard-caps at SELLER_PRODUCT_LIST_LIMIT.
+ * Do not fetch extra pages for local pagination.
+ */
 export async function listSellerProducts(
   storeId: string,
   signal?: AbortSignal,
+  filters?: SellerProductListFilters,
 ): Promise<CatalogProduct[]> {
-  if (shouldUseMockFixtures("sellerCatalog")) return demoProducts;
+  if (shouldUseMockFixtures("sellerCatalog")) {
+    return applySellerProductListFilters(demoProducts, filters);
+  }
 
   const response = await apiRequest<CatalogListEnvelope>(
-    `/v1/stores/${storeId}/products`,
+    `/v1/stores/${encodeURIComponent(storeId)}/products`,
     {
       schema: catalogProductListEnvelopeSchema,
       signal,
     },
   );
-  return mapCatalogProductListDto(response.data);
+  const mapped = mapCatalogProductListDto(response.data);
+  return applySellerProductListFilters(
+    mapped,
+    filters,
+    SELLER_PRODUCT_LIST_LIMIT,
+  );
 }
 
 export async function getSellerProduct(

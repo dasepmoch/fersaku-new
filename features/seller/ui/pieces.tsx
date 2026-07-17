@@ -13,12 +13,24 @@ export { MiniStat } from "@/shared/ui/mini-stat";
 /** Seller surface card token (same visual as historical local `card` constants). */
 export const sellerCard = surfaceCard;
 
-export function SearchBox({ placeholder }: { placeholder: string }) {
+export function SearchBox({
+  placeholder,
+  value,
+  onChange,
+}: {
+  placeholder: string;
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
   return (
     <div className="hairline flex h-10 w-full max-w-sm items-center gap-2 rounded-xl border bg-white px-3 text-[10px] text-[#829087]">
       <Search className="size-3.5" />
       <input
         placeholder={placeholder}
+        value={value}
+        onChange={
+          onChange ? (e) => onChange(e.target.value) : undefined
+        }
         className="min-w-0 flex-1 bg-transparent outline-none"
       />
     </div>
