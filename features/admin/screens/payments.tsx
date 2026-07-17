@@ -15,34 +15,84 @@ import { MoreHorizontal } from "lucide-react";
 
 import { rupiah } from "@/lib/utils";
 
-import { useAdminPayments } from "@/features/admin/data";
+import { useAdminPaymentMismatches, useAdminPayments } from "@/features/admin/data";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
 
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { PaymentMismatchAlert } from "@/features/admin/operations/payment-mismatch";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 function Payments() {
-  const { data, refetch, isFetching } = useAdminPayments();
-  const paymentIntents = data ?? [];
+  const isMock = getDomainSource("adminRead") === "mock";
   const [sourceFilter, setSourceFilter] =
     useState<AdminTransactionSourceFilter>("ALL");
+
+  // Server source filter on API path (BE rejects MIXED).
+  const listFilters = useMemo(() => {
+    if (sourceFilter === "ALL") return {};
+    if (sourceFilter === "MIXED") return { source: "MIXED" as const };
+    return { source: sourceFilter };
+  }, [sourceFilter]);
+
+  const { data, refetch, isFetching } = useAdminPayments(listFilters);
+  const { data: mismatches } = useAdminPaymentMismatches();
+  const paymentIntents = data ?? [];
+
+  // Client filter only on mock when ALL; API path already filtered by source.
   const filteredIntents =
-    sourceFilter === "ALL"
-      ? paymentIntents
-      : paymentIntents.filter((intent) => intent.source === sourceFilter);
+    isMock && sourceFilter !== "ALL"
+      ? sourceFilter === "MIXED"
+        ? []
+        : paymentIntents.filter((intent) => intent.source === sourceFilter)
+      : paymentIntents;
+
   const { pageRows, pagination } = useClientPagination(filteredIntents);
+
+  const successCount = paymentIntents.filter((p) =>
+    /success|paid|settled/i.test(p.status),
+  ).length;
+  const failedCount = paymentIntents.filter((p) =>
+    /fail|reject|unknown/i.test(p.status),
+  ).length;
+
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
-        <Metric label="QRIS created" value="2,104" note="Today" />
-        <Metric label="Success rate" value="96.84%" note="+0.42%" />
-        <Metric label="Provider latency" value="142ms" note="p50 response" />
-        <Metric label="Failed callbacks" value="3" note="0.14% today" />
+        <Metric
+          label="QRIS created"
+          value={
+            isMock
+              ? "2,104"
+              : paymentIntents.length.toLocaleString("id-ID") || "—"
+          }
+          note={isMock ? "Today" : "Current page"}
+        />
+        <Metric
+          label="Success rate"
+          value={
+            isMock
+              ? "96.84%"
+              : paymentIntents.length
+                ? `${((successCount / paymentIntents.length) * 100).toFixed(2)}%`
+                : "—"
+          }
+          note={isMock ? "+0.42%" : "Listed intents"}
+        />
+        <Metric
+          label="Provider latency"
+          value={isMock ? "142ms" : "—"}
+          note={isMock ? "p50 response" : "Server health in providers"}
+        />
+        <Metric
+          label="Failed callbacks"
+          value={isMock ? "3" : String(failedCount)}
+          note={isMock ? "0.14% today" : "Failed / unknown on page"}
+        />
       </div>
-      <PaymentMismatchAlert />
+      <PaymentMismatchAlert mismatches={mismatches ?? (isMock ? undefined : [])} />
       <section className={`${adminPanel} mt-4 overflow-hidden`}>
         <div className="flex flex-col gap-3 border-b border-[#e6e9ef] p-4 sm:flex-row">
           <TableToolbar
@@ -126,31 +176,63 @@ function Payments() {
         <section className={`${adminPanel} p-5`}>
           <h3 className="text-xs font-black">Xendit callback traffic</h3>
           <div className="mt-6 flex h-28 items-end gap-1">
-            {[
-              32, 58, 40, 75, 62, 80, 54, 89, 68, 92, 73, 100, 86, 94, 72, 88,
-              66, 81, 59, 77,
-            ].map((h, i) => (
+            {(isMock
+              ? [
+                  32, 58, 40, 75, 62, 80, 54, 89, 68, 92, 73, 100, 86, 94, 72, 88,
+                  66, 81, 59, 77,
+                ]
+              : Array.from({ length: 20 }, () => 12)
+            ).map((h, i) => (
               <span
                 key={i}
                 className="flex-1 rounded-t-sm bg-[#5b7cfa]"
-                style={{ height: `${h}%`, opacity: 0.25 + i / 29 }}
+                style={{
+                  height: `${h}%`,
+                  opacity: isMock ? 0.25 + i / 29 : 0.15,
+                }}
               />
             ))}
           </div>
           <div className="mt-4 flex justify-between text-[8px] text-[#8c96a8]">
-            <span>2,089 verified</span>
-            <span className="text-[#d85b53]">3 rejected signatures</span>
+            <span>
+              {isMock
+                ? "2,089 verified"
+                : `${successCount} paid on page`}
+            </span>
+            <span className="text-[#d85b53]">
+              {isMock
+                ? "3 rejected signatures"
+                : `${failedCount} failed / unknown`}
+            </span>
           </div>
         </section>
         <section className={`${adminPanel} p-5`}>
           <h3 className="text-xs font-black">Xendit account snapshot</h3>
           <div className="mt-5 grid gap-3">
-            {[
-              ["Successful payments", "2.038"],
-              ["Pending payments", "63"],
-              ["Failed payments", "3"],
-              ["Last provider sync", "12 Jul 2026, 14:35"],
-            ].map((x, i) => (
+            {(isMock
+              ? [
+                  ["Successful payments", "2.038"],
+                  ["Pending payments", "63"],
+                  ["Failed payments", "3"],
+                  ["Last provider sync", "12 Jul 2026, 14:35"],
+                ]
+              : [
+                  ["Successful payments", String(successCount)],
+                  [
+                    "Pending payments",
+                    String(
+                      paymentIntents.filter((p) =>
+                        /pending/i.test(p.status),
+                      ).length,
+                    ),
+                  ],
+                  ["Failed payments", String(failedCount)],
+                  [
+                    "Mismatches open",
+                    String((mismatches ?? []).length),
+                  ],
+                ]
+            ).map((x, i) => (
               <div
                 key={x[0]}
                 className={`flex justify-between rounded-xl p-3 text-[9px] ${i === 0 ? "bg-[#eaf8ef] text-[#277c4c]" : "bg-[#f5f6f9]"}`}

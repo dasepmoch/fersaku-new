@@ -5,15 +5,16 @@ import { AlertOctagon, ArrowUpRight, Clock3 } from "lucide-react";
 import Link from "next/link";
 import { rupiah } from "@/lib/utils";
 
+/** ADM-300 — display row; values are server evidence, not client-writable status. */
 export type PaymentMismatch = {
   id: string;
   paymentIntentId: string;
   orderId: string;
   merchant: string;
   amount: number;
-  provider: "Xendit";
-  providerStatus: "PAID";
-  localStatus: "Pending";
+  provider: string;
+  providerStatus: string;
+  localStatus: string;
   age: string;
   attempts: number;
   observedAt: string;

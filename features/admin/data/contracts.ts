@@ -115,7 +115,8 @@ export type AdminOrder = {
   status: string;
   payment: string;
   created: string;
-  source: "STOREFRONT";
+  /** BE may return STOREFRONT|QRIS_API; list UI treats storefront-first. */
+  source: AdminPaymentSource;
 };
 
 export type AdminPaymentIntent = {
@@ -128,6 +129,41 @@ export type AdminPaymentIntent = {
   latency: string;
   created: string;
   source: AdminPaymentSource;
+};
+
+/**
+ * ADM-300 — read-only provider/local mismatch evidence.
+ * UI cannot set paid or reconcile arbitrarily.
+ */
+export type AdminPaymentMismatch = {
+  id: string;
+  paymentIntentId: string;
+  orderId: string;
+  merchant: string;
+  amount: number;
+  provider: string;
+  providerStatus: string;
+  localStatus: string;
+  age: string;
+  attempts: number;
+  observedAt: string;
+};
+
+/** Provider lookup acceptance (no client status mutation). */
+export type AdminProviderLookupResult = {
+  paymentIntentId: string;
+  localStatus: string;
+  provider: string;
+  providerReference: string;
+  source?: string;
+  lookup: string;
+  note?: string;
+  requestId: string;
+};
+
+export type AdminDeliveryResendResult = {
+  accepted: boolean;
+  requestId: string;
 };
 
 export type AdminWithdrawal = {

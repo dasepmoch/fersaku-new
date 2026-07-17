@@ -111,6 +111,11 @@ export const queryKeys = {
       ["admin", "withdrawals", withdrawalId] as const,
     payments: (filters: Record<string, unknown> = {}) =>
       ["admin", "payments", "bounded", filters] as const,
+    /** ADM-300 payment intent detail. */
+    payment: (paymentIntentId: string) =>
+      ["admin", "payments", paymentIntentId] as const,
+    /** ADM-300 provider/local mismatch evidence feed. */
+    paymentMismatches: () => ["admin", "payment-mismatches"] as const,
     kyc: (filters: Record<string, unknown> = {}) =>
       ["admin", "kyc", "bounded", filters] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>

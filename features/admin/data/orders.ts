@@ -1,6 +1,6 @@
 /**
- * ADM-120 — admin order list/detail read foundation (orders.read).
- * Full evidence/commands remain ADM-300.
+ * ADM-300 — admin order list/detail read (orders.read).
+ * Commands: order-payment-commands (resend / provider-lookup).
  */
 
 import type { z } from "zod";
@@ -40,6 +40,20 @@ function mockOrderPage(
   if (filters.status?.trim()) {
     const status = filters.status.trim().toLowerCase();
     rows = rows.filter((o) => o.status.toLowerCase() === status);
+  }
+  if (filters.source?.trim()) {
+    const source = filters.source.trim();
+    rows = rows.filter((o) => o.source === source);
+  }
+  if (filters.q?.trim()) {
+    const q = filters.q.trim().toLowerCase();
+    rows = rows.filter(
+      (o) =>
+        o.id.toLowerCase().includes(q) ||
+        o.customer.toLowerCase().includes(q) ||
+        o.store.toLowerCase().includes(q) ||
+        o.product.toLowerCase().includes(q),
+    );
   }
   return {
     items: rows.slice(0, limit),

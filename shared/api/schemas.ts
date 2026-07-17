@@ -2060,6 +2060,49 @@ export const adminPaymentDtoSchema = z.object({
   source: z.string(),
 });
 
+/**
+ * ADM-300 — provider-paid / local-pending mismatch row (read-only evidence).
+ * UI cannot set paid or reconcile; amount is server IDR only.
+ */
+export const adminPaymentMismatchDtoSchema = z.object({
+  id: z.string().min(1),
+  paymentIntentId: z.string().min(1),
+  orderId: z.string(),
+  merchant: z.string(),
+  merchantId: z.string().optional(),
+  amount: moneyIdrSchema,
+  provider: z.string(),
+  providerStatus: z.string(),
+  localStatus: z.string(),
+  age: z.string().optional(),
+  attempts: z.number().int().min(0),
+  observedAt: z.string(),
+  providerReference: z.string().optional(),
+  alertCode: z.string().optional(),
+  mismatchCode: z.string().optional(),
+});
+
+/** BE returns `{ items: [...] }` under data for mismatches. */
+export const adminPaymentMismatchListDataSchema = z.object({
+  items: z.array(adminPaymentMismatchDtoSchema),
+});
+
+/** Provider lookup acceptance — no client-chosen status mutation. */
+export const adminProviderLookupResultSchema = z.object({
+  paymentIntentId: z.string().min(1),
+  localStatus: z.string(),
+  provider: z.string(),
+  providerReference: z.string().optional().default(""),
+  source: z.string().optional(),
+  lookup: z.string(),
+  note: z.string().optional(),
+});
+
+/** Delivery resend acceptance. */
+export const adminDeliveryResendResultSchema = z.object({
+  accepted: z.boolean(),
+});
+
 export const adminWithdrawalDtoSchema = z.object({
   id: z.string().min(1),
   merchant: z.string(),
@@ -2212,6 +2255,17 @@ export const adminBuyerEnvelopeSchema =
   successEnvelopeSchema(adminBuyerDtoSchema);
 export const adminOrderEnvelopeSchema =
   successEnvelopeSchema(adminOrderDtoSchema);
+export const adminPaymentEnvelopeSchema =
+  successEnvelopeSchema(adminPaymentDtoSchema);
+export const adminPaymentMismatchListEnvelopeSchema = successEnvelopeSchema(
+  adminPaymentMismatchListDataSchema,
+);
+export const adminProviderLookupEnvelopeSchema = successEnvelopeSchema(
+  adminProviderLookupResultSchema,
+);
+export const adminDeliveryResendEnvelopeSchema = successEnvelopeSchema(
+  adminDeliveryResendResultSchema,
+);
 export const adminWithdrawalEnvelopeSchema = successEnvelopeSchema(
   adminWithdrawalDtoSchema,
 );
@@ -2494,6 +2548,12 @@ export type AdminBuyerPurchaseDto = z.infer<typeof adminBuyerPurchaseDtoSchema>;
 export type AdminBuyerSessionDto = z.infer<typeof adminBuyerSessionDtoSchema>;
 export type AdminOrderDto = z.infer<typeof adminOrderDtoSchema>;
 export type AdminPaymentDto = z.infer<typeof adminPaymentDtoSchema>;
+export type AdminPaymentMismatchDto = z.infer<
+  typeof adminPaymentMismatchDtoSchema
+>;
+export type AdminProviderLookupResultDto = z.infer<
+  typeof adminProviderLookupResultSchema
+>;
 export type AdminWithdrawalDto = z.infer<typeof adminWithdrawalDtoSchema>;
 export type AdminAuditEventDto = z.infer<typeof adminAuditEventDtoSchema>;
 export type AdminReviewDto = z.infer<typeof adminReviewDtoSchema>;

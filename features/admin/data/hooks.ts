@@ -52,7 +52,13 @@ import {
   listMerchantCredentials,
 } from "./merchant-commands";
 import { demoAdminOrders, getAdminOrder, listAdminOrders } from "./orders";
-import { demoPayments, listPayments } from "./payments";
+import {
+  demoPaymentMismatchRows,
+  demoPayments,
+  getPayment,
+  listPaymentMismatches,
+  listPayments,
+} from "./payments";
 import { demoWithdrawals, getWithdrawal, listWithdrawals } from "./withdrawals";
 import { normalizeAdminListFilters } from "./mappers";
 
@@ -252,6 +258,53 @@ export function useAdminPayments(filters: AdminListFilters = {}) {
     enabled,
     placeholderData: mockPlaceholderData("adminRead", demoPayments()),
   });
+}
+
+/** ADM-300 — payment intent detail (payments.read). */
+export function useAdminPayment(paymentIntentId: string) {
+  const enabled = useAdminReadEnabled("payments.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.payment(paymentIntentId),
+    queryFn: (signal) => getPayment(paymentIntentId, signal),
+    enabled: Boolean(paymentIntentId) && enabled,
+    surface: "private",
+    placeholderData: mockPlaceholderData(
+      "adminRead",
+      demoPayments().find((p) => p.id === paymentIntentId) || null,
+    ),
+  });
+}
+
+/**
+ * ADM-300 — provider-paid / local-pending mismatch feed (payments.read).
+ * Read-only; empty list means aligned.
+ */
+export function useAdminPaymentMismatches() {
+  const enabled = useAdminReadEnabled("payments.read");
+  return useAppQuery({
+    queryKey: queryKeys.admin.paymentMismatches(),
+    queryFn: (signal) => listPaymentMismatches(signal),
+    surface: "private",
+    enabled,
+    placeholderData: mockPlaceholderData(
+      "adminRead",
+      demoPaymentMismatchRows(),
+    ),
+  });
+}
+
+/** ADM-300 — resend requires fulfillment.force on API path. */
+export function useAdminOrderDeliveryResendEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "fulfillment.force");
+}
+
+/** ADM-300 — provider lookup uses payments.read (BE gate). */
+export function useAdminProviderLookupEnabled(): boolean {
+  const claims = useSessionClaims();
+  if (getDomainSource("adminWrite") === "mock") return true;
+  return claimsHavePermission(claims?.permissions, "payments.read");
 }
 
 /** ADM-210 — purchase shells only (no delivery secret). */

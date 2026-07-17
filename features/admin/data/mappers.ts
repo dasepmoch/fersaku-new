@@ -15,6 +15,8 @@ import type {
   AdminOrderDto,
   AdminOverviewDto,
   AdminPaymentDto,
+  AdminPaymentMismatchDto,
+  AdminProviderLookupResultDto,
   AdminPermissionRegistryItemDto,
   AdminReviewDto,
   AdminRoleDto,
@@ -37,7 +39,9 @@ import type {
   AdminMerchantStatusWire,
   AdminOrder,
   AdminPaymentIntent,
+  AdminPaymentMismatch,
   AdminPaymentSource,
+  AdminProviderLookupResult,
   AdminPermissionGroup,
   AdminReview,
   AdminRole,
@@ -327,10 +331,10 @@ export function mapAdminOrderDto(dto: AdminOrderDto): AdminOrder {
     product: dto.product,
     gross: nonNegMoney(dto.gross),
     totalFeeCharged: nonNegMoney(dto.totalFeeCharged),
-    status: dto.status,
+    status: mapAdminOrderStatusDisplay(dto.status),
     payment: dto.payment,
     created: dto.created,
-    source: "STOREFRONT",
+    source: mapPaymentSource(dto.source),
   };
 }
 
@@ -341,10 +345,108 @@ export function mapAdminPaymentDto(dto: AdminPaymentDto): AdminPaymentIntent {
     merchant: dto.merchant,
     amount: nonNegMoney(dto.amount),
     providerRef: dto.providerRef,
-    status: dto.status,
+    status: mapAdminPaymentStatusDisplay(dto.status),
     latency: dto.latency,
     created: dto.created,
     source: mapPaymentSource(dto.source),
+  };
+}
+
+/**
+ * ADM-300 — display status for AdminStatus chrome.
+ * UNKNOWN_OUTCOME / provider unavailable must not look like success.
+ */
+export function mapAdminPaymentStatusDisplay(raw: string): string {
+  const s = raw.trim();
+  const upper = s.toUpperCase();
+  if (
+    upper === "UNKNOWN_OUTCOME" ||
+    upper === "UNKNOWN" ||
+    upper.includes("UNKNOWN")
+  ) {
+    return "Unknown outcome";
+  }
+  if (upper === "PROVIDER_UNAVAILABLE" || upper === "UNAVAILABLE") {
+    return "Provider unavailable";
+  }
+  return s;
+}
+
+export function mapAdminOrderStatusDisplay(raw: string): string {
+  return mapAdminPaymentStatusDisplay(raw);
+}
+
+export function mapAdminPaymentMismatchDto(
+  dto: AdminPaymentMismatchDto,
+): AdminPaymentMismatch {
+  return {
+    id: dto.id,
+    paymentIntentId: dto.paymentIntentId,
+    orderId: dto.orderId,
+    merchant: dto.merchant,
+    amount: nonNegMoney(dto.amount),
+    provider: dto.provider,
+    providerStatus: dto.providerStatus,
+    localStatus: dto.localStatus,
+    age: dto.age?.trim() || formatMismatchAge(dto.observedAt),
+    attempts: nonNegInt(dto.attempts),
+    observedAt: dto.observedAt,
+  };
+}
+
+function formatMismatchAge(observedAt: string): string {
+  const t = Date.parse(observedAt);
+  if (Number.isNaN(t)) return "—";
+  const mins = Math.max(0, Math.round((Date.now() - t) / 60_000));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+export function mapAdminProviderLookupResultDto(
+  dto: AdminProviderLookupResultDto,
+  requestId: string,
+): AdminProviderLookupResult {
+  return {
+    paymentIntentId: dto.paymentIntentId,
+    localStatus: mapAdminPaymentStatusDisplay(dto.localStatus),
+    provider: dto.provider,
+    providerReference: dto.providerReference ?? "",
+    ...(dto.source ? { source: dto.source } : {}),
+    lookup: dto.lookup,
+    ...(dto.note ? { note: dto.note } : {}),
+    requestId,
+  };
+}
+
+/**
+ * Fee split for order detail chrome: server totalFeeCharged is authoritative.
+ * Processing fee is not inventable — show total fee only when breakdown missing.
+ * Returns zeros for unpaid (totalFeeCharged === 0); never fabricates net from client %.
+ */
+export function mapAdminOrderFeeDisplay(order: AdminOrder): {
+  platformFee: number;
+  processingFee: number;
+  sellerNet: number;
+  totalFee: number;
+} {
+  const totalFee = nonNegMoney(order.totalFeeCharged);
+  const gross = nonNegMoney(order.gross);
+  if (totalFee <= 0) {
+    return {
+      platformFee: 0,
+      processingFee: 0,
+      sellerNet: 0,
+      totalFee: 0,
+    };
+  }
+  // No BE fee breakdown on list DTO — show total as platform fee; processing unknown.
+  return {
+    platformFee: totalFee,
+    processingFee: 0,
+    sellerNet: Math.max(0, gross - totalFee),
+    totalFee,
   };
 }
 

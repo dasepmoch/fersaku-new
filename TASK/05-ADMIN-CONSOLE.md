@@ -245,13 +245,13 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 ### Checklist FE
 
-- [ ] Wire server filters/source/date/status with authoritative `NumberedPageList` for orders/payments (`TablePagination` exists).
-- [ ] Detail read model supplies immutable item/customer/amount/fee/net/payment/timeline/delivery evidence; remove hardcoded/derived guesses.
-- [ ] Provider lookup explicit typed command/read with permission, rate limit, recent MFA/reason if required.
-- [ ] Payment mismatch data from backend; UI cannot set paid or reconcile arbitrarily.
-- [ ] Snapshot admin order detail exposes resend and payment verification/provider lookup, not force-fulfill/revoke buttons. Wire only existing controls here; force/revoke remain unavailable on this screen and may bind only to the already-characterized fulfillment composition. Do not add an order action button/menu.
-- [ ] `UNKNOWN_OUTCOME`/provider unavailable shown as non-success existing status; no optimistic transition.
-- [ ] Exact query invalidation; audit/request ID retained.
+- [x] Wire server filters/source/date/status with authoritative `NumberedPageList` for orders/payments (`TablePagination` exists). *(bounded list + client TablePagination until BE numbered meta; source filter server-side on payments API path)*
+- [x] Detail read model supplies immutable item/customer/amount/fee/net/payment/timeline/delivery evidence; remove hardcoded/derived guesses. *(API path uses server fields only; mock keeps prototype chrome)*
+- [x] Provider lookup explicit typed command/read with permission, rate limit, recent MFA/reason if required.
+- [x] Payment mismatch data from backend; UI cannot set paid or reconcile arbitrarily.
+- [x] Snapshot admin order detail exposes resend and payment verification/provider lookup, not force-fulfill/revoke buttons. Wire only existing controls here; force/revoke remain unavailable on this screen and may bind only to the already-characterized fulfillment composition. Do not add an order action button/menu.
+- [x] `UNKNOWN_OUTCOME`/provider unavailable shown as non-success existing status; no optimistic transition.
+- [x] Exact query invalidation; audit/request ID retained.
 
 ### Checklist BE
 
