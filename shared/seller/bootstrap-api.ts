@@ -16,7 +16,9 @@ export type SellerBootstrap = SellerBootstrapDto;
 
 export function createMockSellerBootstrap(
   storeId: string = DEMO_STORE_ID,
+  options?: { onboardingCompleted?: boolean; onboardingState?: string },
 ): SellerBootstrap {
+  const completed = options?.onboardingCompleted !== false;
   return {
     merchantId: "merch_mock",
     displayName: "Mock Merchant",
@@ -30,23 +32,81 @@ export function createMockSellerBootstrap(
         merchantStatus: "ACTIVE",
         roleInMerchant: "OWNER",
         capabilities: ["store.read", "store.write"],
-        storeIds: [storeId],
+        storeIds: storeId ? [storeId] : [],
       },
     ],
-    stores: [
-      {
-        storeId,
-        merchantId: "merch_mock",
-        slug: "mock-store",
-        name: "Mock Store",
-        status: "ACTIVE",
-        canonical: true,
-      },
-    ],
-    canonicalStoreId: storeId,
-    currentStoreId: storeId,
+    stores: storeId
+      ? [
+          {
+            storeId,
+            merchantId: "merch_mock",
+            slug: "mock-store",
+            name: "Mock Store",
+            status: "ACTIVE",
+            canonical: true,
+          },
+        ]
+      : [],
+    canonicalStoreId: storeId || undefined,
+    currentStoreId: storeId || undefined,
     capabilities: ["store.read", "store.write"],
+    onboardingState:
+      options?.onboardingState ?? (completed ? "COMPLETE" : "NOT_STARTED"),
+    onboardingCompleted: completed && Boolean(storeId),
   };
+}
+
+/** Pure selection: preferred if allowed → canonical → first stable allowed. */
+export function selectCurrentStoreId(input: {
+  preferred?: string | null;
+  canonical?: string | null;
+  allowedStoreIds: readonly string[];
+}): string {
+  const allowed = new Set(input.allowedStoreIds.filter(Boolean));
+  const preferred = input.preferred?.trim() ?? "";
+  if (preferred && allowed.has(preferred)) return preferred;
+  const canonical = input.canonical?.trim() ?? "";
+  if (canonical && allowed.has(canonical)) return canonical;
+  return input.allowedStoreIds.find(Boolean) ?? "";
+}
+
+/**
+ * Workspace needs completed onboarding + a membership-owned current store.
+ * Incomplete / no-store → redirect to /dashboard/onboarding (server-authoritative).
+ */
+export function needsSellerOnboarding(boot: SellerBootstrap | null): boolean {
+  if (!boot) return true;
+  if (boot.onboardingCompleted === true) {
+    return !(boot.currentStoreId?.trim() || boot.canonicalStoreId?.trim());
+  }
+  if (boot.onboardingCompleted === false) return true;
+  // Legacy responses without the flag: treat missing store as incomplete.
+  const storeId =
+    boot.currentStoreId?.trim() ||
+    boot.canonicalStoreId?.trim() ||
+    boot.stores?.[0]?.storeId ||
+    "";
+  if (!storeId) return true;
+  const state = (boot.onboardingState ?? "").toUpperCase();
+  if (state && state !== "COMPLETE") return true;
+  return false;
+}
+
+/** Reject client preference not present in membership store set (canonical-only launch). */
+export function isAllowedSellerStoreId(
+  boot: SellerBootstrap | null | undefined,
+  storeId: string,
+): boolean {
+  if (!boot || !storeId) return false;
+  const allowed = new Set(
+    (boot.stores ?? []).map((s) => s.storeId).filter(Boolean),
+  );
+  for (const m of boot.memberships ?? []) {
+    for (const id of m.storeIds ?? []) {
+      if (id) allowed.add(id);
+    }
+  }
+  return allowed.has(storeId);
 }
 
 export async function fetchSellerBootstrap(

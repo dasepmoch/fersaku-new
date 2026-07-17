@@ -17,18 +17,18 @@ Semua route `/dashboard/**` harus tetap memakai shell, navigation, cards, tables
 
 ### Checklist
 
-- [ ] Buat schema/mapper untuk merchant, memberships, canonical/current store, capabilities, onboarding state.
-- [ ] Backend dependency: snapshot `/v1/seller/me/merchant` hanya mengembalikan first active merchant/role. Extend endpoint itu atau freeze satu endpoint bootstrap canonical di `INT-000` untuk seluruh allowed stores, scoped capabilities, `canonicalStoreId`, dan server-selected `currentStoreId`.
-- [ ] Backend migration/policy `INT-150` harus dapat membedakan tenant member read/write; snapshot `OWNER|STAFF` + global permission belum cukup.
-- [ ] Bootstrap setelah seller session dan sebelum query seller enabled.
-- [ ] Current store berasal dari membership backend; client-stored ID hanya preference dan harus divalidasi ulang.
-- [ ] Snapshot `dashboard-shell.tsx` hanya memiliki store-switch button tanpa menu/handler. Launch default is canonical single-store context with the switch control disabled/hidden through the exact existing state, or obtain `UI-080` approval for an existing menu composition; do not invent a dropdown while wiring.
-- [ ] Berikan store context ke hooks tanpa mengubah prop/markup shell.
-- [ ] Hapus `DEMO_STORE_ID` dari API-mode code path; pertahankan mock provider khusus mode mock.
-- [ ] Semua query keys memuat store ID; cancel/remove tenant cache saat store/actor/impersonation berubah.
-- [ ] Route yang membutuhkan completed onboarding redirect berdasarkan server state, bukan local flag.
-- [ ] Store suspended/API capability state tidak dicampur; UI hanya memakai existing badge/control mapping.
-- [ ] Foreign/tampered store ID ditolak backend sebagai safe 404.
+- [x] Buat schema/mapper untuk merchant, memberships, canonical/current store, capabilities, onboarding state.
+- [x] Backend dependency: snapshot `/v1/seller/me/merchant` hanya mengembalikan first active merchant/role. Extend endpoint itu atau freeze satu endpoint bootstrap canonical di `INT-000` untuk seluruh allowed stores, scoped capabilities, `canonicalStoreId`, dan server-selected `currentStoreId`.
+- [x] Backend migration/policy `INT-150` harus dapat membedakan tenant member read/write; snapshot `OWNER|STAFF` + global permission belum cukup.
+- [x] Bootstrap setelah seller session dan sebelum query seller enabled.
+- [x] Current store berasal dari membership backend; client-stored ID hanya preference dan harus divalidasi ulang.
+- [x] Snapshot `dashboard-shell.tsx` hanya memiliki store-switch button tanpa menu/handler. Launch default is canonical single-store context with the switch control disabled/hidden through the exact existing state, or obtain `UI-080` approval for an existing menu composition; do not invent a dropdown while wiring.
+- [x] Berikan store context ke hooks tanpa mengubah prop/markup shell.
+- [x] Hapus `DEMO_STORE_ID` dari API-mode code path; pertahankan mock provider khusus mode mock.
+- [x] Semua query keys memuat store ID; cancel/remove tenant cache saat store/actor/impersonation berubah.
+- [x] Route yang membutuhkan completed onboarding redirect berdasarkan server state, bukan local flag.
+- [x] Store suspended/API capability state tidak dicampur; UI hanya memakai existing badge/control mapping.
+- [x] Foreign/tampered store ID ditolak backend sebagai safe 404.
 
 ### Tests/AC
 

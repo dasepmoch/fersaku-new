@@ -560,7 +560,7 @@ func TestSellerBootstrap_SelectionAndMembership(t *testing.T) {
 		t.Fatalf("code=%s", ae.Code)
 	}
 
-	// Default current = canonical
+	// Default current = canonical; onboarding incomplete until COMPLETE + store
 	boot, err := svc.GetSellerBootstrap(context.Background(), "u1")
 	if err != nil {
 		t.Fatal(err)
@@ -570,6 +570,23 @@ func TestSellerBootstrap_SelectionAndMembership(t *testing.T) {
 	}
 	if len(boot.Memberships) != 1 || len(boot.Stores) != 2 {
 		t.Fatalf("memberships=%d stores=%d", len(boot.Memberships), len(boot.Stores))
+	}
+	if boot.OnboardingCompleted {
+		t.Fatal("empty OnboardingState must not report completed")
+	}
+	if boot.OnboardingState != "NOT_STARTED" {
+		t.Fatalf("onboardingState=%s", boot.OnboardingState)
+	}
+
+	store.merchants["m1"] = authz.Merchant{
+		ID: "m1", OwnerUserID: "u1", DisplayName: "Shop", Status: authz.MerchantActive, OnboardingState: "COMPLETE",
+	}
+	boot, err = svc.GetSellerBootstrap(context.Background(), "u1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !boot.OnboardingCompleted || boot.OnboardingState != "COMPLETE" {
+		t.Fatalf("want completed COMPLETE, got completed=%v state=%s", boot.OnboardingCompleted, boot.OnboardingState)
 	}
 
 	// Preferred valid store

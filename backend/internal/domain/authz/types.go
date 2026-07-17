@@ -33,12 +33,13 @@ type UserRole struct {
 
 // Merchant is a minimal tenant root (BE-130; full onboarding in BE-200).
 type Merchant struct {
-	ID          string
-	OwnerUserID string
-	DisplayName string
-	Status      MerchantStatus
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID              string
+	OwnerUserID     string
+	DisplayName     string
+	Status          MerchantStatus
+	OnboardingState string // NOT_STARTED|IDENTITY|SLUG|VISUAL|PRODUCT_OPTIONAL|COMPLETE
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // MerchantMember links a user to a merchant with OWNER|STAFF.

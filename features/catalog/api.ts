@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   catalogProductEnvelopeSchema,
@@ -26,6 +27,13 @@ import {
   toPublicProductMatch,
 } from "./mappers";
 import { demoProducts, findDemoProduct, getDemoStorefront } from "./mock";
+
+type FeaturedListEnvelope = z.infer<
+  typeof featuredCatalogProductListEnvelopeSchema
+>;
+type CatalogListEnvelope = z.infer<typeof catalogProductListEnvelopeSchema>;
+type CatalogProductEnvelope = z.infer<typeof catalogProductEnvelopeSchema>;
+type PublicStorefrontEnvelope = z.infer<typeof publicStorefrontEnvelopeSchema>;
 
 /** Short public SSR/browser revalidate for published catalog (PUB-100). */
 export const PUBLIC_CATALOG_REVALIDATE_SECONDS = 60;
@@ -69,13 +77,14 @@ export async function listFeaturedProducts(
 ): Promise<FeaturedCatalogProduct[]> {
   if (shouldUseMockFixtures("publicCatalog")) return featuredFromDemo(limit);
 
-  const response = await apiRequest<
-    import("zod").infer<typeof featuredCatalogProductListEnvelopeSchema>
-  >("/v1/public/products/featured", {
-    schema: featuredCatalogProductListEnvelopeSchema,
-    query: { limit },
-    signal,
-  });
+  const response = await apiRequest<FeaturedListEnvelope>(
+    "/v1/public/products/featured",
+    {
+      schema: featuredCatalogProductListEnvelopeSchema,
+      query: { limit },
+      signal,
+    },
+  );
   return mapFeaturedCatalogProductListDto(response.data);
 }
 
@@ -110,12 +119,13 @@ export async function listSellerProducts(
 ): Promise<CatalogProduct[]> {
   if (shouldUseMockFixtures("sellerCatalog")) return demoProducts;
 
-  const response = await apiRequest<
-    import("zod").infer<typeof catalogProductListEnvelopeSchema>
-  >(`/v1/stores/${storeId}/products`, {
-    schema: catalogProductListEnvelopeSchema,
-    signal,
-  });
+  const response = await apiRequest<CatalogListEnvelope>(
+    `/v1/stores/${storeId}/products`,
+    {
+      schema: catalogProductListEnvelopeSchema,
+      signal,
+    },
+  );
   return mapCatalogProductListDto(response.data);
 }
 
@@ -129,12 +139,13 @@ export async function getSellerProduct(
   }
 
   try {
-    const response = await apiRequest<
-      import("zod").infer<typeof catalogProductEnvelopeSchema>
-    >(`/v1/stores/${storeId}/products/${productId}`, {
-      schema: catalogProductEnvelopeSchema,
-      signal,
-    });
+    const response = await apiRequest<CatalogProductEnvelope>(
+      `/v1/stores/${storeId}/products/${productId}`,
+      {
+        schema: catalogProductEnvelopeSchema,
+        signal,
+      },
+    );
     return mapCatalogProductDto(response.data);
   } catch (error) {
     if (isResourceNotFound(error)) return null;
@@ -152,12 +163,13 @@ export async function getPublicStorefront(
   if (shouldUseMockFixtures("publicCatalog")) return getDemoStorefront(slug);
 
   try {
-    const response = await apiRequest<
-      import("zod").infer<typeof publicStorefrontEnvelopeSchema>
-    >(`/v1/public/stores/${encodeURIComponent(slug)}`, {
-      schema: publicStorefrontEnvelopeSchema,
-      signal,
-    });
+    const response = await apiRequest<PublicStorefrontEnvelope>(
+      `/v1/public/stores/${encodeURIComponent(slug)}`,
+      {
+        schema: publicStorefrontEnvelopeSchema,
+        signal,
+      },
+    );
     return mapPublicStorefrontDtoWithStoreSlug(response.data);
   } catch (error) {
     if (isResourceNotFound(error)) return null;
@@ -199,13 +211,14 @@ export async function getPublicProduct(
   }
 
   try {
-    const response = await apiRequest<
-      import("zod").infer<typeof catalogProductEnvelopeSchema>
-    >(`/v1/public/products/${encodeURIComponent(productIdOrSlug)}`, {
-      schema: catalogProductEnvelopeSchema,
-      query: storeSlug ? { store: storeSlug } : undefined,
-      signal,
-    });
+    const response = await apiRequest<CatalogProductEnvelope>(
+      `/v1/public/products/${encodeURIComponent(productIdOrSlug)}`,
+      {
+        schema: catalogProductEnvelopeSchema,
+        query: storeSlug ? { store: storeSlug } : undefined,
+        signal,
+      },
+    );
     const product = mapCatalogProductDto(response.data);
     const resolvedSlug = product.storeSlug || storeSlug;
     if (!resolvedSlug) {

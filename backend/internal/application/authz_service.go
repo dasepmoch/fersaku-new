@@ -231,18 +231,20 @@ type SellerStoreDTO struct {
 	Canonical  bool
 }
 
-// SellerBootstrap is GET /v1/seller/me/merchant extended payload (INT-150).
+// SellerBootstrap is GET /v1/seller/me/merchant extended payload (INT-150 / SEL-100).
 type SellerBootstrap struct {
-	MerchantID       string
-	DisplayName      string
-	Status           string
-	RoleInMerchant   string
-	OwnerUserID      string
-	Memberships      []SellerMembershipDTO
-	Stores           []SellerStoreDTO
-	CanonicalStoreID string
-	CurrentStoreID   string
-	Capabilities     []string
+	MerchantID           string
+	DisplayName          string
+	Status               string
+	RoleInMerchant       string
+	OwnerUserID          string
+	Memberships          []SellerMembershipDTO
+	Stores               []SellerStoreDTO
+	CanonicalStoreID     string
+	CurrentStoreID       string
+	Capabilities         []string
+	OnboardingState      string
+	OnboardingCompleted  bool
 }
 
 // GetSellerBootstrap returns merchant, memberships, stores, and server-selected current store.
@@ -331,17 +333,26 @@ func (s *AuthzService) GetSellerBootstrap(ctx context.Context, userID string) (S
 		})
 	}
 
+	onboardingState := strings.TrimSpace(m.OnboardingState)
+	if onboardingState == "" {
+		onboardingState = "NOT_STARTED"
+	}
+	// Complete only when server state is COMPLETE and a membership store exists.
+	onboardingCompleted := onboardingState == "COMPLETE" && currentID != ""
+
 	return SellerBootstrap{
-		MerchantID:       m.ID,
-		DisplayName:      m.DisplayName,
-		Status:           string(m.Status),
-		RoleInMerchant:   string(mem.RoleInMerchant),
-		OwnerUserID:      m.OwnerUserID,
-		Memberships:      memberships,
-		Stores:           storeDTOs,
-		CanonicalStoreID: canonicalID,
-		CurrentStoreID:   currentID,
-		Capabilities:     primaryCapStrs,
+		MerchantID:          m.ID,
+		DisplayName:         m.DisplayName,
+		Status:              string(m.Status),
+		RoleInMerchant:      string(mem.RoleInMerchant),
+		OwnerUserID:         m.OwnerUserID,
+		Memberships:         memberships,
+		Stores:              storeDTOs,
+		CanonicalStoreID:    canonicalID,
+		CurrentStoreID:      currentID,
+		Capabilities:        primaryCapStrs,
+		OnboardingState:     onboardingState,
+		OnboardingCompleted: onboardingCompleted,
 	}, nil
 }
 

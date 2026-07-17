@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { apiRequest, ApiError } from "@/shared/api/http-client";
 import {
   publicReviewListEnvelopeSchema,
@@ -14,6 +15,11 @@ import {
   mapPublicReviewSummaryDto,
 } from "./mappers";
 import { demoPublicReviews, demoRatingSummary, demoReviews } from "./mock";
+
+type PublicReviewListEnvelope = z.infer<typeof publicReviewListEnvelopeSchema>;
+type PublicReviewSummaryEnvelope = z.infer<
+  typeof publicReviewSummaryEnvelopeSchema
+>;
 
 function isResourceNotFound(error: unknown): boolean {
   if (!(error instanceof ApiError)) return false;
@@ -50,12 +56,13 @@ export async function listPublicProductReviews(
   if (shouldUseMockFixtures("publicCatalog")) return demoPublicReviews(productId);
 
   try {
-    const response = await apiRequest<
-      import("zod").infer<typeof publicReviewListEnvelopeSchema>
-    >(`/v1/public/products/${encodeURIComponent(productId)}/reviews`, {
-      schema: publicReviewListEnvelopeSchema,
-      signal,
-    });
+    const response = await apiRequest<PublicReviewListEnvelope>(
+      `/v1/public/products/${encodeURIComponent(productId)}/reviews`,
+      {
+        schema: publicReviewListEnvelopeSchema,
+        signal,
+      },
+    );
     return mapPublicReviewListDto(response.data);
   } catch (error) {
     if (isResourceNotFound(error)) return [];
@@ -74,12 +81,13 @@ export async function getPublicProductRating(
   if (shouldUseMockFixtures("publicCatalog")) return demoRatingSummary();
 
   try {
-    const response = await apiRequest<
-      import("zod").infer<typeof publicReviewSummaryEnvelopeSchema>
-    >(`/v1/public/products/${encodeURIComponent(productId)}/reviews/summary`, {
-      schema: publicReviewSummaryEnvelopeSchema,
-      signal,
-    });
+    const response = await apiRequest<PublicReviewSummaryEnvelope>(
+      `/v1/public/products/${encodeURIComponent(productId)}/reviews/summary`,
+      {
+        schema: publicReviewSummaryEnvelopeSchema,
+        signal,
+      },
+    );
     return mapPublicReviewSummaryDto(response.data);
   } catch (error) {
     if (isResourceNotFound(error)) return emptyRatingSummary();

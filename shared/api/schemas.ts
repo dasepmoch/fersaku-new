@@ -374,6 +374,10 @@ export const sellerBootstrapDataSchema = z.object({
   canonicalStoreId: z.string().optional(),
   currentStoreId: z.string().optional(),
   capabilities: z.array(z.string()).optional(),
+  /** Server onboarding machine state (SEL-100). */
+  onboardingState: z.string().optional(),
+  /** Authoritative completion flag from server bootstrap. */
+  onboardingCompleted: z.boolean().optional(),
 });
 
 export const sellerBootstrapEnvelopeSchema = successEnvelopeSchema(

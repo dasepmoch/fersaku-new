@@ -489,7 +489,7 @@ func (r *AuthzRepo) GetMerchantByID(ctx context.Context, id string) (authz.Merch
 	if err != nil {
 		return authz.Merchant{}, err
 	}
-	return mapMerchantRow(row.ID, row.OwnerUserID, row.DisplayName, row.Status, row.CreatedAt, row.UpdatedAt), nil
+	return mapMerchantRow(row.ID, row.OwnerUserID, row.DisplayName, row.Status, row.OnboardingState, row.CreatedAt, row.UpdatedAt), nil
 }
 
 func (r *AuthzRepo) GetMerchantByOwner(ctx context.Context, ownerUserID string) (authz.Merchant, error) {
@@ -497,7 +497,7 @@ func (r *AuthzRepo) GetMerchantByOwner(ctx context.Context, ownerUserID string) 
 	if err != nil {
 		return authz.Merchant{}, err
 	}
-	return mapMerchantRow(row.ID, row.OwnerUserID, row.DisplayName, row.Status, row.CreatedAt, row.UpdatedAt), nil
+	return mapMerchantRow(row.ID, row.OwnerUserID, row.DisplayName, row.Status, row.OnboardingState, row.CreatedAt, row.UpdatedAt), nil
 }
 
 func (r *AuthzRepo) InsertMerchantMember(ctx context.Context, m authz.MerchantMember) error {
@@ -634,14 +634,15 @@ func mapRole(row gen.Role) authz.Role {
 	}
 }
 
-func mapMerchantRow(id, ownerUserID, displayName, status string, createdAt, updatedAt time.Time) authz.Merchant {
+func mapMerchantRow(id, ownerUserID, displayName, status, onboardingState string, createdAt, updatedAt time.Time) authz.Merchant {
 	return authz.Merchant{
-		ID:          id,
-		OwnerUserID: ownerUserID,
-		DisplayName: displayName,
-		Status:      authz.MerchantStatus(status),
-		CreatedAt:   createdAt,
-		UpdatedAt:   updatedAt,
+		ID:              id,
+		OwnerUserID:     ownerUserID,
+		DisplayName:     displayName,
+		Status:          authz.MerchantStatus(status),
+		OnboardingState: onboardingState,
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 	}
 }
 

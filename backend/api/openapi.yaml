@@ -2525,12 +2525,14 @@ paths:
   /v1/seller/me/merchant:
     get:
       operationId: sellerMeMerchant
-      summary: Seller bootstrap — merchant, memberships, stores, current store (INT-150)
+      summary: Seller bootstrap — merchant, memberships, stores, current store (INT-150/SEL-100)
       description: |
         Returns primary merchant, all active memberships with store-scoped capabilities,
-        allowed stores, canonicalStoreId, and server-selected currentStoreId.
+        allowed stores, canonicalStoreId, server-selected currentStoreId,
+        onboardingState, and onboardingCompleted.
         Selection: valid preferred store → canonical → first stable store.
         Cross-tenant store IDs are never returned. Membership required (403 if none).
+        Incomplete onboarding is signalled via onboardingCompleted=false (workspace redirect).
       tags:
       - seller
       security:

@@ -20,6 +20,8 @@ import { DEMO_STORE_ID } from "@/shared/config/demo";
 import {
   createMockSellerBootstrap,
   fetchSellerBootstrap,
+  isAllowedSellerStoreId,
+  needsSellerOnboarding,
   putSellerCurrentStore,
   type SellerBootstrap,
 } from "./bootstrap-api";
@@ -29,6 +31,7 @@ export type CurrentStoreStatus =
   | "loading"
   | "ready"
   | "no_membership"
+  | "needs_onboarding"
   | "error";
 
 type CurrentStoreContextValue = {
@@ -38,11 +41,13 @@ type CurrentStoreContextValue = {
   storeId: string | null;
   canonicalStoreId: string | null;
   merchantId: string | null;
+  /** Server onboarding completion (false → workspace redirects to onboarding). */
+  onboardingCompleted: boolean;
   errorCode: string | null;
   refresh: () => Promise<void>;
   /**
    * Switch current store: validates membership, persists preference (API mode),
-   * clears prior store cache keys.
+   * clears prior store cache keys. Canonical single-store launch: no UI menu.
    */
   switchStore: (storeId: string) => Promise<void>;
 };
@@ -74,7 +79,13 @@ export function CurrentStoreProvider({ children }: { children: ReactNode }) {
       null;
     setBootstrap(boot);
     setStoreId(current);
-    setStatus(current ? "ready" : "no_membership");
+    if (needsSellerOnboarding(boot)) {
+      setStatus("needs_onboarding");
+    } else if (!current) {
+      setStatus("no_membership");
+    } else {
+      setStatus("ready");
+    }
     setErrorCode(null);
   }, []);
 
@@ -122,13 +133,7 @@ export function CurrentStoreProvider({ children }: { children: ReactNode }) {
   const switchStore = useCallback(
     async (nextId: string) => {
       if (!nextId || !bootstrap) return;
-      const allowed = new Set(
-        (bootstrap.stores ?? []).map((s) => s.storeId).filter(Boolean),
-      );
-      for (const m of bootstrap.memberships ?? []) {
-        for (const id of m.storeIds ?? []) allowed.add(id);
-      }
-      if (!allowed.has(nextId)) {
+      if (!isAllowedSellerStoreId(bootstrap, nextId)) {
         // Client never elevates foreign store — ignore invalid UI choice.
         return;
       }
@@ -160,6 +165,8 @@ export function CurrentStoreProvider({ children }: { children: ReactNode }) {
       storeId,
       canonicalStoreId: bootstrap?.canonicalStoreId ?? null,
       merchantId: bootstrap?.merchantId ?? null,
+      onboardingCompleted:
+        status === "ready" && Boolean(storeId) && !needsSellerOnboarding(bootstrap),
       errorCode,
       refresh,
       switchStore,
