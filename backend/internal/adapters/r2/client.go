@@ -191,6 +191,34 @@ func (c *Client) PutObjectBytes(ctx context.Context, bucket, key, contentType st
 	return nil
 }
 
+// GetObjectBytes reads object body server-side (KYC decrypt; never log body).
+func (c *Client) GetObjectBytes(ctx context.Context, bucket, key string) ([]byte, error) {
+	if !c.Configured() {
+		return nil, fmt.Errorf("r2: not configured")
+	}
+	out, err := c.s3.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		if isNotFound(err) {
+			return nil, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+		}
+		return nil, fmt.Errorf("r2: get: %w", err)
+	}
+	defer out.Body.Close()
+	// Bound KYC ciphertext: plaintext max 10MiB + AEAD overhead headroom.
+	limited := io.LimitReader(out.Body, 12*1024*1024+1)
+	body, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("r2: get body: %w", err)
+	}
+	if len(body) > 12*1024*1024 {
+		return nil, fmt.Errorf("r2: object exceeds bound")
+	}
+	return body, nil
+}
+
 func isNotFound(err error) bool {
 	var nsk *types.NoSuchKey
 	if errors.As(err, &nsk) {

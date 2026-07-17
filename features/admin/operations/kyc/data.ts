@@ -8,6 +8,16 @@ export const KYC_STATUSES = [
 
 export type KycStatus = (typeof KYC_STATUSES)[number];
 
+export type ApiKycDocumentMeta = {
+  id: string;
+  type: string;
+  label: string;
+  status: string;
+  contentType?: string;
+  sizeBytes?: number;
+  scanStatus?: string;
+};
+
 export type ApiKycApplicant = {
   id: string;
   store: string;
@@ -23,6 +33,11 @@ export type ApiKycApplicant = {
   ageMinutes: number;
   /** Reviewer-facing reason when clarification or rejection is recorded. */
   rejectionReason?: string;
+  /** ADM-340 server fields (optional; mock may omit). */
+  merchantId?: string;
+  wireStatus?: string;
+  version?: number;
+  documentMeta?: ApiKycDocumentMeta[];
 };
 
 const allowedTransitions: Readonly<Record<KycStatus, readonly KycStatus[]>> = {

@@ -366,20 +366,20 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 
 ### Checklist FE
 
-- [ ] Replace `apiKycSeed` with query/schema/mapper while preserving current panels/dialog.
-- [ ] Filter/status and case detail from backend under the declared bounded/pagination profile.
-- [ ] Document access explicit, short-lived, `no-store`; no persistent cache/log/screenshot/telemetry URL. Snapshot backend has metadata routes only and R2 bytes are AEAD ciphertext, sehingga direct presigned URL bukan viewer.
-- [ ] KYC upload seller side uses server-mediated multipart; do not use presigned general object endpoint.
-- [ ] Browser `FormData` does not set multipart Content-Type manually; progress/cancel safe.
-- [ ] Approve/reject/resubmit uses allowed transition + reviewer note + permission + recent MFA + idempotency + audit.
-- [ ] KYC gates live QRIS API only, not storefront/withdrawal by hidden risk rule.
+- [x] Replace `apiKycSeed` with query/schema/mapper while preserving current panels/dialog.
+- [x] Filter/status and case detail from backend under the declared bounded/pagination profile.
+- [x] Document access explicit, short-lived, `no-store`; no persistent cache/log/screenshot/telemetry URL. Snapshot backend has metadata routes only and R2 bytes are AEAD ciphertext, sehingga direct presigned URL bukan viewer.
+- [ ] KYC upload seller side uses server-mediated multipart; do not use presigned general object endpoint. *(seller upload UI remains SEL-330; BE path already server-mediated)*
+- [ ] Browser `FormData` does not set multipart Content-Type manually; progress/cancel safe. *(seller upload UI deferred SEL-330)*
+- [x] Approve/reject/resubmit uses allowed transition + reviewer note + permission + recent MFA + idempotency + audit.
+- [x] KYC gates live QRIS API only, not storefront/withdrawal by hidden risk rule.
 
 ### Checklist BE/runtime
 
-- [ ] Validate size/MIME/magic bytes, real malware scan, envelope encryption private storage.
-- [ ] Add exact authenticated admin document-content operation via `INT-000` (for example case/document-scoped content route): permission + tenant/case scope + actual recent MFA, server-side decrypt stream, bounded bytes, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`, restrictive CSP/sandbox and safe `Content-Disposition`.
-- [ ] Decrypt/serve only authorized reviewer; access audit contains identifiers/reason/result but never raw document/PII payload. Do not expose private R2 URL because it yields ciphertext and bypasses view policy.
-- [ ] Transition allowlist/version and dual control if policy specifies.
+- [x] Validate size/MIME/magic bytes, real malware scan, envelope encryption private storage. *(upload path already; LocalScanPass local/test; production scanner still INT-185)*
+- [x] Add exact authenticated admin document-content operation via `INT-000` (for example case/document-scoped content route): permission + tenant/case scope + actual recent MFA, server-side decrypt stream, bounded bytes, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`, restrictive CSP/sandbox and safe `Content-Disposition`.
+- [x] Decrypt/serve only authorized reviewer; access audit contains identifiers/reason/result but never raw document/PII payload. Do not expose private R2 URL because it yields ciphertext and bypasses view policy.
+- [x] Transition allowlist/version and dual control if policy specifies. *(allowlist + reason; dual control not required by current policy)*
 - [ ] Retention/deletion/legal policy documented.
 
 ### Tests/AC

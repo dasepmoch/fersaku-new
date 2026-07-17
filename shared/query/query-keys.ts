@@ -146,6 +146,9 @@ export const queryKeys = {
     paymentMismatches: () => ["admin", "payment-mismatches"] as const,
     kyc: (filters: Record<string, unknown> = {}) =>
       ["admin", "kyc", "bounded", filters] as const,
+    /** ADM-340 — case detail + document metadata only (never content). */
+    kycCase: (caseId: string) =>
+      ["admin", "kyc", "case", caseId] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>
       ["admin", "webhooks", "bounded", filters] as const,
     roles: () => ["admin", "roles"] as const,

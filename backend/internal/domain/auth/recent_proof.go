@@ -12,6 +12,7 @@ const (
 	ProofPurposeBankChange        = "bank.change"
 	ProofPurposeWithdrawalCreate  = "withdrawal.create"
 	ProofPurposeAdminCommand      = "admin.command"
+	ProofPurposeKYCDocumentView   = "kyc.document.view"
 )
 
 // RecentProofTTL is the maximum lifetime of a minted step-up proof.
@@ -33,7 +34,8 @@ func ValidProofPurpose(purpose string) bool {
 		ProofPurposeCredentialsRotate,
 		ProofPurposeBankChange,
 		ProofPurposeWithdrawalCreate,
-		ProofPurposeAdminCommand:
+		ProofPurposeAdminCommand,
+		ProofPurposeKYCDocumentView:
 		return true
 	default:
 		return false

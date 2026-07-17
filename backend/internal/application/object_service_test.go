@@ -201,6 +201,18 @@ func (f *fakeS3) DeleteObject(_ context.Context, bucket, key string) error {
 	delete(f.objects, f.k(bucket, key))
 	return nil
 }
+func (f *fakeS3) GetObjectBytes(_ context.Context, bucket, key string) ([]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o, ok := f.objects[f.k(bucket, key)]
+	if !ok {
+		return nil, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+	}
+	cp := make([]byte, len(o.body))
+	copy(cp, o.body)
+	return cp, nil
+}
+
 func (f *fakeS3) PutObjectBytes(_ context.Context, bucket, key, contentType string, body []byte) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()

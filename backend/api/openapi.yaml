@@ -7158,6 +7158,74 @@ paths:
           description: Updated case
         '400':
           description: KYC_REASON_REQUIRED when reject/clarify without reason
+  /v1/admin/kyc/{caseId}/documents/{documentId}/content:
+    get:
+      operationId: adminGetKYCDocumentContent
+      summary: Server-decrypted KYC document stream (kyc.review + recent MFA)
+      description: |
+        Authenticated reviewer-only decrypt stream. Private R2 holds AEAD ciphertext only;
+        direct presigned URLs must never be used as a viewer. Requires X-Recent-MFA-Proof
+        purpose kyc.document.view and X-Audit-Reason (≥12 chars). Response is raw bytes with
+        Cache-Control no-store, private; never JSON envelope with plaintext body.
+      tags:
+      - kyc
+      - admin
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: caseId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: X-Audit-Reason
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 12
+      - name: X-Recent-MFA-Proof
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Decrypted document bytes (no-store)
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+            X-Content-Type-Options:
+              schema:
+                type: string
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: MFA proof missing/invalid
+        '403':
+          description: Missing kyc.review
+        '404':
+          description: Case/document not found
   /v1/me/credentials:
     get:
       operationId: listMyCredentials

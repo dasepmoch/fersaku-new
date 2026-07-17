@@ -42,3 +42,8 @@ func (Noop) DeleteObject(context.Context, string, string) error {
 func (Noop) PutObjectBytes(context.Context, string, string, string, []byte) error {
 	return fmt.Errorf("r2: object storage not configured")
 }
+
+// GetObjectBytes fails closed.
+func (Noop) GetObjectBytes(context.Context, string, string) ([]byte, error) {
+	return nil, fmt.Errorf("r2: object storage not configured")
+}

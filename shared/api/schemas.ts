@@ -3445,3 +3445,137 @@ export type SellerKycCreateCaseRequest = z.infer<
   typeof sellerKycCreateCaseRequestSchema
 >;
 
+// --- Admin KYC review queue (ADM-340) ---
+// Metadata only on list/detail; decrypted content is raw binary (no JSON envelope).
+
+export const adminKycDocumentDtoSchema = z
+  .object({
+    id: z.string().min(1),
+    caseId: z.string().optional(),
+    documentType: z.string().optional(),
+    type: z.string().optional(),
+    status: z.string().optional(),
+    contentType: z.string().optional(),
+    sizeBytes: z.number().int().optional(),
+    checksumSha256: z.string().optional(),
+    encryptionKeyVersion: z.string().optional(),
+    ciphertextSizeBytes: z.number().int().optional(),
+    scanStatus: z.string().optional(),
+    docVersion: z.number().int().optional(),
+    uploadMode: z.string().optional(),
+    readyAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+      .optional(),
+    createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+    updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  })
+  .passthrough()
+  .superRefine((val, ctx) => {
+    // Never accept storage keys / presigned URLs on admin metadata DTO.
+    const banned = [
+      "storageKey",
+      "storage_key",
+      "objectKey",
+      "object_key",
+      "uploadUrl",
+      "downloadUrl",
+      "presignedUrl",
+      "presignUrl",
+      "url",
+    ] as const;
+    for (const key of banned) {
+      if (key in val && (val as Record<string, unknown>)[key] != null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `admin KYC document must not include ${key}`,
+          path: [key],
+        });
+      }
+    }
+  });
+
+export const adminKycCaseDtoSchema = z
+  .object({
+    id: z.string().min(1),
+    merchantId: z.string().optional(),
+    storeId: z.string().optional(),
+    capability: z.string().optional(),
+    status: z.string().min(1),
+    version: z.number().int().optional(),
+    legalName: z.string().optional(),
+    businessName: z.string().optional(),
+    registrationNumber: z.string().optional(),
+    countryCode: z.string().optional(),
+    consentVersion: z.string().optional(),
+    reason: z.string().optional(),
+    clarificationReason: z.string().optional(),
+    rejectionReason: z.string().optional(),
+    queueAgeSeconds: z.number().optional(),
+    ageMinutes: z.number().int().optional(),
+    submittedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+      .optional(),
+    approvedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+      .optional(),
+    rejectedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+      .optional(),
+    reviewedAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1), z.null()])
+      .optional(),
+    createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+    updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+    documents: z.array(adminKycDocumentDtoSchema).optional(),
+    transitions: z
+      .array(
+        z
+          .object({
+            id: z.string().optional(),
+            fromStatus: z.string().optional(),
+            toStatus: z.string().optional(),
+            reason: z.string().optional(),
+            createdAt: z.string().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
+  })
+  .passthrough();
+
+/** BE AdminList wraps items; tolerate array data as alternate. */
+export const adminKycListDataSchema = z.union([
+  z.object({ items: z.array(adminKycCaseDtoSchema) }),
+  z.array(adminKycCaseDtoSchema),
+]);
+
+export const adminKycListEnvelopeSchema = successEnvelopeSchema(
+  adminKycListDataSchema,
+);
+
+export const adminKycCaseEnvelopeSchema = successEnvelopeSchema(
+  adminKycCaseDtoSchema,
+);
+
+export const adminKycTransitionRequestSchema = z.object({
+  action: z.enum([
+    "START_REVIEW",
+    "VENDOR_CHECK",
+    "NEEDS_CLARIFICATION",
+    "APPROVE",
+    "REJECT",
+    "EXPIRE",
+  ]),
+  reason: z.string().optional(),
+});
+
+export const adminKycTransitionEnvelopeSchema = successEnvelopeSchema(
+  adminKycCaseDtoSchema,
+);
+
+export type AdminKycDocumentDto = z.infer<typeof adminKycDocumentDtoSchema>;
+export type AdminKycCaseDto = z.infer<typeof adminKycCaseDtoSchema>;
+export type AdminKycTransitionRequest = z.infer<
+  typeof adminKycTransitionRequestSchema
+>;
+

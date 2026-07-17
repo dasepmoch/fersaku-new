@@ -95,6 +95,19 @@ func (f *Fake) PutObjectBytes(_ context.Context, bucket, key, contentType string
 	return nil
 }
 
+// GetObjectBytes returns stored bytes.
+func (f *Fake) GetObjectBytes(_ context.Context, bucket, key string) ([]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o, ok := f.objects[f.key(bucket, key)]
+	if !ok {
+		return nil, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+	}
+	cp := make([]byte, len(o.Body))
+	copy(cp, o.Body)
+	return cp, nil
+}
+
 // Has reports presence (tests).
 func (f *Fake) Has(bucket, key string) bool {
 	f.mu.Lock()

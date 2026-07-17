@@ -321,6 +321,210 @@ function sanitizeRouteTemplate(pathname: string): string {
     .replace(/\/\d{3,}/g, "/{n}");
 }
 
+/**
+ * Binary/no-JSON success path (ADM-340 KYC document content stream).
+ * Never caches; caller must hold blob only in component memory with short TTL.
+ * Errors still use ProblemEnvelope JSON when present.
+ */
+export async function apiBinaryRequest(
+  pathname: string,
+  options: Omit<
+    RequestOptions<Record<string, unknown> | undefined, never>,
+    "schema" | "requireSchema" | "body"
+  > & {
+    body?: Record<string, unknown>;
+    method?: string;
+  } = {},
+): Promise<{
+  blob: Blob;
+  contentType: string;
+  documentId?: string;
+  documentType?: string;
+  requestId: string;
+}> {
+  const {
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    signal: callerSignal,
+    requestId = createRequestId(),
+    csrfToken: explicitCsrf,
+    idempotencyKey,
+    auditReason,
+    recentMfaProof: explicitRecentMfa,
+    requireRecentMfa = false,
+    ifMatch,
+    skipCsrf = false,
+    body,
+    headers: requestHeaders,
+    method = "GET",
+    query,
+    ...requestInit
+  } = options;
+
+  const timeoutController = new AbortController();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    timeoutController.abort(
+      new DOMException("The request timed out.", "TimeoutError"),
+    );
+  }, timeoutMs);
+  const combined = combineAbortSignals(
+    [callerSignal, timeoutController.signal].filter(
+      (signal): signal is AbortSignal => Boolean(signal),
+    ),
+  );
+
+  const headers = new Headers(requestHeaders);
+  if (!headers.has(HTTP_HEADERS.ACCEPT)) {
+    headers.set(HTTP_HEADERS.ACCEPT, "*/*");
+  }
+  if (body !== undefined && !headers.has(HTTP_HEADERS.CONTENT_TYPE)) {
+    headers.set(HTTP_HEADERS.CONTENT_TYPE, "application/json");
+  }
+  if (!headers.has(HTTP_HEADERS.REQUEST_ID)) {
+    headers.set(HTTP_HEADERS.REQUEST_ID, requestId);
+  }
+  if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
+  if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
+  let recentMfaProof = explicitRecentMfa;
+  if (
+    !recentMfaProof &&
+    requireRecentMfa &&
+    sessionHooks.getRecentMfaProof
+  ) {
+    try {
+      recentMfaProof = await sessionHooks.getRecentMfaProof();
+    } catch {
+      recentMfaProof = undefined;
+    }
+  }
+  if (recentMfaProof) {
+    headers.set(HTTP_HEADERS.RECENT_MFA_PROOF, recentMfaProof);
+  }
+  if (ifMatch) headers.set(HTTP_HEADERS.IF_MATCH, ifMatch);
+
+  let csrfToken = explicitCsrf;
+  if (
+    !csrfToken &&
+    !skipCsrf &&
+    isUnsafeMethod(method) &&
+    sessionHooks.getCsrfToken
+  ) {
+    try {
+      csrfToken = await sessionHooks.getCsrfToken();
+    } catch {
+      csrfToken = undefined;
+    }
+  }
+  if (csrfToken && !headers.has(HTTP_HEADERS.CSRF)) {
+    headers.set(HTTP_HEADERS.CSRF, csrfToken);
+  }
+
+  const effectiveRequestId =
+    headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
+
+  try {
+    const response = await fetch(buildApiUrl(pathname, query), {
+      ...requestInit,
+      method,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: "include",
+      headers,
+      signal: combined.signal,
+      cache: "no-store",
+    });
+
+    const responseRequestId =
+      response.headers.get(HTTP_HEADERS.REQUEST_ID) || effectiveRequestId;
+    const retryAfterSeconds = parseRetryAfterHeader(
+      response.headers.get(HTTP_HEADERS.RETRY_AFTER),
+    );
+
+    if (!response.ok) {
+      const contentType = response.headers.get(HTTP_HEADERS.CONTENT_TYPE);
+      let payload: unknown = null;
+      if (contentTypeLooksJson(contentType) || !contentType) {
+        payload = await readJson(response, responseRequestId).catch(
+          (error: unknown) => {
+            if (error instanceof ApiError) return null;
+            throw error;
+          },
+        );
+      }
+      const problem = parseProblemPayload(
+        payload,
+        effectiveRequestId,
+        responseRequestId,
+      );
+      const problemBody =
+        problem ?? {
+          code: PROBLEM_CODES.HTTP_ERROR,
+          message: `Request failed with status ${response.status}`,
+          requestId: responseRequestId,
+        };
+      const apiError = new ApiError(
+        response.status,
+        problemBody,
+        retryAfterSeconds,
+      );
+      if (
+        classifyApiError(response.status, problemBody, {
+          retryAfterSeconds,
+        }).kind === "session_expired"
+      ) {
+        notifySessionExpired(apiError);
+      }
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "http_error",
+      });
+      throw apiError;
+    }
+
+    const contentType =
+      response.headers.get(HTTP_HEADERS.CONTENT_TYPE) ||
+      "application/octet-stream";
+    const blob = await response.blob();
+    return {
+      blob,
+      contentType,
+      documentId: response.headers.get("X-KYC-Document-Id") ?? undefined,
+      documentType: response.headers.get("X-KYC-Document-Type") ?? undefined,
+      requestId: responseRequestId,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (timedOut || (error instanceof DOMException && error.name === "TimeoutError")) {
+      const apiError = new ApiError(504, {
+        code: PROBLEM_CODES.REQUEST_TIMEOUT,
+        message: "The request timed out.",
+        requestId: effectiveRequestId,
+      });
+      reportTransportDiagnostic(apiError, {
+        path: pathname,
+        phase: "timeout",
+      });
+      throw apiError;
+    }
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+    const apiError = new ApiError(502, {
+      code: PROBLEM_CODES.NETWORK_ERROR,
+      message: "Network request failed.",
+      requestId: effectiveRequestId,
+    });
+    reportTransportDiagnostic(apiError, {
+      path: pathname,
+      phase: "network",
+    });
+    throw apiError;
+  } finally {
+    clearTimeout(timeout);
+    combined.cleanup();
+  }
+}
+
 export async function apiRequest<TResponse, TBody = unknown>(
   pathname: string,
   options: RequestOptions<TBody, TResponse> = {},

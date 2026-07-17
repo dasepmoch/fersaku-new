@@ -224,7 +224,7 @@ This table calls out controls that are currently mock/no-op/hardcoded or securit
 | Admin invite resend | No backend route | Explicit rotate-and-resend operation or disabled | ADM-220 |
 | Admin inventory reveal | No admin route | Secure admin facade or disabled | ADM-320 |
 | Admin order force/revoke vs fulfillment actions | Order detail exposes resend/provider verification; force/revoke are characterized only in fulfillment composition | Keep order-screen force/revoke disabled; wire retry/force/revoke only in existing fulfillment controls | ADM-300/320 |
-| Admin KYC document | Object storage ciphertext/no safe route | Server-auth/decrypt/stream/no-store route | ADM-340 |
+| Admin KYC document | `GET /v1/admin/kyc/{caseId}/documents/{documentId}/content` | Server-auth/decrypt/stream/no-store route | ADM-340 |
 | Admin campaigns | No canonical backend | Implement frozen contract or disable entire command capability | ADM-380 |
 | Campaign preview CTAs | Preview-only buttons can look actionable | Explicit noninteractive preview or disabled existing control; never submit/publish from preview | ADM-380 |
 | Theme toggle, responsive menus, static navigation, print | Genuine client/navigation behavior | `STATIC`; preserve exact existing behavior | UI-090 |

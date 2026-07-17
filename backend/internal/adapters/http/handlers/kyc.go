@@ -408,6 +408,60 @@ func (h *KYCHandler) AdminTransition(w http.ResponseWriter, r *http.Request) {
 	presenters.WriteData(w, r, http.StatusOK, caseDTO(c))
 }
 
+// AdminDocumentContent GET /v1/admin/kyc/{caseId}/documents/{documentId}/content
+// Server-mediated decrypt stream: permission + recent MFA at router; no-store; never raw R2 URL.
+func (h *KYCHandler) AdminDocumentContent(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.actorID(r)
+	if !ok {
+		presenters.WriteAppError(w, r, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required"))
+		return
+	}
+	if h.Svc == nil {
+		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "KYC unavailable"))
+		return
+	}
+	reason := strings.TrimSpace(r.Header.Get("X-Audit-Reason"))
+	if reason == "" {
+		reason = strings.TrimSpace(r.URL.Query().Get("reason"))
+	}
+	// Recent MFA already validated + consumed by RequireRecentMFAProof middleware.
+	content, err := h.Svc.AdminOpenDocumentContent(
+		r.Context(),
+		chi.URLParam(r, "caseId"),
+		chi.URLParam(r, "documentId"),
+		userID,
+		reason,
+	)
+	if err != nil {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	// Bound response; zero plaintext after write via defer.
+	plain := content.Plaintext
+	defer func() {
+		for i := range plain {
+			plain[i] = 0
+		}
+	}()
+
+	w.Header().Set("Cache-Control", "no-store, private")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
+	w.Header().Set("Content-Type", content.ContentType)
+	// Safe disposition: inline for images/pdf viewer; filename is opaque document id only.
+	w.Header().Set(
+		"Content-Disposition",
+		`inline; filename="kyc-`+content.DocumentID+`"`,
+	)
+	w.Header().Set("Content-Length", strconv.FormatInt(content.SizeBytes, 10))
+	// Extra identifiers for FE (never PII payload).
+	w.Header().Set("X-KYC-Document-Id", content.DocumentID)
+	w.Header().Set("X-KYC-Document-Type", content.DocType)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(plain)
+}
+
 func caseDTO(c kyc.Case) map[string]any {
 	m := map[string]any{
 		"id":                  c.ID,

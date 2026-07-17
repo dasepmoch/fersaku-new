@@ -614,6 +614,107 @@ func (s *KYCService) AdminGetCase(ctx context.Context, caseID string) (kyc.Case,
 	return c, docs, tr, nil
 }
 
+// AdminDocumentContent is a server-decrypted document stream for authorized reviewers.
+// Never return raw storage keys, ciphertext URLs, or persist plaintext.
+type AdminDocumentContent struct {
+	DocumentID  string
+	CaseID      string
+	MerchantID  string
+	DocType     string
+	ContentType string
+	SizeBytes   int64
+	Plaintext   []byte
+}
+
+// AdminOpenDocumentContent loads ciphertext from private storage, decrypts server-side,
+// and returns plaintext bytes for a no-store response stream. MFA/permission at HTTP layer.
+func (s *KYCService) AdminOpenDocumentContent(ctx context.Context, caseID, documentID, actorUserID, reason string) (AdminDocumentContent, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" || len(reason) < 12 {
+		return AdminDocumentContent{}, apperr.Validation(apperr.CodeValidationFailed, "A reason of at least 12 characters is required")
+	}
+	if actorUserID == "" {
+		return AdminDocumentContent{}, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required")
+	}
+	if s.EncryptionKey == "" {
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "KYC encryption key unavailable")
+	}
+	if s.Objects == nil || !s.Objects.Configured() {
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Object store unavailable")
+	}
+
+	c, err := s.Store.GetCaseByID(ctx, caseID)
+	if err != nil {
+		if s.Store.IsNotFound(err) {
+			return AdminDocumentContent{}, apperr.NotFound(apperr.CodeResourceNotFound, "KYC case not found")
+		}
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Case lookup failed")
+	}
+	d, err := s.Store.GetDocumentByID(ctx, documentID)
+	if err != nil {
+		if s.Store.IsNotFound(err) {
+			return AdminDocumentContent{}, apperr.NotFound(apperr.CodeResourceNotFound, "Document not found")
+		}
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Document lookup failed")
+	}
+	if d.CaseID != c.ID || d.MerchantID != c.MerchantID {
+		return AdminDocumentContent{}, apperr.NotFound(apperr.CodeResourceNotFound, "Document not found")
+	}
+	if d.Status != kyc.DocStatusReady {
+		return AdminDocumentContent{}, apperr.Validation(apperr.CodeValidationFailed, "Document is not ready for review")
+	}
+	if d.StorageBucket == "" || d.StorageKey == "" {
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Document storage reference missing")
+	}
+
+	cipher, err := s.Objects.GetObjectBytes(ctx, d.StorageBucket, d.StorageKey)
+	if err != nil {
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Failed to load encrypted document")
+	}
+	plain, err := security.DecryptAEAD(s.EncryptionKey, cipher)
+	// Zero ciphertext buffer ASAP.
+	for i := range cipher {
+		cipher[i] = 0
+	}
+	if err != nil {
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Document decrypt failed")
+	}
+	if int64(len(plain)) > kyc.MaxDocumentBytes {
+		for i := range plain {
+			plain[i] = 0
+		}
+		return AdminDocumentContent{}, apperr.Internal(apperr.CodeInternalError, "Decrypted document exceeds bound")
+	}
+
+	// Audit identifiers/reason only — never plaintext/PII payload.
+	if s.Log != nil {
+		s.Log.Info("kyc.document.view",
+			"case_id", c.ID,
+			"document_id", d.ID,
+			"document_type", d.DocumentType,
+			"merchant_id", c.MerchantID,
+			"actor", actorUserID,
+			"reason_len", len(reason),
+			"size_bytes", len(plain),
+			// never log plaintext or storage key
+		)
+	}
+
+	ct := d.ContentType
+	if ct == "" {
+		ct = "application/octet-stream"
+	}
+	return AdminDocumentContent{
+		DocumentID:  d.ID,
+		CaseID:      c.ID,
+		MerchantID:  c.MerchantID,
+		DocType:     d.DocumentType,
+		ContentType: ct,
+		SizeBytes:   int64(len(plain)),
+		Plaintext:   plain,
+	}, nil
+}
+
 // AdminTransition applies approve/reject/clarification/etc.
 // APPROVE enables LIVE capability + authorizes pending issuance (no raw key).
 func (s *KYCService) AdminTransition(ctx context.Context, caseID, action, reason, actorUserID string) (kyc.Case, error) {

@@ -2,7 +2,7 @@
 
 import { adminPanel, ControlDialog } from "@/features/admin/ui";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  apiKycSeed,
   canTransitionKyc,
   kycAgeLabel,
   kycTransitionRequiresVendor,
@@ -26,16 +25,51 @@ import {
 } from "./data";
 import { ApiKycDialog } from "./dialog";
 import { AdminMetric, RiskDot } from "./pieces";
+import {
+  useAdminKycQueue,
+  useAdminKycReviewEnabled,
+  useTransitionAdminKycMutation,
+} from "./hooks";
+import { isAdminKycApiDomain } from "./api";
+import { createIdempotencyKey } from "@/shared/api/idempotency";
+import { demoAdminKycQueue } from "./mock";
 
 export function KycVerificationCenter() {
-  const [applicants, setApplicants] = useState(apiKycSeed);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const canReview = useAdminKycReviewEnabled();
   const [query, setQuery] = useState("");
   const [ageFilter, setAgeFilter] = useState<KycAgeFilter>("all");
   const [vendor, setVendor] = useState("Provider belum dipilih");
   const [vendorDraft, setVendorDraft] = useState("Provider belum dipilih");
   const [vendorSaved, setVendorSaved] = useState(false);
   const [adapterDialogOpen, setAdapterDialogOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [localOverrides, setLocalOverrides] = useState<
+    Record<string, { status: KycStatus; rejectionReason?: string }>
+  >({});
+  const idemRef = useRef<string | null>(null);
+
+  const isApi = isAdminKycApiDomain();
+  const queueQuery = useAdminKycQueue({
+    age: ageFilter === "all" ? "all" : ageFilter,
+    limit: 50,
+  });
+  const transitionMutation = useTransitionAdminKycMutation();
+
+  const applicants = useMemo(() => {
+    const base =
+      queueQuery.data ??
+      (isApi ? [] : demoAdminKycQueue());
+    return base.map((item) => {
+      const o = localOverrides[item.id];
+      if (!o) return item;
+      return {
+        ...item,
+        status: o.status,
+        rejectionReason: o.rejectionReason ?? item.rejectionReason,
+      };
+    });
+  }, [queueQuery.data, localOverrides, isApi]);
+
   const selected = applicants.find((item) => item.id === selectedId);
   const columns = [
     "Submitted",
@@ -50,7 +84,8 @@ export function KycVerificationCenter() {
         .toLowerCase()
         .includes(query.toLowerCase()) && matchesKycAgeFilter(item, ageFilter),
   );
-  const move = (status: KycStatus, rejectionReason?: string) => {
+
+  const move = async (status: KycStatus, rejectionReason?: string) => {
     if (!selected) return;
     if (!canTransitionKyc(selected.status, status)) return;
     if (
@@ -59,20 +94,37 @@ export function KycVerificationCenter() {
     ) {
       return;
     }
-    setApplicants((items) =>
-      items.map((item) =>
-        item.id === selected.id
-          ? {
-              ...item,
-              status,
-              rejectionReason:
-                status === "Rejected" || status === "Needs clarification"
-                  ? rejectionReason
-                  : undefined,
-            }
-          : item,
-      ),
-    );
+    if (!canReview) return;
+
+    const reason = (rejectionReason ?? "").trim();
+    if (reason.length < 12) return;
+
+    if (isApi) {
+      if (!idemRef.current) {
+        idemRef.current = createIdempotencyKey();
+      }
+      await transitionMutation.mutateAsync({
+        caseId: selected.id,
+        status,
+        reason,
+        idempotencyKey: idemRef.current,
+      });
+      idemRef.current = null;
+      setSelectedId(null);
+      return;
+    }
+
+    // Mock path: local board update only.
+    setLocalOverrides((prev) => ({
+      ...prev,
+      [selected.id]: {
+        status,
+        rejectionReason:
+          status === "Rejected" || status === "Needs clarification"
+            ? reason
+            : undefined,
+      },
+    }));
     setSelectedId(null);
   };
 
@@ -223,6 +275,7 @@ export function KycVerificationCenter() {
                   .map((applicant) => (
                     <button
                       key={applicant.id}
+                      type="button"
                       onClick={() => setSelectedId(applicant.id)}
                       className="rounded-2xl border border-[#dfe3ec] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                     >
@@ -288,6 +341,7 @@ export function KycVerificationCenter() {
           vendor={vendor}
           onClose={() => setSelectedId(null)}
           onMove={move}
+          busy={transitionMutation.isPending}
         />
       )}
       {adapterDialogOpen && (

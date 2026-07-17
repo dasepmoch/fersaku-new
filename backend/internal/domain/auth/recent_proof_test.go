@@ -13,6 +13,7 @@ func TestValidProofPurpose(t *testing.T) {
 		ProofPurposeBankChange,
 		ProofPurposeWithdrawalCreate,
 		ProofPurposeAdminCommand,
+		ProofPurposeKYCDocumentView,
 	}
 	for _, p := range ok {
 		if !ValidProofPurpose(p) {

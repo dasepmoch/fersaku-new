@@ -657,6 +657,17 @@ func NewRouterWith(d RouterDeps) http.Handler {
 			ar.With(middleware.RequirePermission("kyc.review")).Get("/", kh.AdminList)
 			ar.With(middleware.RequirePermission("kyc.review")).Get("/{caseId}", kh.AdminGet)
 			ar.With(middleware.RequirePermission("kyc.review")).Post("/{caseId}/transition", kh.AdminTransition)
+			// Server-decrypt stream only — never private R2 URL; MFA step-up required.
+			if d.AuthService != nil {
+				ar.With(
+					middleware.RequirePermission("kyc.review"),
+					middleware.RequireRecentMFAProof(auth.ProofPurposeKYCDocumentView, d.AuthService),
+				).Get("/{caseId}/documents/{documentId}/content", kh.AdminDocumentContent)
+			} else {
+				ar.With(middleware.RequirePermission("kyc.review")).Get("/{caseId}/documents/{documentId}/content", func(w http.ResponseWriter, r *http.Request) {
+					presenters.WriteAppError(w, r, auth.ErrMFAProofRequired)
+				})
+			}
 		})
 	}
 
