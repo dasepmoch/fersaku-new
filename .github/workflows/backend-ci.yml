@@ -198,7 +198,9 @@ jobs:
 
       - name: Assert integration suite non-empty
         working-directory: .
-        run: node scripts/ci-assert-suite.mjs backend-integration
+        run: |
+          node scripts/ci-assert-suite.mjs backend-integration
+          node scripts/ci-assert-suite.mjs qlt-210-integration
 
       - name: Wait for Postgres
         run: |
@@ -221,11 +223,12 @@ jobs:
           ../scripts/ci-assert-go-tests.sh backend-integration -- \
             -tags=integration -count=1 -timeout 20m ./test/integration/...
 
-      - name: Security negative package subset (must run)
+      # QLT-210 parent smoke: migrate empty/upgrade + concurrent + security negatives.
+      - name: Security/migrate/concurrency subset (must run)
         run: |
           set -o pipefail
           go test -tags=integration -count=1 -timeout 10m \
-            -run 'TestSecurity_|TestConcurrentIdempotency|TestMigrate' \
+            -run 'TestSecurity_|TestConcurrentIdempotency|TestMigrate|TestAtomicCommit' \
             ./test/integration/ -v | tee /tmp/security-neg.txt
           grep -E '^--- (PASS|FAIL):' /tmp/security-neg.txt | tee /tmp/security-neg-summary.txt
           if grep -E '^--- FAIL:' /tmp/security-neg-summary.txt >/dev/null; then
@@ -235,3 +238,7 @@ jobs:
           count=$(grep -cE '^--- PASS:' /tmp/security-neg-summary.txt || true)
           echo "security/idempotency/migrate passes=$count"
           test "$count" -ge 5
+          # Explicit parent markers (empty-DB migrate + concurrent race).
+          grep -E '^--- PASS: TestMigrateUpFromZero' /tmp/security-neg-summary.txt
+          grep -E '^--- PASS: TestMigrateUpgradeFromSupportedPrevious' /tmp/security-neg-summary.txt
+          grep -E '^--- PASS: TestConcurrentIdempotencyFirstWriterWins' /tmp/security-neg-summary.txt

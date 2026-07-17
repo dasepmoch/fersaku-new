@@ -212,15 +212,25 @@ For every feature API function:
 **Priority:** P0
 **Depends on:** QLT-100 dan foundation/domain migration yang sedang diuji; berjalan bersama setiap backend slice
 
-### Coverage areas
+Parent framework (harness/CI/co-evolution) completed 2026-07-17 — see `docs/QLT-210-INTEGRATION-COEVOLUTION.md` and `TASK/evidence/QLT-210/`. Parent `[x]` does **not** mark every domain coverage bullet or §3.7 capability cell complete; cells co-evolve with domain BE slices.
 
-- [ ] Migrations apply from empty DB and upgrade supported previous schema.
-- [ ] Unique/foreign/check/deferred/immutability constraints.
-- [ ] Store membership/foreign tenant returns safe 404.
+### Parent framework (done)
+
+- [x] Tagged integration required CI (`backend-ci.yml` → `backend-integration`) + non-empty guards (`ci-assert-suite.mjs` `backend-integration` / `qlt-210-integration`).
+- [x] Repeatable local recipe: `make compose-deps && make migrate && make test-integration` / `test-integration-foundation`.
+- [x] Migrations apply from empty DB (`TestMigrateUpFromZero`) and upgrade supported previous schema (`TestMigrateUpgradeFromSupportedPrevious`).
+- [x] Race/concurrency foundation sample uses real concurrent transactions (`TestConcurrentIdempotencyFirstWriterWins` + domain WaitGroup suites).
+- [x] Atomic multi-table rollback sample (`TestAtomicCommitRollbackOnOutboxFailure`).
+- [x] Continuous co-evolution rule documented — domain slices extend suite in same PR as BE changes.
+
+### Coverage areas (capability cells / domain co-evolution — not claimed by parent alone)
+
+- [ ] Unique/foreign/check/deferred/immutability constraints. *(partial: foundation + domain suites; claim per §3.7 cell)*
+- [ ] Store membership/foreign tenant returns safe 404. *(partial: rbac/security suites)*
 - [ ] Buyer ownership and admin permission projections.
-- [ ] Idempotency same/different body and concurrent requests.
+- [ ] Idempotency same/different body and concurrent requests. *(foundation concurrent sample [x]; domain cells expand)*
 - [ ] Optimistic concurrency/ETag.
-- [ ] Inventory reservation/import/reveal/revoke.
+- [ ] Inventory reservation/import/reveal/revoke. *(suite present; cell depth before canary)*
 - [ ] Coupon reservation/redemption concurrency.
 - [ ] Checkout provider callback duplicate/out-of-order/late event.
 - [ ] Balanced append-only ledger and withdrawal reserve/variance/unknown outcome.
@@ -233,15 +243,15 @@ For every feature API function:
 
 ### Database role tests
 
-- App role cannot mutate ledger/audit immutable tables outside approved functions.
-- Migration role separated from app role.
-- Transaction failure rolls back domain/idempotency/outbox/audit together.
+- App role cannot mutate ledger/audit immutable tables outside approved functions. *(domain/security cells)*
+- Migration role separated from app role. *(documented `migrations/README.md`; prod separation ops)*
+- Transaction failure rolls back domain/idempotency/outbox/audit together. *(foundation sample [x])*
 - Backup/PITR/restore rehearsal tracked outside unit CI but before live.
 
 ### Acceptance criteria
 
-- Tagged integration is required CI and repeatable.
-- Race/concurrency cases use actual concurrent transactions, not only sequential mocks.
+- [x] Tagged integration is required CI and repeatable. *(parent)*
+- [x] Race/concurrency cases use actual concurrent transactions, not only sequential mocks. *(parent foundation + existing domain WaitGroup samples)*
 
 ---
 

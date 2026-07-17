@@ -73,7 +73,7 @@ func openPool(t *testing.T) *postgres.Pool {
 
 func TestMigrateUpFromZero(t *testing.T) {
 	_ = databaseURL(t)
-	// Drop all migrate state and re-apply from zero.
+	// Drop all migrate state and re-apply from zero (QLT-210: empty DB → head).
 	runMigrate(t, "drop")
 	runMigrate(t, "up")
 	runMigrate(t, "version")
@@ -101,6 +101,58 @@ func TestMigrateUpFromZero(t *testing.T) {
 	if idStrategy != "ulid_text" {
 		t.Fatalf("id_strategy=%q want ulid_text", idStrategy)
 	}
+}
+
+// TestMigrateUpgradeFromSupportedPrevious proves head is reachable from a
+// supported intermediate schema (foundation-only), not only from empty.
+// QLT-210 parent: upgrade path sample; domain migrations co-evolve under cells.
+func TestMigrateUpgradeFromSupportedPrevious(t *testing.T) {
+	_ = databaseURL(t)
+	runMigrate(t, "drop")
+	// Version 1 = 000001_foundation only (supported previous baseline).
+	runMigrate(t, "goto", "1")
+	runMigrate(t, "version")
+
+	pool := openPool(t)
+	ctx := context.Background()
+	var foundationOK int
+	err := pool.Pool().QueryRow(ctx, `
+		SELECT COUNT(*) FROM information_schema.tables
+		WHERE table_schema = 'public'
+		  AND table_name IN ('outbox_events', 'idempotency_records', 'audit_events', 'schema_meta')
+	`).Scan(&foundationOK)
+	if err != nil {
+		t.Fatalf("count foundation tables at v1: %v", err)
+	}
+	if foundationOK != 4 {
+		t.Fatalf("at v1 expected 4 foundation tables, got %d", foundationOK)
+	}
+
+	// Upgrade supported previous → head.
+	runMigrate(t, "up")
+	runMigrate(t, "version")
+
+	// Head must still have foundation + later domain tables introduced after v1.
+	var headTables int
+	err = pool.Pool().QueryRow(ctx, `
+		SELECT COUNT(*) FROM information_schema.tables
+		WHERE table_schema = 'public'
+		  AND table_name IN (
+		    'outbox_events', 'idempotency_records', 'audit_events', 'schema_meta',
+		    'users', 'stores'
+		  )
+	`).Scan(&headTables)
+	if err != nil {
+		t.Fatalf("count head tables: %v", err)
+	}
+	if headTables < 6 {
+		t.Fatalf("after upgrade expected >=6 core tables (foundation+identity+stores), got %d", headTables)
+	}
+
+	// One-step down then up: latest migration is reversible in isolation.
+	runMigrate(t, "down", "1")
+	runMigrate(t, "up")
+	runMigrate(t, "version")
 }
 
 func TestConcurrentIdempotencyFirstWriterWins(t *testing.T) {
@@ -203,15 +255,15 @@ func TestAtomicCommitRollbackOnOutboxFailure(t *testing.T) {
 			return e
 		},
 		Idempotency: &postgres.IdempotencyInsert{
-			ID:          idemID,
-			SubjectType: "probe",
-			SubjectID:   domainID,
-			Operation:   "be100.atomic",
-			PaymentMode: &mode,
-			KeyHash:     fmt.Sprintf("%x", sha256.Sum256([]byte("k-"+suffix))),
-			RequestHash: fmt.Sprintf("%x", sha256.Sum256([]byte("r-"+suffix))),
-			Status:      "COMPLETED",
-			ExpiresAt:   expires,
+			ID:           idemID,
+			SubjectType:  "probe",
+			SubjectID:    domainID,
+			Operation:    "be100.atomic",
+			PaymentMode:  &mode,
+			KeyHash:      fmt.Sprintf("%x", sha256.Sum256([]byte("k-"+suffix))),
+			RequestHash:  fmt.Sprintf("%x", sha256.Sum256([]byte("r-"+suffix))),
+			Status:       "COMPLETED",
+			ExpiresAt:    expires,
 			ResponseBody: json.RawMessage(`{"ok":true}`),
 		},
 		Outbox: []postgres.OutboxInsert{{

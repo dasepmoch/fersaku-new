@@ -76,6 +76,64 @@ switch (suite) {
     break;
   }
 
+  case "qlt-210-integration": {
+    // Parent framework must stay non-empty and document co-evolution (QLT-210 continuous).
+    const foundation = join(
+      root,
+      "backend/test/integration/foundation_test.go",
+    );
+    minLines(foundation, 100);
+    const foundationSrc = readFileSync(foundation, "utf8");
+    for (const needle of [
+      "TestMigrateUpFromZero",
+      "TestMigrateUpgradeFromSupportedPrevious",
+      "TestConcurrentIdempotencyFirstWriterWins",
+      "TestAtomicCommitRollbackOnOutboxFailure",
+      "sync.WaitGroup",
+      "QLT_REQUIRE_INTEGRATION",
+    ]) {
+      if (!foundationSrc.includes(needle)) {
+        fail(`foundation_test.go missing required parent marker: ${needle}`);
+      }
+    }
+    minLines(
+      join(root, "backend/test/integration/security_verification_test.go"),
+      100,
+    );
+    minLines(join(root, "docs/QLT-210-INTEGRATION-COEVOLUTION.md"), 40);
+    minLines(join(root, "backend/Makefile"), 40);
+    const makefile = readFileSync(join(root, "backend/Makefile"), "utf8");
+    if (!makefile.includes("test-integration")) {
+      fail("backend/Makefile missing test-integration target");
+    }
+    if (!makefile.includes("QLT_REQUIRE_INTEGRATION")) {
+      fail("backend/Makefile test-integration must set QLT_REQUIRE_INTEGRATION");
+    }
+    const n = countFiles(join(root, "backend/test/integration"), (name) =>
+      name.endsWith("_test.go"),
+    );
+    if (n < 10) fail(`integration package has ${n} *_test.go (need >= 10)`);
+    // At least one domain suite must use real concurrent WaitGroup (not foundation alone).
+    const domainDir = join(root, "backend/test/integration");
+    let concurrentFiles = 0;
+    for (const name of readdirSync(domainDir)) {
+      if (!name.endsWith("_test.go") || name === "foundation_test.go") continue;
+      const src = readFileSync(join(domainDir, name), "utf8");
+      if (src.includes("sync.WaitGroup") || src.includes("WaitGroup")) {
+        concurrentFiles += 1;
+      }
+    }
+    if (concurrentFiles < 3) {
+      fail(
+        `domain concurrent race samples=${concurrentFiles} (need >= 3 files with WaitGroup)`,
+      );
+    }
+    ok(
+      `qlt-210 harness + foundation migrate/race + co-evolution doc + concurrent domain files=${concurrentFiles} suite=${n}`,
+    );
+    break;
+  }
+
   case "frontend-unit": {
     const n = countFiles(join(root, "tests/unit"), (name) =>
       name.endsWith(".test.ts"),

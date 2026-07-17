@@ -17,7 +17,7 @@ export DATABASE_URL
 .PHONY: build test tidy vet fmt check-fmt run-api run-worker \
 	compose-up compose-down compose-build compose-deps compose-ps compose-logs \
 	migrate migrate-down migrate-version seed sqlc check-generated \
-	test-integration test-contract openapi-lint openapi-bundle \
+	test-integration test-integration-foundation test-contract openapi-lint openapi-bundle \
 	resilience-drills resilience-drills-dry resilience-drills-full help
 
 help:
@@ -25,10 +25,12 @@ help:
 	@echo "  build test tidy vet fmt check-fmt run-api run-worker"
 	@echo "  compose-up compose-down compose-build compose-deps compose-ps"
 	@echo "  migrate migrate-down migrate-version seed sqlc check-generated"
-	@echo "  test-integration test-contract openapi-lint openapi-bundle"
+	@echo "  test-integration test-integration-foundation test-contract"
+	@echo "  openapi-lint openapi-bundle"
 	@echo "  resilience-drills resilience-drills-dry resilience-drills-full"
 	@echo "GO=$(GO)"
 	@echo "DATABASE_URL=$(DATABASE_URL)"
+	@echo "QLT-210: make compose-deps && make migrate && make test-integration"
 
 build:
 	$(GO) build -o bin/fersaku-api ./cmd/api
@@ -37,8 +39,16 @@ build:
 test:
 	$(GO) test ./...
 
+# QLT-210 parent: tagged integration required, non-empty, no silent skip when QLT_REQUIRE_INTEGRATION=1.
+# Prefer disposable Postgres (compose-deps) + migrate before full suite.
 test-integration:
-	$(GO) test -tags=integration -count=1 -timeout 120s ./test/integration/...
+	QLT_REQUIRE_INTEGRATION=1 $(GO) test -tags=integration -count=1 -timeout 20m ./test/integration/...
+
+# Foundation smoke: migrate empty/upgrade + real concurrent idempotency + atomic rollback.
+test-integration-foundation:
+	QLT_REQUIRE_INTEGRATION=1 $(GO) test -tags=integration -count=1 -timeout 5m \
+		-run 'TestMigrate|TestConcurrentIdempotency|TestAtomicCommit|TestPoolPing' \
+		./test/integration/
 
 # INT-000: OpenAPI 3.0.3 lint + router/OpenAPI drift gate
 test-contract:
