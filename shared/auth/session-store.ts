@@ -139,7 +139,8 @@ export async function bootstrapSession(options?: {
     mockSurfaceHint = options.mockSurface;
   }
 
-  if (!options?.force && bootstrapInFlight) {
+  // Always share an in-flight bootstrap (force must not stack parallel GET /session).
+  if (bootstrapInFlight) {
     return bootstrapInFlight;
   }
 
@@ -151,7 +152,19 @@ export async function bootstrapSession(options?: {
     return snapshot;
   }
 
-  setSnapshot({ ...LOADING_SNAPSHOT });
+  const previousSnapshot = snapshot;
+  const previousIdentity = claimsCacheIdentity(previousSnapshot.claims);
+  // Keep existing claims visible during force refresh to avoid guard flash / login bounce.
+  if (
+    !(
+      options?.force &&
+      (previousSnapshot.status === "authenticated" ||
+        previousSnapshot.status === "mfa_pending") &&
+      previousSnapshot.claims
+    )
+  ) {
+    setSnapshot({ ...LOADING_SNAPSHOT });
+  }
 
   bootstrapInFlight = (async () => {
     const source = authDomainSource();
@@ -186,19 +199,43 @@ export async function bootstrapSession(options?: {
         claims: result.claims,
         errorCode: null,
       });
-      publishSessionBroadcast({
-        type: "session-changed",
-        identity: claimsCacheIdentity(result.claims),
-      });
+      // Broadcast only when identity changes. Same-tab BroadcastChannel peers
+      // receive posts from other channel instances and must not re-force bootstrap
+      // (that loops GET /session until rate-limited and kicks the user to login).
+      const nextIdentity = claimsCacheIdentity(result.claims);
+      if (nextIdentity !== previousIdentity) {
+        publishSessionBroadcast({
+          type: "session-changed",
+          identity: nextIdentity,
+        });
+      }
       return snapshot;
     }
 
+    // Authoritative unauth: clear. Transient (429/network): keep prior session if any.
+    if (result.kind === "expired" || result.kind === "anonymous") {
+      maybeClearPrivateCache(null);
+      setSnapshot({
+        status: result.kind === "expired" ? "expired" : "anonymous",
+        claims: null,
+        errorCode: result.code,
+      });
+      return snapshot;
+    }
+    if (
+      previousSnapshot.claims &&
+      (previousSnapshot.status === "authenticated" ||
+        previousSnapshot.status === "mfa_pending")
+    ) {
+      setSnapshot({
+        ...previousSnapshot,
+        errorCode: result.code,
+      });
+      return snapshot;
+    }
     maybeClearPrivateCache(null);
-    // Network/transport errors: treat as anonymous for guards (no invented identity).
-    const status: SessionStatus =
-      result.kind === "expired" ? "expired" : "anonymous";
     setSnapshot({
-      status,
+      status: "anonymous",
       claims: null,
       errorCode: result.code,
     });

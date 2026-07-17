@@ -23,12 +23,14 @@ export function PrivateSurfaceShell({
   useEffect(() => {
     setMockSurfaceHint(surface);
     // Mock domain: re-bootstrap with correct surface claims (no hardcoded API identity).
+    // API mode: never force-bootstrap here — SessionProvider owns bootstrap; force storms
+    // hit rate limits and bounce private shells back to login.
     try {
       if (getDomainSource("auth") === "mock") {
         void bootstrapSession({ force: true, mockSurface: surface });
       }
     } catch {
-      void bootstrapSession({ force: true, mockSurface: surface });
+      // Fail closed: do not force bootstrap on unknown source.
     }
   }, [surface]);
 

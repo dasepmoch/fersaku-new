@@ -34,6 +34,31 @@ func (h *AuthHandler) cookieName() string {
 	return "fersaku_session"
 }
 
+// cookieSecure is true when configured SecureCookies or the request is HTTPS
+// (direct TLS, reverse-proxy X-Forwarded-Proto, or https Origin/Referer from
+// a same-origin tunnel rewrite where the edge terminates TLS).
+func (h *AuthHandler) cookieSecure(r *http.Request) bool {
+	if h.Secure {
+		return true
+	}
+	if r == nil {
+		return false
+	}
+	if r.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") {
+		return true
+	}
+	// Next.js /v1 rewrite may drop X-Forwarded-Proto; browser still sends Origin.
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if strings.HasPrefix(strings.ToLower(origin), "https://") {
+		return true
+	}
+	referer := strings.TrimSpace(r.Header.Get("Referer"))
+	return strings.HasPrefix(strings.ToLower(referer), "https://")
+}
+
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, rawToken string, exp time.Time) {
 	// Never set app auth cookies on custom storefront hosts (BE-240).
 	if h.Domains != nil && r != nil && h.Domains.IsCustomStorefrontHost(r.Host) {
@@ -48,14 +73,14 @@ func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, r
 		Value:    rawToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.Secure,
+		Secure:   h.cookieSecure(r),
 		SameSite: same,
 		Expires:  exp,
 		MaxAge:   int(time.Until(exp).Seconds()),
 	})
 }
 
-func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter) {
+func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	same := http.SameSiteLaxMode
 	if h.SameSiteStrict {
 		same = http.SameSiteStrictMode
@@ -65,7 +90,7 @@ func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   h.Secure,
+		Secure:   h.cookieSecure(r),
 		SameSite: same,
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
@@ -157,7 +182,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if p, ok := reqctx.PrincipalFrom(r.Context()); ok {
 		_ = h.Auth.Logout(r.Context(), p.SessionID, p.SubjectID)
 	}
-	h.clearSessionCookie(w)
+	h.clearSessionCookie(w, r)
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{"message": auth.MsgLogoutOK})
 }
 
@@ -319,7 +344,7 @@ func (h *AuthHandler) RevokeSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if sid == p.SessionID {
-		h.clearSessionCookie(w)
+		h.clearSessionCookie(w, r)
 	}
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{"revoked": true})
 }
@@ -350,7 +375,7 @@ func (h *AuthHandler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 		presenters.WriteAppError(w, r, err)
 		return
 	}
-	h.clearSessionCookie(w)
+	h.clearSessionCookie(w, r)
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{"revokedCount": n})
 }
 
@@ -574,7 +599,7 @@ func (h *AuthHandler) emailChangeConfirm(w http.ResponseWriter, r *http.Request,
 	}
 	if res.Complete {
 		// Sessions revoked on commit; clear cookie so client re-authenticates.
-		h.clearSessionCookie(w)
+		h.clearSessionCookie(w, r)
 	}
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{
 		"message":  res.Message,

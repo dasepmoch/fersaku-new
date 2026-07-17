@@ -25,10 +25,11 @@ import {
   wireSessionTransportHooks,
 } from "./session-store";
 import { subscribeSessionBroadcast } from "./session-broadcast";
-import type {
-  SessionClaims,
-  SessionSnapshot,
-  SessionSurface,
+import {
+  claimsCacheIdentity,
+  type SessionClaims,
+  type SessionSnapshot,
+  type SessionSurface,
 } from "./session-model";
 import { sessionHasPermission } from "./guards";
 
@@ -69,6 +70,11 @@ export function SessionProvider({
       if (msg.type === "logout") {
         applyRemoteLogout();
       } else if (msg.type === "session-changed") {
+        // Ignore echo / no-op: same browsing context peers receive BroadcastChannel
+        // posts. Re-bootstrap only when another tab changed identity.
+        if (msg.identity === claimsCacheIdentity(getSessionSnapshot().claims)) {
+          return;
+        }
         void bootstrapSession({ force: true });
       }
     });
