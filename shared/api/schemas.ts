@@ -459,6 +459,46 @@ export type CreateCheckoutIntentRequestDto = z.infer<
 export type CheckoutIntentDto = z.infer<typeof checkoutIntentDtoSchema>;
 export type CheckoutIntentStatusDto = z.infer<typeof checkoutIntentStatusSchema>;
 
+// --- Public/buyer order result (CHK-130) — payment fields only; no delivery secrets ---
+
+/**
+ * GET /v1/orders/{orderId} public DTO (orderPublicDTO).
+ * Path status is never authority; paymentStatus/orderStatus from body only.
+ * Delivery secrets never appear here (CHK-140).
+ */
+export const orderResultDtoSchema = z.object({
+  orderId: z.string().min(1),
+  orderNumber: z.string().optional(),
+  orderStatus: z.string().optional(),
+  paymentStatus: z.string().min(1),
+  paymentStatusDetail: z.string().optional(),
+  source: z.string().optional(),
+  currency: z.string().optional(),
+  subtotal: moneyIdrSchema.optional(),
+  discount: moneyIdrSchema.optional(),
+  tip: moneyIdrSchema.optional(),
+  fee: moneyIdrSchema.optional(),
+  gross: moneyIdrSchema.optional(),
+  merchantNet: moneyIdrSchema.optional(),
+  amount: moneyIdrSchema.optional(),
+  paymentIntentId: z.string().optional(),
+  expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  qrString: z.string().nullable().optional(),
+  qrImageUrl: z.string().nullable().optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  /** Optional product chrome when BE projects it; never invent. */
+  productId: z.string().optional(),
+  productTitle: z.string().optional(),
+  productSlug: z.string().optional(),
+  storeSlug: z.string().optional(),
+});
+
+export const orderResultEnvelopeSchema = successEnvelopeSchema(
+  orderResultDtoSchema,
+);
+
+export type OrderResultDto = z.infer<typeof orderResultDtoSchema>;
+
 // --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
 
 /** Launch bounded page size; PurchaseLibrary has no paging control (BoundedNoPaging). */

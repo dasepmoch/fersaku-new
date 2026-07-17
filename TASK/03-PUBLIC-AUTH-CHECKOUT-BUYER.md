@@ -440,14 +440,14 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 ### Checklist
 
-- [ ] Treat path `status` only as pretty/presentational; fetch canonical order state.
-- [ ] Authorize via buyer session or opaque purpose-bound guest capability; never capability in query string/log.
-- [ ] Jika fragment bootstrap diperlukan, scrub then exchange to HttpOnly/scoped access before fetch.
-- [ ] Wrong path status canonicalizes/redirects safely based on backend response, tanpa open redirect.
-- [ ] Unknown/foreign order returns generic not-found without enumeration.
-- [ ] Map server order snapshot to existing success/pending/failure component; no hardcoded price/customer/order ID.
-- [ ] Delivery secret not embedded in base order response.
-- [ ] Public result responses `no-store` dan minimally disclose PII.
+- [x] Treat path `status` only as pretty/presentational; fetch canonical order state.
+- [x] Authorize via buyer session or opaque purpose-bound guest capability; never capability in query string/log. *(session cookie SSR; optional `X-Order-Capability` header from memory only)*
+- [x] Jika fragment bootstrap diperlukan, scrub then exchange to HttpOnly/scoped access before fetch. *(semantics freeze; no fragment on current route — exchange path ready for header capability)*
+- [x] Wrong path status canonicalizes/redirects safely based on backend response, tanpa open redirect.
+- [x] Unknown/foreign order returns generic not-found without enumeration.
+- [x] Map server order snapshot to existing success/pending/failure component; no hardcoded price/customer/order ID.
+- [x] Delivery secret not embedded in base order response. *(download shell only; no secret/href — CHK-140)*
+- [x] Public result responses `no-store` dan minimally disclose PII. *(SSR `privacy: private` → no-store)*
 
 ### Tests/AC
 

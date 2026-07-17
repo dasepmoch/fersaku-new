@@ -10,12 +10,20 @@ import {
   RefreshCcw,
   X,
 } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import { listSellerProducts } from "@/features/catalog/api";
-import { DEMO_STORE_ID } from "@/shared/config/demo";
+import {
+  getOrderResult,
+  isKnownOrderResultPathStatus,
+  type OrderResult,
+  type OrderResultDisplayState,
+} from "@/features/commerce/order-result";
+import { getOrderResultServer } from "@/features/commerce/order-result/server";
 import { getDomainSource } from "@/shared/data/domain-source";
+import { rupiah } from "@/shared/format/money";
+
+export const dynamic = "force-dynamic";
 
 const states = {
   success: {
@@ -38,19 +46,87 @@ const states = {
   },
 };
 
+async function loadOrderResult(orderId: string): Promise<OrderResult> {
+  const source = getDomainSource("checkout");
+  if (source === "disabled") notFound();
+  if (source === "api") {
+    // Session cookie / capability-safe SSR; foreign → notFound (no enumeration).
+    return getOrderResultServer(orderId);
+  }
+  // Mock fixtures: adapter only — path status never applied as authority.
+  const mock = await getOrderResult(orderId);
+  if (!mock) notFound();
+  return mock;
+}
+
 export default async function OrderStatePage({
   params,
 }: {
   params: Promise<{ orderId: string; status: string }>;
 }) {
-  const { orderId, status } = await params;
-  const key = (status in states ? status : "pending") as keyof typeof states;
-  const current = states[key];
+  const { orderId, status: urlStatus } = await params;
+  const result = await loadOrderResult(orderId);
+
+  // Canonicalize mismatched pretty status from backend (no open redirect).
+  // URL status is never authority for chrome selection.
+  if (
+    isKnownOrderResultPathStatus(urlStatus) &&
+    urlStatus !== result.displayState
+  ) {
+    const prettyId = encodeURIComponent(result.orderNumber || result.orderId);
+    redirect(`/orders/${prettyId}/${result.displayState}`);
+  }
+
+  return (
+    <OrderResultChrome
+      orderId={result.orderNumber || result.orderId}
+      displayState={result.displayState}
+      productTitle={result.productTitle}
+      productPriceLabel={rupiah(result.gross)}
+      productPalette={result.palette}
+      productGlyph={result.glyph}
+      productId={result.productId}
+      productSlug={result.productSlug}
+      storeSlug={result.storeSlug}
+      showDeliveryShell={result.deliveryReadyShell}
+    />
+  );
+}
+
+/** Existing order status chrome — markup/class/copy frozen; data via props only. */
+function OrderResultChrome({
+  orderId,
+  displayState,
+  productTitle,
+  productPriceLabel,
+  productPalette,
+  productGlyph,
+  productId,
+  productSlug,
+  storeSlug,
+  showDeliveryShell,
+}: {
+  orderId: string;
+  displayState: OrderResultDisplayState;
+  productTitle: string;
+  productPriceLabel: string;
+  productPalette: string;
+  productGlyph: string;
+  productId?: string;
+  productSlug?: string;
+  storeSlug?: string;
+  showDeliveryShell: boolean;
+}) {
+  const current = states[displayState];
   const Icon = current.icon;
-  // Mock-only product chrome for order status page; API mode uses capability order result (CHK-130).
-  if (getDomainSource("publicCatalog") !== "mock") notFound();
-  const product = (await listSellerProducts(DEMO_STORE_ID))[0];
-  if (!product) notFound();
+  const checkoutHref = productId
+    ? `/checkout/${productId}`
+    : productSlug && storeSlug
+      ? `/@${storeSlug}/${productSlug}`
+      : "/";
+  const productHref =
+    productSlug && storeSlug ? `/@${storeSlug}/${productSlug}` : "/";
+
   return (
     <main className="min-h-screen bg-[#f3f2ec]">
       <header className="mx-auto flex h-20 max-w-[1000px] items-center justify-center px-5">
@@ -72,41 +148,46 @@ export default async function OrderStatePage({
           </p>
           <div className="hairline mt-8 flex items-center gap-4 rounded-2xl border bg-white p-3 text-left">
             <ProductArt
-              palette={product.palette}
-              glyph={product.glyph}
+              palette={productPalette}
+              glyph={productGlyph}
               className="size-16 shrink-0 !rounded-xl"
             />
             <div>
-              <p className="text-sm font-extrabold">{product.title}</p>
+              <p className="text-sm font-extrabold">{productTitle}</p>
               <p className="mt-1 text-[10px] font-bold text-[#7a867f]">
                 Pesanan #{orderId}
               </p>
             </div>
-            <b className="ml-auto text-xs">Rp79.000</b>
+            <b className="ml-auto text-xs">{productPriceLabel}</b>
           </div>
-          {key === "success" && (
+          {displayState === "success" && (
             <>
-              <div className="mt-5 rounded-2xl bg-[#eaf4e9] p-5 text-left">
-                <div className="flex items-center gap-2">
-                  <Download className="size-4" />
-                  <b className="text-sm">File siap diunduh</b>
+              {showDeliveryShell && (
+                <div className="mt-5 rounded-2xl bg-[#eaf4e9] p-5 text-left">
+                  <div className="flex items-center gap-2">
+                    <Download className="size-4" />
+                    <b className="text-sm">File siap diunduh</b>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[#65736b]">
+                    Link aktif selama 7 hari dengan maksimal 5 kali unduhan.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white"
+                  >
+                    Unduh {productTitle} <ArrowRight className="size-4" />
+                  </button>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#65736b]">
-                  Link aktif selama 7 hari dengan maksimal 5 kali unduhan.
-                </p>
-                <button className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white">
-                  Unduh AI Prompt Pack <ArrowRight className="size-4" />
-                </button>
-              </div>
+              )}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <Link
-                  href={`/orders/${orderId}/invoice`}
+                  href={`/orders/${encodeURIComponent(orderId)}/invoice`}
                   className="hairline flex h-11 items-center justify-center gap-2 rounded-xl border bg-white text-[10px] font-extrabold"
                 >
                   <FileText className="size-4" /> Unduh Invoice PDF Resmi
                 </Link>
                 <Link
-                  href={`/account/purchases/${orderId}`}
+                  href={`/account/purchases/${encodeURIComponent(orderId)}`}
                   className="hairline flex h-11 items-center justify-center gap-2 rounded-xl border bg-white text-[10px] font-extrabold"
                 >
                   Buyer portal <ArrowRight className="size-4" />
@@ -117,30 +198,30 @@ export default async function OrderStatePage({
               </p>
             </>
           )}
-          {key === "pending" && (
+          {displayState === "pending" && (
             <>
               <div className="mt-5 rounded-2xl bg-[#fff6d8] p-4 text-xs leading-5 text-[#756438]">
                 <AlertCircle className="mr-2 inline size-4" /> Selesaikan
                 pembayaran sebelum QRIS kedaluwarsa.
               </div>
               <Link
-                href={`/checkout/${product.id}`}
+                href={checkoutHref}
                 className="mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white"
               >
                 Lihat QRIS <ArrowRight className="size-4" />
               </Link>
             </>
           )}
-          {key === "failed" && (
+          {displayState === "failed" && (
             <>
               <Link
-                href={`/checkout/${product.id}`}
+                href={checkoutHref}
                 className="mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f2c] text-sm font-extrabold text-white"
               >
                 <RefreshCcw className="size-4" /> Coba bayar lagi
               </Link>
               <Link
-                href={`/@asep-ai-tools/${product.slug}`}
+                href={productHref}
                 className="mt-4 block text-xs font-bold text-[#65736b]"
               >
                 Kembali ke produk
