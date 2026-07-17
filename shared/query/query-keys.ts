@@ -82,6 +82,12 @@ export const queryKeys = {
       ["seller", storeId, "bank-accounts"] as const,
     bankAccount: (storeId: string, bankId: string) =>
       ["seller", storeId, "bank-accounts", bankId] as const,
+    /**
+     * SEL-230: object metadata only (opaque id + status).
+     * Never include uploadUrl/downloadUrl/checksum/raw key in the key.
+     */
+    objectMeta: (storeId: string, objectId: string) =>
+      ["seller", storeId, "objects", objectId, "meta"] as const,
   },
   admin: {
     /** ADM-120 overview aggregate (admin.dashboard.read). */

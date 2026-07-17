@@ -27,6 +27,12 @@ import {
   normalizeProductSlug,
   parseProductPriceIdr,
 } from "@/features/catalog/mappers";
+import {
+  displayFileName,
+  formatObjectSizeBytes,
+  useRunStoreObjectUploadMutation,
+  type StoreObjectMeta,
+} from "@/features/seller/objects";
 import { getDomainSource } from "@/shared/data/domain-source";
 import {
   createIdempotencyIntentHolder,
@@ -56,6 +62,7 @@ export function ProductForm() {
   const apiMode = sellerCatalogIsApi();
   const createMutation = useCreateSellerProductMutation();
   const publishMutation = usePublishSellerProductMutation();
+  const uploadMutation = useRunStoreObjectUploadMutation();
 
   const [type, setType] = useState<ProductDeliveryOption>("download");
   const [title, setTitle] = useState("");
@@ -64,10 +71,19 @@ export function ProductForm() {
   const [priceText, setPriceText] = useState("");
   const [fieldErrors, setFieldErrors] = useState<ProductFieldError[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  /** Opaque product file object id after SEL-230 upload (not attachable on product DTO yet). */
+  const [productFile, setProductFile] = useState<{
+    objectId: string;
+    fileName: string;
+    sizeBytes?: number;
+    status: StoreObjectMeta["status"];
+  } | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<string | null>(null);
 
   const createIdemRef = useRef(createIdempotencyIntentHolder());
   const publishIdemRef = useRef(createIdempotencyIntentHolder());
   const pendingRef = useRef(createPendingDedupe());
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const previewTitle = title.trim() || "Produk tanpa judul";
   const priceNum = parseProductPriceIdr(priceText);
@@ -82,6 +98,46 @@ export function ProductForm() {
       id === "credentials"
     ) {
       setType(id);
+    }
+  };
+
+  const onProductFileSelected = async (file: File | null) => {
+    if (!file) return;
+    if (!apiMode) {
+      setProductFile({
+        objectId: `mock_local_${Date.now().toString(36)}`,
+        fileName: displayFileName(file),
+        sizeBytes: file.size,
+        status: "READY",
+      });
+      setUploadFeedback(null);
+      return;
+    }
+    setUploadFeedback(null);
+    try {
+      const meta = await uploadMutation.mutateAsync({
+        storeId,
+        purpose: "PRODUCT_FILE",
+        file,
+      });
+      setProductFile({
+        objectId: meta.id,
+        fileName: displayFileName(file),
+        sizeBytes: meta.sizeBytes ?? file.size,
+        status: meta.status,
+      });
+      if (meta.status === "REJECTED") {
+        setUploadFeedback(meta.rejectedReason || "File ditolak scanner.");
+      } else if (meta.status === "READY") {
+        setUploadFeedback(null);
+      } else {
+        setUploadFeedback(`Status unggahan: ${meta.status}`);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Gagal mengunggah file.";
+      setUploadFeedback(message);
+      setProductFile(null);
     }
   };
 
@@ -298,11 +354,40 @@ export function ProductForm() {
                 <p className="mt-1 text-[10px] text-[#87918b]">
                   ZIP, PDF, PNG hingga 2 GB
                 </p>
+                {productFile ? (
+                  <p className="mt-3 text-[10px] font-semibold text-[#315d47]">
+                    {productFile.fileName}
+                    {productFile.sizeBytes !== undefined
+                      ? ` · ${formatObjectSizeBytes(productFile.sizeBytes)}`
+                      : ""}
+                    {productFile.status !== "READY"
+                      ? ` · ${productFile.status}`
+                      : ""}
+                  </p>
+                ) : null}
+                {uploadFeedback ? (
+                  <p className="mt-2 text-[9px] font-semibold text-[#a44f3b]">
+                    {uploadFeedback}
+                  </p>
+                ) : null}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    void onProductFileSelected(f);
+                  }}
+                />
                 <button
                   type="button"
-                  className="hairline mt-4 rounded-lg border bg-white px-3 py-2 text-[10px] font-bold"
+                  disabled={uploadMutation.isPending}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="hairline mt-4 rounded-lg border bg-white px-3 py-2 text-[10px] font-bold disabled:opacity-60"
                 >
-                  Pilih file
+                  {uploadMutation.isPending ? "Mengunggah…" : "Pilih file"}
                 </button>
               </div>
             )}

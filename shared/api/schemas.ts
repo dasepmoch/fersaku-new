@@ -1984,6 +1984,101 @@ export type StorefrontPublishRequest = z.infer<
 >;
 export type StorefrontPublishDto = z.infer<typeof storefrontPublishDtoSchema>;
 
+// --- Store objects upload lifecycle (SEL-230) — product/public assets only ---
+
+/** Store-scoped upload purposes. PROFILE_ASSET is not for personal avatar (INT-175). */
+export const objectPurposeSchema = z.enum([
+  "PRODUCT_FILE",
+  "PUBLIC_ASSET",
+  "PROFILE_ASSET",
+  "INVOICE_INPUT",
+]);
+
+export const objectStatusSchema = z.enum([
+  "UPLOADING",
+  "SCANNING",
+  "READY",
+  "REJECTED",
+  "EXPIRED",
+]);
+
+export const objectVisibilitySchema = z.enum(["PRIVATE", "PUBLIC"]);
+
+/** Lowercase hex SHA-256 (64 chars). */
+export const checksumSha256Schema = z
+  .string()
+  .regex(/^[a-f0-9]{64}$/, "checksumSha256 must be lowercase hex SHA-256");
+
+export const objectUploadRequestSchema = z.object({
+  purpose: objectPurposeSchema,
+  contentType: z.string().min(1).max(128),
+  sizeBytes: z.number().int().positive(),
+  expectedChecksumSha256: z.string().optional(),
+});
+
+/** Never includes raw R2/storage key as an authority field. */
+export const objectMetaDtoSchema = z.object({
+  id: z.string().min(1),
+  purpose: z.string().min(1),
+  visibility: objectVisibilitySchema,
+  contentType: z.string().min(1),
+  expectedSizeBytes: z.number().int().optional(),
+  sizeBytes: z.number().int().optional(),
+  checksumSha256: z.string().optional(),
+  status: objectStatusSchema,
+  retentionClass: z.string().optional(),
+  storeId: z.string().min(1),
+  merchantId: z.string().optional(),
+  scanVerdict: z.string().optional(),
+  rejectedReason: z.string().optional(),
+  uploadExpiresAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+  updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+});
+
+export const objectMetaEnvelopeSchema = successEnvelopeSchema(
+  objectMetaDtoSchema,
+);
+
+/**
+ * Presign envelope. `uploadUrl` is a short-lived secret capability —
+ * never put in query keys, logs, or localStorage.
+ */
+export const objectUploadEnvelopeSchema = successEnvelopeSchema(
+  z.object({
+    object: objectMetaDtoSchema,
+    uploadUrl: z.string().min(1),
+    uploadExpires: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+    method: z.string().min(1),
+  }),
+);
+
+export const objectCompleteRequestSchema = z.object({
+  checksumSha256: z.string().min(1),
+});
+
+/**
+ * Download capability envelope. `downloadUrl` is secret — never cache/key.
+ */
+export const objectDownloadEnvelopeSchema = successEnvelopeSchema(
+  z.object({
+    objectId: z.string().min(1),
+    downloadUrl: z.string().min(1),
+    expiresAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
+    contentType: z.string().optional(),
+    sizeBytes: z.number().int().optional(),
+    cacheControl: z.string().min(1),
+  }),
+);
+
+export type ObjectPurposeDto = z.infer<typeof objectPurposeSchema>;
+export type ObjectStatusDto = z.infer<typeof objectStatusSchema>;
+export type ObjectMetaDto = z.infer<typeof objectMetaDtoSchema>;
+export type ObjectUploadRequest = z.infer<typeof objectUploadRequestSchema>;
+export type ObjectCompleteRequest = z.infer<typeof objectCompleteRequestSchema>;
+
 // --- Admin read models (ADM-120) — overview + shared list foundation ---
 
 /** GET /v1/admin/overview — safe command-center KPIs (admin.dashboard.read). */

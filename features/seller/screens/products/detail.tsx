@@ -17,6 +17,13 @@ import {
   parseProductPriceIdr,
   productDetailStatusLabel,
 } from "@/features/catalog/mappers";
+import {
+  displayFileName,
+  formatObjectSizeBytes,
+  formatObjectUpdatedLabel,
+  useRunStoreObjectUploadMutation,
+  type StoreObjectMeta,
+} from "@/features/seller/objects";
 import { compactRupiah, rupiah } from "@/lib/utils";
 import { getDomainSource } from "@/shared/data/domain-source";
 import {
@@ -55,6 +62,7 @@ export function ProductDetail({ id }: { id: string }) {
   const publishMutation = usePublishSellerProductMutation();
   const patchMutation = usePatchSellerProductMutation();
   const archiveMutation = useArchiveSellerProductMutation();
+  const uploadMutation = useRunStoreObjectUploadMutation();
 
   const [tab, setTab] = useState("Detail");
   const [archived, setArchived] = useState(false);
@@ -81,11 +89,20 @@ export function ProductDetail({ id }: { id: string }) {
   const [fieldErrors, setFieldErrors] = useState<ProductFieldError[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [hydratedId, setHydratedId] = useState<string | null>(null);
+  const [deliveryFile, setDeliveryFile] = useState<{
+    objectId: string;
+    fileName: string;
+    sizeBytes?: number;
+    updatedAt?: string;
+    status: StoreObjectMeta["status"];
+  } | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<string | null>(null);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const archiveIdemRef = useRef(createIdempotencyIntentHolder());
   const publishIdemRef = useRef(createIdempotencyIntentHolder());
   const pendingRef = useRef(createPendingDedupe());
+  const replaceFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(
     () => () => {
@@ -127,6 +144,45 @@ export function ProductDetail({ id }: { id: string }) {
    * when status is draft. Keep local release history UX in mock; API mode
    * only toggles feedback without inventing a release endpoint (SEL-230).
    */
+  const onReplaceProductFile = async (file: File | null) => {
+    if (!file) return;
+    if (!apiMode) {
+      setDeliveryFile({
+        objectId: `mock_local_${Date.now().toString(36)}`,
+        fileName: displayFileName(file, "ai-prompt-pack-v3.zip"),
+        sizeBytes: file.size,
+        updatedAt: new Date().toISOString(),
+        status: "READY",
+      });
+      setUploadFeedback(null);
+      return;
+    }
+    setUploadFeedback(null);
+    try {
+      const meta = await uploadMutation.mutateAsync({
+        storeId,
+        purpose: "PRODUCT_FILE",
+        file,
+      });
+      setDeliveryFile({
+        objectId: meta.id,
+        fileName: displayFileName(file),
+        sizeBytes: meta.sizeBytes ?? file.size,
+        updatedAt: meta.updatedAt ?? meta.createdAt,
+        status: meta.status,
+      });
+      if (meta.status === "REJECTED") {
+        setUploadFeedback(meta.rejectedReason || "File ditolak scanner.");
+      } else if (meta.status !== "READY") {
+        setUploadFeedback(`Status unggahan: ${meta.status}`);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Gagal mengunggah file.";
+      setUploadFeedback(message);
+    }
+  };
+
   const publishRelease = async () => {
     if (apiMode) {
       setPublished(true);
@@ -322,16 +378,41 @@ export function ProductDetail({ id }: { id: string }) {
                   <Download className="size-5" />
                 </span>
                 <div>
-                  <b className="block text-xs">ai-prompt-pack-v3.zip</b>
+                  <b className="block text-xs">
+                    {deliveryFile?.fileName ?? "ai-prompt-pack-v3.zip"}
+                  </b>
                   <span className="text-[9px] text-[#7a867f]">
-                    48.2 MB • Updated 2 Jul 2026
+                    {deliveryFile
+                      ? `${formatObjectSizeBytes(deliveryFile.sizeBytes)} • Updated ${formatObjectUpdatedLabel(deliveryFile.updatedAt)}`
+                      : "48.2 MB • Updated 2 Jul 2026"}
+                    {deliveryFile && deliveryFile.status !== "READY"
+                      ? ` • ${deliveryFile.status}`
+                      : ""}
                   </span>
+                  {uploadFeedback ? (
+                    <span className="mt-1 block text-[9px] font-semibold text-[#a44f3b]">
+                      {uploadFeedback}
+                    </span>
+                  ) : null}
                 </div>
+                <input
+                  ref={replaceFileInputRef}
+                  type="file"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = "";
+                    void onReplaceProductFile(f);
+                  }}
+                />
                 <button
                   type="button"
-                  className="ml-auto text-[10px] font-bold text-[#315d47]"
+                  disabled={uploadMutation.isPending}
+                  onClick={() => replaceFileInputRef.current?.click()}
+                  className="ml-auto text-[10px] font-bold text-[#315d47] disabled:opacity-60"
                 >
-                  Replace file
+                  {uploadMutation.isPending ? "Uploading…" : "Replace file"}
                 </button>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">

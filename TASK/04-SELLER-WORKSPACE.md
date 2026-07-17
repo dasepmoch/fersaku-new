@@ -179,15 +179,15 @@ select existing dropzone/button
 
 ### Checklist FE
 
-- [ ] Keep existing upload/dropzone visuals; add hidden/input behavior using same component styling.
-- [ ] Client MIME/size validation for immediate feedback; server repeats magic-byte/size/checksum validation.
-- [ ] Compute checksum using browser-safe streaming/worker if practical; avoid blocking main thread for large file.
-- [ ] Direct PUT signed URL; do not proxy large file through Next.
-- [ ] Do not manually set multipart `Content-Type`; for signed PUT follow required headers exact.
-- [ ] Progress/cancel/retry map to existing controls; abort cleans request and marks orphan for server expiry.
-- [ ] Never persist/log/report signed URL, object key, token, or raw bytes.
-- [ ] `complete` only after upload success; poll bounded scan state.
-- [ ] Attach opaque object ID, not provider bucket path.
+- [x] Keep existing upload/dropzone visuals; add hidden/input behavior using same component styling.
+- [x] Client MIME/size validation for immediate feedback; server repeats magic-byte/size/checksum validation.
+- [x] Compute checksum using browser-safe streaming/worker if practical; avoid blocking main thread for large file.
+- [x] Direct PUT signed URL; do not proxy large file through Next.
+- [x] Do not manually set multipart `Content-Type`; for signed PUT follow required headers exact.
+- [x] Progress/cancel/retry map to existing controls; abort cleans request and marks orphan for server expiry.
+- [x] Never persist/log/report signed URL, object key, token, or raw bytes.
+- [x] `complete` only after upload success; poll bounded scan state.
+- [x] Attach opaque object ID, not provider bucket path.
 
 ### Checklist BE/runtime
 
