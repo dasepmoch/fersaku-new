@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/postgres/gen"
@@ -79,7 +80,41 @@ func (r *ObjectRepo) InsertObject(ctx context.Context, o objects.ObjectRef) erro
 	})
 }
 
-func mapObject(row gen.ObjectRef) objects.ObjectRef {
+// objectRow is the common scan projection used by sqlc object queries.
+type objectRow struct {
+	ID                     string
+	Bucket                 string
+	ObjectKey              string
+	Purpose                string
+	Visibility             string
+	ContentType            string
+	ExpectedSizeBytes      int64
+	ActualSizeBytes        *int64
+	ChecksumSha256         *string
+	ExpectedChecksumSha256 *string
+	EncryptionKeyVersion   *string
+	RetentionClass         string
+	OwnerMerchantID        string
+	OwnerStoreID           string
+	OwnerUserID            *string
+	Status                 string
+	UploadExpiresAt        time.Time
+	MultipartUploadID      *string
+	MultipartAbortedAt     pgtype.Timestamptz
+	ScanStatus             *string
+	ScanVerdict            *string
+	ScanVersion            *string
+	ScanAt                 pgtype.Timestamptz
+	LastVerifiedAt         pgtype.Timestamptz
+	RejectedReason         *string
+	ScanAttempts           int32
+	ScanErrorClass         *string
+	ScanNextRetryAt        pgtype.Timestamptz
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+}
+
+func mapObjectRow(row objectRow) objects.ObjectRef {
 	return objects.ObjectRef{
 		ID:                     row.ID,
 		Bucket:                 row.Bucket,
@@ -104,10 +139,77 @@ func mapObject(row gen.ObjectRef) objects.ObjectRef {
 		ScanVerdict:            row.ScanVerdict,
 		ScanVersion:            row.ScanVersion,
 		ScanAt:                 pgToTimePtr(row.ScanAt),
+		ScanAttempts:           row.ScanAttempts,
+		ScanErrorClass:         row.ScanErrorClass,
+		ScanNextRetryAt:        pgToTimePtr(row.ScanNextRetryAt),
 		LastVerifiedAt:         pgToTimePtr(row.LastVerifiedAt),
 		RejectedReason:         row.RejectedReason,
 		CreatedAt:              row.CreatedAt,
 		UpdatedAt:              row.UpdatedAt,
+	}
+}
+
+func fromGetByID(row gen.ObjectGetByIDRow) objectRow {
+	return objectRow{
+		ID: row.ID, Bucket: row.Bucket, ObjectKey: row.ObjectKey, Purpose: row.Purpose,
+		Visibility: row.Visibility, ContentType: row.ContentType, ExpectedSizeBytes: row.ExpectedSizeBytes,
+		ActualSizeBytes: row.ActualSizeBytes, ChecksumSha256: row.ChecksumSha256,
+		ExpectedChecksumSha256: row.ExpectedChecksumSha256, EncryptionKeyVersion: row.EncryptionKeyVersion,
+		RetentionClass: row.RetentionClass, OwnerMerchantID: row.OwnerMerchantID, OwnerStoreID: row.OwnerStoreID,
+		OwnerUserID: row.OwnerUserID, Status: row.Status, UploadExpiresAt: row.UploadExpiresAt,
+		MultipartUploadID: row.MultipartUploadID, MultipartAbortedAt: row.MultipartAbortedAt,
+		ScanStatus: row.ScanStatus, ScanVerdict: row.ScanVerdict, ScanVersion: row.ScanVersion,
+		ScanAt: row.ScanAt, LastVerifiedAt: row.LastVerifiedAt, RejectedReason: row.RejectedReason,
+		ScanAttempts: row.ScanAttempts, ScanErrorClass: row.ScanErrorClass, ScanNextRetryAt: row.ScanNextRetryAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+}
+
+func fromGetByIDForStore(row gen.ObjectGetByIDForStoreRow) objectRow {
+	return objectRow{
+		ID: row.ID, Bucket: row.Bucket, ObjectKey: row.ObjectKey, Purpose: row.Purpose,
+		Visibility: row.Visibility, ContentType: row.ContentType, ExpectedSizeBytes: row.ExpectedSizeBytes,
+		ActualSizeBytes: row.ActualSizeBytes, ChecksumSha256: row.ChecksumSha256,
+		ExpectedChecksumSha256: row.ExpectedChecksumSha256, EncryptionKeyVersion: row.EncryptionKeyVersion,
+		RetentionClass: row.RetentionClass, OwnerMerchantID: row.OwnerMerchantID, OwnerStoreID: row.OwnerStoreID,
+		OwnerUserID: row.OwnerUserID, Status: row.Status, UploadExpiresAt: row.UploadExpiresAt,
+		MultipartUploadID: row.MultipartUploadID, MultipartAbortedAt: row.MultipartAbortedAt,
+		ScanStatus: row.ScanStatus, ScanVerdict: row.ScanVerdict, ScanVersion: row.ScanVersion,
+		ScanAt: row.ScanAt, LastVerifiedAt: row.LastVerifiedAt, RejectedReason: row.RejectedReason,
+		ScanAttempts: row.ScanAttempts, ScanErrorClass: row.ScanErrorClass, ScanNextRetryAt: row.ScanNextRetryAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+}
+
+func fromListExpired(row gen.ObjectListExpiredUploadingRow) objectRow {
+	return objectRow{
+		ID: row.ID, Bucket: row.Bucket, ObjectKey: row.ObjectKey, Purpose: row.Purpose,
+		Visibility: row.Visibility, ContentType: row.ContentType, ExpectedSizeBytes: row.ExpectedSizeBytes,
+		ActualSizeBytes: row.ActualSizeBytes, ChecksumSha256: row.ChecksumSha256,
+		ExpectedChecksumSha256: row.ExpectedChecksumSha256, EncryptionKeyVersion: row.EncryptionKeyVersion,
+		RetentionClass: row.RetentionClass, OwnerMerchantID: row.OwnerMerchantID, OwnerStoreID: row.OwnerStoreID,
+		OwnerUserID: row.OwnerUserID, Status: row.Status, UploadExpiresAt: row.UploadExpiresAt,
+		MultipartUploadID: row.MultipartUploadID, MultipartAbortedAt: row.MultipartAbortedAt,
+		ScanStatus: row.ScanStatus, ScanVerdict: row.ScanVerdict, ScanVersion: row.ScanVersion,
+		ScanAt: row.ScanAt, LastVerifiedAt: row.LastVerifiedAt, RejectedReason: row.RejectedReason,
+		ScanAttempts: row.ScanAttempts, ScanErrorClass: row.ScanErrorClass, ScanNextRetryAt: row.ScanNextRetryAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+}
+
+func fromListPending(row gen.ObjectListPendingScanRow) objectRow {
+	return objectRow{
+		ID: row.ID, Bucket: row.Bucket, ObjectKey: row.ObjectKey, Purpose: row.Purpose,
+		Visibility: row.Visibility, ContentType: row.ContentType, ExpectedSizeBytes: row.ExpectedSizeBytes,
+		ActualSizeBytes: row.ActualSizeBytes, ChecksumSha256: row.ChecksumSha256,
+		ExpectedChecksumSha256: row.ExpectedChecksumSha256, EncryptionKeyVersion: row.EncryptionKeyVersion,
+		RetentionClass: row.RetentionClass, OwnerMerchantID: row.OwnerMerchantID, OwnerStoreID: row.OwnerStoreID,
+		OwnerUserID: row.OwnerUserID, Status: row.Status, UploadExpiresAt: row.UploadExpiresAt,
+		MultipartUploadID: row.MultipartUploadID, MultipartAbortedAt: row.MultipartAbortedAt,
+		ScanStatus: row.ScanStatus, ScanVerdict: row.ScanVerdict, ScanVersion: row.ScanVersion,
+		ScanAt: row.ScanAt, LastVerifiedAt: row.LastVerifiedAt, RejectedReason: row.RejectedReason,
+		ScanAttempts: row.ScanAttempts, ScanErrorClass: row.ScanErrorClass, ScanNextRetryAt: row.ScanNextRetryAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 	}
 }
 
@@ -116,7 +218,7 @@ func (r *ObjectRepo) GetObjectByID(ctx context.Context, id string) (objects.Obje
 	if err != nil {
 		return objects.ObjectRef{}, err
 	}
-	return mapObject(row), nil
+	return mapObjectRow(fromGetByID(row)), nil
 }
 
 func (r *ObjectRepo) GetObjectByIDForStore(ctx context.Context, id, storeID string) (objects.ObjectRef, error) {
@@ -127,7 +229,7 @@ func (r *ObjectRepo) GetObjectByIDForStore(ctx context.Context, id, storeID stri
 	if err != nil {
 		return objects.ObjectRef{}, err
 	}
-	return mapObject(row), nil
+	return mapObjectRow(fromGetByIDForStore(row)), nil
 }
 
 func (r *ObjectRepo) UpdateObjectComplete(
@@ -165,6 +267,42 @@ func (r *ObjectRepo) UpdateObjectComplete(
 	})
 }
 
+func (r *ObjectRepo) UpdateObjectScanMeta(
+	ctx context.Context,
+	id string,
+	status objects.Status,
+	scanStatus, scanVerdict, scanVersion *string,
+	scanAt *time.Time,
+	scanAttempts int32,
+	scanErrorClass *string,
+	scanNextRetryAt *time.Time,
+	rejectedReason *string,
+	verifiedAt *time.Time,
+	updatedAt time.Time,
+	allowedFrom []objects.Status,
+) (bool, error) {
+	from := make([]string, 0, len(allowedFrom))
+	for _, s := range allowedFrom {
+		from = append(from, string(s))
+	}
+	n, err := r.queries().ObjectUpdateScanMeta(ctx, gen.ObjectUpdateScanMetaParams{
+		ID:              id,
+		Status:          string(status),
+		ScanStatus:      scanStatus,
+		ScanVerdict:     scanVerdict,
+		ScanVersion:     scanVersion,
+		ScanAt:          timePtrToPg(scanAt),
+		ScanAttempts:    scanAttempts,
+		ScanErrorClass:  scanErrorClass,
+		ScanNextRetryAt: timePtrToPg(scanNextRetryAt),
+		RejectedReason:  rejectedReason,
+		LastVerifiedAt:  timePtrToPg(verifiedAt),
+		UpdatedAt:       updatedAt,
+		Column13:        from,
+	})
+	return n > 0, err
+}
+
 func (r *ObjectRepo) MarkObjectExpired(ctx context.Context, id string, updatedAt time.Time) error {
 	return r.queries().ObjectMarkExpired(ctx, gen.ObjectMarkExpiredParams{
 		ID:        id,
@@ -182,9 +320,28 @@ func (r *ObjectRepo) ListExpiredUploading(ctx context.Context, before time.Time,
 	}
 	out := make([]objects.ObjectRef, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, mapObject(row))
+		out = append(out, mapObjectRow(fromListExpired(row)))
 	}
 	return out, nil
+}
+
+func (r *ObjectRepo) ListPendingScan(ctx context.Context, now time.Time, limit int32) ([]objects.ObjectRef, error) {
+	rows, err := r.queries().ObjectListPendingScan(ctx, gen.ObjectListPendingScanParams{
+		ScanNextRetryAt: timePtrToPg(&now),
+		Limit:           limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]objects.ObjectRef, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, mapObjectRow(fromListPending(row)))
+	}
+	return out, nil
+}
+
+func (r *ObjectRepo) CountScanning(ctx context.Context) (int64, error) {
+	return r.queries().ObjectCountScanning(ctx)
 }
 
 func (r *ObjectRepo) GetStoreByID(ctx context.Context, storeID string) (application.ObjectStoreRow, error) {
@@ -225,9 +382,9 @@ func (r *ObjectRepo) GetQuota(ctx context.Context, merchantID string) (readyByte
 
 func (r *ObjectRepo) AddQuota(ctx context.Context, merchantID string, addBytes int64, at time.Time) error {
 	return r.queries().ObjectQuotaUpsertAdd(ctx, gen.ObjectQuotaUpsertAddParams{
-		MerchantID:  merchantID,
-		ReadyBytes:  addBytes,
-		UpdatedAt:   at,
+		MerchantID: merchantID,
+		ReadyBytes: addBytes,
+		UpdatedAt:  at,
 	})
 }
 

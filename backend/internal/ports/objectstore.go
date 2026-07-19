@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"io"
 	"time"
 )
 
@@ -48,6 +49,10 @@ type ObjectStore interface {
 	PutObjectBytes(ctx context.Context, bucket, key, contentType string, body []byte) error
 	// GetObjectBytes reads object bytes server-side (KYC decrypt stream; never expose raw R2 URL).
 	GetObjectBytes(ctx context.Context, bucket, key string) ([]byte, error)
+	// GetObjectStream opens a server-side object body for controlled consumers (malware scan).
+	// Caller must Close the reader. maxBytes<=0 uses implementation default bound.
+	// Never returns a public URL — body is read via the storage credential path only.
+	GetObjectStream(ctx context.Context, bucket, key string, maxBytes int64) (io.ReadCloser, ObjectHead, error)
 }
 
 // ErrObjectNotFound is returned by HeadObject when the key is missing.

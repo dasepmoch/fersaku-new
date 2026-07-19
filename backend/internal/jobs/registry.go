@@ -13,6 +13,7 @@ const (
 	JobCouponReservationExpiry     JobName = "coupon.reservation_expiry"
 	JobInventoryReservationExpiry  JobName = "inventory.reservation_expiry"
 	JobObjectUploadCleanup         JobName = "object.upload_cleanup"
+	JobObjectMalwareScan           JobName = "object.malware_scan"
 	JobCheckoutIntentExpiry        JobName = "checkout.intent_expiry"
 	JobCheckoutUnknownReconciliation JobName = "checkout.unknown_reconciliation"
 	JobDomainRevalidation          JobName = "domain.dns_tls_revalidation"
@@ -81,6 +82,12 @@ func DefaultInventory() []JobMeta {
 			Name: JobObjectUploadCleanup, Owner: "objects", Description: "Abort orphan/expired UPLOADING object intents",
 			Cadence: 1 * time.Minute, BatchSize: 50, Timeout: 45 * time.Second, LeaseTTL: 60 * time.Second,
 			AlertLag: 10 * time.Minute, Runbook: "TASK/02-FOUNDATION-TRANSPORT-AUTH.md#INT-185", MetricsLabel: "object_upload_cleanup",
+		},
+		{
+			Name: JobObjectMalwareScan, Owner: "objects", Description: "Process SCANNING quarantine malware scan retries",
+			Cadence: 15 * time.Second, BatchSize: 25, Timeout: 90 * time.Second, LeaseTTL: 2 * time.Minute,
+			MaxAttempts: objectsDefaultScanAttempts(), RetryBackoff: 15 * time.Second,
+			AlertLag: 5 * time.Minute, Runbook: "docs/runbooks/malware-scan-quarantine.md", MetricsLabel: "object_malware_scan",
 		},
 		{
 			Name: JobCheckoutIntentExpiry, Owner: "checkout", Description: "Expire storefront payment intents past expires_at",
@@ -213,3 +220,5 @@ func MetaByName(name JobName) (JobMeta, bool) {
 	}
 	return JobMeta{}, false
 }
+
+func objectsDefaultScanAttempts() int { return 5 }

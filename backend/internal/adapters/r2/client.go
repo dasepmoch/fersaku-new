@@ -193,8 +193,26 @@ func (c *Client) PutObjectBytes(ctx context.Context, bucket, key, contentType st
 
 // GetObjectBytes reads object body server-side (KYC decrypt; never log body).
 func (c *Client) GetObjectBytes(ctx context.Context, bucket, key string) ([]byte, error) {
+	rc, _, err := c.GetObjectStream(ctx, bucket, key, 12*1024*1024)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	body, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("r2: get body: %w", err)
+	}
+	return body, nil
+}
+
+// GetObjectStream opens a server-side object body for controlled consumers (malware scan).
+// maxBytes<=0 defaults to 100MiB (product file cap). Caller must Close.
+func (c *Client) GetObjectStream(ctx context.Context, bucket, key string, maxBytes int64) (io.ReadCloser, ports.ObjectHead, error) {
 	if !c.Configured() {
-		return nil, fmt.Errorf("r2: not configured")
+		return nil, ports.ObjectHead{}, fmt.Errorf("r2: not configured")
+	}
+	if maxBytes <= 0 {
+		maxBytes = 100 * 1024 * 1024
 	}
 	out, err := c.s3.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
@@ -202,21 +220,44 @@ func (c *Client) GetObjectBytes(ctx context.Context, bucket, key string) ([]byte
 	})
 	if err != nil {
 		if isNotFound(err) {
-			return nil, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+			return nil, ports.ObjectHead{}, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
 		}
-		return nil, fmt.Errorf("r2: get: %w", err)
+		return nil, ports.ObjectHead{}, fmt.Errorf("r2: get: %w", err)
 	}
-	defer out.Body.Close()
-	// Bound KYC ciphertext: plaintext max 10MiB + AEAD overhead headroom.
-	limited := io.LimitReader(out.Body, 12*1024*1024+1)
-	body, err := io.ReadAll(limited)
-	if err != nil {
-		return nil, fmt.Errorf("r2: get body: %w", err)
+	head := ports.ObjectHead{}
+	if out.ContentLength != nil {
+		head.ContentLength = *out.ContentLength
 	}
-	if len(body) > 12*1024*1024 {
-		return nil, fmt.Errorf("r2: object exceeds bound")
+	if out.ContentType != nil {
+		head.ContentType = *out.ContentType
 	}
-	return body, nil
+	if out.ETag != nil {
+		head.ETag = strings.Trim(*out.ETag, `"`)
+	}
+	// Bound stream: oversize fails closed after maxBytes+1 is observed by LimitReader consumers.
+	limited := &limitedReadCloser{
+		Reader: io.LimitReader(out.Body, maxBytes+1),
+		Closer: out.Body,
+		max:    maxBytes,
+	}
+	return limited, head, nil
+}
+
+// limitedReadCloser wraps a body with a size bound and Close.
+type limitedReadCloser struct {
+	io.Reader
+	io.Closer
+	max int64
+	n   int64
+}
+
+func (l *limitedReadCloser) Read(p []byte) (int, error) {
+	n, err := l.Reader.Read(p)
+	l.n += int64(n)
+	if l.n > l.max {
+		return n, fmt.Errorf("r2: object exceeds bound")
+	}
+	return n, err
 }
 
 func isNotFound(err error) bool {

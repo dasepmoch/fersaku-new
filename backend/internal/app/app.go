@@ -13,16 +13,17 @@ import (
 	"time"
 
 	dnsadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/dns"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/duitku"
 	edgeadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/edge"
 	httpadapter "github.com/dasepmoch/fersaku-new/backend/internal/adapters/http"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/middleware"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/mail"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/malware"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/observability"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/postgres"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/queue"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/r2"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/redis"
-	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/duitku"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/xendit"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
 	"github.com/dasepmoch/fersaku-new/backend/internal/config"
@@ -251,6 +252,13 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		return nil, fmt.Errorf("app: object storage (R2) required when APP_ENV=production (INT-180)")
 	}
 
+	// --- Malware scanner (GAP-02) ---
+	scanner, scannerKind, err := wireMalwareScanner(cfg)
+	if err != nil {
+		return nil, err
+	}
+	localScanPass := cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest
+
 	// --- Rate limiter: process-local local/test; Redis on live ---
 	var rateLimiter middleware.Limiter = middleware.NewTokenBucketLimiter(120, 20)
 	if cfg.RequiresDistributedLimiter() {
@@ -321,6 +329,20 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			healthChecks = append(healthChecks, func() error {
 				if !objStore.Configured() {
 					return fmt.Errorf("object store: not configured")
+				}
+				return nil
+			})
+		}
+		if cfg.MalwareScannerRequired {
+			sc := scanner
+			healthChecks = append(healthChecks, func() error {
+				if sc == nil || !sc.Configured() {
+					return fmt.Errorf("malware scanner: not configured (kind=%s)", scannerKind)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				if err := sc.Ready(ctx); err != nil {
+					return fmt.Errorf("malware scanner: not ready: %w", err)
 				}
 				return nil
 			})
@@ -408,14 +430,14 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		objectSvc = &application.ObjectService{
 			Store:                  postgres.NewObjectRepo(pool.Pool()),
 			Objects:                objStore,
+			Scanner:                scanner,
 			IDs:                    ids,
 			Clock:                  clock,
 			Log:                    log,
 			BucketPublic:           cfg.R2BucketPublic,
 			BucketPrivate:          cfg.R2BucketPrivate,
 			MerchantSoftQuotaBytes: 0, // default domain soft limit
-			// Local/test allow pass-through scan; production must wire real scanner later.
-			LocalScanPass: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			LocalScanPass:          localScanPass,
 		}
 		stockKey := cfg.EffectiveStockEncryptionKey()
 		if stockKey == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
@@ -589,9 +611,10 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		kycSvc = &application.KYCService{
 			Store:         postgres.NewKYCRepo(pool.Pool()),
 			Objects:       objStore,
+			Scanner:       scanner,
 			BucketPrivate: privBucket,
 			EncryptionKey: kycKey,
-			LocalScanPass: cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest,
+			LocalScanPass: localScanPass,
 			IDs:           ids,
 			Clock:         clock,
 			Log:           log,
@@ -1198,6 +1221,20 @@ func platformComponentHealth(
 	}
 	out = append(out, admin.ComponentHealth{Component: "r2", Status: r2Status, CheckedAt: now, Message: r2Msg})
 
+	// Malware scanner
+	mwMode := cfg.EffectiveMalwareScanner()
+	mwStatus, mwMsg := "OK", "malware scanner kind="+mwMode
+	if !cfg.MalwareScannerRequired && (mwMode == "localpass" || mwMode == "stub" || mwMode == "noop") {
+		mwStatus, mwMsg = "OK", "malware scanner kind="+mwMode+" (non-required)"
+	} else if cfg.MalwareScannerRequired {
+		// Ready probe is on /ready; admin surface is informational only (no secrets).
+		mwStatus, mwMsg = "OK", "malware scanner required kind="+mwMode
+		if mwMode == "noop" || mwMode == "localpass" {
+			mwStatus, mwMsg = "DOWN", "malware scanner kind="+mwMode+" invalid for live"
+		}
+	}
+	out = append(out, admin.ComponentHealth{Component: "malware_scanner", Status: mwStatus, CheckedAt: now, Message: mwMsg})
+
 	// Redis
 	rdStatus, rdMsg := "OK", "redis kind="+redisKind
 	if redisKind == "noop" || rd == nil || rd.Kind() == "noop" {
@@ -1231,4 +1268,31 @@ func platformComponentHealth(
 
 	_ = pool
 	return out
+}
+
+// wireMalwareScanner selects scanner adapter from config (GAP-02).
+// localpass only for local/test; clamav for staging/production; stub for drills.
+func wireMalwareScanner(cfg config.Config) (ports.MalwareScanner, string, error) {
+	mode := cfg.EffectiveMalwareScanner()
+	switch mode {
+	case "localpass":
+		return &malware.LocalPass{Version: "local-pass-v1"}, "localpass", nil
+	case "stub":
+		return malware.NewFake(), "stub", nil
+	case "noop":
+		return malware.Noop{}, "noop", nil
+	case "clamav":
+		addr := strings.TrimSpace(cfg.MalwareScannerAddress)
+		if addr == "" {
+			if d := malware.DetectSocket(); d != "" {
+				addr = d
+			}
+		}
+		if addr == "" {
+			return malware.Noop{}, "clamav-unconfigured", fmt.Errorf("app: MALWARE_SCANNER_ADDRESS required for clamav")
+		}
+		return malware.NewClamAV(addr), "clamav", nil
+	default:
+		return malware.Noop{}, "unknown", fmt.Errorf("app: unknown malware scanner %q", mode)
+	}
 }

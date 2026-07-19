@@ -68,11 +68,30 @@ type ObjectRef struct {
 	ScanVerdict            *string
 	ScanVersion            *string
 	ScanAt                 *time.Time
+	ScanAttempts           int32
+	ScanErrorClass         *string
+	ScanNextRetryAt        *time.Time
 	LastVerifiedAt         *time.Time
 	RejectedReason         *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
+
+// Object scan_status values (evidence lifecycle; free-form in DB historically).
+const (
+	ScanStatusPending    = "PENDING"
+	ScanStatusInProgress = "IN_PROGRESS"
+	ScanStatusComplete   = "COMPLETE"
+	ScanStatusFailed     = "FAILED"
+	ScanStatusSkipped    = "SKIPPED"
+)
+
+// Default malware scan policy.
+const (
+	DefaultScanMaxAttempts = 5
+	DefaultScanTimeout     = 60 * time.Second
+	DefaultScanBackoff     = 15 * time.Second
+)
 
 // DeliveryGrant is a short-lived buyer/owner download authorization stub (BE-235 expands).
 type DeliveryGrant struct {

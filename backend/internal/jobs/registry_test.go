@@ -12,6 +12,7 @@ func TestDefaultInventory_CoversINT185(t *testing.T) {
 		JobCouponReservationExpiry:       false,
 		JobInventoryReservationExpiry:    false,
 		JobObjectUploadCleanup:           false,
+		JobObjectMalwareScan:             false,
 		JobCheckoutIntentExpiry:          false,
 		JobCheckoutUnknownReconciliation: false,
 		JobDomainRevalidation:            false,

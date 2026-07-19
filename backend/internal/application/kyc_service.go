@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -23,9 +24,11 @@ import (
 type KYCService struct {
 	Store         KYCStore
 	Objects       ports.ObjectStore
+	Scanner       ports.MalwareScanner
 	BucketPrivate string
 	EncryptionKey string
-	// LocalScanPass when true (local/test) marks malware scan as PASSED without external scanner.
+	// LocalScanPass when true (local/test) and Scanner is nil, marks scan PASSED via local-pass.
+	// Staging/production must inject a Configured MalwareScanner; heuristic alone is not acceptance.
 	LocalScanPass bool
 	IDs           ports.IDGenerator
 	Clock         ports.Clock
@@ -494,15 +497,13 @@ func (s *KYCService) UploadDocument(ctx context.Context, userID, merchantID, cas
 		return kyc.Document{}, apperr.Validation(apperr.CodeValidationFailed, "Content type does not match payload")
 	}
 
-	// Malware/file validator (local/test: pass; production hook would fail closed).
-	scanStatus := kyc.ScanPassed
-	scanDetail := "local_pass"
-	if !s.LocalScanPass {
-		// Minimal heuristic scan: reject EICAR signature and empty-looking PDF shells.
-		if bytes.Contains(plain, []byte("EICAR-STANDARD-ANTIVIRUS-TEST-FILE")) {
-			return kyc.Document{}, apperr.Validation(apperr.CodeValidationFailed, "Document failed malware scan")
+	// Malware scan BEFORE encrypt/persist. Fail-closed: no PASSED without engine/version CLEAN.
+	scanStatus, scanDetail, scanErr := s.scanKYCPlaintext(ctx, plain)
+	if scanErr != nil {
+		for i := range plain {
+			plain[i] = 0
 		}
-		scanDetail = "heuristic_pass"
+		return kyc.Document{}, scanErr
 	}
 
 	plainLen := int64(len(plain))
@@ -510,6 +511,9 @@ func (s *KYCService) UploadDocument(ctx context.Context, userID, merchantID, cas
 	checksum := hex.EncodeToString(sum[:])
 	kv, cipher, err := security.EncryptAEAD(s.EncryptionKey, plain)
 	if err != nil {
+		for i := range plain {
+			plain[i] = 0
+		}
 		return kyc.Document{}, apperr.Internal(apperr.CodeInternalError, "Document encryption failed")
 	}
 	for i := range plain {
@@ -556,6 +560,46 @@ func (s *KYCService) UploadDocument(ctx context.Context, userID, merchantID, cas
 		return kyc.Document{}, apperr.Internal(apperr.CodeInternalError, "Failed to persist document metadata")
 	}
 	return d, nil
+}
+
+// scanKYCPlaintext runs the malware scanner on plaintext before encrypt.
+// Returns PASSED only on CLEAN with recorded engine:version. Heuristic alone is not acceptance.
+func (s *KYCService) scanKYCPlaintext(ctx context.Context, plain []byte) (scanStatus, scanDetail string, err error) {
+	sc := s.Scanner
+	if sc == nil || !sc.Configured() {
+		if s.LocalScanPass {
+			return kyc.ScanPassed, "localpass:local-pass-v1", nil
+		}
+		return "", "", apperr.Internal(apperr.CodeInternalError, "Malware scan unavailable")
+	}
+	// Bound scan timeout for KYC docs.
+	scanCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	res, scanErr := sc.Scan(scanCtx, ports.ScanInput{
+		Reader:   bytes.NewReader(plain),
+		SizeBytes: int64(len(plain)),
+		MaxBytes: kyc.MaxDocumentBytes,
+		Timeout:  60 * time.Second,
+		Purpose:  "kyc",
+	})
+	if res.Verdict == ports.ScanVerdictClean {
+		if strings.TrimSpace(res.Engine) == "" || strings.TrimSpace(res.Version) == "" {
+			return "", "", apperr.Internal(apperr.CodeInternalError, "Malware scan invalid response")
+		}
+		detail := res.Engine + ":" + res.Version
+		if len(detail) > 200 {
+			detail = detail[:200]
+		}
+		return kyc.ScanPassed, detail, nil
+	}
+	if res.Verdict == ports.ScanVerdictInfected {
+		return kyc.ScanFailed, "infected", apperr.Validation(apperr.CodeValidationFailed, "Document failed malware scan")
+	}
+	// ERROR / TIMEOUT / unavailable → fail closed (do not encrypt as PASSED).
+	if scanErr != nil && (errors.Is(scanErr, context.DeadlineExceeded) || res.Verdict == ports.ScanVerdictTimeout) {
+		return kyc.ScanFailed, "timeout", apperr.Internal(apperr.CodeInternalError, "Malware scan timeout")
+	}
+	return kyc.ScanFailed, "error", apperr.Internal(apperr.CodeInternalError, "Malware scan failed")
 }
 
 func sniffContentType(b []byte) string {

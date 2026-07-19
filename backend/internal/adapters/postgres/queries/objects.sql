@@ -18,6 +18,7 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE id = $1;
@@ -29,6 +30,7 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE id = $1 AND owner_store_id = $2;
@@ -48,6 +50,41 @@ UPDATE object_refs SET
     updated_at = $12
 WHERE id = $1;
 
+-- name: ObjectUpdateScanMeta :execrows
+UPDATE object_refs SET
+    status = $2,
+    scan_status = $3,
+    scan_verdict = $4,
+    scan_version = $5,
+    scan_at = $6,
+    scan_attempts = $7,
+    scan_error_class = $8,
+    scan_next_retry_at = $9,
+    rejected_reason = $10,
+    last_verified_at = $11,
+    updated_at = $12
+WHERE id = $1 AND status = ANY ($13::text[]);
+
+-- name: ObjectListPendingScan :many
+SELECT
+    id, bucket, object_key, purpose, visibility, content_type,
+    expected_size_bytes, actual_size_bytes, checksum_sha256, expected_checksum_sha256,
+    encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
+    status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
+    scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
+    created_at, updated_at
+FROM object_refs
+WHERE status = 'SCANNING'
+  AND (scan_next_retry_at IS NULL OR scan_next_retry_at <= $1)
+ORDER BY COALESCE(scan_next_retry_at, updated_at) ASC
+LIMIT $2;
+
+-- name: ObjectCountScanning :one
+SELECT COUNT(*)::bigint AS n
+FROM object_refs
+WHERE status = 'SCANNING';
+
 -- name: ObjectMarkExpired :exec
 UPDATE object_refs SET
     status = 'EXPIRED',
@@ -61,6 +98,7 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE status = 'UPLOADING' AND upload_expires_at < $1

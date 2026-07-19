@@ -12,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const objectCountScanning = `-- name: ObjectCountScanning :one
+SELECT COUNT(*)::bigint AS n
+FROM object_refs
+WHERE status = 'SCANNING'
+`
+
+func (q *Queries) ObjectCountScanning(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, objectCountScanning)
+	var n int64
+	err := row.Scan(&n)
+	return n, err
+}
+
 const objectGetByID = `-- name: ObjectGetByID :one
 SELECT
     id, bucket, object_key, purpose, visibility, content_type,
@@ -19,14 +32,48 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE id = $1
 `
 
-func (q *Queries) ObjectGetByID(ctx context.Context, id string) (ObjectRef, error) {
+type ObjectGetByIDRow struct {
+	ID                     string             `json:"id"`
+	Bucket                 string             `json:"bucket"`
+	ObjectKey              string             `json:"object_key"`
+	Purpose                string             `json:"purpose"`
+	Visibility             string             `json:"visibility"`
+	ContentType            string             `json:"content_type"`
+	ExpectedSizeBytes      int64              `json:"expected_size_bytes"`
+	ActualSizeBytes        *int64             `json:"actual_size_bytes"`
+	ChecksumSha256         *string            `json:"checksum_sha256"`
+	ExpectedChecksumSha256 *string            `json:"expected_checksum_sha256"`
+	EncryptionKeyVersion   *string            `json:"encryption_key_version"`
+	RetentionClass         string             `json:"retention_class"`
+	OwnerMerchantID        string             `json:"owner_merchant_id"`
+	OwnerStoreID           string             `json:"owner_store_id"`
+	OwnerUserID            *string            `json:"owner_user_id"`
+	Status                 string             `json:"status"`
+	UploadExpiresAt        time.Time          `json:"upload_expires_at"`
+	MultipartUploadID      *string            `json:"multipart_upload_id"`
+	MultipartAbortedAt     pgtype.Timestamptz `json:"multipart_aborted_at"`
+	ScanStatus             *string            `json:"scan_status"`
+	ScanVerdict            *string            `json:"scan_verdict"`
+	ScanVersion            *string            `json:"scan_version"`
+	ScanAt                 pgtype.Timestamptz `json:"scan_at"`
+	LastVerifiedAt         pgtype.Timestamptz `json:"last_verified_at"`
+	RejectedReason         *string            `json:"rejected_reason"`
+	ScanAttempts           int32              `json:"scan_attempts"`
+	ScanErrorClass         *string            `json:"scan_error_class"`
+	ScanNextRetryAt        pgtype.Timestamptz `json:"scan_next_retry_at"`
+	CreatedAt              time.Time          `json:"created_at"`
+	UpdatedAt              time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) ObjectGetByID(ctx context.Context, id string) (ObjectGetByIDRow, error) {
 	row := q.db.QueryRow(ctx, objectGetByID, id)
-	var i ObjectRef
+	var i ObjectGetByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Bucket,
@@ -53,6 +100,9 @@ func (q *Queries) ObjectGetByID(ctx context.Context, id string) (ObjectRef, erro
 		&i.ScanAt,
 		&i.LastVerifiedAt,
 		&i.RejectedReason,
+		&i.ScanAttempts,
+		&i.ScanErrorClass,
+		&i.ScanNextRetryAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -66,6 +116,7 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE id = $1 AND owner_store_id = $2
@@ -76,9 +127,42 @@ type ObjectGetByIDForStoreParams struct {
 	OwnerStoreID string `json:"owner_store_id"`
 }
 
-func (q *Queries) ObjectGetByIDForStore(ctx context.Context, arg ObjectGetByIDForStoreParams) (ObjectRef, error) {
+type ObjectGetByIDForStoreRow struct {
+	ID                     string             `json:"id"`
+	Bucket                 string             `json:"bucket"`
+	ObjectKey              string             `json:"object_key"`
+	Purpose                string             `json:"purpose"`
+	Visibility             string             `json:"visibility"`
+	ContentType            string             `json:"content_type"`
+	ExpectedSizeBytes      int64              `json:"expected_size_bytes"`
+	ActualSizeBytes        *int64             `json:"actual_size_bytes"`
+	ChecksumSha256         *string            `json:"checksum_sha256"`
+	ExpectedChecksumSha256 *string            `json:"expected_checksum_sha256"`
+	EncryptionKeyVersion   *string            `json:"encryption_key_version"`
+	RetentionClass         string             `json:"retention_class"`
+	OwnerMerchantID        string             `json:"owner_merchant_id"`
+	OwnerStoreID           string             `json:"owner_store_id"`
+	OwnerUserID            *string            `json:"owner_user_id"`
+	Status                 string             `json:"status"`
+	UploadExpiresAt        time.Time          `json:"upload_expires_at"`
+	MultipartUploadID      *string            `json:"multipart_upload_id"`
+	MultipartAbortedAt     pgtype.Timestamptz `json:"multipart_aborted_at"`
+	ScanStatus             *string            `json:"scan_status"`
+	ScanVerdict            *string            `json:"scan_verdict"`
+	ScanVersion            *string            `json:"scan_version"`
+	ScanAt                 pgtype.Timestamptz `json:"scan_at"`
+	LastVerifiedAt         pgtype.Timestamptz `json:"last_verified_at"`
+	RejectedReason         *string            `json:"rejected_reason"`
+	ScanAttempts           int32              `json:"scan_attempts"`
+	ScanErrorClass         *string            `json:"scan_error_class"`
+	ScanNextRetryAt        pgtype.Timestamptz `json:"scan_next_retry_at"`
+	CreatedAt              time.Time          `json:"created_at"`
+	UpdatedAt              time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) ObjectGetByIDForStore(ctx context.Context, arg ObjectGetByIDForStoreParams) (ObjectGetByIDForStoreRow, error) {
 	row := q.db.QueryRow(ctx, objectGetByIDForStore, arg.ID, arg.OwnerStoreID)
-	var i ObjectRef
+	var i ObjectGetByIDForStoreRow
 	err := row.Scan(
 		&i.ID,
 		&i.Bucket,
@@ -105,6 +189,9 @@ func (q *Queries) ObjectGetByIDForStore(ctx context.Context, arg ObjectGetByIDFo
 		&i.ScanAt,
 		&i.LastVerifiedAt,
 		&i.RejectedReason,
+		&i.ScanAttempts,
+		&i.ScanErrorClass,
+		&i.ScanNextRetryAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -280,6 +367,7 @@ SELECT
     encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
     status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
     scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
     created_at, updated_at
 FROM object_refs
 WHERE status = 'UPLOADING' AND upload_expires_at < $1
@@ -292,15 +380,48 @@ type ObjectListExpiredUploadingParams struct {
 	Limit           int32     `json:"limit"`
 }
 
-func (q *Queries) ObjectListExpiredUploading(ctx context.Context, arg ObjectListExpiredUploadingParams) ([]ObjectRef, error) {
+type ObjectListExpiredUploadingRow struct {
+	ID                     string             `json:"id"`
+	Bucket                 string             `json:"bucket"`
+	ObjectKey              string             `json:"object_key"`
+	Purpose                string             `json:"purpose"`
+	Visibility             string             `json:"visibility"`
+	ContentType            string             `json:"content_type"`
+	ExpectedSizeBytes      int64              `json:"expected_size_bytes"`
+	ActualSizeBytes        *int64             `json:"actual_size_bytes"`
+	ChecksumSha256         *string            `json:"checksum_sha256"`
+	ExpectedChecksumSha256 *string            `json:"expected_checksum_sha256"`
+	EncryptionKeyVersion   *string            `json:"encryption_key_version"`
+	RetentionClass         string             `json:"retention_class"`
+	OwnerMerchantID        string             `json:"owner_merchant_id"`
+	OwnerStoreID           string             `json:"owner_store_id"`
+	OwnerUserID            *string            `json:"owner_user_id"`
+	Status                 string             `json:"status"`
+	UploadExpiresAt        time.Time          `json:"upload_expires_at"`
+	MultipartUploadID      *string            `json:"multipart_upload_id"`
+	MultipartAbortedAt     pgtype.Timestamptz `json:"multipart_aborted_at"`
+	ScanStatus             *string            `json:"scan_status"`
+	ScanVerdict            *string            `json:"scan_verdict"`
+	ScanVersion            *string            `json:"scan_version"`
+	ScanAt                 pgtype.Timestamptz `json:"scan_at"`
+	LastVerifiedAt         pgtype.Timestamptz `json:"last_verified_at"`
+	RejectedReason         *string            `json:"rejected_reason"`
+	ScanAttempts           int32              `json:"scan_attempts"`
+	ScanErrorClass         *string            `json:"scan_error_class"`
+	ScanNextRetryAt        pgtype.Timestamptz `json:"scan_next_retry_at"`
+	CreatedAt              time.Time          `json:"created_at"`
+	UpdatedAt              time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) ObjectListExpiredUploading(ctx context.Context, arg ObjectListExpiredUploadingParams) ([]ObjectListExpiredUploadingRow, error) {
 	rows, err := q.db.Query(ctx, objectListExpiredUploading, arg.UploadExpiresAt, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ObjectRef{}
+	items := []ObjectListExpiredUploadingRow{}
 	for rows.Next() {
-		var i ObjectRef
+		var i ObjectListExpiredUploadingRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Bucket,
@@ -327,6 +448,114 @@ func (q *Queries) ObjectListExpiredUploading(ctx context.Context, arg ObjectList
 			&i.ScanAt,
 			&i.LastVerifiedAt,
 			&i.RejectedReason,
+			&i.ScanAttempts,
+			&i.ScanErrorClass,
+			&i.ScanNextRetryAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const objectListPendingScan = `-- name: ObjectListPendingScan :many
+SELECT
+    id, bucket, object_key, purpose, visibility, content_type,
+    expected_size_bytes, actual_size_bytes, checksum_sha256, expected_checksum_sha256,
+    encryption_key_version, retention_class, owner_merchant_id, owner_store_id, owner_user_id,
+    status, upload_expires_at, multipart_upload_id, multipart_aborted_at,
+    scan_status, scan_verdict, scan_version, scan_at, last_verified_at, rejected_reason,
+    scan_attempts, scan_error_class, scan_next_retry_at,
+    created_at, updated_at
+FROM object_refs
+WHERE status = 'SCANNING'
+  AND (scan_next_retry_at IS NULL OR scan_next_retry_at <= $1)
+ORDER BY COALESCE(scan_next_retry_at, updated_at) ASC
+LIMIT $2
+`
+
+type ObjectListPendingScanParams struct {
+	ScanNextRetryAt pgtype.Timestamptz `json:"scan_next_retry_at"`
+	Limit           int32              `json:"limit"`
+}
+
+type ObjectListPendingScanRow struct {
+	ID                     string             `json:"id"`
+	Bucket                 string             `json:"bucket"`
+	ObjectKey              string             `json:"object_key"`
+	Purpose                string             `json:"purpose"`
+	Visibility             string             `json:"visibility"`
+	ContentType            string             `json:"content_type"`
+	ExpectedSizeBytes      int64              `json:"expected_size_bytes"`
+	ActualSizeBytes        *int64             `json:"actual_size_bytes"`
+	ChecksumSha256         *string            `json:"checksum_sha256"`
+	ExpectedChecksumSha256 *string            `json:"expected_checksum_sha256"`
+	EncryptionKeyVersion   *string            `json:"encryption_key_version"`
+	RetentionClass         string             `json:"retention_class"`
+	OwnerMerchantID        string             `json:"owner_merchant_id"`
+	OwnerStoreID           string             `json:"owner_store_id"`
+	OwnerUserID            *string            `json:"owner_user_id"`
+	Status                 string             `json:"status"`
+	UploadExpiresAt        time.Time          `json:"upload_expires_at"`
+	MultipartUploadID      *string            `json:"multipart_upload_id"`
+	MultipartAbortedAt     pgtype.Timestamptz `json:"multipart_aborted_at"`
+	ScanStatus             *string            `json:"scan_status"`
+	ScanVerdict            *string            `json:"scan_verdict"`
+	ScanVersion            *string            `json:"scan_version"`
+	ScanAt                 pgtype.Timestamptz `json:"scan_at"`
+	LastVerifiedAt         pgtype.Timestamptz `json:"last_verified_at"`
+	RejectedReason         *string            `json:"rejected_reason"`
+	ScanAttempts           int32              `json:"scan_attempts"`
+	ScanErrorClass         *string            `json:"scan_error_class"`
+	ScanNextRetryAt        pgtype.Timestamptz `json:"scan_next_retry_at"`
+	CreatedAt              time.Time          `json:"created_at"`
+	UpdatedAt              time.Time          `json:"updated_at"`
+}
+
+func (q *Queries) ObjectListPendingScan(ctx context.Context, arg ObjectListPendingScanParams) ([]ObjectListPendingScanRow, error) {
+	rows, err := q.db.Query(ctx, objectListPendingScan, arg.ScanNextRetryAt, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ObjectListPendingScanRow{}
+	for rows.Next() {
+		var i ObjectListPendingScanRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Bucket,
+			&i.ObjectKey,
+			&i.Purpose,
+			&i.Visibility,
+			&i.ContentType,
+			&i.ExpectedSizeBytes,
+			&i.ActualSizeBytes,
+			&i.ChecksumSha256,
+			&i.ExpectedChecksumSha256,
+			&i.EncryptionKeyVersion,
+			&i.RetentionClass,
+			&i.OwnerMerchantID,
+			&i.OwnerStoreID,
+			&i.OwnerUserID,
+			&i.Status,
+			&i.UploadExpiresAt,
+			&i.MultipartUploadID,
+			&i.MultipartAbortedAt,
+			&i.ScanStatus,
+			&i.ScanVerdict,
+			&i.ScanVersion,
+			&i.ScanAt,
+			&i.LastVerifiedAt,
+			&i.RejectedReason,
+			&i.ScanAttempts,
+			&i.ScanErrorClass,
+			&i.ScanNextRetryAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -442,6 +671,60 @@ func (q *Queries) ObjectUpdateComplete(ctx context.Context, arg ObjectUpdateComp
 		arg.UpdatedAt,
 	)
 	return err
+}
+
+const objectUpdateScanMeta = `-- name: ObjectUpdateScanMeta :execrows
+UPDATE object_refs SET
+    status = $2,
+    scan_status = $3,
+    scan_verdict = $4,
+    scan_version = $5,
+    scan_at = $6,
+    scan_attempts = $7,
+    scan_error_class = $8,
+    scan_next_retry_at = $9,
+    rejected_reason = $10,
+    last_verified_at = $11,
+    updated_at = $12
+WHERE id = $1 AND status = ANY ($13::text[])
+`
+
+type ObjectUpdateScanMetaParams struct {
+	ID              string             `json:"id"`
+	Status          string             `json:"status"`
+	ScanStatus      *string            `json:"scan_status"`
+	ScanVerdict     *string            `json:"scan_verdict"`
+	ScanVersion     *string            `json:"scan_version"`
+	ScanAt          pgtype.Timestamptz `json:"scan_at"`
+	ScanAttempts    int32              `json:"scan_attempts"`
+	ScanErrorClass  *string            `json:"scan_error_class"`
+	ScanNextRetryAt pgtype.Timestamptz `json:"scan_next_retry_at"`
+	RejectedReason  *string            `json:"rejected_reason"`
+	LastVerifiedAt  pgtype.Timestamptz `json:"last_verified_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	Column13        []string           `json:"column_13"`
+}
+
+func (q *Queries) ObjectUpdateScanMeta(ctx context.Context, arg ObjectUpdateScanMetaParams) (int64, error) {
+	result, err := q.db.Exec(ctx, objectUpdateScanMeta,
+		arg.ID,
+		arg.Status,
+		arg.ScanStatus,
+		arg.ScanVerdict,
+		arg.ScanVersion,
+		arg.ScanAt,
+		arg.ScanAttempts,
+		arg.ScanErrorClass,
+		arg.ScanNextRetryAt,
+		arg.RejectedReason,
+		arg.LastVerifiedAt,
+		arg.UpdatedAt,
+		arg.Column13,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const objectUserCanAccessStore = `-- name: ObjectUserCanAccessStore :one

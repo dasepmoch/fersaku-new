@@ -1,9 +1,11 @@
 package application_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -12,6 +14,63 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/objects"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
+
+// testScanner is an in-package malware scanner stub (no adapter import — architecture boundary).
+type testScanner struct {
+	mu           sync.Mutex
+	Next         ports.ScanVerdict
+	ForceTimeout bool
+	ForceError   string
+	Unconfigured bool
+	CallCount    int
+}
+
+func (t *testScanner) Configured() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return !t.Unconfigured
+}
+func (t *testScanner) Ready(context.Context) error {
+	if !t.Configured() {
+		return errors.New("unconfigured")
+	}
+	return nil
+}
+func (t *testScanner) Scan(ctx context.Context, in ports.ScanInput) (ports.ScanResult, error) {
+	t.mu.Lock()
+	t.CallCount++
+	next := t.Next
+	to := t.ForceTimeout
+	fe := t.ForceError
+	t.Next = ""
+	t.ForceTimeout = false
+	t.ForceError = ""
+	unc := t.Unconfigured
+	t.mu.Unlock()
+	if unc {
+		return ports.ScanResult{Verdict: ports.ScanVerdictError, Engine: "test", Version: "v1", ErrorClass: "not_configured"}, errors.New("unconfigured")
+	}
+	if to {
+		return ports.ScanResult{Verdict: ports.ScanVerdictTimeout, Engine: "test", Version: "v1", ErrorClass: "timeout"}, context.DeadlineExceeded
+	}
+	if fe != "" {
+		return ports.ScanResult{Verdict: ports.ScanVerdictError, Engine: "test", Version: "v1", ErrorClass: fe}, errors.New(fe)
+	}
+	body, _ := io.ReadAll(in.Reader)
+	if next != "" {
+		r := ports.ScanResult{Verdict: next, Engine: "test", Version: "v1"}
+		if next == ports.ScanVerdictInfected {
+			r.Signature = "TEST"
+		}
+		return r, nil
+	}
+	if bytes.Contains(body, []byte("EICAR-STANDARD-ANTIVIRUS-TEST-FILE")) {
+		return ports.ScanResult{Verdict: ports.ScanVerdictInfected, Engine: "test", Version: "v1", Signature: "EICAR"}, nil
+	}
+	return ports.ScanResult{Verdict: ports.ScanVerdictClean, Engine: "test", Version: "v1"}, nil
+}
+
+var _ ports.MalwareScanner = (*testScanner)(nil)
 
 type memObjectStore struct {
 	mu     sync.Mutex
@@ -93,6 +152,66 @@ func (m *memObjectStore) UpdateObjectComplete(_ context.Context, id string, stat
 	o.UpdatedAt = updatedAt
 	m.byID[id] = o
 	return nil
+}
+func (m *memObjectStore) UpdateObjectScanMeta(_ context.Context, id string, status objects.Status, scanStatus, scanVerdict, scanVersion *string, scanAt *time.Time, scanAttempts int32, scanErrorClass *string, scanNextRetryAt *time.Time, rejectedReason *string, verifiedAt *time.Time, updatedAt time.Time, allowedFrom []objects.Status) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	o, ok := m.byID[id]
+	if !ok {
+		return false, errObjNF
+	}
+	allowed := false
+	for _, s := range allowedFrom {
+		if o.Status == s {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return false, nil // CAS miss — no-op
+	}
+	o.Status = status
+	o.ScanStatus = scanStatus
+	o.ScanVerdict = scanVerdict
+	o.ScanVersion = scanVersion
+	o.ScanAt = scanAt
+	o.ScanAttempts = scanAttempts
+	o.ScanErrorClass = scanErrorClass
+	o.ScanNextRetryAt = scanNextRetryAt
+	o.RejectedReason = rejectedReason
+	o.LastVerifiedAt = verifiedAt
+	o.UpdatedAt = updatedAt
+	m.byID[id] = o
+	return true, nil
+}
+func (m *memObjectStore) ListPendingScan(_ context.Context, now time.Time, limit int32) ([]objects.ObjectRef, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []objects.ObjectRef
+	for _, o := range m.byID {
+		if o.Status != objects.StatusScanning {
+			continue
+		}
+		if o.ScanNextRetryAt != nil && o.ScanNextRetryAt.After(now) {
+			continue
+		}
+		out = append(out, o)
+		if int32(len(out)) >= limit {
+			break
+		}
+	}
+	return out, nil
+}
+func (m *memObjectStore) CountScanning(_ context.Context) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var n int64
+	for _, o := range m.byID {
+		if o.Status == objects.StatusScanning {
+			n++
+		}
+	}
+	return n, nil
 }
 func (m *memObjectStore) MarkObjectExpired(_ context.Context, id string, updatedAt time.Time) error {
 	m.mu.Lock()
@@ -211,6 +330,27 @@ func (f *fakeS3) GetObjectBytes(_ context.Context, bucket, key string) ([]byte, 
 	cp := make([]byte, len(o.body))
 	copy(cp, o.body)
 	return cp, nil
+}
+
+func (f *fakeS3) GetObjectStream(_ context.Context, bucket, key string, maxBytes int64) (io.ReadCloser, ports.ObjectHead, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o, ok := f.objects[f.k(bucket, key)]
+	if !ok {
+		return nil, ports.ObjectHead{}, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+	}
+	if maxBytes <= 0 {
+		maxBytes = 100 * 1024 * 1024
+	}
+	if int64(len(o.body)) > maxBytes {
+		return nil, ports.ObjectHead{}, fmt.Errorf("object exceeds bound")
+	}
+	cp := make([]byte, len(o.body))
+	copy(cp, o.body)
+	return io.NopCloser(bytes.NewReader(cp)), ports.ObjectHead{
+		ContentLength: int64(len(cp)),
+		ContentType:   o.ct,
+	}, nil
 }
 
 func (f *fakeS3) PutObjectBytes(_ context.Context, bucket, key, contentType string, body []byte) error {
@@ -367,6 +507,186 @@ func TestPresignCompleteHappyPath(t *testing.T) {
 	if dl.DownloadURL == "" || dl.CacheControl != "private, no-store" {
 		t.Fatalf("bad download result: %+v", dl)
 	}
+}
+
+func TestComplete_ScannerCleanReady(t *testing.T) {
+	mem := newMemObjectStore()
+	fake := newFakeS3()
+	sc := &testScanner{}
+	svc := &application.ObjectService{
+		Store: mem, Objects: fake, Scanner: sc, IDs: &objIDs{}, Clock: objClock{t: time.Now().UTC()},
+		BucketPublic: "pub", BucketPrivate: "priv",
+	}
+	body := []byte("clean-bytes")
+	res, err := svc.CreateUploadIntent(context.Background(), "user_a", "store_a", application.CreateUploadInput{
+		Purpose: "PRODUCT_FILE", ContentType: "application/zip", SizeBytes: int64(len(body)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = fake.PutObjectBytes(context.Background(), res.Object.Bucket, res.Object.ObjectKey, "application/zip", body)
+	out, err := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Status != objects.StatusReady {
+		t.Fatalf("status=%s", out.Status)
+	}
+	if out.ScanVerdict == nil || *out.ScanVerdict != "CLEAN" {
+		t.Fatalf("scan verdict=%v", out.ScanVerdict)
+	}
+	if out.ScanVersion == nil || *out.ScanVersion == "" {
+		t.Fatal("expected scan version evidence")
+	}
+	// idempotent complete
+	out2, err := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out2.Status != objects.StatusReady {
+		t.Fatalf("idempotent status=%s", out2.Status)
+	}
+}
+
+func TestComplete_EICARInfectedRejected(t *testing.T) {
+	mem := newMemObjectStore()
+	fake := newFakeS3()
+	sc := &testScanner{}
+	svc := &application.ObjectService{
+		Store: mem, Objects: fake, Scanner: sc, IDs: &objIDs{}, Clock: objClock{t: time.Now().UTC()},
+		BucketPublic: "pub", BucketPrivate: "priv",
+	}
+	body := []byte(`X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*`)
+	res, err := svc.CreateUploadIntent(context.Background(), "user_a", "store_a", application.CreateUploadInput{
+		Purpose: "PRODUCT_FILE", ContentType: "application/zip", SizeBytes: int64(len(body)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = fake.PutObjectBytes(context.Background(), res.Object.Bucket, res.Object.ObjectKey, "application/zip", body)
+	out, err := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if err == nil {
+		t.Fatal("expected infected error")
+	}
+	if out.Status != objects.StatusRejected {
+		t.Fatalf("status=%s", out.Status)
+	}
+	if out.ScanVerdict == nil || *out.ScanVerdict != "INFECTED" {
+		t.Fatalf("verdict=%v", out.ScanVerdict)
+	}
+	// blob deleted (containment)
+	if fake.Has(res.Object.Bucket, res.Object.ObjectKey) {
+		t.Fatal("infected object should be deleted")
+	}
+}
+
+func TestComplete_TimeoutStaysQuarantine(t *testing.T) {
+	mem := newMemObjectStore()
+	fake := newFakeS3()
+	sc := &testScanner{ForceTimeout: true}
+	svc := &application.ObjectService{
+		Store: mem, Objects: fake, Scanner: sc, IDs: &objIDs{}, Clock: objClock{t: time.Now().UTC()},
+		BucketPublic: "pub", BucketPrivate: "priv",
+	}
+	body := []byte("slow")
+	res, err := svc.CreateUploadIntent(context.Background(), "user_a", "store_a", application.CreateUploadInput{
+		Purpose: "PRODUCT_FILE", ContentType: "application/zip", SizeBytes: int64(len(body)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = fake.PutObjectBytes(context.Background(), res.Object.Bucket, res.Object.ObjectKey, "application/zip", body)
+	out, err := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if err != nil {
+		t.Fatal(err) // quarantine path returns object without hard error
+	}
+	if out.Status != objects.StatusScanning {
+		t.Fatalf("status=%s want SCANNING", out.Status)
+	}
+}
+
+func TestComplete_ScannerUnavailableQuarantine(t *testing.T) {
+	mem := newMemObjectStore()
+	fake := newFakeS3()
+	svc := &application.ObjectService{
+		Store: mem, Objects: fake, IDs: &objIDs{}, Clock: objClock{t: time.Now().UTC()},
+		BucketPublic: "pub", BucketPrivate: "priv", LocalScanPass: false,
+	}
+	body := []byte("data")
+	res, err := svc.CreateUploadIntent(context.Background(), "user_a", "store_a", application.CreateUploadInput{
+		Purpose: "PRODUCT_FILE", ContentType: "application/zip", SizeBytes: int64(len(body)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = fake.PutObjectBytes(context.Background(), res.Object.Bucket, res.Object.ObjectKey, "application/zip", body)
+	out, err := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if err != nil {
+		// may return quarantine object with nil err or scanning state
+		_ = err
+	}
+	if out.ID == "" {
+		ref, _ := mem.GetObjectByID(context.Background(), res.Object.ID)
+		out = ref
+	}
+	if out.Status == objects.StatusReady {
+		t.Fatal("must not READY without scanner")
+	}
+	if out.Status != objects.StatusScanning {
+		t.Fatalf("status=%s want SCANNING", out.Status)
+	}
+}
+
+func TestProcessPendingScans_IdempotentReady(t *testing.T) {
+	mem := newMemObjectStore()
+	fake := newFakeS3()
+	sc := &testScanner{}
+	base := time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC)
+	clk := &objClock{t: base}
+	svc := &application.ObjectService{
+		Store: mem, Objects: fake, Scanner: sc, IDs: &objIDs{}, Clock: clk,
+		BucketPublic: "pub", BucketPrivate: "priv",
+	}
+	body := []byte("retry-me")
+	res, err := svc.CreateUploadIntent(context.Background(), "user_a", "store_a", application.CreateUploadInput{
+		Purpose: "PRODUCT_FILE", ContentType: "application/zip", SizeBytes: int64(len(body)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = fake.PutObjectBytes(context.Background(), res.Object.Bucket, res.Object.ObjectKey, "application/zip", body)
+	// force quarantine first
+	sc.ForceTimeout = true
+	out, _ := svc.CompleteUpload(context.Background(), "user_a", "store_a", res.Object.ID, objects.SHA256Hex(body))
+	if out.Status != objects.StatusScanning {
+		t.Fatalf("want SCANNING got %s", out.Status)
+	}
+	// advance clock past backoff so ListPendingScan picks it up
+	clk.t = base.Add(2 * time.Minute)
+	n, err := svc.ProcessPendingScans(context.Background(), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n < 1 {
+		t.Fatalf("processed=%d", n)
+	}
+	ref, _ := mem.GetObjectByID(context.Background(), res.Object.ID)
+	if ref.Status != objects.StatusReady {
+		t.Fatalf("status=%s", ref.Status)
+	}
+	q1 := mem.quota["merch_a"]
+	// duplicate job must not double quota
+	_, _ = svc.ProcessPendingScans(context.Background(), 10)
+	if mem.quota["merch_a"] != q1 {
+		t.Fatalf("quota double-counted: %d -> %d", q1, mem.quota["merch_a"])
+	}
+}
+
+func (f *fakeS3) Has(bucket, key string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	_, ok := f.objects[f.k(bucket, key)]
+	return ok
 }
 
 var _ ports.ObjectStore = (*fakeS3)(nil)

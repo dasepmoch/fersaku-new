@@ -21,6 +21,8 @@ type Metrics struct {
 	callbackProcessed map[string]*atomic.Uint64
 	webhookDelivered  map[string]*atomic.Uint64
 	auditChainChecks  map[string]*atomic.Uint64
+	malwareScans      map[string]*atomic.Uint64
+	malwareQuarantine atomic.Uint64 // backlog gauge source (set, not add)
 
 	httpLatencySum     map[string]*atomic.Uint64
 	httpLatencyCount   map[string]*atomic.Uint64
@@ -45,6 +47,7 @@ func NewMetrics() *Metrics {
 		callbackProcessed:  make(map[string]*atomic.Uint64),
 		webhookDelivered:   make(map[string]*atomic.Uint64),
 		auditChainChecks:   make(map[string]*atomic.Uint64),
+		malwareScans:       make(map[string]*atomic.Uint64),
 		httpLatencySum:     make(map[string]*atomic.Uint64),
 		httpLatencyCount:   make(map[string]*atomic.Uint64),
 		httpLatencyBuckets: make(map[string]*latencyBuckets),
@@ -136,6 +139,22 @@ func (m *Metrics) IncAuditChain(result string) {
 	m.counterGet(m.auditChainChecks, result).Add(1)
 }
 
+// IncMalwareScan records a scan outcome: clean|infected|error|timeout|quarantine|dead_letter
+func (m *Metrics) IncMalwareScan(result string) {
+	if result == "" {
+		result = "unknown"
+	}
+	m.counterGet(m.malwareScans, result).Add(1)
+}
+
+// SetMalwareQuarantineBacklog sets the SCANNING object backlog gauge.
+func (m *Metrics) SetMalwareQuarantineBacklog(n float64) {
+	if n < 0 {
+		n = 0
+	}
+	m.malwareQuarantine.Store(uint64(n))
+}
+
 // WritePrometheus writes Prometheus text exposition format 0.0.4.
 func (m *Metrics) WritePrometheus(b *strings.Builder) {
 	m.mu.Lock()
@@ -143,6 +162,7 @@ func (m *Metrics) WritePrometheus(b *strings.Builder) {
 	cbKeys := sortedKeys(m.callbackProcessed)
 	whKeys := sortedKeys(m.webhookDelivered)
 	audKeys := sortedKeys(m.auditChainChecks)
+	mwKeys := sortedKeys(m.malwareScans)
 	latKeys := sortedKeys(m.httpLatencySum)
 	scrape := m.scrapeGauges
 	m.mu.Unlock()
@@ -211,6 +231,17 @@ func (m *Metrics) WritePrometheus(b *strings.Builder) {
 		v := m.counterGet(m.auditChainChecks, k).Load()
 		fmt.Fprintf(b, `fersaku_audit_chain_status_total{result=%q} %d`+"\n", k, v)
 	}
+
+	b.WriteString("# HELP fersaku_malware_scan_total Malware scan outcomes by result.\n")
+	b.WriteString("# TYPE fersaku_malware_scan_total counter\n")
+	for _, k := range mwKeys {
+		v := m.counterGet(m.malwareScans, k).Load()
+		fmt.Fprintf(b, `fersaku_malware_scan_total{result=%q} %d`+"\n", k, v)
+	}
+
+	b.WriteString("# HELP fersaku_malware_quarantine_backlog Objects in SCANNING quarantine.\n")
+	b.WriteString("# TYPE fersaku_malware_quarantine_backlog gauge\n")
+	fmt.Fprintf(b, "fersaku_malware_quarantine_backlog %d\n", m.malwareQuarantine.Load())
 
 	b.WriteString("# HELP fersaku_outbox_pending Gauge of pending/failed outbox rows available for work.\n")
 	b.WriteString("# TYPE fersaku_outbox_pending gauge\n")

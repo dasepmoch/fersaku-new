@@ -8,6 +8,7 @@ import (
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/objects"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/metrics"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
@@ -16,6 +17,7 @@ import (
 type ObjectService struct {
 	Store         ObjectStore
 	Objects       ports.ObjectStore
+	Scanner       ports.MalwareScanner
 	IDs           ports.IDGenerator
 	Clock         ports.Clock
 	Log           ports.Logger
@@ -23,9 +25,14 @@ type ObjectService struct {
 	BucketPrivate string
 	// MerchantSoftQuotaBytes is optional soft limit; 0 = unlimited.
 	MerchantSoftQuotaBytes int64
-	// LocalScanPass: when true (local/test), skip external malware scanner and mark CLEAN.
-	// Production scanners land later; incomplete scan must not silently READY without this flag.
+	// LocalScanPass: when true (local/test) and Scanner is nil, use implicit local-pass.
+	// Prefer injecting ports.MalwareScanner (localpass adapter) explicitly.
+	// Deprecated for production: staging/prod must wire a Configured scanner.
 	LocalScanPass bool
+	// MaxScanAttempts before dead-letter quarantine (default objects.DefaultScanMaxAttempts).
+	MaxScanAttempts int32
+	// ScanTimeout bounds a single scan attempt.
+	ScanTimeout time.Duration
 }
 
 func (s *ObjectService) now() time.Time {
@@ -253,35 +260,324 @@ func (s *ObjectService) CompleteUpload(ctx context.Context, userID, storeID, obj
 		return objects.ObjectRef{}, apperr.Validation(apperr.CodeValidationFailed, "Checksum is required to complete upload")
 	}
 
-	// Scan gate: local pass for minio/dev; production must set scanner (later).
-	scanStatus := "SKIPPED"
-	scanVerdict := "CLEAN"
-	scanVersion := "local-pass-v1"
-	if !s.LocalScanPass {
-		// Without scanner, quarantine as SCANNING then reject READY transition.
-		// Launch policy: LocalScanPass must be true for local; staging/prod wire scanner later.
-		// Fail closed: do not mark READY without scan pass flag.
-		reason := "malware scan unavailable"
-		_ = s.reject(ctx, ref.ID, reason, now)
-		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Malware scan unavailable")
+	// Persist size/checksum and move to SCANNING quarantine until CLEAN.
+	// Never READY without scan evidence from a configured scanner (or explicit local-pass).
+	scanStatus := objects.ScanStatusPending
+	if err := s.Store.UpdateObjectComplete(ctx, ref.ID, objects.StatusScanning, head.ContentLength, checksum, ref.ContentType,
+		&scanStatus, nil, nil, nil, nil, nil, now); err != nil {
+		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Failed to quarantine object for scan")
 	}
-	scanAt := now
-	status := objects.StatusReady
-	if err := s.Store.UpdateObjectComplete(ctx, ref.ID, status, head.ContentLength, checksum, ref.ContentType,
-		&scanStatus, &scanVerdict, &scanVersion, &scanAt, &now, nil, now); err != nil {
-		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Failed to finalize object")
-	}
-	_ = s.Store.AddQuota(ctx, ref.OwnerMerchantID, head.ContentLength, now)
 
-	out, err := s.Store.GetObjectByIDForStore(ctx, objectID, storeID)
+	// Attempt synchronous scan so happy-path clients get READY without waiting for worker.
+	out, err := s.scanObject(ctx, objectID, storeID)
 	if err != nil {
-		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Object reload failed")
+		// Quarantine retained; surface SCANNING state for async retry (timeout/error).
+		ref2, gerr := s.Store.GetObjectByIDForStore(ctx, objectID, storeID)
+		if gerr == nil && ref2.Status == objects.StatusScanning {
+			if s.Log != nil {
+				s.Log.Info("upload quarantined pending scan", "object_id", objectID, "err", err.Error())
+			}
+			return ref2, nil
+		}
+		if gerr == nil {
+			return ref2, err
+		}
+		return objects.ObjectRef{}, err
 	}
 	if s.Log != nil {
 		s.Log.Info("upload completed", "object_id", objectID, "status", string(out.Status))
 	}
 	return out, nil
 }
+
+func (s *ObjectService) maxAttempts() int32 {
+	if s.MaxScanAttempts > 0 {
+		return s.MaxScanAttempts
+	}
+	return objects.DefaultScanMaxAttempts
+}
+
+func (s *ObjectService) scanTimeout() time.Duration {
+	if s.ScanTimeout > 0 {
+		return s.ScanTimeout
+	}
+	return objects.DefaultScanTimeout
+}
+
+func (s *ObjectService) scanner() ports.MalwareScanner {
+	if s.Scanner != nil {
+		return s.Scanner
+	}
+	return nil
+}
+
+// scanObject runs one malware scan attempt for a SCANNING object.
+// CLEAN → READY + quota; INFECTED → REJECTED; ERROR/TIMEOUT → retry or dead-letter quarantine.
+// Idempotent: READY/REJECTED objects are returned unchanged (no double quota).
+func (s *ObjectService) scanObject(ctx context.Context, objectID, storeID string) (objects.ObjectRef, error) {
+	ref, err := s.Store.GetObjectByIDForStore(ctx, objectID, storeID)
+	if err != nil {
+		if s.Store.IsNotFound(err) {
+			return objects.ObjectRef{}, objects.ErrNotFound
+		}
+		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Object lookup failed")
+	}
+	if ref.Status == objects.StatusReady || ref.Status == objects.StatusRejected {
+		return ref, nil
+	}
+	if ref.Status != objects.StatusScanning {
+		return objects.ObjectRef{}, objects.ErrInvalidState
+	}
+
+	now := s.now()
+	sc := s.scanner()
+	if sc == nil || !sc.Configured() {
+		if s.LocalScanPass {
+			return s.finalizeClean(ctx, ref, ports.ScanResult{
+				Verdict: ports.ScanVerdictClean,
+				Engine:  "localpass",
+				Version: "local-pass-v1",
+			}, now)
+		}
+		// Fail-closed quarantine: scanner missing — schedule retry, never READY.
+		attempts := ref.ScanAttempts + 1
+		errClass := "scanner_unavailable"
+		next := now.Add(objects.DefaultScanBackoff * time.Duration(attempts))
+		st := objects.ScanStatusFailed
+		verdict := string(ports.ScanVerdictError)
+		version := "unavailable"
+		reason := "malware scan unavailable"
+		_, _ = s.Store.UpdateObjectScanMeta(ctx, ref.ID, objects.StatusScanning,
+			&st, &verdict, &version, &now, attempts, &errClass, &next, &reason, nil, now,
+			[]objects.Status{objects.StatusScanning})
+		metrics.Global.IncMalwareScan("error")
+		metrics.Global.IncMalwareScan("quarantine")
+		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Malware scan unavailable")
+	}
+
+	maxB := objects.MaxBytesForPurpose(ref.Purpose)
+	if maxB <= 0 {
+		maxB = objects.MaxUploadBytesProduct
+	}
+	rc, _, openErr := s.Objects.GetObjectStream(ctx, ref.Bucket, ref.ObjectKey, maxB)
+	if openErr != nil {
+		return s.handleScanFailure(ctx, ref, ports.ScanResult{
+			Verdict:    ports.ScanVerdictError,
+			Engine:     "objectstore",
+			Version:    "n/a",
+			ErrorClass: "fetch_error",
+		}, now, openErr)
+	}
+	defer rc.Close()
+
+	scanCtx, cancel := context.WithTimeout(ctx, s.scanTimeout())
+	defer cancel()
+	result, scanErr := sc.Scan(scanCtx, ports.ScanInput{
+		Reader:      rc,
+		SizeBytes:   derefInt64(ref.ActualSizeBytes, ref.ExpectedSizeBytes),
+		ContentType: ref.ContentType,
+		MaxBytes:    maxB,
+		Timeout:     s.scanTimeout(),
+		Purpose:     "object",
+	})
+	// Never treat spoofed/empty CLEAN without engine/version as success.
+	if result.Verdict == ports.ScanVerdictClean {
+		if strings.TrimSpace(result.Engine) == "" || strings.TrimSpace(result.Version) == "" {
+			result.Verdict = ports.ScanVerdictError
+			result.ErrorClass = "invalid_response"
+			scanErr = errors.New("malware: missing engine/version on clean verdict")
+		}
+	}
+	if scanErr != nil && result.Verdict == "" {
+		if errors.Is(scanErr, context.DeadlineExceeded) || errors.Is(scanCtx.Err(), context.DeadlineExceeded) {
+			result.Verdict = ports.ScanVerdictTimeout
+			result.ErrorClass = "timeout"
+		} else {
+			result.Verdict = ports.ScanVerdictError
+			if result.ErrorClass == "" {
+				result.ErrorClass = "scan_error"
+			}
+		}
+	}
+	if result.Verdict == ports.ScanVerdictTimeout || errors.Is(scanCtx.Err(), context.DeadlineExceeded) {
+		if result.Verdict != ports.ScanVerdictInfected {
+			result.Verdict = ports.ScanVerdictTimeout
+			if result.ErrorClass == "" {
+				result.ErrorClass = "timeout"
+			}
+		}
+	}
+
+	switch result.Verdict {
+	case ports.ScanVerdictClean:
+		return s.finalizeClean(ctx, ref, result, now)
+	case ports.ScanVerdictInfected:
+		return s.finalizeInfected(ctx, ref, result, now)
+	default:
+		return s.handleScanFailure(ctx, ref, result, now, scanErr)
+	}
+}
+
+func derefInt64(p *int64, fallback int64) int64 {
+	if p != nil {
+		return *p
+	}
+	return fallback
+}
+
+func (s *ObjectService) finalizeClean(ctx context.Context, ref objects.ObjectRef, result ports.ScanResult, now time.Time) (objects.ObjectRef, error) {
+	// Re-check status to avoid double quota on concurrent workers.
+	cur, err := s.Store.GetObjectByID(ctx, ref.ID)
+	if err == nil && cur.Status == objects.StatusReady {
+		return cur, nil
+	}
+	st := objects.ScanStatusComplete
+	verdict := string(ports.ScanVerdictClean)
+	version := result.Engine + ":" + result.Version
+	if len(version) > 128 {
+		version = version[:128]
+	}
+	attempts := ref.ScanAttempts + 1
+	won, err := s.Store.UpdateObjectScanMeta(ctx, ref.ID, objects.StatusReady,
+		&st, &verdict, &version, &now, attempts, nil, nil, nil, &now, now,
+		[]objects.Status{objects.StatusScanning})
+	if err != nil {
+		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Failed to finalize clean scan")
+	}
+	if won {
+		size := derefInt64(ref.ActualSizeBytes, ref.ExpectedSizeBytes)
+		_ = s.Store.AddQuota(ctx, ref.OwnerMerchantID, size, now)
+		metrics.Global.IncMalwareScan("clean")
+	}
+	out, err := s.Store.GetObjectByID(ctx, ref.ID)
+	if err != nil {
+		return objects.ObjectRef{}, apperr.Internal(apperr.CodeInternalError, "Object reload failed")
+	}
+	return out, nil
+}
+
+func (s *ObjectService) finalizeInfected(ctx context.Context, ref objects.ObjectRef, result ports.ScanResult, now time.Time) (objects.ObjectRef, error) {
+	st := objects.ScanStatusComplete
+	verdict := string(ports.ScanVerdictInfected)
+	version := result.Engine + ":" + result.Version
+	if len(version) > 128 {
+		version = version[:128]
+	}
+	reason := "malware detected"
+	if result.Signature != "" {
+		reason = "malware detected: " + result.Signature
+		if len(reason) > 200 {
+			reason = reason[:200]
+		}
+	}
+	attempts := ref.ScanAttempts + 1
+	won, _ := s.Store.UpdateObjectScanMeta(ctx, ref.ID, objects.StatusRejected,
+		&st, &verdict, &version, &now, attempts, nil, nil, &reason, nil, now,
+		[]objects.Status{objects.StatusScanning})
+	// Best-effort delete infected blob (containment).
+	if won && s.Objects != nil && s.Objects.Configured() {
+		_ = s.Objects.DeleteObject(ctx, ref.Bucket, ref.ObjectKey)
+	}
+	if won {
+		metrics.Global.IncMalwareScan("infected")
+	}
+	out, _ := s.Store.GetObjectByID(ctx, ref.ID)
+	if out.ID == "" {
+		out = ref
+		out.Status = objects.StatusRejected
+	}
+	return out, apperr.Validation(apperr.CodeValidationFailed, "Object failed malware scan")
+}
+
+func (s *ObjectService) handleScanFailure(ctx context.Context, ref objects.ObjectRef, result ports.ScanResult, now time.Time, scanErr error) (objects.ObjectRef, error) {
+	attempts := ref.ScanAttempts + 1
+	errClass := result.ErrorClass
+	if errClass == "" {
+		errClass = "scan_error"
+	}
+	if result.Verdict == ports.ScanVerdictTimeout {
+		errClass = "timeout"
+	}
+	st := objects.ScanStatusFailed
+	verdict := string(result.Verdict)
+	if verdict == "" {
+		verdict = string(ports.ScanVerdictError)
+	}
+	version := result.Engine + ":" + result.Version
+	if version == ":" || strings.TrimPrefix(version, ":") == result.Version && result.Engine == "" {
+		version = "unknown"
+	}
+	if len(version) > 128 {
+		version = version[:128]
+	}
+
+	maxA := s.maxAttempts()
+	if attempts >= maxA {
+		reason := "malware scan failed after retries"
+		won, _ := s.Store.UpdateObjectScanMeta(ctx, ref.ID, objects.StatusRejected,
+			&st, &verdict, &version, &now, attempts, &errClass, nil, &reason, nil, now,
+			[]objects.Status{objects.StatusScanning})
+		if won {
+			metrics.Global.IncMalwareScan("error")
+			metrics.Global.IncMalwareScan("dead_letter")
+		}
+		out, _ := s.Store.GetObjectByID(ctx, ref.ID)
+		if scanErr != nil {
+			return out, apperr.Internal(apperr.CodeInternalError, "Malware scan failed")
+		}
+		return out, apperr.Internal(apperr.CodeInternalError, "Malware scan failed")
+	}
+
+	backoff := objects.DefaultScanBackoff * time.Duration(attempts)
+	if backoff > 10*time.Minute {
+		backoff = 10 * time.Minute
+	}
+	next := now.Add(backoff)
+	reason := "malware scan pending retry"
+	won, _ := s.Store.UpdateObjectScanMeta(ctx, ref.ID, objects.StatusScanning,
+		&st, &verdict, &version, &now, attempts, &errClass, &next, &reason, nil, now,
+		[]objects.Status{objects.StatusScanning})
+	if won {
+		if result.Verdict == ports.ScanVerdictTimeout {
+			metrics.Global.IncMalwareScan("timeout")
+		} else {
+			metrics.Global.IncMalwareScan("error")
+		}
+		metrics.Global.IncMalwareScan("quarantine")
+	}
+	out, _ := s.Store.GetObjectByID(ctx, ref.ID)
+	if out.ID == "" {
+		out = ref
+		out.Status = objects.StatusScanning
+	}
+	if scanErr != nil {
+		return out, scanErr
+	}
+	return out, apperr.Internal(apperr.CodeInternalError, "Malware scan incomplete")
+}
+
+// ProcessPendingScans drains due SCANNING objects (worker job). Idempotent per object.
+func (s *ObjectService) ProcessPendingScans(ctx context.Context, limit int32) (int, error) {
+	if limit <= 0 {
+		limit = 25
+	}
+	now := s.now()
+	list, err := s.Store.ListPendingScan(ctx, now, limit)
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, ref := range list {
+		_, _ = s.scanObject(ctx, ref.ID, ref.OwnerStoreID)
+		n++
+	}
+	if backlog, cerr := s.Store.CountScanning(ctx); cerr == nil {
+		metrics.Global.SetMalwareQuarantineBacklog(float64(backlog))
+	}
+	return n, nil
+}
+
+
 
 func (s *ObjectService) reject(ctx context.Context, id, reason string, now time.Time) error {
 	return s.Store.UpdateObjectComplete(ctx, id, objects.StatusRejected, 0, "", "", nil, nil, nil, nil, nil, &reason, now)

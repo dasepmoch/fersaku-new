@@ -345,6 +345,18 @@ type DeliveryGrant struct {
 	UpdatedAt            time.Time          `json:"updated_at"`
 }
 
+// GAP-01 audit: Duitku intents and how status lookup should resolve (merchantOrderId=external_id). No blind ID rewrite.
+type DuitkuMerchantOrderRepairReport struct {
+	PaymentIntentID   string    `json:"payment_intent_id"`
+	PaymentMode       string    `json:"payment_mode"`
+	ExternalID        string    `json:"external_id"`
+	ProviderReference *string   `json:"provider_reference"`
+	Status            string    `json:"status"`
+	RepairAction      string    `json:"repair_action"`
+	Notes             string    `json:"notes"`
+	ReportedAt        time.Time `json:"reported_at"`
+}
+
 type EmailChangeRequest struct {
 	ID                      string             `json:"id"`
 	UserID                  string             `json:"user_id"`
@@ -861,6 +873,9 @@ type ObjectRef struct {
 	RejectedReason         *string            `json:"rejected_reason"`
 	CreatedAt              time.Time          `json:"created_at"`
 	UpdatedAt              time.Time          `json:"updated_at"`
+	ScanAttempts           int32              `json:"scan_attempts"`
+	ScanErrorClass         *string            `json:"scan_error_class"`
+	ScanNextRetryAt        pgtype.Timestamptz `json:"scan_next_retry_at"`
 }
 
 type Order struct {

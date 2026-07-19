@@ -272,6 +272,9 @@ func setMinimalProduction(t *testing.T) {
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_SMTP_PORT", "587")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	// GAP-02 malware scanner
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 }
 
 func setMinimalStaging(t *testing.T) {
@@ -291,6 +294,9 @@ func setMinimalStaging(t *testing.T) {
 	t.Setenv("MAIL_MODE", "smtp")
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	// GAP-02 malware scanner
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 }
 
 func TestStagingRejectsFakeXendit(t *testing.T) {
@@ -306,10 +312,36 @@ func TestStagingRejectsFakeXendit(t *testing.T) {
 	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "fake") {
 		t.Fatalf("expected staging fake xendit forbidden, got %v", err)
+	}
+}
+
+func TestProductionRejectsLocalpassScanner(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("MALWARE_SCANNER", "localpass")
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "localpass") {
+		t.Fatalf("expected production localpass forbidden, got %v", err)
+	}
+}
+
+func TestLocalDefaultsLocalpassScanner(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("MALWARE_SCANNER", "")
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.EffectiveMalwareScanner() != "localpass" {
+		t.Fatalf("got %s", cfg.EffectiveMalwareScanner())
 	}
 }
 
@@ -355,6 +387,8 @@ func TestStagingRejectsCaptureMail(t *testing.T) {
 	t.Setenv("XENDIT_MODE", "live")
 	t.Setenv("XENDIT_SECRET_KEY", "xnd_staging_test")
 	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_staging")
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 	t.Setenv("SESSION_SECRET", "staging-session-secret-16")
 	t.Setenv("CSRF_SECRET", "staging-csrf-secret")
 	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
@@ -509,6 +543,8 @@ func TestProductionDuitkuRejectsSandboxBaseURL(t *testing.T) {
 	t.Setenv("MAIL_MODE", "smtp")
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "sandbox") {
@@ -541,6 +577,8 @@ func TestProductionDuitkuAllowsPassport(t *testing.T) {
 	t.Setenv("MAIL_MODE", "smtp")
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	t.Setenv("MALWARE_SCANNER", "clamav")
+	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 
 	cfg, err := config.Load("fersaku-api")
 	if err != nil {

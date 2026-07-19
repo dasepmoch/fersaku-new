@@ -4,6 +4,7 @@ package r2
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
@@ -46,4 +47,9 @@ func (Noop) PutObjectBytes(context.Context, string, string, string, []byte) erro
 // GetObjectBytes fails closed.
 func (Noop) GetObjectBytes(context.Context, string, string) ([]byte, error) {
 	return nil, fmt.Errorf("r2: object storage not configured")
+}
+
+// GetObjectStream fails closed.
+func (Noop) GetObjectStream(context.Context, string, string, int64) (io.ReadCloser, ports.ObjectHead, error) {
+	return nil, ports.ObjectHead{}, fmt.Errorf("r2: object storage not configured")
 }

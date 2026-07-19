@@ -80,8 +80,12 @@ func BuildRegistry(d Deps) *Registry {
 		reg.Register(must(JobObjectUploadCleanup), func(ctx context.Context, batch int) (int, error) {
 			return d.Objects.CleanupExpiredUploads(ctx, int32(batch))
 		})
+		reg.Register(must(JobObjectMalwareScan), func(ctx context.Context, batch int) (int, error) {
+			return d.Objects.ProcessPendingScans(ctx, int32(batch))
+		})
 	} else {
 		stub(JobObjectUploadCleanup, "ObjectService missing")
+		stub(JobObjectMalwareScan, "ObjectService missing")
 	}
 
 	// checkout intent expiry + unknown reconciliation

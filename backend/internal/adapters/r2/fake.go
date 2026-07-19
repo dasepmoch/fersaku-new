@@ -1,8 +1,10 @@
 package r2
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -106,6 +108,30 @@ func (f *Fake) GetObjectBytes(_ context.Context, bucket, key string) ([]byte, er
 	cp := make([]byte, len(o.Body))
 	copy(cp, o.Body)
 	return cp, nil
+}
+
+// GetObjectStream returns a ReadCloser over stored bytes.
+func (f *Fake) GetObjectStream(_ context.Context, bucket, key string, maxBytes int64) (io.ReadCloser, ports.ObjectHead, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o, ok := f.objects[f.key(bucket, key)]
+	if !ok {
+		return nil, ports.ObjectHead{}, ports.ErrObjectNotFound{Bucket: bucket, Key: key}
+	}
+	if maxBytes <= 0 {
+		maxBytes = 100 * 1024 * 1024
+	}
+	if int64(len(o.Body)) > maxBytes {
+		return nil, ports.ObjectHead{}, fmt.Errorf("r2: object exceeds bound")
+	}
+	cp := make([]byte, len(o.Body))
+	copy(cp, o.Body)
+	head := ports.ObjectHead{
+		ContentLength: int64(len(cp)),
+		ContentType:   o.ContentType,
+		ETag:          "fake-etag",
+	}
+	return io.NopCloser(bytes.NewReader(cp)), head, nil
 }
 
 // Has reports presence (tests).

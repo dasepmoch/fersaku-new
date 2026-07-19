@@ -110,6 +110,17 @@ type Config struct {
 	R2Region          string
 	R2ForcePathStyle  bool
 
+	// Malware scanner (GAP-02).
+	// MalwareScanner: auto|localpass|clamav|stub|noop (empty = auto by AppEnv).
+	// auto: local|test → localpass; staging|production → clamav (requires address).
+	// stub is for tests/drills only; forbidden on production.
+	MalwareScanner string
+	// MalwareScannerAddress is clamav socket/URL (unix:///path or host:port).
+	MalwareScannerAddress string
+	// MalwareScannerRequired when true forces readiness failure if scanner not ready.
+	// Default true on staging/production.
+	MalwareScannerRequired bool
+
 	// Mail
 	MailSMTPHost     string
 	MailSMTPPort     string
@@ -168,6 +179,8 @@ func Load(serviceName string) (Config, error) {
 		R2SecretAccessKey:       strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
 		R2Region:                strings.TrimSpace(getEnv("R2_REGION", "auto")),
 		R2ForcePathStyle:        false,
+		MalwareScanner:          strings.ToLower(strings.TrimSpace(os.Getenv("MALWARE_SCANNER"))),
+		MalwareScannerAddress:   strings.TrimSpace(os.Getenv("MALWARE_SCANNER_ADDRESS")),
 		MailSMTPHost:            strings.TrimSpace(os.Getenv("MAIL_SMTP_HOST")),
 		MailSMTPPort:            strings.TrimSpace(getEnv("MAIL_SMTP_PORT", "587")),
 		MailFrom:                strings.TrimSpace(os.Getenv("MAIL_FROM")),
@@ -215,6 +228,23 @@ func Load(serviceName string) (Config, error) {
 			return Config{}, fmt.Errorf("config: R2_FORCE_PATH_STYLE must be bool, got %q", v)
 		}
 		cfg.R2ForcePathStyle = b
+	}
+
+	if v := strings.TrimSpace(os.Getenv("MALWARE_SCANNER_REQUIRED")); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			if v == "1" {
+				b = true
+			} else if v == "0" {
+				b = false
+			} else {
+				return Config{}, fmt.Errorf("config: MALWARE_SCANNER_REQUIRED must be bool or 0|1, got %q", v)
+			}
+		}
+		cfg.MalwareScannerRequired = b
+	} else {
+		// Default: required on live runtimes.
+		cfg.MalwareScannerRequired = cfg.AppEnv == EnvStaging || cfg.AppEnv == EnvProduction
 	}
 
 	if err := cfg.resolveProviders(); err != nil {
@@ -408,11 +438,30 @@ func (c Config) RequiresDistributedLimiter() bool {
 	return c.IsLiveRuntime()
 }
 
+// EffectiveMalwareScanner returns the scanner mode after AppEnv defaults.
+// Values: localpass|clamav|stub|noop
+func (c Config) EffectiveMalwareScanner() string {
+	m := strings.ToLower(strings.TrimSpace(c.MalwareScanner))
+	if m == "" || m == "auto" {
+		switch c.AppEnv {
+		case EnvLocal, EnvTest:
+			return "localpass"
+		default:
+			return "clamav"
+		}
+	}
+	return m
+}
+
 func (c Config) validateByEnv() error {
 	if err := c.validateFakeProviders(); err != nil {
 		return err
 	}
 	if err := c.validateProviderCredentials(); err != nil {
+		return err
+	}
+
+	if err := c.validateMalwareScanner(); err != nil {
 		return err
 	}
 
@@ -490,6 +539,35 @@ func (c Config) validateByEnv() error {
 			return err
 		}
 		return nil
+	}
+	return nil
+}
+
+func (c Config) validateMalwareScanner() error {
+	mode := c.EffectiveMalwareScanner()
+	switch mode {
+	case "localpass", "clamav", "stub", "noop":
+	default:
+		return fmt.Errorf("config: MALWARE_SCANNER must be auto|localpass|clamav|stub|noop, got %q", c.MalwareScanner)
+	}
+	switch c.AppEnv {
+	case EnvProduction:
+		if mode == "localpass" || mode == "stub" || mode == "noop" {
+			return fmt.Errorf("config: MALWARE_SCANNER=%s is forbidden when APP_ENV=production (use clamav)", mode)
+		}
+		if mode == "clamav" && strings.TrimSpace(c.MalwareScannerAddress) == "" {
+			return fmt.Errorf("config: MALWARE_SCANNER_ADDRESS is required when APP_ENV=production and scanner=clamav")
+		}
+	case EnvStaging:
+		if mode == "localpass" || mode == "noop" {
+			return fmt.Errorf("config: MALWARE_SCANNER=%s is forbidden when APP_ENV=staging (use clamav or stub with ALLOW_FAKE_PROVIDERS)", mode)
+		}
+		if mode == "stub" && !c.AllowFakeProviders {
+			return fmt.Errorf("config: MALWARE_SCANNER=stub requires ALLOW_FAKE_PROVIDERS=1 on staging")
+		}
+		if mode == "clamav" && strings.TrimSpace(c.MalwareScannerAddress) == "" {
+			return fmt.Errorf("config: MALWARE_SCANNER_ADDRESS is required when APP_ENV=staging and scanner=clamav")
+		}
 	}
 	return nil
 }

@@ -15,8 +15,15 @@ type ObjectStore interface {
 	GetObjectByID(ctx context.Context, id string) (objects.ObjectRef, error)
 	GetObjectByIDForStore(ctx context.Context, id, storeID string) (objects.ObjectRef, error)
 	UpdateObjectComplete(ctx context.Context, id string, status objects.Status, actualSize int64, checksum, contentType string, scanStatus, scanVerdict, scanVersion *string, scanAt, verifiedAt *time.Time, rejectedReason *string, updatedAt time.Time) error
+	// UpdateObjectScanMeta transitions scan fields while status is in allowedFrom (CAS).
+	// Returns true when a row was updated (caller won the race).
+	UpdateObjectScanMeta(ctx context.Context, id string, status objects.Status, scanStatus, scanVerdict, scanVersion *string, scanAt *time.Time, scanAttempts int32, scanErrorClass *string, scanNextRetryAt *time.Time, rejectedReason *string, verifiedAt *time.Time, updatedAt time.Time, allowedFrom []objects.Status) (updated bool, err error)
 	MarkObjectExpired(ctx context.Context, id string, updatedAt time.Time) error
 	ListExpiredUploading(ctx context.Context, before time.Time, limit int32) ([]objects.ObjectRef, error)
+	// ListPendingScan returns SCANNING objects due for (re)scan.
+	ListPendingScan(ctx context.Context, now time.Time, limit int32) ([]objects.ObjectRef, error)
+	// CountScanning returns quarantine backlog size.
+	CountScanning(ctx context.Context) (int64, error)
 
 	GetStoreByID(ctx context.Context, storeID string) (ObjectStoreRow, error)
 	UserCanAccessStore(ctx context.Context, userID, storeID string) (bool, error)
