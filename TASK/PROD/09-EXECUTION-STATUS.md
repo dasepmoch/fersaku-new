@@ -5,7 +5,7 @@
 
 **Program:** Production readiness + Duitku payment + Xendit disbursement  
 **Auth:** no MFA  
-**Last board update:** 2026-07-19 (Phase G agent prep complete)
+**Last board update:** 2026-07-19 (B50 CLOSED — host dual-provider E2E PAID+ledger)
 
 ---
 
@@ -39,7 +39,7 @@
 | PROD-B20 | Webhook `/v1/webhooks/duitku` | P0 | done | @nikki/opencode | `evidence/PROD-B20/20260719-opencode.md` |
 | PROD-B30 | Wire checkout + gateway create | P0 | done | @nikki/opencode | `evidence/PROD-B30/20260719-opencode.md` |
 | PROD-B40 | Unwire Xendit QRIS primary | P1 | done | @nikki/opencode | `evidence/PROD-B40/20260719-opencode.md` |
-| PROD-B50 | Sandbox manual payment proof | P1 | deferred | @nikki/opencode | `evidence/PROD-B50/20260719-opencode.md` (create OK; PAID+ledger pending redeploy/pay) |
+| PROD-B50 | Sandbox manual payment proof | P1 | done | @nikki | `evidence/PROD-B50/20260719-opencode.md` (PAID+ledger+settlement verified on host) |
 
 ## Phase C — Xendit disbursement
 
@@ -92,9 +92,9 @@
 ## Suggested next
 
 ```text
-Human: rebuild/redeploy API (Duitku routes) → close B50 PAID+ledger
 Human: sign residual-risks.md (G30) → optional GO LIVE CANARY (G40)
 Ops: secret manager + managed HA (G10/G20 TBD rows)
+Host demo money path: DONE (B50 PAID+ledger on dual-provider API)
 ```
 
 ---
@@ -103,9 +103,9 @@ Ops: secret manager + managed HA (G10/G20 TBD rows)
 
 | Date | Item | Impact | Owner |
 | ---- | ---- | ------ | ----- |
-| 2026-07-19 | B50 full PAID+ledger needs API image rebuild with dual-provider + QRIS pay or signed callback | Full money E2E not green yet | @nikki |
-| 2026-07-19 | Live compose POST `/v1/webhooks/duitku` → 404 (image predates routes; source has routes) | Live Duitku callback until redeploy | @nikki |
-| 2026-07-19 | Browser login Secure cookie capture needs real credentials | E10/F10 residual only | human |
+| 2026-07-19 | ~~B50 full PAID+ledger needs API image rebuild~~ **CLOSED** after rebuild + migration 000033 + dual-provider env | — | @nikki |
+| 2026-07-19 | ~~Live compose POST `/v1/webhooks/duitku` → 404~~ **CLOSED** (route live; empty body → 401) | — | @nikki |
+| 2026-07-19 | Browser login Secure cookie capture needs real credentials | E10 residual only | human |
 | 2026-07-19 | G40 live canary blocked until explicit human GO LIVE CANARY | No real-money canary | human |
 
 ---

@@ -18,10 +18,11 @@ services:
       target: api
     image: fersaku-api:local
     # Binary via Dockerfile ENTRYPOINT [/app/fersaku-api]; do not duplicate as command.
+    # Later env_file wins — keep .env last so local dual-provider secrets override example defaults.
     env_file:
-      - path: .env
-        required: false
       - path: .env.example
+        required: false
+      - path: .env
         required: false
     environment:
       APP_ENV: ${APP_ENV:-local}
@@ -29,6 +30,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_URL: ${DATABASE_URL:-postgres://fersaku:fersaku_local@postgres:5432/fersaku?sslmode=disable}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # PAYMENT_PROVIDER / DISBURSEMENT_PROVIDER / Duitku keys come from env_file (.env last).
+      # Do not pin them here — ${VAR:-fake} would override .env with host-empty → fake.
       XENDIT_MODE: ${XENDIT_MODE:-fake}
       SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-not-for-prod}
       CSRF_SECRET: ${CSRF_SECRET:-local-dev-csrf-secret-not-for-prod}
@@ -64,15 +67,16 @@ services:
     image: fersaku-worker:local
     # Binary via Dockerfile ENTRYPOINT [/app/fersaku-worker]; no public ports.
     env_file:
-      - path: .env
-        required: false
       - path: .env.example
+        required: false
+      - path: .env
         required: false
     environment:
       APP_ENV: ${APP_ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_URL: ${DATABASE_URL:-postgres://fersaku:fersaku_local@postgres:5432/fersaku?sslmode=disable}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Provider selection + Duitku keys: env_file only (.env last). See api service comment.
       XENDIT_MODE: ${XENDIT_MODE:-fake}
       SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-not-for-prod}
       CSRF_SECRET: ${CSRF_SECRET:-local-dev-csrf-secret-not-for-prod}
