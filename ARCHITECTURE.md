@@ -1,11 +1,15 @@
 # Frontend Architecture
 
+Source lives under `frontend/`. Backend Go services live under `backend/`.
+
+
 Fersaku uses Next.js App Router as a presentation application. Production commerce, payment, ledger, fulfillment, KYC, provider credentials, and privileged authorization remain in the separate Go API.
 
 ## Boundaries
 
 ```txt
-app/                URL ownership, layouts, loading/error boundaries, metadata
+frontend/
+  app/                URL ownership, layouts, loading/error boundaries, metadata
 features/           Business-domain screens, contracts, api modules, hooks
   catalog/          Product contracts, api module, query hooks
   orders/           Order contracts, api module, query hooks

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   CircleDollarSign,
@@ -268,7 +269,11 @@ function Overview() {
           <div className="p-5">
             <h3 className="text-xs font-extrabold">Produk terlaris</h3>
             {products.slice(0, 3).map((p) => (
-              <div key={p.id} className="mt-4 flex items-center gap-3">
+              <Link
+                key={p.id}
+                href={`/dashboard/products/${encodeURIComponent(p.id)}`}
+                className="mt-4 flex items-center gap-3 rounded-xl transition hover:bg-[#f3f4ef]"
+              >
                 <ProductArt
                   palette={p.palette}
                   glyph={p.glyph}
@@ -283,7 +288,7 @@ function Overview() {
                 <b className="ml-auto text-[10px]">
                   {compactRupiah(p.price * p.sales)}
                 </b>
-              </div>
+              </Link>
             ))}
           </div>
         </section>

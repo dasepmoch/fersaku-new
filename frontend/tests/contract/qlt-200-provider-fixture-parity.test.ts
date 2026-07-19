@@ -11,7 +11,7 @@ import { mapFeaturedCatalogProductListDto } from "@/features/catalog/mappers";
 import { assertConsumerMapsToView } from "./helpers/consumer";
 
 const fixturePath = join(
-  process.cwd(),
+  process.cwd().replace(/[\\/]frontend$/, ""),
   "backend/test/fixtures/contract/featured-products.provider.json",
 );
 

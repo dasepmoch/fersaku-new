@@ -192,20 +192,9 @@ VALUES ($1, $2, $3, true, $4)`, p.UserID, ev, ch, now)
 		res.Resources["persona."+p.Key+".email"] = p.Email
 	}
 
-	// MFA factor for admin super (secret is fake ciphertext, not real TOTP).
-	_, err := tx.Exec(ctx, `
-INSERT INTO mfa_factors (id, user_id, factor_type, secret_enc, label, confirmed_at, created_at)
-VALUES ($1, $2, 'TOTP', $3, 'Seed Authenticator', $4, $4)`,
-		ID(IDMFAAdminSuper), ID(IDUserAdminSuper),
-		fmt.Sprintf("%x", FakeCiphertext("mfa-admin-super")),
-		now.Add(-48*time.Hour))
-	if err != nil {
-		return res, fmt.Errorf("seed: mfa: %w", err)
-	}
-	res.Resources["mfa.admin_super"] = ID(IDMFAAdminSuper)
-
 	// Sessions (token hashes only — raw tokens never stored).
 	sessExpires := now.Add(7 * 24 * time.Hour)
+	var err error
 	for _, s := range []struct {
 		id, user, surface, label string
 	}{

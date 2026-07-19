@@ -7,20 +7,20 @@ on:
     branches: [main, master]
     paths:
       - "backend/**"
-      - "shared/api/generated/**"
-      - "package.json"
-      - "package-lock.json"
-      - "redocly.yaml"
+      - "frontend/shared/api/generated/**"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/redocly.yaml"
       - "scripts/**"
       - ".github/workflows/backend-ci.yml"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "backend/**"
-      - "shared/api/generated/**"
-      - "package.json"
-      - "package-lock.json"
-      - "redocly.yaml"
+      - "frontend/shared/api/generated/**"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/redocly.yaml"
       - "scripts/**"
       - ".github/workflows/backend-ci.yml"
       - ".github/workflows/ci.yml"
@@ -107,9 +107,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - uses: actions/setup-go@v5
         with:
@@ -117,7 +117,7 @@ jobs:
           cache-dependency-path: backend/go.sum
 
       - name: npm ci (redocly / openapi-typescript)
-        working-directory: .
+        working-directory: frontend
         run: npm ci
 
       - name: Assert contract artefacts non-empty
@@ -125,20 +125,20 @@ jobs:
         run: node scripts/ci-assert-suite.mjs openapi-contract
 
       - name: OpenAPI lint (redocly)
-        working-directory: .
+        working-directory: frontend
         run: npm run api:lint
 
       - name: OpenAPI bundle
-        working-directory: .
+        working-directory: frontend
         run: |
           npm run api:bundle
-          test -s backend/api/openapi.bundle.yaml
-          lines=$(wc -l < backend/api/openapi.bundle.yaml)
+          test -s ../backend/api/openapi.bundle.yaml
+          lines=$(wc -l < ../backend/api/openapi.bundle.yaml)
           echo "bundle lines=$lines"
           test "$lines" -ge 100
 
       - name: Codegen dirty-diff (api:check)
-        working-directory: .
+        working-directory: frontend
         run: npm run api:check
 
       - name: Contract tests (router inventory / OpenAPI drift)
@@ -194,7 +194,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
 
       - name: Assert integration suite non-empty
         working-directory: .

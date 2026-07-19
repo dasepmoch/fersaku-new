@@ -1,6 +1,7 @@
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+frontend/node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -9,27 +10,34 @@
 !.yarn/versions
 
 # testing
-/coverage
-/test-results
-/playwright-report
-/blob-report
-/playwright/.cache
+coverage/
+frontend/coverage/
+test-results/
+frontend/test-results/
+playwright-report/
+frontend/playwright-report/
+blob-report/
+playwright/.cache/
 
 # next.js
-/.next/
-/.next-dev/
-/.next-e2e-api/
-/out/
+frontend/.next/
+frontend/.next-dev/
+frontend/.next-e2e-api/
+frontend/out/
+.next/
+.next-dev/
+.next-e2e-api/
+out/
 
 # production
-/build
-/bundle-report
+build/
+bundle-report/
 
 # misc
 .DS_Store
 *.pem
 
-# go local caches (BE-100+)
+# go local caches
 .gocache/
 .gomod/
 .gotmp/
@@ -43,10 +51,12 @@ yarn-error.log*
 # env files
 .env
 .env*.local
+frontend/.env*.local
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
 
 # IDE
 .idea

@@ -13,7 +13,7 @@ concurrency:
 
 defaults:
   run:
-    working-directory: .
+    working-directory: frontend
 
 jobs:
   frontend-static:
@@ -24,9 +24,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Assert Node engines band
         run: |
@@ -45,14 +45,14 @@ jobs:
 
       - name: Assert unit + security-negative + QLT-300 + QLT-310 + QLT-320 + QLT-400 + QLT-410 suites are non-empty
         run: |
-          node scripts/ci-assert-suite.mjs frontend-unit
-          node scripts/ci-assert-suite.mjs security-negative
-          node scripts/ci-assert-suite.mjs qlt-300-security
-          node scripts/ci-assert-suite.mjs qlt-310-performance
-          node scripts/ci-assert-suite.mjs qlt-320-observability
-          node scripts/ci-assert-suite.mjs qlt-400-flags
-          node scripts/ci-assert-suite.mjs qlt-410-deploy
-          node scripts/ci-assert-suite.mjs qlt-420-cutover
+          node ../scripts/ci-assert-suite.mjs frontend-unit
+          node ../scripts/ci-assert-suite.mjs security-negative
+          node ../scripts/ci-assert-suite.mjs qlt-300-security
+          node ../scripts/ci-assert-suite.mjs qlt-310-performance
+          node ../scripts/ci-assert-suite.mjs qlt-320-observability
+          node ../scripts/ci-assert-suite.mjs qlt-400-flags
+          node ../scripts/ci-assert-suite.mjs qlt-410-deploy
+          node ../scripts/ci-assert-suite.mjs qlt-420-cutover
 
       - run: npm run format:check
       - run: npm run lint -- --max-warnings=0
@@ -74,9 +74,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
       - run: npm run build
@@ -92,16 +92,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
 
       - name: Assert mock e2e + QLT-230 visual/a11y harness present
         run: |
-          node scripts/ci-assert-suite.mjs frontend-mock-e2e
-          node scripts/ci-assert-suite.mjs qlt-230-visual-a11y
+          node ../scripts/ci-assert-suite.mjs frontend-mock-e2e
+          node ../scripts/ci-assert-suite.mjs qlt-230-visual-a11y
 
       - run: npx playwright install --with-deps chromium
 
@@ -117,8 +117,8 @@ jobs:
         with:
           name: playwright-mock-artifacts
           path: |
-            test-results/
-            playwright-report/
+            frontend/test-results/
+            frontend/playwright-report/
           if-no-files-found: ignore
 
   # QLT-105/220: required API-mode harness (QLT-215) + INT-190 + QLT-220 parent.
@@ -134,9 +134,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: frontend/.nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - uses: actions/setup-go@v5
         with:
@@ -147,13 +147,13 @@ jobs:
 
       - name: Assert API e2e suite non-empty (cross-stack + QLT-220 parent)
         run: |
-          node scripts/ci-assert-suite.mjs cross-stack-api-e2e
-          node scripts/ci-assert-suite.mjs qlt-220-api-e2e
+          node ../scripts/ci-assert-suite.mjs cross-stack-api-e2e
+          node ../scripts/ci-assert-suite.mjs qlt-220-api-e2e
 
       - name: Bring up disposable API stack (deps, migrate, seed, api, worker)
         run: |
-          chmod +x scripts/e2e-api-stack.sh
-          E2E_API_TEARDOWN=0 bash scripts/e2e-api-stack.sh
+          chmod +x ../scripts/e2e-api-stack.sh
+          E2E_API_TEARDOWN=0 bash ../scripts/e2e-api-stack.sh
         env:
           APP_ENV: local
           CI: "true"
@@ -175,11 +175,11 @@ jobs:
         with:
           name: playwright-api-artifacts
           path: |
-            test-results/api/
-            playwright-report/
+            frontend/test-results/api/
+            frontend/playwright-report/
           if-no-files-found: ignore
 
       - name: Teardown compose
         if: always()
         run: |
-          cd backend && docker compose -f docker-compose.yml down -v || true
+          cd ../backend && docker compose -f docker-compose.yml down -v || true

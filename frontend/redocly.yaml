@@ -4,7 +4,7 @@ extends:
 
 apis:
   fersaku@v1:
-    root: backend/api/openapi.yaml
+    root: ../backend/api/openapi.yaml
 
 rules:
   # Spec must parse and resolve; keep hard errors for structural issues

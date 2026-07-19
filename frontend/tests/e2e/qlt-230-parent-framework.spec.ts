@@ -8,7 +8,26 @@ import { visualRoutes } from "./routes";
  * Failures here mean harness/registration/policy regressions, not domain cells.
  */
 
-const root = process.cwd();
+const root = (() => {
+  const cwd = process.cwd();
+  // monorepo: frontend package cwd → repo root
+  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
+  return cwd;
+})();
+
+function repoPath(rel: string): string {
+  if (
+    rel.startsWith("backend/") ||
+    rel.startsWith("docs/") ||
+    rel.startsWith("TASK/") ||
+    rel.startsWith("scripts/") ||
+    rel.startsWith(".github/")
+  ) {
+    return path.join(root, rel);
+  }
+  return path.join(root, "frontend", rel);
+}
+
 
 function countPng(dir: string): number {
   if (!existsSync(dir)) return 0;
@@ -29,9 +48,9 @@ function snapshotName(route: string): string {
 
 test.describe("QLT-230 parent — mock registration + isolation", () => {
   test("mock Playwright projects are desktop + mobile; API isolated", () => {
-    const mockCfg = readFileSync(path.join(root, "playwright.config.ts"), "utf8");
+    const mockCfg = readFileSync(repoPath("playwright.config.ts"), "utf8");
     const apiCfg = readFileSync(
-      path.join(root, "playwright.api.config.ts"),
+      repoPath("playwright.api.config.ts"),
       "utf8",
     );
 
@@ -67,7 +86,7 @@ test.describe("QLT-230 parent — mock registration + isolation", () => {
       "TASK/evidence/UI-060/invariants.md",
       "playwright.config.ts",
     ]) {
-      expect(existsSync(path.join(root, rel)), rel).toBe(true);
+      expect(existsSync(repoPath(rel)), rel).toBe(true);
     }
   });
 });
@@ -112,7 +131,7 @@ test.describe("QLT-230 parent — visual baselines non-empty", () => {
   });
 
   test("visual.spec uses stable full-page snapshot options", () => {
-    const src = readFileSync(path.join(root, "tests/e2e/visual.spec.ts"), "utf8");
+    const src = readFileSync(repoPath("tests/e2e/visual.spec.ts"), "utf8");
     expect(src.includes("toHaveScreenshot")).toBe(true);
     expect(src.includes("fullPage")).toBe(true);
     expect(src.includes("animations")).toBe(true);
@@ -124,7 +143,7 @@ test.describe("QLT-230 parent — visual baselines non-empty", () => {
 test.describe("QLT-230 parent — a11y + interaction samples", () => {
   test("accessibility suite is non-empty and blocks serious/critical", () => {
     const src = readFileSync(
-      path.join(root, "tests/e2e/accessibility.spec.ts"),
+      repoPath("tests/e2e/accessibility.spec.ts"),
       "utf8",
     );
     expect(src.includes("AxeBuilder") || src.includes("@axe-core")).toBe(true);
@@ -147,7 +166,7 @@ test.describe("QLT-230 parent — a11y + interaction samples", () => {
 
   test("critical-flows mock interaction samples remain present", () => {
     const src = readFileSync(
-      path.join(root, "tests/e2e/critical-flows.spec.ts"),
+      repoPath("tests/e2e/critical-flows.spec.ts"),
       "utf8",
     );
     for (const needle of [
@@ -165,7 +184,7 @@ test.describe("QLT-230 parent — a11y + interaction samples", () => {
 test.describe("QLT-230 parent — baseline review + API co-evolution policy", () => {
   test("co-evolution doc encodes baseline review and API prerequisites", () => {
     const doc = readFileSync(
-      path.join(root, "docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md"),
+      repoPath("docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md"),
       "utf8",
     );
     for (const needle of [
@@ -188,7 +207,7 @@ test.describe("QLT-230 parent — baseline review + API co-evolution policy", ()
 
   test("CI assert suite registers qlt-230 and frontend-mock-e2e", () => {
     const assertSrc = readFileSync(
-      path.join(root, "scripts/ci-assert-suite.mjs"),
+      repoPath("scripts/ci-assert-suite.mjs"),
       "utf8",
     );
     expect(assertSrc.includes("frontend-mock-e2e")).toBe(true);
@@ -201,7 +220,7 @@ test.describe("QLT-230 parent — baseline review + API co-evolution policy", ()
     // Parent policy: mock __screenshots__ stay mock-authority; API must not
     // silently share this tree without distinct project (documented in coevo).
     const apiCfg = readFileSync(
-      path.join(root, "playwright.api.config.ts"),
+      repoPath("playwright.api.config.ts"),
       "utf8",
     );
     expect(

@@ -1,31 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Eye, Plus } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
 
 export function DashboardAction({ segments }: { segments: string[] }) {
   const s = segments[0] || "overview";
   if (s === "products" && !segments[1])
     return (
-      <div className="flex gap-2">
-        <ActionLink href="/dashboard/products/prod_01">
-          <Eye className="size-4" /> Detail produk
-        </ActionLink>
-        <ActionLink href="/dashboard/products/new">
-          <Plus className="size-4" /> Produk baru
-        </ActionLink>
-      </div>
-    );
-  if (s === "orders" && !segments[1])
-    return (
-      <ActionLink href="/dashboard/orders/FRS-240712-1842">
-        <Eye className="size-4" /> Detail pesanan
-      </ActionLink>
-    );
-  if (s === "customers" && !segments[1])
-    return (
-      <ActionLink href="/dashboard/customers/FRS-240712-1842">
-        <Eye className="size-4" /> Detail pelanggan
+      <ActionLink href="/dashboard/products/new">
+        <Plus className="size-4" /> Produk baru
       </ActionLink>
     );
   if (s === "coupons" && !segments[1])
@@ -38,12 +21,6 @@ export function DashboardAction({ segments }: { segments: string[] }) {
     return (
       <ActionLink href="/dashboard/withdrawals/new">
         <ArrowUpRight className="size-4" /> Tarik saldo
-      </ActionLink>
-    );
-  if (s === "inventory" && !segments[1])
-    return (
-      <ActionLink href="/dashboard/inventory/prod_account">
-        <Plus className="size-4" /> Kelola stok akun
       </ActionLink>
     );
   return null;

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ProductArt } from "@/components/product-art";
 import {
   useDebouncedProductSearch,
@@ -33,9 +34,10 @@ export function Products() {
       </div>
       <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((p) => (
-          <article
+          <Link
             key={p.id}
-            className="group hairline rounded-[20px] border bg-white p-3 transition hover:-translate-y-0.5 hover:shadow-md"
+            href={`/dashboard/products/${encodeURIComponent(p.id)}`}
+            className="group hairline block rounded-[20px] border bg-white p-3 transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#173f2c]/30"
           >
             <ProductArt
               palette={p.palette}
@@ -44,7 +46,7 @@ export function Products() {
               className="aspect-[1.5]"
             />
             <div className="p-2 pt-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-extrabold">
@@ -56,9 +58,7 @@ export function Products() {
                     {p.type} • {productStatusListLabel(p.status)}
                   </p>
                 </div>
-                <button>
-                  <MoreHorizontal className="size-4" />
-                </button>
+                <ChevronRight className="mt-0.5 size-4 shrink-0 text-[#9aa39c] transition group-hover:text-[#173f2c]" />
               </div>
               <div className="hairline mt-4 flex items-center justify-between border-t pt-3">
                 <b className="text-xs">{rupiah(p.price)}</b>
@@ -67,7 +67,7 @@ export function Products() {
                 </span>
               </div>
             </div>
-          </article>
+          </Link>
         ))}
       </div>
     </section>

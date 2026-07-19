@@ -82,8 +82,8 @@ func Personas() []Persona {
 			Name:         "Admin Super Seed",
 			Surface:      "ADMIN",
 			Roles:        []string{"role_super_admin"},
-			MFAEnabled:   true,
-			Notes:        "MFA enabled; all test permissions via SUPER_ADMIN",
+			MFAEnabled:   false,
+			Notes:        "SUPER_ADMIN without mandatory MFA (local/demo)",
 		},
 		{
 			Key:          PersonaAdminSupport,

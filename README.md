@@ -1,4 +1,37 @@
-# Fersaku Frontend
+# Fersaku
+
+Monorepo for the Fersaku digital-product commerce platform.
+
+## Monorepo layout
+
+```text
+frontend/   Next.js App Router (seller, buyer, admin UI)
+backend/    Go modular monolith (API + worker)
+docs/       Cross-cutting product/architecture docs
+scripts/    CI and local stack helpers
+TASK/       Execution evidence and task trackers
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Or from the monorepo root:
+
+```bash
+npm run dev    # → frontend
+npm run build
+```
+
+Backend: see `backend/README.md`.
+
+---
+
+# Frontend
 
 High-fidelity frontend prototype for an Indonesian digital-product commerce platform. The project is frontend-only: checkout, payment, analytics, products, orders, withdrawals, API keys, and webhooks use realistic mock data.
 

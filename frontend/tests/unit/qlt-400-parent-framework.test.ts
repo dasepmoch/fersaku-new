@@ -7,7 +7,12 @@ import { describe, expect, it } from "vitest";
  * Failures here mean harness/registration/policy regressions, not domain cells.
  */
 
-const root = process.cwd();
+const root = (() => {
+  const cwd = process.cwd();
+  // monorepo: frontend package cwd → repo root
+  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
+  return cwd;
+})();
 
 const MATRIX_CATEGORIES = [
   "Typed registry",
@@ -30,7 +35,17 @@ const REQUIRED_SAMPLES = [
 ] as const;
 
 function abs(rel: string): string {
-  return path.join(root, rel);
+  if (
+    rel.startsWith("backend/") ||
+    rel.startsWith("docs/") ||
+    rel.startsWith("TASK/") ||
+    rel.startsWith("scripts/") ||
+    rel.startsWith(".github/")
+  ) {
+    return path.join(root, rel);
+  }
+  // Frontend package paths (shared/, tests/, features/, package.json, playwright, etc.)
+  return path.join(root, "frontend", rel);
 }
 
 function minBytes(rel: string, min: number): void {

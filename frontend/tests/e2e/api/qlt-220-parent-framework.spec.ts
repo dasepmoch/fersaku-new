@@ -28,10 +28,29 @@ test.describe("QLT-220 parent — project registration + isolation", () => {
   });
 
   test("mock and API Playwright configs are distinct", () => {
-    const root = process.cwd();
-    const mockCfg = readFileSync(path.join(root, "playwright.config.ts"), "utf8");
+    const root = (() => {
+  const cwd = process.cwd();
+  // monorepo: frontend package cwd → repo root
+  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
+  return cwd;
+})();
+
+function repoPath(rel: string): string {
+  if (
+    rel.startsWith("backend/") ||
+    rel.startsWith("docs/") ||
+    rel.startsWith("TASK/") ||
+    rel.startsWith("scripts/") ||
+    rel.startsWith(".github/")
+  ) {
+    return path.join(root, rel);
+  }
+  return path.join(root, "frontend", rel);
+}
+
+    const mockCfg = readFileSync(repoPath("playwright.config.ts"), "utf8");
     const apiCfg = readFileSync(
-      path.join(root, "playwright.api.config.ts"),
+      repoPath("playwright.api.config.ts"),
       "utf8",
     );
 
@@ -59,7 +78,12 @@ test.describe("QLT-220 parent — project registration + isolation", () => {
   });
 
   test("required parent sample specs exist", () => {
-    const root = process.cwd();
+    const root = (() => {
+  const cwd = process.cwd();
+  // monorepo: frontend package cwd → repo root
+  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
+  return cwd;
+})();
     for (const rel of [
       "tests/e2e/api/harness-health.spec.ts",
       "tests/e2e/api/int-190-vertical-slice.spec.ts",
@@ -68,7 +92,7 @@ test.describe("QLT-220 parent — project registration + isolation", () => {
       "docs/QLT-220-API-E2E-COEVOLUTION.md",
       "scripts/e2e-api-stack.sh",
     ]) {
-      expect(existsSync(path.join(root, rel)), rel).toBe(true);
+      expect(existsSync(repoPath(rel)), rel).toBe(true);
     }
   });
 

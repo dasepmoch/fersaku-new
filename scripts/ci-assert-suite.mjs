@@ -6,7 +6,41 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const root = resolve(process.cwd());
+/** Monorepo root (contains frontend/ + backend/). */
+function monorepoRoot() {
+  const cwd = resolve(process.cwd());
+  if (
+    existsSync(join(cwd, "frontend/package.json")) &&
+    existsSync(join(cwd, "backend"))
+  ) {
+    return cwd;
+  }
+  // Invoked from frontend/
+  if (
+    existsSync(join(cwd, "package.json")) &&
+    existsSync(join(cwd, "../backend"))
+  ) {
+    return resolve(cwd, "..");
+  }
+  return cwd;
+}
+
+const root = monorepoRoot();
+const fe = join(root, "frontend");
+
+/** FE-relative by default; monorepo paths (backend/docs/TASK/scripts) stay at root. */
+function resolveRepoPath(rel) {
+  if (
+    rel.startsWith("backend/") ||
+    rel.startsWith("docs/") ||
+    rel.startsWith("TASK/") ||
+    rel.startsWith("scripts/") ||
+    rel.startsWith(".github/")
+  ) {
+    return join(root, rel);
+  }
+  return join(fe, rel);
+}
 
 function fail(msg) {
   console.error(`ci-assert-suite: FAIL — ${msg}`);
@@ -55,7 +89,7 @@ switch (suite) {
     if (inv.length < 50) {
       fail(`router_inventory has ${inv.length} routes (need >= 50)`);
     }
-    minLines(join(root, "shared/api/generated/openapi.ts"), 500);
+    minLines(join(fe, "shared/api/generated/openapi.ts"), 500);
     ok(
       `openapi + contract tests + inventory(${inv.length}) + generated types present`,
     );
@@ -135,7 +169,7 @@ switch (suite) {
   }
 
   case "frontend-unit": {
-    const n = countFiles(join(root, "tests/unit"), (name) =>
+    const n = countFiles(join(fe, "tests/unit"), (name) =>
       name.endsWith(".test.ts"),
     );
     if (n < 20) fail(`unit tests: ${n} files (need >= 20)`);
@@ -145,10 +179,10 @@ switch (suite) {
 
   case "qlt-200-contract": {
     // Parent framework must stay non-empty (QLT-200 continuous).
-    minLines(join(root, "vitest.config.ts"), 40);
-    minLines(join(root, "tests/contract/helpers/consumer.ts"), 40);
+    minLines(join(fe, "vitest.config.ts"), 40);
+    minLines(join(fe, "tests/contract/helpers/consumer.ts"), 40);
     minLines(
-      join(root, "tests/contract/qlt-200-consumer-foundation.test.ts"),
+      join(fe, "tests/contract/qlt-200-consumer-foundation.test.ts"),
       40,
     );
     minLines(
@@ -160,7 +194,7 @@ switch (suite) {
       10,
     );
     minLines(join(root, "docs/QLT-200-CONTRACT-COEVOLUTION.md"), 30);
-    const n = countFiles(join(root, "tests/contract"), (name) =>
+    const n = countFiles(join(fe, "tests/contract"), (name) =>
       name.endsWith(".test.ts"),
     );
     if (n < 1) fail(`contract tests: ${n} files (need >= 1)`);
@@ -177,9 +211,9 @@ switch (suite) {
       "tests/e2e/qlt-230-parent-framework.spec.ts",
       "tests/e2e/routes.ts",
     ]) {
-      minLines(join(root, f), 10);
+      minLines(resolveRepoPath(f), 10);
     }
-    const shots = join(root, "tests/e2e/__screenshots__");
+    const shots = join(fe, "tests/e2e/__screenshots__");
     if (!existsSync(shots)) fail("missing visual baselines tests/e2e/__screenshots__");
     const desktop = countFiles(join(shots, "desktop-chromium"), (n) =>
       n.endsWith(".png"),
@@ -193,7 +227,7 @@ switch (suite) {
         `visual baselines desktop=${desktop} mobile=${mobile} (need >= 14 each for QLT-230)`,
       );
     }
-    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    const mockCfg = readFileSync(join(fe, "playwright.config.ts"), "utf8");
     for (const needle of [
       "desktop-chromium",
       "mobile-chromium",
@@ -212,17 +246,17 @@ switch (suite) {
   case "qlt-230-visual-a11y": {
     // Parent framework must stay non-empty (QLT-230 continuous).
     minLines(join(root, "docs/QLT-230-VISUAL-A11Y-COEVOLUTION.md"), 40);
-    minLines(join(root, "playwright.config.ts"), 20);
-    minLines(join(root, "tests/e2e/visual.spec.ts"), 15);
-    minLines(join(root, "tests/e2e/accessibility.spec.ts"), 20);
-    minLines(join(root, "tests/e2e/critical-flows.spec.ts"), 40);
-    minLines(join(root, "tests/e2e/smoke.spec.ts"), 15);
-    minLines(join(root, "tests/e2e/routes.ts"), 40);
-    minLines(join(root, "tests/e2e/fixtures.ts"), 15);
-    minLines(join(root, "tests/e2e/qlt-230-parent-framework.spec.ts"), 80);
+    minLines(join(fe, "playwright.config.ts"), 20);
+    minLines(join(fe, "tests/e2e/visual.spec.ts"), 15);
+    minLines(join(fe, "tests/e2e/accessibility.spec.ts"), 20);
+    minLines(join(fe, "tests/e2e/critical-flows.spec.ts"), 40);
+    minLines(join(fe, "tests/e2e/smoke.spec.ts"), 15);
+    minLines(join(fe, "tests/e2e/routes.ts"), 40);
+    minLines(join(fe, "tests/e2e/fixtures.ts"), 15);
+    minLines(join(fe, "tests/e2e/qlt-230-parent-framework.spec.ts"), 80);
     minLines(join(root, "TASK/evidence/UI-060/invariants.md"), 30);
 
-    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    const mockCfg = readFileSync(join(fe, "playwright.config.ts"), "utf8");
     for (const needle of [
       "desktop-chromium",
       "mobile-chromium",
@@ -234,7 +268,7 @@ switch (suite) {
       }
     }
 
-    const visualSrc = readFileSync(join(root, "tests/e2e/visual.spec.ts"), "utf8");
+    const visualSrc = readFileSync(join(fe, "tests/e2e/visual.spec.ts"), "utf8");
     for (const needle of ["visualRoutes", "toHaveScreenshot", "fullPage", "animations"]) {
       if (!visualSrc.includes(needle)) {
         fail(`visual.spec.ts missing marker: ${needle}`);
@@ -242,7 +276,7 @@ switch (suite) {
     }
 
     const a11ySrc = readFileSync(
-      join(root, "tests/e2e/accessibility.spec.ts"),
+      join(fe, "tests/e2e/accessibility.spec.ts"),
       "utf8",
     );
     for (const needle of ["AxeBuilder", "serious", "critical", "color-contrast"]) {
@@ -252,7 +286,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/e2e/qlt-230-parent-framework.spec.ts"),
+      join(fe, "tests/e2e/qlt-230-parent-framework.spec.ts"),
       "utf8",
     );
     for (const needle of [
@@ -286,7 +320,7 @@ switch (suite) {
       }
     }
 
-    const routesSrc = readFileSync(join(root, "tests/e2e/routes.ts"), "utf8");
+    const routesSrc = readFileSync(join(fe, "tests/e2e/routes.ts"), "utf8");
     // visualRoutes array must list enough characterization routes (14 frozen).
     const routeMatches = routesSrc.match(/export const visualRoutes = \[([\s\S]*?)\]/);
     if (!routeMatches) fail("routes.ts missing visualRoutes export");
@@ -295,7 +329,7 @@ switch (suite) {
       fail(`visualRoutes has ${routeCount} entries (need >= 14)`);
     }
 
-    const shots = join(root, "tests/e2e/__screenshots__");
+    const shots = join(fe, "tests/e2e/__screenshots__");
     if (!existsSync(shots)) fail("missing tests/e2e/__screenshots__");
     const desktop = countFiles(join(shots, "desktop-chromium"), (n) =>
       n.endsWith(".png"),
@@ -333,28 +367,28 @@ switch (suite) {
   }
 
   case "cross-stack-api-e2e": {
-    minLines(join(root, "playwright.api.config.ts"), 20);
+    minLines(join(fe, "playwright.api.config.ts"), 20);
     minLines(join(root, "scripts/e2e-api-stack.sh"), 30);
-    minLines(join(root, "tests/e2e/api/harness-health.spec.ts"), 20);
-    minLines(join(root, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 50);
-    minLines(join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 40);
-    minLines(join(root, "tests/e2e/api/helpers/auth.ts"), 40);
+    minLines(join(fe, "tests/e2e/api/harness-health.spec.ts"), 20);
+    minLines(join(fe, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 50);
+    minLines(join(fe, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 40);
+    minLines(join(fe, "tests/e2e/api/helpers/auth.ts"), 40);
     if (!existsSync(join(root, "TASK/evidence/QLT-110/seed-ids.json"))) {
       fail("missing QLT-110 seed-ids.json");
     }
     // Mock must stay isolated from API suite registration.
-    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    const mockCfg = readFileSync(join(fe, "playwright.config.ts"), "utf8");
     if (!mockCfg.includes("**/api/**")) {
       fail("playwright.config.ts must testIgnore **/api/** (mock vs API isolation)");
     }
-    const apiCfg = readFileSync(join(root, "playwright.api.config.ts"), "utf8");
+    const apiCfg = readFileSync(join(fe, "playwright.api.config.ts"), "utf8");
     if (!apiCfg.includes("api-desktop-chromium")) {
       fail("playwright.api.config.ts missing api-desktop-chromium project");
     }
     if (!apiCfg.includes("NEXT_PUBLIC_DATA_SOURCE")) {
       fail("playwright.api.config.ts must force NEXT_PUBLIC_DATA_SOURCE=api");
     }
-    const apiSpecs = countFiles(join(root, "tests/e2e/api"), (name) =>
+    const apiSpecs = countFiles(join(fe, "tests/e2e/api"), (name) =>
       name.endsWith(".spec.ts"),
     );
     if (apiSpecs < 3) {
@@ -369,18 +403,18 @@ switch (suite) {
   case "qlt-220-api-e2e": {
     // Parent framework must stay non-empty and document co-evolution (QLT-220 continuous).
     minLines(join(root, "docs/QLT-220-API-E2E-COEVOLUTION.md"), 40);
-    minLines(join(root, "playwright.api.config.ts"), 40);
-    minLines(join(root, "playwright.config.ts"), 20);
+    minLines(join(fe, "playwright.api.config.ts"), 40);
+    minLines(join(fe, "playwright.config.ts"), 20);
     minLines(join(root, "scripts/e2e-api-stack.sh"), 40);
-    minLines(join(root, "tests/e2e/api/harness-health.spec.ts"), 40);
-    minLines(join(root, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 80);
-    minLines(join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 80);
-    minLines(join(root, "tests/e2e/api/helpers/auth.ts"), 80);
-    minLines(join(root, "tests/e2e/api/helpers/env.ts"), 30);
-    minLines(join(root, "tests/e2e/api/helpers/mailpit.ts"), 40);
-    minLines(join(root, "tests/e2e/api/helpers/callback.ts"), 40);
+    minLines(join(fe, "tests/e2e/api/harness-health.spec.ts"), 40);
+    minLines(join(fe, "tests/e2e/api/int-190-vertical-slice.spec.ts"), 80);
+    minLines(join(fe, "tests/e2e/api/qlt-220-parent-framework.spec.ts"), 80);
+    minLines(join(fe, "tests/e2e/api/helpers/auth.ts"), 80);
+    minLines(join(fe, "tests/e2e/api/helpers/env.ts"), 30);
+    minLines(join(fe, "tests/e2e/api/helpers/mailpit.ts"), 40);
+    minLines(join(fe, "tests/e2e/api/helpers/callback.ts"), 40);
 
-    const mockCfg = readFileSync(join(root, "playwright.config.ts"), "utf8");
+    const mockCfg = readFileSync(join(fe, "playwright.config.ts"), "utf8");
     for (const needle of [
       'testIgnore: ["**/api/**"]',
       "desktop-chromium",
@@ -391,7 +425,7 @@ switch (suite) {
       }
     }
 
-    const apiCfg = readFileSync(join(root, "playwright.api.config.ts"), "utf8");
+    const apiCfg = readFileSync(join(fe, "playwright.api.config.ts"), "utf8");
     for (const needle of [
       "api-desktop-chromium",
       "NEXT_PUBLIC_DATA_SOURCE",
@@ -404,7 +438,7 @@ switch (suite) {
     }
 
     const authSrc = readFileSync(
-      join(root, "tests/e2e/api/helpers/auth.ts"),
+      join(fe, "tests/e2e/api/helpers/auth.ts"),
       "utf8",
     );
     for (const needle of [
@@ -422,7 +456,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/e2e/api/qlt-220-parent-framework.spec.ts"),
+      join(fe, "tests/e2e/api/qlt-220-parent-framework.spec.ts"),
       "utf8",
     );
     for (const needle of [
@@ -457,7 +491,7 @@ switch (suite) {
       fail("missing QLT-110 seed-ids.json");
     }
 
-    const apiSpecs = countFiles(join(root, "tests/e2e/api"), (name) =>
+    const apiSpecs = countFiles(join(fe, "tests/e2e/api"), (name) =>
       name.endsWith(".spec.ts"),
     );
     if (apiSpecs < 3) {
@@ -479,7 +513,7 @@ switch (suite) {
       "tests/unit/pub-100-public-catalog.test.ts",
       "tests/unit/architecture-boundaries.test.ts",
     ];
-    for (const f of required) minLines(join(root, f), 30);
+    for (const f of required) minLines(resolveRepoPath(f), 30);
     ok(`security/contract/tenant/idempotency unit files (${required.length})`);
     break;
   }
@@ -487,7 +521,7 @@ switch (suite) {
   case "qlt-300-security": {
     // Parent framework must stay non-empty and document co-evolution (QLT-300 continuous).
     minLines(join(root, "docs/QLT-300-SECURITY-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-300-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-300-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-300-SECURITY-COEVOLUTION.md"),
@@ -520,7 +554,7 @@ switch (suite) {
       "tests/unit/chk-110-checkout-intent.test.ts",
       "tests/unit/qlt-300-parent-framework.test.ts",
     ];
-    for (const f of feSamples) minLines(join(root, f), 40);
+    for (const f of feSamples) minLines(resolveRepoPath(f), 40);
 
     const beSecurity = join(
       root,
@@ -548,7 +582,7 @@ switch (suite) {
     minLines(join(root, "backend/test/integration/rbac_test.go"), 50);
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-300-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-300-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [
@@ -572,7 +606,7 @@ switch (suite) {
   case "qlt-310-performance": {
     // Parent framework must stay non-empty and document co-evolution (QLT-310 continuous).
     minLines(join(root, "docs/QLT-310-PERFORMANCE-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-310-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-310-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-310-PERFORMANCE-COEVOLUTION.md"),
@@ -606,7 +640,7 @@ switch (suite) {
       "tests/unit/http-client.test.ts",
       "tests/unit/qlt-310-parent-framework.test.ts",
     ];
-    for (const f of samples) minLines(join(root, f), 30);
+    for (const f of samples) minLines(resolveRepoPath(f), 30);
 
     const bundle = readFileSync(
       join(root, "scripts/check-bundle-budget.mjs"),
@@ -619,7 +653,7 @@ switch (suite) {
     }
 
     const pollTest = readFileSync(
-      join(root, "tests/unit/chk-120-checkout-poll.test.ts"),
+      join(fe, "tests/unit/chk-120-checkout-poll.test.ts"),
       "utf8",
     );
     if (!pollTest.includes("no overlapping polls")) {
@@ -627,7 +661,7 @@ switch (suite) {
     }
 
     const httpTest = readFileSync(
-      join(root, "tests/unit/http-client.test.ts"),
+      join(fe, "tests/unit/http-client.test.ts"),
       "utf8",
     );
     if (!httpTest.includes("timeout")) {
@@ -635,7 +669,7 @@ switch (suite) {
     }
 
     const queryPolicy = readFileSync(
-      join(root, "shared/query/query-policy.ts"),
+      join(fe, "shared/query/query-policy.ts"),
       "utf8",
     );
     for (const needle of [
@@ -649,7 +683,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-310-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-310-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [
@@ -673,7 +707,7 @@ switch (suite) {
   case "qlt-320-observability": {
     // Parent framework must stay non-empty and document co-evolution (QLT-320 continuous).
     minLines(join(root, "docs/QLT-320-OBSERVABILITY-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-320-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-320-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-320-OBSERVABILITY-COEVOLUTION.md"),
@@ -713,10 +747,10 @@ switch (suite) {
       "backend/docs/runbooks/queue-outbox.md",
       "tests/unit/qlt-320-parent-framework.test.ts",
     ];
-    for (const f of samples) minLines(join(root, f), 20);
+    for (const f of samples) minLines(resolveRepoPath(f), 20);
 
     const reporter = readFileSync(
-      join(root, "shared/observability/reporter.ts"),
+      join(fe, "shared/observability/reporter.ts"),
       "utf8",
     );
     for (const needle of [
@@ -745,7 +779,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-320-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-320-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [
@@ -769,7 +803,7 @@ switch (suite) {
   case "qlt-400-flags": {
     // Parent framework must stay non-empty and document co-evolution (QLT-400 continuous).
     minLines(join(root, "docs/QLT-400-FLAGS-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-400-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-400-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-400-FLAGS-COEVOLUTION.md"),
@@ -804,10 +838,10 @@ switch (suite) {
       "tests/unit/qlt-400-parent-framework.test.ts",
       "shared/query/QUERY-MUTATION-POLICY.md",
     ];
-    for (const f of samples) minLines(join(root, f), 30);
+    for (const f of samples) minLines(resolveRepoPath(f), 30);
 
     const domainSource = readFileSync(
-      join(root, "shared/data/domain-source.ts"),
+      join(fe, "shared/data/domain-source.ts"),
       "utf8",
     );
     for (const needle of [
@@ -824,7 +858,7 @@ switch (suite) {
     }
 
     const flags = readFileSync(
-      join(root, "shared/data/domain-flags.ts"),
+      join(fe, "shared/data/domain-flags.ts"),
       "utf8",
     );
     for (const needle of [
@@ -841,7 +875,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-400-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-400-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [
@@ -865,7 +899,7 @@ switch (suite) {
   case "qlt-410-deploy": {
     // Parent framework must stay non-empty and document co-evolution (QLT-410 continuous).
     minLines(join(root, "docs/QLT-410-DEPLOY-ROLLBACK-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-410-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-410-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-410-DEPLOY-ROLLBACK-COEVOLUTION.md"),
@@ -900,7 +934,7 @@ switch (suite) {
       "backend/test/integration/foundation_test.go",
       "tests/unit/qlt-410-parent-framework.test.ts",
     ];
-    for (const f of samples) minLines(join(root, f), 30);
+    for (const f of samples) minLines(resolveRepoPath(f), 30);
 
     const migrateSh = readFileSync(
       join(root, "backend/scripts/migrate.sh"),
@@ -947,7 +981,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-410-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-410-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [
@@ -971,7 +1005,7 @@ switch (suite) {
   case "qlt-420-cutover": {
     // Parent framework must stay non-empty and document co-evolution (QLT-420 continuous).
     minLines(join(root, "docs/QLT-420-CUTOVER-COEVOLUTION.md"), 40);
-    minLines(join(root, "tests/unit/qlt-420-parent-framework.test.ts"), 80);
+    minLines(join(fe, "tests/unit/qlt-420-parent-framework.test.ts"), 80);
 
     const coevo = readFileSync(
       join(root, "docs/QLT-420-CUTOVER-COEVOLUTION.md"),
@@ -1006,7 +1040,7 @@ switch (suite) {
       "tests/unit/domain-source.test.ts",
       "tests/unit/qlt-420-parent-framework.test.ts",
     ];
-    for (const f of samples) minLines(join(root, f), 30);
+    for (const f of samples) minLines(resolveRepoPath(f), 30);
 
     const readiness = readFileSync(
       join(root, "backend/docs/launch/readiness-checklist.md"),
@@ -1039,7 +1073,7 @@ switch (suite) {
     }
 
     const domainSource = readFileSync(
-      join(root, "shared/data/domain-source.ts"),
+      join(fe, "shared/data/domain-source.ts"),
       "utf8",
     );
     for (const needle of [
@@ -1053,7 +1087,7 @@ switch (suite) {
     }
 
     const arch = readFileSync(
-      join(root, "tests/unit/architecture-boundaries.test.ts"),
+      join(fe, "tests/unit/architecture-boundaries.test.ts"),
       "utf8",
     );
     if (!arch.toLowerCase().includes("mock") || arch.length < 500) {
@@ -1061,7 +1095,7 @@ switch (suite) {
     }
 
     const parentSrc = readFileSync(
-      join(root, "tests/unit/qlt-420-parent-framework.test.ts"),
+      join(fe, "tests/unit/qlt-420-parent-framework.test.ts"),
       "utf8",
     );
     for (const needle of [

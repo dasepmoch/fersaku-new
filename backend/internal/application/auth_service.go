@@ -211,10 +211,7 @@ func (s *AuthService) Login(ctx context.Context, in LoginInput) (LoginResult, er
 		}
 	}
 
-	if surface == auth.SurfaceAdmin && !user.MFAEnabled {
-		return LoginResult{}, apperr.Forbidden(apperr.CodeForbidden, "Admin MFA enrollment required")
-	}
-
+	// Admin MFA enrollment is optional for local/demo (no mandatory gate at login).
 	issue, err := s.createSession(ctx, user, surface, in.IP, in.UserAgent, !user.MFAEnabled)
 	if err != nil {
 		return LoginResult{}, apperr.Internal(apperr.CodeInternalError, "Login failed")
