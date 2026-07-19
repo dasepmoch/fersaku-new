@@ -920,9 +920,20 @@ func wireMoneyProviders(cfg config.Config, accountScope string, log ports.Logger
 	case config.PaymentProviderXendit:
 		qris = xdReal
 	case config.PaymentProviderDuitku:
+		// Fail-closed env/base URL coherence before listen (GAP-01).
+		if cerr := duitku.ValidateAppEnvCoherence(
+			string(cfg.AppEnv),
+			cfg.DuitkuEnv,
+			cfg.DuitkuBaseURL,
+			cfg.DuitkuCallbackURL,
+			cfg.DuitkuReturnURL,
+		); cerr != nil {
+			return nil, nil, nil, "", "", fmt.Errorf("app: duitku config: %w", cerr)
+		}
 		dk, derr := duitku.NewReal(
 			cfg.DuitkuMerchantCode,
 			cfg.DuitkuAPIKey,
+			cfg.DuitkuEnv,
 			cfg.DuitkuBaseURL,
 			cfg.DuitkuCallbackURL,
 			cfg.DuitkuReturnURL,

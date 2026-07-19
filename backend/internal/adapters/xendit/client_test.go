@@ -296,6 +296,35 @@ func TestReal_CreateDisbursement_RejectsInvalidAmount(t *testing.T) {
 	}
 }
 
+func TestReal_CreateDisbursement_AuthFailureDoesNotFallbackV1(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+	r, err := NewReal("xendit-primary", "test-secret", srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.HTTPClient = srv.Client()
+	_, err = r.CreateDisbursement(context.Background(), ports.CreateDisbursementInput{
+		ExternalID:        "wd_auth",
+		NetAmountIDR:      10000,
+		BankCode:          "BCA",
+		AccountHolderName: "A",
+		AccountNumber:     "123",
+		IdempotencyKey:    "idem-auth",
+	})
+	pe, ok := err.(*ports.ProviderError)
+	if !ok || pe.Class != ports.ProviderAuthFailure {
+		t.Fatalf("expected AUTH_FAILURE, got %v", err)
+	}
+	if len(paths) != 1 || paths[0] != "/v2/payouts" {
+		t.Fatalf("must not call v1 after auth failure, paths=%v", paths)
+	}
+}
+
 func TestReal_CreateDisbursement_ClassifiesAuthFailure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)

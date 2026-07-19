@@ -3,7 +3,8 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -41,7 +42,7 @@ func TestDuitkuWebhook_BadSignature_401(t *testing.T) {
 	}
 }
 
-func TestDuitkuWebhook_GoodSignature_200OK(t *testing.T) {
+func TestDuitkuWebhook_GoodSignature_200SUCCESS(t *testing.T) {
 	store := &duitkuHandlerStore{events: map[string]payments.ProviderEvent{}}
 	svc := &application.CallbackService{
 		Store:              store,
@@ -53,7 +54,8 @@ func TestDuitkuWebhook_GoodSignature_200OK(t *testing.T) {
 		DefaultPaymentMode: payments.PaymentModeSandbox,
 	}
 	h := &CallbackHandler{Svc: svc}
-	sig := md5Hex("DXXXX" + "10000" + "o1" + "fake-key")
+	// HMAC-SHA256(merchantCode + amount + merchantOrderId, apiKey)
+	sig := hmacSHA256Hex("DXXXX"+"10000"+"o1", "fake-key")
 	body := []byte(fmt.Sprintf(
 		`{"merchantCode":"DXXXX","amount":"10000","merchantOrderId":"o1","resultCode":"00","reference":"R1","signature":%q}`,
 		sig,
@@ -65,8 +67,8 @@ func TestDuitkuWebhook_GoodSignature_200OK(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
-	if rr.Body.String() != "OK" {
-		t.Fatalf("body=%q", rr.Body.String())
+	if rr.Body.String() != "SUCCESS" {
+		t.Fatalf("body=%q want SUCCESS", rr.Body.String())
 	}
 	if store.lastProvider != payments.ProviderDuitku {
 		t.Fatalf("provider=%q", store.lastProvider)
@@ -85,7 +87,7 @@ func TestDuitkuWebhook_SandboxPathMode(t *testing.T) {
 		DefaultPaymentMode: payments.PaymentModeLive, // override via path
 	}
 	h := &CallbackHandler{Svc: svc}
-	sig := md5Hex("DXXXX" + "1000" + "o2" + "fake-key")
+	sig := hmacSHA256Hex("DXXXX"+"1000"+"o2", "fake-key")
 	body := []byte(fmt.Sprintf(
 		`{"merchantCode":"DXXXX","amount":"1000","merchantOrderId":"o2","resultCode":"01","reference":"R2","signature":%q}`,
 		sig,
@@ -95,16 +97,20 @@ func TestDuitkuWebhook_SandboxPathMode(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.DuitkuWebhook(rr, req)
 	if rr.Code != http.StatusOK {
-		t.Fatalf("status=%d", rr.Code)
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if rr.Body.String() != "SUCCESS" {
+		t.Fatalf("body=%q", rr.Body.String())
 	}
 	if store.lastMode != payments.PaymentModeSandbox {
 		t.Fatalf("mode=%q", store.lastMode)
 	}
 }
 
-func md5Hex(s string) string {
-	sum := md5.Sum([]byte(s))
-	return hex.EncodeToString(sum[:])
+func hmacSHA256Hex(message, key string) string {
+	mac := hmac.New(sha256.New, []byte(key))
+	_, _ = mac.Write([]byte(message))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 type fixedHandlerIDs struct{}

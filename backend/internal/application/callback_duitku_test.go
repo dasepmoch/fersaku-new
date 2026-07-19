@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -19,7 +21,14 @@ const (
 	testDuitkuAPIKey   = "fake-duitku-api-key-not-real"
 )
 
+// HMAC-SHA256(merchantCode + amount + merchantOrderId, apiKey) — live path (docs 2026-07-20).
 func duitkuSig(merchant, amount, orderID, key string) string {
+	mac := hmac.New(sha256.New, []byte(key))
+	_, _ = mac.Write([]byte(merchant + amount + orderID))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func duitkuMD5Legacy(merchant, amount, orderID, key string) string {
 	sum := md5.Sum([]byte(merchant + amount + orderID + key))
 	return hex.EncodeToString(sum[:])
 }
@@ -34,13 +43,14 @@ func TestHandleDuitkuIngress_InvalidSignatureRejects(t *testing.T) {
 		Clock:              cbFixedClock{t: time.Now().UTC()},
 		Store:              store,
 	}
+	// 64-hex junk (HMAC length) but wrong digest.
 	body := []byte(fmt.Sprintf(`{
 		"merchantCode":%q,
 		"amount":"10000",
 		"merchantOrderId":"ord-1",
 		"resultCode":"00",
 		"reference":"REF1",
-		"signature":"deadbeefdeadbeefdeadbeefdeadbeef"
+		"signature":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 	}`, testDuitkuMerchant))
 	res, err := s.HandleDuitkuIngress(context.Background(), DuitkuIngressRequest{
 		Body:        body,
@@ -54,6 +64,36 @@ func TestHandleDuitkuIngress_InvalidSignatureRejects(t *testing.T) {
 	}
 	if store.rejections != 1 {
 		t.Fatal("expected rejection row")
+	}
+}
+
+func TestHandleDuitkuIngress_RejectsLegacyMD5(t *testing.T) {
+	store := &rejectOnlyStore{}
+	s := &CallbackService{
+		DuitkuMerchantCode: testDuitkuMerchant,
+		DuitkuAPIKey:       testDuitkuAPIKey,
+		IDs:                fixedIDs{},
+		Clock:              cbFixedClock{t: time.Now().UTC()},
+		Store:              store,
+	}
+	md5Sig := duitkuMD5Legacy(testDuitkuMerchant, "10000", "ord-1", testDuitkuAPIKey)
+	body := []byte(fmt.Sprintf(`{
+		"merchantCode":%q,
+		"amount":"10000",
+		"merchantOrderId":"ord-1",
+		"resultCode":"00",
+		"reference":"REF1",
+		"signature":%q
+	}`, testDuitkuMerchant, md5Sig))
+	res, err := s.HandleDuitkuIngress(context.Background(), DuitkuIngressRequest{
+		Body:        body,
+		ContentType: "application/json",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.HTTPStatus != 401 || res.RejectionReason != payments.RejectInvalidSignature {
+		t.Fatalf("MD5 must be rejected on live path: status=%d reason=%s", res.HTTPStatus, res.RejectionReason)
 	}
 }
 

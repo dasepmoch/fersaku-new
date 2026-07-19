@@ -325,6 +325,9 @@ func (c Config) Validate() error {
 			return fmt.Errorf("config: DUITKU_ENV must be sandbox|production, got %q", c.DuitkuEnv)
 		}
 	}
+	if err := c.validateDuitkuEndpoints(); err != nil {
+		return err
+	}
 	if c.XenditEnv != "" {
 		switch c.XenditEnv {
 		case "sandbox", "production":
@@ -522,6 +525,87 @@ func (c Config) validateFakeProviders() error {
 		}
 		if fakeDis {
 			return fmt.Errorf("config: DISBURSEMENT_PROVIDER=fake is forbidden when APP_ENV=staging (set ALLOW_FAKE_PROVIDERS=1 for drills only; INT-180)")
+		}
+	}
+	return nil
+}
+
+// validateDuitkuEndpoints enforces APP_ENV / DUITKU_ENV / base URL coherence (GAP-01).
+// Production never defaults to sandbox; passport/sandbox hosts must match env.
+func (c Config) validateDuitkuEndpoints() error {
+	if !c.NeedsDuitkuCredentials() {
+		return nil
+	}
+	env := strings.ToLower(strings.TrimSpace(c.DuitkuEnv))
+	base := strings.TrimSpace(c.DuitkuBaseURL)
+	app := strings.ToLower(string(c.AppEnv))
+
+	// Production APP_ENV: never allow sandbox env or sandbox host; empty base implies production.
+	if app == string(EnvProduction) {
+		if env == "sandbox" {
+			return fmt.Errorf("config: DUITKU_ENV=sandbox is forbidden when APP_ENV=production")
+		}
+		if env == "" {
+			env = "production"
+		}
+		if base == "" {
+			// Implicit production host — do not select sandbox.
+			return nil
+		}
+	}
+
+	if base != "" {
+		u, err := url.Parse(base)
+		if err != nil {
+			return fmt.Errorf("config: DUITKU_BASE_URL is not a valid URL")
+		}
+		host := strings.ToLower(u.Hostname())
+		// Allow loopback only outside production (tests/local stubs).
+		if host == "127.0.0.1" || host == "localhost" || host == "::1" {
+			if app == string(EnvProduction) {
+				return fmt.Errorf("config: DUITKU_BASE_URL loopback is forbidden when APP_ENV=production")
+			}
+			return nil
+		}
+		if !strings.EqualFold(u.Scheme, "https") {
+			return fmt.Errorf("config: DUITKU_BASE_URL must use https")
+		}
+		switch host {
+		case "sandbox.duitku.com":
+			if env == "production" || app == string(EnvProduction) {
+				return fmt.Errorf("config: DUITKU_BASE_URL sandbox host incompatible with production")
+			}
+			if env != "" && env != "sandbox" {
+				return fmt.Errorf("config: DUITKU_ENV=%s incompatible with sandbox.duitku.com", env)
+			}
+		case "passport.duitku.com":
+			if env == "sandbox" {
+				return fmt.Errorf("config: DUITKU_ENV=sandbox incompatible with passport.duitku.com")
+			}
+		default:
+			return fmt.Errorf("config: DUITKU_BASE_URL host %q is not allowlisted (sandbox.duitku.com|passport.duitku.com)", host)
+		}
+	}
+
+	// Staging must not silently use passport unless DUITKU_ENV=production.
+	if app == string(EnvStaging) && env == "sandbox" && strings.Contains(strings.ToLower(base), "passport.duitku.com") {
+		return fmt.Errorf("config: passport host requires DUITKU_ENV=production")
+	}
+
+	for _, pair := range []struct{ name, raw string }{
+		{"DUITKU_CALLBACK_URL", c.DuitkuCallbackURL},
+		{"DUITKU_RETURN_URL", c.DuitkuReturnURL},
+	} {
+		raw := strings.TrimSpace(pair.raw)
+		if raw == "" {
+			continue
+		}
+		u, err := url.Parse(raw)
+		if err != nil {
+			return fmt.Errorf("config: %s is not a valid URL", pair.name)
+		}
+		if c.IsLiveRuntime() && !strings.EqualFold(u.Scheme, "https") {
+			return fmt.Errorf("config: %s must use https on staging/production", pair.name)
 		}
 	}
 	return nil

@@ -182,14 +182,18 @@ func (r *Real) CreateDisbursement(ctx context.Context, in ports.CreateDisburseme
 	}
 	var resp disburseResponse
 	if err := r.doJSON(ctx, http.MethodPost, "/v2/payouts", idem, body, &resp); err != nil {
-		// Fallback to classic disbursements endpoint for accounts still on v1.
+		// Fallback to classic disbursements only for transport/retryable classes.
+		// Do not mask v2 AUTH/REJECTED (non-retryable) with a v1 attempt (GAP-01).
+		if !shouldFallbackPayoutV1(err) {
+			return ports.CreateDisbursementResult{}, err
+		}
 		bodyV1 := map[string]any{
-			"external_id":        in.ExternalID,
-			"amount":             in.NetAmountIDR,
-			"bank_code":          in.BankCode,
+			"external_id":         in.ExternalID,
+			"amount":              in.NetAmountIDR,
+			"bank_code":           in.BankCode,
 			"account_holder_name": in.AccountHolderName,
-			"account_number":     in.AccountNumber,
-			"description":        in.Description,
+			"account_number":      in.AccountNumber,
+			"description":         in.Description,
 		}
 		if err2 := r.doJSON(ctx, http.MethodPost, "/disbursements", idem, bodyV1, &resp); err2 != nil {
 			return ports.CreateDisbursementResult{}, err
@@ -218,6 +222,9 @@ func (r *Real) GetDisbursement(ctx context.Context, providerRef string) (ports.P
 	}
 	var resp disburseResponse
 	if err := r.doJSON(ctx, http.MethodGet, "/v2/payouts/"+providerRef, "", nil, &resp); err != nil {
+		if !shouldFallbackPayoutV1(err) {
+			return ports.ProviderDisbursement{}, err
+		}
 		if err2 := r.doJSON(ctx, http.MethodGet, "/disbursements/"+providerRef, "", nil, &resp); err2 != nil {
 			return ports.ProviderDisbursement{}, err
 		}
@@ -375,6 +382,26 @@ func isTimeout(err error) bool {
 	}
 	s := strings.ToLower(err.Error())
 	return strings.Contains(s, "timeout") || strings.Contains(s, "deadline")
+}
+
+// shouldFallbackPayoutV1 is true only when v2 failure may be endpoint-not-available
+// (unavailable/timeout/rate-limit/invalid-response/404|405), not auth or business rejection.
+// AuthFailure and non-404 REJECTED must not be masked by a v1 attempt (GAP-01).
+func shouldFallbackPayoutV1(err error) bool {
+	pe, ok := err.(*ports.ProviderError)
+	if !ok || pe == nil {
+		return false
+	}
+	switch pe.Class {
+	case ports.ProviderUnavailable, ports.ProviderTimeout, ports.ProviderRateLimited, ports.ProviderInvalidResp:
+		return true
+	case ports.ProviderRejected:
+		// Endpoint missing on accounts still on classic disbursements only.
+		msg := strings.ToLower(pe.Message)
+		return strings.Contains(msg, "status 404") || strings.Contains(msg, "status 405")
+	default:
+		return false
+	}
 }
 
 func mapQRStatus(s string) string {

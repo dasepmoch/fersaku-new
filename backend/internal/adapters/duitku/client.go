@@ -1,14 +1,15 @@
-// Package duitku provides the Duitku QRIS payment adapter (ADR-0008, PROD-B10).
+// Package duitku provides the Duitku QRIS payment adapter (ADR-0008, PROD-B10, GAP-01).
 // Real is the production HTTP client for create/status inquiry.
 // Secrets are never logged or returned.
+//
+// Contract freeze: DocVerifiedURL / DocVerifiedDate in contract.go.
+// Signatures: HMAC-SHA256 lowercase hex (MD5 obsolete).
+// Status lookup uses merchantOrderId (merchant external id), not provider reference.
 package duitku
 
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,20 +21,16 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
-const (
-	defaultSandboxBaseURL = "https://sandbox.duitku.com"
-	defaultPaymentMethod  = "SP"
-	defaultAccountScope   = "duitku-primary"
-	pathInquiry           = "/webapi/api/merchant/v2/inquiry"
-	pathTransactionStatus = "/webapi/api/merchant/transactionStatus"
-)
-
 // Real is the live Duitku HTTP client (QRIS payment only).
 // APIKey must never be logged or returned.
+//
+// GetPayment / CancelPayment / ExpirePayment take merchantOrderId (ports.ExternalID /
+// payment_intents.external_id), NOT the provider reference returned at create time.
 type Real struct {
 	MerchantCode  string
 	APIKey        string // never log
-	BaseURL       string // default sandbox https://sandbox.duitku.com
+	BaseURL       string // passport (production) or sandbox; never default sandbox on production env
+	Env           string // sandbox|production
 	CallbackURL   string
 	ReturnURL     string
 	PaymentMethod string // from DUITKU_QRIS_PAYMENT_METHOD, default SP
@@ -44,7 +41,9 @@ type Real struct {
 }
 
 // NewReal builds a live Duitku adapter. merchantCode and apiKey must be non-empty.
-func NewReal(merchantCode, apiKey, baseURL, callbackURL, returnURL, paymentMethod, accountScope string) (*Real, error) {
+// env is sandbox|production (empty → sandbox for local only when baseURL empty).
+// baseURL empty selects documented default for env; production never defaults to sandbox.
+func NewReal(merchantCode, apiKey, env, baseURL, callbackURL, returnURL, paymentMethod, accountScope string) (*Real, error) {
 	merchantCode = strings.TrimSpace(merchantCode)
 	apiKey = strings.TrimSpace(apiKey)
 	if merchantCode == "" {
@@ -53,8 +52,13 @@ func NewReal(merchantCode, apiKey, baseURL, callbackURL, returnURL, paymentMetho
 	if apiKey == "" {
 		return nil, fmt.Errorf("duitku: api key required for live adapter")
 	}
-	if strings.TrimSpace(baseURL) == "" {
-		baseURL = defaultSandboxBaseURL
+	env = strings.ToLower(strings.TrimSpace(env))
+	if env != "" && env != EnvSandbox && env != EnvProduction {
+		return nil, fmt.Errorf("duitku: env must be sandbox|production, got %q", env)
+	}
+	resolved, err := ResolveBaseURL(env, baseURL)
+	if err != nil {
+		return nil, err
 	}
 	if strings.TrimSpace(paymentMethod) == "" {
 		paymentMethod = defaultPaymentMethod
@@ -62,11 +66,12 @@ func NewReal(merchantCode, apiKey, baseURL, callbackURL, returnURL, paymentMetho
 	if strings.TrimSpace(accountScope) == "" {
 		accountScope = defaultAccountScope
 	}
-	timeout := 15 * time.Second
+	timeout := time.Duration(defaultHTTPTimeout) * time.Second
 	return &Real{
 		MerchantCode:  merchantCode,
 		APIKey:        apiKey,
-		BaseURL:       strings.TrimRight(baseURL, "/"),
+		BaseURL:       resolved,
+		Env:           env,
 		CallbackURL:   strings.TrimSpace(callbackURL),
 		ReturnURL:     strings.TrimSpace(returnURL),
 		PaymentMethod: paymentMethod,
@@ -87,6 +92,8 @@ func (r *Real) Name() string {
 func (r *Real) IsFake() bool { return false }
 
 // CreateQRIS creates a QRIS payment via Duitku merchant v2 inquiry.
+// ExternalID is sent as merchantOrderId and must be used for later status lookup.
+// ProviderReference in the result is Duitku's reference (audit only).
 func (r *Real) CreateQRIS(ctx context.Context, in ports.CreateQRISInput) (ports.CreateQRISResult, error) {
 	if in.AmountIDR <= 0 {
 		return ports.CreateQRISResult{}, &ports.ProviderError{Class: ports.ProviderRejected, Message: "invalid amount"}
@@ -103,7 +110,6 @@ func (r *Real) CreateQRIS(ctx context.Context, in ports.CreateQRISInput) (ports.
 	if productDetails == "" {
 		productDetails = "QRIS payment"
 	}
-	// Cap product details to a reasonable merchant API length.
 	if len(productDetails) > 255 {
 		productDetails = productDetails[:255]
 	}
@@ -135,10 +141,17 @@ func (r *Real) CreateQRIS(ctx context.Context, in ports.CreateQRISInput) (ports.
 		return ports.CreateQRISResult{}, err
 	}
 
-	ref := firstNonEmpty(resp.Reference, resp.MerchantOrderID, orderID)
+	// reference = Duitku provider id only; never substitute merchantOrderId as provider ref.
+	ref := strings.TrimSpace(resp.Reference)
+	if ref == "" {
+		return ports.CreateQRISResult{}, &ports.ProviderError{
+			Class:       ports.ProviderInvalidResp,
+			Message:     "missing provider reference",
+			RequestSent: true,
+		}
+	}
 	qrString := firstNonEmpty(resp.QRString, resp.QrString, resp.VaNumber)
 	qrImage := firstNonEmpty(resp.QRUrl, resp.QrUrl, resp.PaymentURL, resp.QrImageURL)
-	// Inquiry success means QR issued; payment is not settled yet → PENDING until callback/status.
 	status := "PENDING"
 	exp := in.ExpiresAt
 	if exp.IsZero() && expiryMinutes > 0 {
@@ -153,17 +166,18 @@ func (r *Real) CreateQRIS(ctx context.Context, in ports.CreateQRISInput) (ports.
 	}, nil
 }
 
-// GetPayment looks up transaction status by merchantOrderId (or stored reference).
-func (r *Real) GetPayment(ctx context.Context, providerRef string) (ports.ProviderPayment, error) {
-	providerRef = strings.TrimSpace(providerRef)
-	if providerRef == "" {
-		return ports.ProviderPayment{}, &ports.ProviderError{Class: ports.ProviderRejected, Message: "empty provider ref"}
+// GetPayment looks up transaction status by merchantOrderId (merchant external id).
+// Do not pass provider reference (Duitku reference) here — the API keys on merchantOrderId.
+func (r *Real) GetPayment(ctx context.Context, merchantOrderID string) (ports.ProviderPayment, error) {
+	merchantOrderID = strings.TrimSpace(merchantOrderID)
+	if merchantOrderID == "" {
+		return ports.ProviderPayment{}, &ports.ProviderError{Class: ports.ProviderRejected, Message: "empty merchant order id"}
 	}
 	var resp statusResponse
 	body := map[string]any{
 		"merchantCode":    r.MerchantCode,
-		"merchantOrderId": providerRef,
-		"signature":       StatusSignature(r.MerchantCode, providerRef, r.APIKey),
+		"merchantOrderId": merchantOrderID,
+		"signature":       StatusSignature(r.MerchantCode, merchantOrderID, r.APIKey),
 	}
 	if err := r.doJSON(ctx, http.MethodPost, pathTransactionStatus, body, &resp); err != nil {
 		return ports.ProviderPayment{}, err
@@ -171,15 +185,15 @@ func (r *Real) GetPayment(ctx context.Context, providerRef string) (ports.Provid
 	if err := classifyStatusBusiness(resp); err != nil {
 		return ports.ProviderPayment{}, err
 	}
-	amount := resp.Amount
-	if amount == 0 && resp.PaymentAmount > 0 {
-		amount = resp.PaymentAmount
+	amount := int64(resp.Amount)
+	if amount == 0 && int64(resp.PaymentAmount) > 0 {
+		amount = int64(resp.PaymentAmount)
 	}
 	status := mapDuitkuStatus(resp.StatusCode, resp.StatusMessage)
 	paidAt := parseTimePtr(firstNonEmpty(resp.SettlementDate, resp.PaymentDate))
 	return ports.ProviderPayment{
-		ProviderReference: firstNonEmpty(resp.Reference, resp.MerchantOrderID, providerRef),
-		ExternalID:        firstNonEmpty(resp.MerchantOrderID, providerRef),
+		ProviderReference: firstNonEmpty(resp.Reference, ""),
+		ExternalID:        firstNonEmpty(resp.MerchantOrderID, merchantOrderID),
 		AmountIDR:         amount,
 		Currency:          "IDR",
 		Status:            status,
@@ -188,78 +202,24 @@ func (r *Real) GetPayment(ctx context.Context, providerRef string) (ports.Provid
 }
 
 // CancelPayment is best-effort: Duitku has no dedicated cancel for QRIS.
-// Re-fetch status; if still pending, report CANCELLED class via REJECTED path only when
-// provider explicitly canceled — otherwise return current status (caller decides).
-func (r *Real) CancelPayment(ctx context.Context, providerRef string) (ports.ProviderPayment, error) {
-	p, err := r.GetPayment(ctx, providerRef)
+// merchantOrderID is the merchant external id (same as GetPayment).
+func (r *Real) CancelPayment(ctx context.Context, merchantOrderID string) (ports.ProviderPayment, error) {
+	p, err := r.GetPayment(ctx, merchantOrderID)
 	if err != nil {
 		return ports.ProviderPayment{}, err
 	}
-	// No cancel API: return live status so application can expire/void locally.
 	return p, nil
 }
 
-// ExpirePayment re-fetches status (Duitku auto-expires; evidence-oriented like Xendit).
-func (r *Real) ExpirePayment(ctx context.Context, providerRef string) (ports.ProviderPayment, error) {
-	return r.GetPayment(ctx, providerRef)
-}
-
-// InquirySignature is MD5(merchantCode + merchantOrderId + paymentAmount + apiKey) lowercase hex.
-func InquirySignature(merchantCode, merchantOrderID, paymentAmount, apiKey string) string {
-	return md5Hex(merchantCode + merchantOrderID + paymentAmount + apiKey)
-}
-
-// StatusSignature is MD5(merchantCode + merchantOrderId + apiKey) lowercase hex.
-func StatusSignature(merchantCode, merchantOrderID, apiKey string) string {
-	return md5Hex(merchantCode + merchantOrderID + apiKey)
-}
-
-// CallbackSignature is MD5(merchantCode + amount + merchantOrderId + apiKey) lowercase hex.
-// amount is the posted amount string (whole IDR, no decimals), same as the callback amount field.
-func CallbackSignature(merchantCode, amount, merchantOrderID, apiKey string) string {
-	return md5Hex(merchantCode + amount + merchantOrderID + apiKey)
-}
-
-// VerifyCallbackSignature constant-time compares provided signature to CallbackSignature.
-// Returns false if any required field is empty or lengths of digests differ.
-func VerifyCallbackSignature(merchantCode, amount, merchantOrderID, apiKey, provided string) bool {
-	merchantCode = strings.TrimSpace(merchantCode)
-	amount = strings.TrimSpace(amount)
-	merchantOrderID = strings.TrimSpace(merchantOrderID)
-	apiKey = strings.TrimSpace(apiKey)
-	provided = strings.ToLower(strings.TrimSpace(provided))
-	if merchantCode == "" || amount == "" || merchantOrderID == "" || apiKey == "" || provided == "" {
-		return false
-	}
-	want := strings.ToLower(CallbackSignature(merchantCode, amount, merchantOrderID, apiKey))
-	if len(want) != len(provided) {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(want), []byte(provided)) == 1
-}
-
-// MerchantCodeEqual constant-time compares merchant codes via fixed-size digests
-// (handles unequal lengths safely).
-func MerchantCodeEqual(got, want string) bool {
-	got = strings.TrimSpace(got)
-	want = strings.TrimSpace(want)
-	if want == "" {
-		return false
-	}
-	// Fixed-size digests so ConstantTimeCompare always runs equal-length inputs.
-	a := md5Hex(got)
-	b := md5Hex(want)
-	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+// ExpirePayment re-fetches status (Duitku auto-expires).
+// merchantOrderID is the merchant external id (same as GetPayment).
+func (r *Real) ExpirePayment(ctx context.Context, merchantOrderID string) (ports.ProviderPayment, error) {
+	return r.GetPayment(ctx, merchantOrderID)
 }
 
 // MapStatus maps Duitku status codes/messages to domain payment status (exported for tests).
 func MapStatus(statusCode, statusMessage string) string {
 	return mapDuitkuStatus(statusCode, statusMessage)
-}
-
-func md5Hex(s string) string {
-	sum := md5.Sum([]byte(s))
-	return hex.EncodeToString(sum[:])
 }
 
 type inquiryResponse struct {
@@ -279,20 +239,43 @@ type inquiryResponse struct {
 }
 
 type statusResponse struct {
-	MerchantOrderID string `json:"merchantOrderId"`
-	Reference       string `json:"reference"`
-	Amount          int64  `json:"amount"`
-	PaymentAmount   int64  `json:"paymentAmount"`
-	StatusCode      string `json:"statusCode"`
-	StatusMessage   string `json:"statusMessage"`
-	SettlementDate  string `json:"settlementDate"`
-	PaymentDate     string `json:"paymentDate"`
+	MerchantOrderID string      `json:"merchantOrderId"`
+	Reference       string      `json:"reference"`
+	Amount          flexInt64   `json:"amount"`
+	PaymentAmount   flexInt64   `json:"paymentAmount"`
+	StatusCode      string      `json:"statusCode"`
+	StatusMessage   string      `json:"statusMessage"`
+	SettlementDate  string      `json:"settlementDate"`
+	PaymentDate     string      `json:"paymentDate"`
+}
+
+// flexInt64 accepts JSON number or whole-IDR string (provider status docs use both shapes).
+type flexInt64 int64
+
+func (f *flexInt64) UnmarshalJSON(b []byte) error {
+	s := strings.TrimSpace(string(b))
+	if s == "" || s == "null" {
+		*f = 0
+		return nil
+	}
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	if s == "" {
+		*f = 0
+		return nil
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return err
+	}
+	*f = flexInt64(n)
+	return nil
 }
 
 func classifyInquiryBusiness(resp inquiryResponse) error {
 	code := strings.TrimSpace(resp.StatusCode)
 	msg := strings.ToLower(strings.TrimSpace(resp.StatusMessage))
-	// Empty statusCode with a reference/QR is treated as success (some sandbox shapes).
 	if code == "" && (resp.Reference != "" || resp.QRString != "" || resp.QrString != "" || resp.PaymentURL != "") {
 		return nil
 	}
@@ -305,7 +288,6 @@ func classifyInquiryBusiness(resp inquiryResponse) error {
 	if isAuthMessage(msg) || code == "01" && strings.Contains(msg, "signature") {
 		return &ports.ProviderError{Class: ports.ProviderAuthFailure, Message: "auth or signature failure", RequestSent: true}
 	}
-	// Non-00 business codes on create are rejections.
 	if code != "" && code != "00" {
 		return &ports.ProviderError{
 			Class:       ports.ProviderRejected,
@@ -325,7 +307,6 @@ func classifyStatusBusiness(resp statusResponse) error {
 	if isAuthMessage(msg) {
 		return &ports.ProviderError{Class: ports.ProviderAuthFailure, Message: "auth or signature failure", RequestSent: true}
 	}
-	// Known money statuses are success responses even when not paid.
 	switch code {
 	case "00", "01", "02":
 		return nil
@@ -333,7 +314,6 @@ func classifyStatusBusiness(resp statusResponse) error {
 	if strings.Contains(msg, "not found") || strings.Contains(msg, "tidak ditemukan") {
 		return &ports.ProviderError{Class: ports.ProviderRejected, Message: "transaction not found", RequestSent: true}
 	}
-	// Other codes: still map if message implies a terminal state; else reject.
 	if mapDuitkuStatus(code, resp.StatusMessage) != "UNKNOWN" {
 		return nil
 	}
@@ -363,7 +343,6 @@ func mapDuitkuStatus(statusCode, statusMessage string) string {
 	case "00":
 		return "PAID"
 	case "01":
-		// Process / pending
 		if strings.Contains(msg, "cancel") || strings.Contains(msg, "fail") {
 			return "FAILED"
 		}
@@ -375,7 +354,6 @@ func mapDuitkuStatus(statusCode, statusMessage string) string {
 		return "FAILED"
 	}
 
-	// Message-based fallbacks when code is non-standard or empty.
 	switch {
 	case strings.Contains(msg, "success") || strings.Contains(msg, "paid") || strings.Contains(msg, "berhasil"):
 		return "PAID"
@@ -390,9 +368,6 @@ func mapDuitkuStatus(statusCode, statusMessage string) string {
 	case code == "" && msg == "":
 		return "UNKNOWN"
 	default:
-		if code == "" {
-			return "UNKNOWN"
-		}
 		return "UNKNOWN"
 	}
 }
@@ -411,7 +386,7 @@ func (r *Real) doJSON(ctx context.Context, method, path string, body any, out an
 	if err != nil {
 		return &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "build request"}
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", ContentTypeJSON)
 	req.Header.Set("Accept", "application/json")
 
 	client := r.HTTPClient
@@ -449,7 +424,6 @@ func (r *Real) doJSON(ctx context.Context, method, path string, body any, out an
 		return &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "provider 5xx", RequestSent: true}
 	}
 	if resp.StatusCode >= 400 {
-		// Inspect body only for signature/auth hints; never surface raw body.
 		if looksLikeAuthBody(raw) {
 			return &ports.ProviderError{Class: ports.ProviderAuthFailure, Message: "auth or signature failure", RequestSent: true}
 		}
@@ -476,7 +450,7 @@ func (r *Real) timeout() time.Duration {
 	if r.Timeout > 0 {
 		return r.Timeout
 	}
-	return 15 * time.Second
+	return time.Duration(defaultHTTPTimeout) * time.Second
 }
 
 func (r *Real) logSafe(msg, method, path string, status int, d time.Duration, err error) {

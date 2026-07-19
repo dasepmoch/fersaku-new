@@ -2,7 +2,8 @@ package application
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -1179,11 +1180,13 @@ func parseProviderEnvelope(provider string, body []byte) (payments.NormalizedCal
 	}
 }
 
-// Duitku callback signature: MD5(merchantCode + amount + merchantOrderId + apiKey) lowercase hex.
+// Duitku callback signature: HMAC-SHA256(merchantCode + amount + merchantOrderId, apiKey) lowercase hex.
+// MD5 is obsolete (docs.duitku.com 2026-07-20); live path rejects 32-hex MD5 digests.
 // Implemented here (not via adapters import) to keep application free of adapter packages.
 func duitkuCallbackSignature(merchantCode, amount, merchantOrderID, apiKey string) string {
-	sum := md5.Sum([]byte(merchantCode + amount + merchantOrderID + apiKey))
-	return hex.EncodeToString(sum[:])
+	mac := hmac.New(sha256.New, []byte(apiKey))
+	_, _ = mac.Write([]byte(merchantCode + amount + merchantOrderID))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func duitkuVerifyCallbackSignature(merchantCode, amount, merchantOrderID, apiKey, provided string) bool {
@@ -1193,6 +1196,10 @@ func duitkuVerifyCallbackSignature(merchantCode, amount, merchantOrderID, apiKey
 	apiKey = strings.TrimSpace(apiKey)
 	provided = strings.ToLower(strings.TrimSpace(provided))
 	if merchantCode == "" || amount == "" || merchantOrderID == "" || apiKey == "" || provided == "" {
+		return false
+	}
+	// Live path: HMAC-SHA256 only (64 hex). Reject legacy MD5 (32 hex).
+	if len(provided) != 64 {
 		return false
 	}
 	want := strings.ToLower(duitkuCallbackSignature(merchantCode, amount, merchantOrderID, apiKey))
@@ -1209,8 +1216,8 @@ func duitkuMerchantCodeEqual(got, want string) bool {
 		return false
 	}
 	// Fixed-size digests so ConstantTimeCompare always runs equal-length inputs.
-	sumA := md5.Sum([]byte(got))
-	sumB := md5.Sum([]byte(want))
+	sumA := sha256.Sum256([]byte(got))
+	sumB := sha256.Sum256([]byte(want))
 	return subtle.ConstantTimeCompare(sumA[:], sumB[:]) == 1
 }
 

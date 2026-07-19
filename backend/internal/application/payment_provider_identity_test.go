@@ -177,3 +177,27 @@ func TestGatewayService_CreateQRISUsesPaymentAccountScope(t *testing.T) {
 		t.Fatalf("CreateQRIS AccountScope=%q", rec.lastScope)
 	}
 }
+
+func TestProviderLookupKey_DuitkuUsesExternalID(t *testing.T) {
+	t.Parallel()
+	ref := "DXXXX-PROVIDER-REF"
+	pi := payments.Intent{
+		Provider:          payments.ProviderDuitku,
+		ExternalID:        "merchant-order-1",
+		ProviderReference: &ref,
+	}
+	if got := providerLookupKey(pi); got != "merchant-order-1" {
+		t.Fatalf("duitku lookup=%q want merchant order id", got)
+	}
+	if got := providerLookupKey(pi); got == ref {
+		t.Fatal("duitku must not use provider reference for status lookup")
+	}
+	xendit := payments.Intent{
+		Provider:          payments.ProviderXendit,
+		ExternalID:        "ext-x",
+		ProviderReference: &ref,
+	}
+	if got := providerLookupKey(xendit); got != ref {
+		t.Fatalf("xendit lookup=%q want provider ref", got)
+	}
+}

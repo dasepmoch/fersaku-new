@@ -484,6 +484,73 @@ func TestLocalDuitkuRequiresCredentials(t *testing.T) {
 	}
 }
 
+func TestProductionDuitkuRejectsSandboxBaseURL(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "duitku")
+	t.Setenv("DISBURSEMENT_PROVIDER", "xendit")
+	t.Setenv("DUITKU_MERCHANT_CODE", "DXXXX")
+	t.Setenv("DUITKU_API_KEY", "duitku-test-key-not-real")
+	t.Setenv("DUITKU_ENV", "sandbox")
+	t.Setenv("DUITKU_BASE_URL", "https://sandbox.duitku.com")
+	t.Setenv("SESSION_SECRET", "production-session-secret-32chars-min!!")
+	t.Setenv("CSRF_SECRET", "production-csrf-secret-32chars-min!!!!!")
+	t.Setenv("KYC_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef")
+	t.Setenv("DATABASE_URL", "postgres://u:p@db:5432/fersaku?sslmode=require")
+	t.Setenv("REDIS_URL", "rediss://redis:6379/0")
+	t.Setenv("R2_ENDPOINT", "https://r2.example.com")
+	t.Setenv("R2_BUCKET_PRIVATE", "private")
+	t.Setenv("R2_BUCKET_PUBLIC", "public")
+	t.Setenv("R2_ACCESS_KEY_ID", "ak")
+	t.Setenv("R2_SECRET_ACCESS_KEY", "sk")
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_production_test_key_not_real")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_token_production_test_xx")
+	t.Setenv("MAIL_MODE", "smtp")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "sandbox") {
+		t.Fatalf("expected production+sandbox rejected, got %v", err)
+	}
+}
+
+func TestProductionDuitkuAllowsPassport(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "duitku")
+	t.Setenv("DISBURSEMENT_PROVIDER", "xendit")
+	t.Setenv("DUITKU_MERCHANT_CODE", "DXXXX")
+	t.Setenv("DUITKU_API_KEY", "duitku-test-key-not-real")
+	t.Setenv("DUITKU_ENV", "production")
+	t.Setenv("DUITKU_BASE_URL", "")
+	t.Setenv("SESSION_SECRET", "production-session-secret-32chars-min!!")
+	t.Setenv("CSRF_SECRET", "production-csrf-secret-32chars-min!!!!!")
+	t.Setenv("KYC_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef")
+	t.Setenv("DATABASE_URL", "postgres://u:p@db:5432/fersaku?sslmode=require")
+	t.Setenv("REDIS_URL", "rediss://redis:6379/0")
+	t.Setenv("R2_ENDPOINT", "https://r2.example.com")
+	t.Setenv("R2_BUCKET_PRIVATE", "private")
+	t.Setenv("R2_BUCKET_PUBLIC", "public")
+	t.Setenv("R2_ACCESS_KEY_ID", "ak")
+	t.Setenv("R2_SECRET_ACCESS_KEY", "sk")
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_production_test_key_not_real")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_token_production_test_xx")
+	t.Setenv("MAIL_MODE", "smtp")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("production duitku empty base should load: %v", err)
+	}
+	if cfg.DuitkuEnv != "production" {
+		t.Fatalf("DuitkuEnv=%q", cfg.DuitkuEnv)
+	}
+}
+
 func TestRejectUnknownPaymentProvider(t *testing.T) {
 	t.Setenv("APP_ENV", "local")
 	t.Setenv("HTTP_ADDR", ":8080")

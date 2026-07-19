@@ -795,9 +795,10 @@ func (s *CheckoutService) ExpireIntent(ctx context.Context, req ExpireIntentRequ
 	}
 	pi = updated
 
-	// Call provider with same reference when present.
-	if pi.ProviderReference == nil || *pi.ProviderReference == "" {
-		// No provider ref yet (create unknown) — stay EXPIRE_PENDING / schedule lookup; no stock release.
+	// Provider lookup key: Duitku uses merchantOrderId (ExternalID); Xendit uses provider reference.
+	lookupKey := providerLookupKey(pi)
+	if lookupKey == "" {
+		// No provider identity yet (create unknown) — stay EXPIRE_PENDING / schedule lookup; no stock release.
 		lookupAt := now.Add(payments.DefaultLookupDelay)
 		op := "EXPIRE"
 		_, _ = s.Store.ForceUpdatePaymentIntent(ctx, pi.ID, payments.StatusUnknownOutcome, PaymentIntentPatch{
@@ -814,7 +815,7 @@ func (s *CheckoutService) ExpireIntent(ctx context.Context, req ExpireIntentRequ
 	if s.QRIS == nil {
 		return pi, 202, nil
 	}
-	prov, perr := s.QRIS.ExpirePayment(ctx, *pi.ProviderReference)
+	prov, perr := s.QRIS.ExpirePayment(ctx, lookupKey)
 	if perr != nil {
 		// Timeout → UNKNOWN_OUTCOME; DO NOT release stock.
 		if pe, ok := perr.(*ports.ProviderError); ok && pe.IsUnknownOutcome() {
@@ -886,7 +887,8 @@ func (s *CheckoutService) ExpireIntent(ctx context.Context, req ExpireIntentRequ
 	}
 }
 
-// LookupProvider resolves UNKNOWN_OUTCOME using the same provider reference (no blind create retry).
+// LookupProvider resolves UNKNOWN_OUTCOME using the provider status API (no blind create retry).
+// Duitku: merchantOrderId = ExternalID; Xendit: provider reference id.
 func (s *CheckoutService) LookupProvider(ctx context.Context, intentID string) (payments.Intent, error) {
 	pi, err := s.Store.GetPaymentIntentByID(ctx, intentID)
 	if err != nil {
@@ -895,10 +897,11 @@ func (s *CheckoutService) LookupProvider(ctx context.Context, intentID string) (
 		}
 		return payments.Intent{}, err
 	}
-	if pi.ProviderReference == nil || *pi.ProviderReference == "" || s.QRIS == nil {
+	lookupKey := providerLookupKey(pi)
+	if lookupKey == "" || s.QRIS == nil {
 		return pi, nil
 	}
-	prov, perr := s.QRIS.GetPayment(ctx, *pi.ProviderReference)
+	prov, perr := s.QRIS.GetPayment(ctx, lookupKey)
 	if perr != nil {
 		return pi, nil
 	}
@@ -979,3 +982,16 @@ func (s *CheckoutService) SimulatePayment(ctx context.Context, intentID string) 
 }
 
 func strPtr(s string) *string { return &s }
+
+// providerLookupKey selects the identifier for QRISProvider status/expire/cancel.
+// Duitku transactionStatus keys on merchantOrderId (= ExternalID); Xendit uses provider id.
+// Never pass Duitku provider reference as merchantOrderId.
+func providerLookupKey(pi payments.Intent) string {
+	if strings.EqualFold(pi.Provider, payments.ProviderDuitku) {
+		return strings.TrimSpace(pi.ExternalID)
+	}
+	if pi.ProviderReference != nil {
+		return strings.TrimSpace(*pi.ProviderReference)
+	}
+	return ""
+}

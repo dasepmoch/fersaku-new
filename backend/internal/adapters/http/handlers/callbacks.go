@@ -94,8 +94,8 @@ func callbackToken(r *http.Request) string {
 }
 
 // DuitkuWebhook handles POST /v1/webhooks/duitku (+ /sandbox /live).
-// Auth: body signature MD5(merchantCode + amount + merchantOrderId + apiKey); merchantCode match.
-// Success response: 200 text/plain "OK" (Duitku common practice).
+// Auth: body signature HMAC-SHA256(merchantCode + amount + merchantOrderId, apiKey); merchantCode match.
+// Success response: 200 text/plain "SUCCESS" (docs.duitku.com contract freeze 2026-07-20).
 func (h *CallbackHandler) DuitkuWebhook(w http.ResponseWriter, r *http.Request) {
 	if h.Svc == nil {
 		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Webhook unavailable"))
@@ -141,11 +141,11 @@ func (h *CallbackHandler) DuitkuWebhook(w http.ResponseWriter, r *http.Request) 
 }
 
 func writeDuitkuWebhookResponse(w http.ResponseWriter, res application.IngressResult) {
-	// Duitku expects plain "OK" on accept; keep JSON-less body for provider retry semantics.
+	// Provider requires HTTP 200 on accept; body SUCCESS per active API contract (GAP-01).
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(res.HTTPStatus)
 	if res.Accepted {
-		_, _ = w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("SUCCESS"))
 		return
 	}
 	_, _ = w.Write([]byte("FAILED"))

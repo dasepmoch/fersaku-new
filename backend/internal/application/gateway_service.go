@@ -807,7 +807,8 @@ func (s *GatewayService) CancelPayment(ctx context.Context, auth gateway.AuthCon
 		CreatedAt:       now,
 	})
 
-	if pi.ProviderReference == nil || *pi.ProviderReference == "" {
+	lookupKey := providerLookupKey(pi)
+	if lookupKey == "" {
 		lookupAt := now.Add(payments.DefaultLookupDelay)
 		op := "CANCEL"
 		fin, _ := s.Store.ForceUpdatePaymentIntent(ctx, pi.ID, payments.StatusUnknownOutcome, PaymentIntentPatch{
@@ -822,7 +823,7 @@ func (s *GatewayService) CancelPayment(ctx context.Context, auth gateway.AuthCon
 	if s.QRIS == nil {
 		return pi, 202, nil
 	}
-	prov, perr := s.QRIS.CancelPayment(ctx, *pi.ProviderReference)
+	prov, perr := s.QRIS.CancelPayment(ctx, lookupKey)
 	if perr != nil {
 		if pe, ok := perr.(*ports.ProviderError); ok && pe.IsUnknownOutcome() {
 			lookupAt := now.Add(payments.DefaultLookupDelay)

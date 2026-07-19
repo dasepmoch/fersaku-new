@@ -38,8 +38,11 @@ type ProviderPayment struct {
 	ExpiresAt         *time.Time
 }
 
-// QRISProvider is the single Xendit QRIS capability port (ADR-0002).
+// QRISProvider is the QRIS capability port (ADR-0002, ADR-0008).
 // Hosted checkout and gateway share this interface.
+// Lookup argument semantics are adapter-specific:
+//   - Xendit: provider QR id (ProviderReference)
+//   - Duitku: merchantOrderId (ExternalID) — never Duitku reference
 type QRISProvider interface {
 	CreateQRIS(ctx context.Context, in CreateQRISInput) (CreateQRISResult, error)
 	GetPayment(ctx context.Context, providerRef string) (ProviderPayment, error)
