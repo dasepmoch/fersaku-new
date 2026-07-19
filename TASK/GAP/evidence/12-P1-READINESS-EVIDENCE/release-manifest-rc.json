@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1",
+  "releaseId": "rc-196d812",
+  "gitSha": "196d81236919bafa9d8b054c4ec912760b2b8141",
+  "gitRef": "gap/production-readiness",
+  "createdAt": "2026-07-19T20:10:47Z",
+  "configSchemaVersion": "1",
+  "runtimes": {
+    "go": "1.24.5",
+    "node": "24.15.0",
+    "npm": "11.16.0"
+  },
+  "baseImages": {
+    "golang": { "ref": "golang:1.25-alpine@sha256:56961d79ea8129efddcc0b8643fd8a5416b4e6228cfd477e3fd61deb2672c587" },
+    "alpine": { "ref": "alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d" },
+    "node": { "ref": "node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd" }
+  },
+  "supplyChain": {
+    "packageLockSha256": "",
+    "goSumSha256": "",
+    "exceptionExpiry": null,
+    "policy": "docs/security/supply-chain-policy.md"
+  },
+  "images": {
+    "api": {"repository":"ghcr.io/fersaku/fersaku-api","tag":"196d81236919","digest":"sha256:abc3416d41610b258a1defefade43fa7b65358c0f373151f8351ecef1efe84fa","builtFromGitSha":"196d81236919bafa9d8b054c4ec912760b2b8141"},
+    "worker": {"repository":"ghcr.io/fersaku/fersaku-worker","tag":"196d81236919","digest":"sha256:c494083fedbab589c2d2a3f200d2c2d1d7df464b1130385dfcbe3683bda5f41f","builtFromGitSha":"196d81236919bafa9d8b054c4ec912760b2b8141"},
+    "frontend": {"repository":"ghcr.io/fersaku/fersaku-frontend","tag":"196d81236919","digest":"sha256:a06cc37176c035747b1e26930316d9d4558710e08eb111890c20ea9bd35b3e7c","builtFromGitSha":"196d81236919bafa9d8b054c4ec912760b2b8141"}
+  },
+  "migration": {
+    "head": "35",
+    "tool": "golang-migrate",
+    "path": "backend/migrations",
+    "forwardCompatibleOnly": true,
+    "autoDownMigrate": false
+  },
+  "featureDomainSourceMap": { "auth": "api", "catalog": "api", "checkout": "api", "orders": "api", "payments": "api", "wallet": "api", "withdrawals": "api", "kyc": "api", "admin": "api", "notifications": "api", "webhooks": "api", "platformFees": "api", "storefront": "api"},
+  "provenance": {
+    "sbomPaths": [],
+    "cosignBundlePaths": [],
+    "attestationPaths": []
+  },
+  "promotion": {
+    "strategy": "build-once-digest",
+    "rebuildOnPromote": false,
+    "stagingDigestVerified": false,
+    "productionDigestVerified": false
+  },
+  "gates": {
+    "migrateBeforeRollout": true,
+    "readinessRequired": true,
+    "callbackSmokeRequired": true,
+    "syntheticRequired": true,
+    "manualProdApproval": true
+  }
+}

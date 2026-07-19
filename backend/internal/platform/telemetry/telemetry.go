@@ -352,7 +352,7 @@ func (o *OTLPExporter) Shutdown(context.Context) error { return nil }
 // Provider is the process tracer.
 type Provider struct {
 	cfg      Config
-	exporter    Exporter
+	exporter Exporter
 	sink     *SinkExporter // always present for diagnostics when multi
 	queue    chan Span
 	stopCh   chan struct{}
@@ -435,11 +435,11 @@ func New(cfg Config) *Provider {
 	}
 
 	return &Provider{
-		cfg:    cfg,
+		cfg:      cfg,
 		exporter: exp,
-		sink:   sink,
-		queue:  make(chan Span, cfg.QueueMax),
-		stopCh: make(chan struct{}),
+		sink:     sink,
+		queue:    make(chan Span, cfg.QueueMax),
+		stopCh:   make(chan struct{}),
 	}
 }
 
@@ -794,27 +794,27 @@ func newSpanID() string {
 
 // Allowed attribute keys (low-cardinality). Others are dropped.
 var allowedAttrKeys = map[string]struct{}{
-	"http.method":        {},
-	"http.route":         {},
-	"http.status_code":   {},
-	"error.class":        {},
-	"rpc.system":         {},
-	"db.system":          {},
-	"db.operation":       {},
-	"messaging.system":   {},
+	"http.method":         {},
+	"http.route":          {},
+	"http.status_code":    {},
+	"error.class":         {},
+	"rpc.system":          {},
+	"db.system":           {},
+	"db.operation":        {},
+	"messaging.system":    {},
 	"messaging.operation": {},
-	"job.name":           {},
-	"job.result":         {},
-	"provider":           {},
-	"provider.operation": {},
-	"provider.result":    {},
-	"component":          {},
-	"request_id":         {},
-	"service":            {},
-	"env":                {},
-	"release":            {},
-	"route_class":        {},
-	"span.kind":          {},
+	"job.name":            {},
+	"job.result":          {},
+	"provider":            {},
+	"provider.operation":  {},
+	"provider.result":     {},
+	"component":           {},
+	"request_id":          {},
+	"service":             {},
+	"env":                 {},
+	"release":             {},
+	"route_class":         {},
+	"span.kind":           {},
 }
 
 func sanitizeAttrs(in map[string]string) map[string]string {

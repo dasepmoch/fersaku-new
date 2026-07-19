@@ -5,7 +5,10 @@
 
 **Program:** Production readiness + Duitku payment + Xendit disbursement  
 **Auth:** no MFA  
-**Last board update:** 2026-07-19 (B50 CLOSED — host dual-provider E2E PAID+ledger)
+**Last board update:** 2026-07-20 (GAP-12 readiness reconcile — host/demo evidence ≠ production)
+
+> **Truthful readiness matrix:** [`TASK/GAP/evidence/12-P1-READINESS-EVIDENCE/READINESS-MATRIX.md`](../GAP/evidence/12-P1-READINESS-EVIDENCE/READINESS-MATRIX.md)  
+> **Pre-LIVE GO:** **NOT READY** (KEY-22/52/60/62 + managed platform OWNER)
 
 ---
 
@@ -15,9 +18,11 @@
 | ------ | ------- |
 | `pending` | Not started |
 | `in_progress` | Claimed; only one P0 money task per agent |
-| `done` | Acceptance + evidence complete |
+| `done` | Acceptance + evidence complete **for the claimed layer only** |
 | `blocked` | Waiting on dependency or owner |
 | `deferred` | Explicitly postponed with date/owner |
+
+**Anti-pattern:** Do not treat `done` as “production live”. Host PAID, sandbox dry-run, and unit pass are not staging parity or LIVE canary.
 
 ---
 
@@ -74,27 +79,28 @@
 | PROD-F10 | Auth/session cell | P0 | done | @nikki/opencode | `evidence/PROD-F10/20260719-opencode.md` |
 | PROD-F20 | Checkout-order cell | P0 | done | @nikki/opencode | `evidence/PROD-F20/20260719-opencode.md` (live PAID residual = B50) |
 | PROD-F30 | Seller-finance cell | P0 | done | @nikki/opencode | `evidence/PROD-F30/20260719-opencode.md` |
-| PROD-F40 | Sandbox canary execution | P0 | done | @nikki/opencode | `evidence/PROD-F40/canary-sandbox.md` (dry-run; no live money) |
+| PROD-F40 | Sandbox canary execution | P0 | done (dry-run only) | @nikki/opencode | `evidence/PROD-F40/canary-sandbox.md` — **not** LIVE; historical 404 section STALE after B50 |
 | PROD-F50 | Mock mode regression | P1 | done | @nikki/opencode | `evidence/PROD-F50/20260719-opencode.md` |
 
 ## Phase G — Ops / owner-sign
 
 | ID | Title | P | Status | Owner | Evidence |
 | -- | ----- | - | ------ | ----- | -------- |
-| PROD-G10 | Production secrets inventory | P0 | done | @nikki/opencode | `evidence/PROD-G10/20260719-opencode.md` (inventory; secret-manager paths TBD human) |
-| PROD-G20 | Infrastructure HA checklist | P0 | done | @nikki/opencode | `evidence/PROD-G20/20260719-opencode.md` (demo host verified; managed prod TBD human) |
-| PROD-G30 | Residual risk sign-off | P0 | done | @nikki/opencode | `evidence/PROD-G30/20260719-opencode.md` (doc ready; human signatures deferred) |
+| PROD-G10 | Production secrets inventory | P0 | done (inventory) / OWNER SM | @nikki/opencode | `evidence/PROD-G10/20260719-opencode.md` — secret-manager **paths TBD human** |
+| PROD-G20 | Infrastructure HA checklist | P0 | done (checklist) / OWNER managed | @nikki/opencode | `evidence/PROD-G20/20260719-opencode.md` — demo host ≠ managed multi-replica |
+| PROD-G30 | Residual risk sign-off | P0 | done (doc) / OWNER ink | @nikki/opencode | `evidence/PROD-G30/` + `residual-risks.md` v1.4 — **signatures blank** |
 | PROD-G40 | Live canary (owner-gated) | P0 | blocked | human GO required | `evidence/PROD-G40/20260719-opencode.md` — **no real money; wait GO LIVE CANARY** |
-| PROD-G50 | Program close | P1 | done | @nikki/opencode | `evidence/PROD-G50/20260719-opencode.md` |
+| PROD-G50 | Program close | P1 | done (code-complete note) | @nikki/opencode | `evidence/PROD-G50/20260719-opencode.md` — **not** owner GO |
 
 ---
 
 ## Suggested next
 
 ```text
-Human: sign residual-risks.md (G30) → optional GO LIVE CANARY (G40)
-Ops: secret manager + managed HA (G10/G20 TBD rows)
-Host demo money path: DONE (B50 PAID+ledger on dual-provider API)
+GAP-12 matrix: TASK/GAP/evidence/12-P1-READINESS-EVIDENCE/READINESS-MATRIX.md
+Human: KEY-51/60 signs → managed KEY-11..14 → KEY-22/52 staging → GO LIVE CANARY (G40/KEY-62)
+Ops: SM populate + managed HA (G10/G20 OWNER rows)
+Host demo money path: DONE (B50 PAID+ledger) — do not promote as staging/prod claim
 ```
 
 ---
@@ -104,9 +110,12 @@ Host demo money path: DONE (B50 PAID+ledger on dual-provider API)
 | Date | Item | Impact | Owner |
 | ---- | ---- | ------ | ----- |
 | 2026-07-19 | ~~B50 full PAID+ledger needs API image rebuild~~ **CLOSED** after rebuild + migration 000033 + dual-provider env | — | @nikki |
-| 2026-07-19 | ~~Live compose POST `/v1/webhooks/duitku` → 404~~ **CLOSED** (route live; empty body → 401) | — | @nikki |
+| 2026-07-19 | ~~Live compose POST `/v1/webhooks/duitku` → 404~~ **CLOSED** (route live; empty body → 401); re-proven GAP-12 2026-07-19T20:10Z | — | @nikki |
 | 2026-07-19 | Browser login Secure cookie capture needs real credentials | E10 residual only | human |
 | 2026-07-19 | G40 live canary blocked until explicit human GO LIVE CANARY | No real-money canary | human |
+| 2026-07-20 | KEY-22 staging parity + KEY-52 headed re-run missing | Cannot claim staging=canary digest | human |
+| 2026-07-20 | Managed scanner/ClamAV address + HA | Production upload/KYC fail-closed without scanner | human |
+| 2026-07-20 | Placeholder digests in `release/dist/release-manifest.json` (`aaaa…`) | Invalid for promote — use GAP-12 rc manifest / rebuild | eng/ops |
 
 ---
 
@@ -121,18 +130,18 @@ Host demo money path: DONE (B50 PAID+ledger on dual-provider API)
 | F10 | done | Identity/CSRF integration cell; no MFA required |
 | F20 | done | Checkout+callback integration PASS; host PAID+ledger closed in B50 (KEY-01) |
 | F30 | done | Withdrawal unit+integration + ledger; isolation notes |
-| F40 | done | canary-sandbox.md dry-run only; **no live money** |
+| F40 | done (dry-run) | canary-sandbox.md dry-run only; **no live money**; B50 closed host PAID |
 | F50 | done | 148 critical mock unit tests PASS |
 
-## Phase G board summary (2026-07-19)
+## Phase G board summary (2026-07-20 GAP-12)
 
 | ID | Status | One-line |
 | -- | ------ | -------- |
-| G10 | done | Secrets inventory presence-only; webhooks URL expectations named |
-| G20 | done | HA checklist prepared; tunnel demo ≠ prod multi-replica |
-| G30 | done | residual-risks.md v1.1 dual-provider; signatures deferred |
+| G10 | done / OWNER | Inventory only; SM populate residual |
+| G20 | done / OWNER | Checklist; managed HA residual |
+| G30 | done / OWNER | residual-risks.md v1.4; **signatures blank** |
 | G40 | blocked | Live canary not run; wait human GO |
-| G50 | done | Program close; code-complete vs owner-gated documented |
+| G50 | done (code) | Code-complete ≠ owner GO; see GAP-12 matrix |
 
 ---
 

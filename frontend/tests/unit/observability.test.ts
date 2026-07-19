@@ -6,10 +6,7 @@ import {
   setObservabilityReporter,
 } from "@/shared/observability/reporter";
 import { resolveObservabilityMode } from "@/shared/observability/mode";
-import {
-  createMemorySink,
-  createHttpSink,
-} from "@/shared/observability/sink";
+import { createMemorySink, createHttpSink } from "@/shared/observability/sink";
 import { installObservabilityReporter } from "@/shared/observability/install";
 
 let resetReporter: (() => void) | undefined;
@@ -86,7 +83,10 @@ describe("observability mode + sink install (GAP-07)", () => {
       }),
     ).toBe("disabled");
     expect(
-      resolveObservabilityMode({ appStage: "prototype", nodeEnv: "development" }),
+      resolveObservabilityMode({
+        appStage: "prototype",
+        nodeEnv: "development",
+      }),
     ).toBe("noop");
   });
 
@@ -118,7 +118,9 @@ describe("observability mode + sink install (GAP-07)", () => {
 
   it("http sink does not throw when fetch fails", async () => {
     const prev = globalThis.fetch;
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error("down")) as typeof fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error("down")) as typeof fetch;
     const sink = createHttpSink({ endpoint: "/api/observability/events" });
     expect(() =>
       sink.captureError({

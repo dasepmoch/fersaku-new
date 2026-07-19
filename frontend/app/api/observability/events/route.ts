@@ -28,7 +28,8 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 }
 
 /** Drop keys that must never be re-logged even if a buggy client sends them. */
-const FORBIDDEN = /password|secret|token|authorization|cookie|signature|account|kyc|email|card|cvv|bearer/i;
+const FORBIDDEN =
+  /password|secret|token|authorization|cookie|signature|account|kyc|email|card|cvv|bearer/i;
 
 function scrub(value: unknown, depth = 0): unknown {
   if (depth > 4) return "[DEPTH]";
@@ -59,23 +60,35 @@ function scrub(value: unknown, depth = 0): unknown {
 export async function POST(request: Request) {
   const cl = request.headers.get("content-length");
   if (cl && Number(cl) > MAX_BODY_BYTES) {
-    return NextResponse.json({ ok: false, error: "payload_too_large" }, { status: 413 });
+    return NextResponse.json(
+      { ok: false, error: "payload_too_large" },
+      { status: 413 },
+    );
   }
 
   let body: unknown;
   try {
     const text = await request.text();
     if (text.length > MAX_BODY_BYTES) {
-      return NextResponse.json({ ok: false, error: "payload_too_large" }, { status: 413 });
+      return NextResponse.json(
+        { ok: false, error: "payload_too_large" },
+        { status: 413 },
+      );
     }
     body = text ? JSON.parse(text) : {};
   } catch {
-    return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "invalid_json" },
+      { status: 400 },
+    );
   }
 
   const eventsRaw = isPlainObject(body) ? body.events : null;
   if (!Array.isArray(eventsRaw)) {
-    return NextResponse.json({ ok: false, error: "events_required" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "events_required" },
+      { status: 400 },
+    );
   }
 
   const events = eventsRaw.slice(0, MAX_EVENTS) as InEvent[];
@@ -87,8 +100,10 @@ export async function POST(request: Request) {
       msg: "client_observability",
       kind,
       ts: typeof e.ts === "string" ? e.ts : undefined,
-      releaseId: typeof e.releaseId === "string" ? e.releaseId.slice(0, 64) : undefined,
-      surface: typeof e.surface === "string" ? e.surface.slice(0, 64) : undefined,
+      releaseId:
+        typeof e.releaseId === "string" ? e.releaseId.slice(0, 64) : undefined,
+      surface:
+        typeof e.surface === "string" ? e.surface.slice(0, 64) : undefined,
       source: typeof e.source === "string" ? e.source.slice(0, 64) : undefined,
       redactedError: scrub(e.redactedError),
       context: scrub(e.context),
@@ -100,7 +115,8 @@ export async function POST(request: Request) {
                   ? e.metric.name.slice(0, 96)
                   : "unknown",
               value:
-                typeof e.metric.value === "number" && Number.isFinite(e.metric.value)
+                typeof e.metric.value === "number" &&
+                Number.isFinite(e.metric.value)
                   ? e.metric.value
                   : 0,
             }

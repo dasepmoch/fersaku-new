@@ -69,7 +69,10 @@ describe("GAP-05 release deployment contract", () => {
   });
 
   it("generate/verify scripts enforce build-once and no auto-down", () => {
-    const gen = readFileSync(abs("scripts/release/generate-manifest.sh"), "utf8");
+    const gen = readFileSync(
+      abs("scripts/release/generate-manifest.sh"),
+      "utf8",
+    );
     const ver = readFileSync(abs("scripts/release/verify-manifest.sh"), "utf8");
     const canary = readFileSync(
       abs("scripts/release/canary-rollback.sh"),
@@ -79,18 +82,18 @@ describe("GAP-05 release deployment contract", () => {
     expect(gen.includes("autoDownMigrate")).toBe(true);
     expect(ver.includes("rebuildOnPromote")).toBe(true);
     expect(ver.includes("autoDownMigrate")).toBe(true);
-    expect(canary.includes("no migrate down") || canary.includes("NO migrate down")).toBe(
-      true,
-    );
+    expect(
+      canary.includes("no migrate down") || canary.includes("NO migrate down"),
+    ).toBe(true);
     expect(canary.includes("rollback")).toBe(true);
   });
 
   it("migrate-job blocks destructive down on staging/production", () => {
     const src = readFileSync(abs("scripts/release/migrate-job.sh"), "utf8");
     expect(src.includes("ALLOW_DESTRUCTIVE_MIGRATE")).toBe(true);
-    expect(src.includes("forward-compatible") || src.includes("auto-down")).toBe(
-      true,
-    );
+    expect(
+      src.includes("forward-compatible") || src.includes("auto-down"),
+    ).toBe(true);
     expect(src.includes("abort rollout") || src.includes("FAILED")).toBe(true);
   });
 

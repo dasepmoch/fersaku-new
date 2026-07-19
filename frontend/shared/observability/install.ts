@@ -27,9 +27,9 @@ export type InstallResult = {
 };
 
 let installedMode: ObservabilityMode | undefined;
-let memoryEvents: (() => ReturnType<
-  ReturnType<typeof createMemorySink>["events"]
->) | null = null;
+let memoryEvents:
+  (() => ReturnType<ReturnType<typeof createMemorySink>["events"]>) | null =
+  null;
 
 /**
  * Install the production/staging sink or explicit noop.
@@ -66,7 +66,8 @@ export function installObservabilityReporter(options?: {
   const useHttp =
     options?.http ??
     (typeof window !== "undefined" ||
-      (typeof process !== "undefined" && process.env.NODE_ENV === "production"));
+      (typeof process !== "undefined" &&
+        process.env.NODE_ENV === "production"));
   if (useHttp) {
     parts.push(createHttpSink());
   }

@@ -159,7 +159,9 @@ function ensureCorrelationHeaders(headers: Headers, requestId: string) {
   if (!headers.has(HTTP_HEADERS.TRACEPARENT)) {
     headers.set(
       HTTP_HEADERS.TRACEPARENT,
-      traceparentFromRequestId(headers.get(HTTP_HEADERS.REQUEST_ID) || requestId),
+      traceparentFromRequestId(
+        headers.get(HTTP_HEADERS.REQUEST_ID) || requestId,
+      ),
     );
   }
 }

@@ -1,0 +1,55 @@
+=== gate re-run 2026-07-19T20:10:29Z git=196d81236919bafa9d8b054c4ec912760b2b8141 ===
+--- health ---
+{"check":"live","service":"fersaku-api","status":"ok"}
+
+live_http=200
+{"check":"ready","service":"fersaku-api","status":"ready"}
+
+ready_http=200
+--- callbacks (expect 401 or 400 not 404) ---
+POST /v1/webhooks/duitku -> 401
+POST /v1/webhooks/xendit -> 401
+POST /v1/webhooks/xendit/disbursement -> 401
+--- deploy-gate ---
+deploy-gate start api=http://127.0.0.1:18080 frontend=none time=2026-07-19T20:10:29Z
+PASS: api /health/live
+PASS: api /health/ready
+PASS: api /metrics
+PASS: callback /v1/webhooks/duitku mounted (got 401)
+PASS: callback /v1/webhooks/xendit mounted (got 401)
+PASS: callback /v1/webhooks/xendit/disbursement mounted (got 401)
+deploy-gate: OK
+--- gofmt ---
+internal/platform/telemetry/telemetry.go
+gofmt_count=1
+--- go vet sample packages ---
+--- unit smoke (config + trusted proxy + malware + duitku) ---
+ok  	github.com/dasepmoch/fersaku-new/backend/internal/config	0.008s
+ok  	github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/middleware	0.015s
+ok  	github.com/dasepmoch/fersaku-new/backend/internal/adapters/malware	0.007s
+ok  	github.com/dasepmoch/fersaku-new/backend/internal/adapters/duitku	0.142s
+--- frontend gap-08/09 unit ---
+
+> fersaku-frontend@0.1.0 test:run
+> vitest run tests/unit/gap-08-live-data-truth.test.ts tests/unit/gap-09-legal-public-surface.test.ts
+
+
+ RUN  v4.1.10 /var/www/fersaku-new/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  03:10:31
+   Duration  476ms (transform 206ms, setup 0ms, import 379ms, tests 19ms, environment 0ms)
+
+--- npm audit gate ---
+{
+  "ok": true,
+  "vulnerabilityCount": 0,
+  "blockers": 0,
+  "waived": 0,
+  "packageLockSha256": "d9785aa1756d1226842f02ccfe8076c59fd2cdc7f6027c03dda61f09b6b69a56",
+  "blockersDetail": [],
+  "waivedDetail": []
+}
+npm-audit-gate: PASS
