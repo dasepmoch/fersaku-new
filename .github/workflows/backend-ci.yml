@@ -38,9 +38,9 @@ jobs:
     name: backend-unit (fmt, vet, test, check-generated)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
@@ -73,9 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend-unit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
@@ -86,11 +86,11 @@ jobs:
           ../scripts/ci-assert-go-tests.sh backend-race -- -race ./...
 
   backend-docker:
-    name: backend-docker (api + worker images)
+    name: backend-docker (api + worker images + SBOM/CVE)
     runs-on: ubuntu-latest
     needs: backend-unit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build API image
         run: docker build --target api -t fersaku-api:ci .
@@ -98,20 +98,41 @@ jobs:
       - name: Build worker image
         run: docker build --target worker -t fersaku-worker:ci .
 
+      - name: IaC / compose pin scan
+        working-directory: .
+        run: |
+          chmod +x scripts/security/*.sh
+          ./scripts/security/iac-scan.sh
+
+      - name: SBOM + Grype (fail on critical)
+        working-directory: .
+        run: |
+          chmod +x scripts/security/image-scan.sh
+          OUT_DIR=release/dist/sbom FAIL_ON=critical \
+            ./scripts/security/image-scan.sh fersaku-api:ci fersaku-worker:ci
+
+      - name: Upload SBOM/scan artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-image-sbom
+          path: release/dist/sbom/
+          if-no-files-found: ignore
+
   # QLT-105: OpenAPI lint + bundle + codegen dirty-diff + router coverage.
   openapi-contract:
     name: openapi-contract (lint, bundle, codegen check, router)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
@@ -154,7 +175,7 @@ jobs:
     timeout-minutes: 45
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
         env:
           POSTGRES_USER: fersaku
           POSTGRES_PASSWORD: fersaku_local
@@ -167,7 +188,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
         ports:
           - 6380:6379
         options: >-
@@ -185,14 +206,14 @@ jobs:
       SESSION_SECRET: ci-session-secret-not-for-prod
       CSRF_SECRET: ci-csrf-secret-not-for-prod
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
 

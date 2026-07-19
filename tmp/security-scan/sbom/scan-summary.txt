@@ -1,0 +1,5 @@
+image-scan 2026-07-19T20:02:58Z
+image=fersaku-api:ci
+  sbom=/var/www/fersaku-new/tmp/security-scan/sbom/fersaku-api_ci.spdx.json
+  grype=/var/www/fersaku-new/tmp/security-scan/sbom/fersaku-api_ci.grype.json
+  id=sha256:5dea0bc0bc090d1df7a08e1b8f280df7f05d1de4110256622fcde269c3c08c92

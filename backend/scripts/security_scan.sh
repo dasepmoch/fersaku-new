@@ -146,15 +146,34 @@ fi
 log "policy: payment=duitku|fake|xendit; disbursement=xendit|fake; no multi-provider failover UI"
 log ""
 
-log "--- [6/6] docker image note ---"
+log "--- [6/6] docker image / supply-chain note ---"
 log "Dockerfile: multi-target api/worker, non-root UID 65532, no secrets in image."
-log "Base: golang:1.25-alpine builder; alpine:3.21 runtime (see Dockerfile)."
+log "Base digests: docs/security/base-image-digests.md (golang/alpine/node pinned @sha256)."
 log "Remediation SLA: docs/security/scan-sla.md"
-log "Optional: trivy image --severity CRITICAL,HIGH fersaku-api:<tag>"
+log "Policy: docs/security/supply-chain-policy.md"
+log "Image SBOM/CVE: scripts/security/image-scan.sh <image:tag>"
+log "IaC pin scan: scripts/security/iac-scan.sh"
+log "Provenance verify: scripts/security/verify-provenance.sh (REQUIRE_SIGNATURE=1 for prod)"
 if command -v docker >/dev/null 2>&1; then
   log "docker=$(docker --version 2>/dev/null || true)"
 else
   log "docker CLI not available in this environment"
+fi
+# Optional local image scan if CI image tags exist
+if command -v docker >/dev/null 2>&1 && docker image inspect fersaku-api:ci >/dev/null 2>&1; then
+  if [ -x "$ROOT/../scripts/security/image-scan.sh" ]; then
+    log "running image-scan on fersaku-api:ci (FAIL_ON=critical)"
+    set +e
+    OUT_DIR="$REPORT_DIR" FAIL_ON=critical "$ROOT/../scripts/security/image-scan.sh" fersaku-api:ci >>"$REPORT" 2>&1
+    IS=$?
+    set -e
+    if [ "$IS" -ne 0 ]; then
+      log "FAIL image-scan exit=$IS"
+      FAIL=1
+    else
+      log "PASS image-scan fersaku-api:ci"
+    fi
+  fi
 fi
 log ""
 

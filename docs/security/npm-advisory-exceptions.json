@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "policy": "Moderate advisories listed here are waived only until expiresAt (UTC). Critical/high must never appear here — use residual-risks.md with security owner sign-off.",
+  "reviewCadenceDays": 14,
+  "exceptions": [
+    {
+      "id": "GHSA-qx2v-qp2m-jg93",
+      "package": "postcss",
+      "affectedRange": "<8.5.10",
+      "severity": "moderate",
+      "title": "PostCSS XSS via unescaped </style> in CSS stringify",
+      "decision": "mitigated",
+      "mitigation": "npm overrides pin postcss@8.5.10 for next nested dep and all consumers; npm audit reports 0 vulnerabilities after lockfile refresh.",
+      "owner": "frontend-engineering",
+      "createdAt": "2026-07-20",
+      "expiresAt": "2026-10-20",
+      "followUp": "When Next ships postcss>=8.5.10 as direct dependency, remove override and re-audit.",
+      "rejectedFix": "npm audit fix --force would install next@9.x (major downgrade) — rejected without compatibility review."
+    }
+  ]
+}

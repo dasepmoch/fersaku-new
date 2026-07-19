@@ -1,0 +1,35 @@
+=== iac-scan 20260719T200101Z ===
+--- privileged / host network / docker.sock ---
+PASS no privileged/host/docker.sock
+--- Dockerfile FROM pins ---
+PASS Dockerfiles pin digests
+--- compose image pins ---
+PASS compose third-party images pin digests (local build tags / env refs allowed)
+--- secret-like ENV in Dockerfiles ---
+PASS no secret ENV in Dockerfiles
+--- final USER nonroot check ---
+PASS backend/Dockerfile has USER nonroot
+PASS frontend/Dockerfile has USER nonroot
+--- exposed debug ports (informational) ---
+45:    ports:
+46-      - "18080:8080"
+47-    depends_on:
+--
+108:    ports:
+109-      - "5433:5432"
+110-    volumes:
+--
+122:    ports:
+123-      - "6380:6379"
+124-    volumes:
+--
+139:    ports:
+140-      - "9000:9000"
+141-      - "9001:9001"
+--
+165:    ports:
+166-      - "1025:1025"
+167-      - "8025:8025"
+NOTE: local compose binds 18080/5433/6380/9000/8025 — production must not publish these on public LB (ADR-0007).
+=== iac-scan RESULT: PASS ===
+report=/var/www/fersaku-new/tmp/security-scan/iac-scan-20260719T200101Z.txt

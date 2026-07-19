@@ -13,7 +13,8 @@ name: fersaku-backend
 
 services:
   migrate:
-    image: migrate/migrate:v4.18.3
+    # Pin: docs/security/base-image-digests.md
+    image: migrate/migrate:v4.18.3@sha256:39b59b389634e43bb3f2d4e94bc1edef0775ec2a9a3540ce6a2cf330e5daae55
     profiles: ["migrate"]
     volumes:
       - ./migrations:/migrations:ro

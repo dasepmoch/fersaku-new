@@ -20,9 +20,9 @@ jobs:
     name: frontend-static (format, lint, typecheck, unit, security-negative)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
@@ -63,16 +63,18 @@ jobs:
       - name: Unit + coverage (includes security/contract/tenant/idempotency)
         run: npm run test:coverage
 
-      - run: npm audit --audit-level=high
+      # Critical/high always fail; moderate only with active owner waiver (docs/security/npm-advisory-exceptions.json).
+      - name: npm audit gate (critical/high + waived moderate)
+        run: npm run audit:gate
 
   frontend-build:
     name: frontend-build (production + bundle budget)
     runs-on: ubuntu-latest
     needs: frontend-static
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
@@ -88,9 +90,9 @@ jobs:
     needs: frontend-static
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
@@ -113,7 +115,7 @@ jobs:
 
       - name: Upload Playwright artifacts (failure only)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-mock-artifacts
           path: |
@@ -130,15 +132,15 @@ jobs:
     needs: frontend-static
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
@@ -171,7 +173,7 @@ jobs:
 
       - name: Upload API Playwright artifacts (failure only; scrub secret flows in helpers)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-api-artifacts
           path: |

@@ -7,7 +7,9 @@
 | SAST / static | `go vet ./...` | Every PR / `security_scan.sh` |
 | Dependency vulns | `govulncheck ./...` when installed | Every release candidate + weekly |
 | Secrets | gitleaks if installed; else ripgrep pattern scan | Every PR / release |
-| Container image | Documented note + optional `docker scout` / Trivy when available | Every image publish |
+| Container image | Syft SBOM + Grype (`scripts/security/image-scan.sh`); fail on critical | Every image publish + backend-docker CI |
+| npm SCA | `scripts/security/npm-audit-gate.mjs` (critical/high block; moderate waiver) | Every frontend PR |
+| IaC / compose | `scripts/security/iac-scan.sh` (digest pins, privileged, secrets) | Every image CI + release |
 | Authz/security functional | Integration negative matrix | Every PR with backend changes |
 
 Command: `sh backend/scripts/security_scan.sh` (from repo root or `backend/`).
@@ -51,11 +53,13 @@ If SLA cannot be met: open/update entry in `residual-risks.md` with owner signat
 
 ## Image scan note
 
-Runtime images: multi-stage `backend/Dockerfile` (`api` / `worker` targets), non-root UID **65532**, no secrets baked. 
-When Trivy/Docker Scout is available in CI:
+Runtime images: multi-stage `backend/Dockerfile` (`api` / `worker` targets), non-root UID **65532**, no secrets baked.
+Base images pinned by digest (`docs/security/base-image-digests.md`).
 
-```text
-trivy image --severity CRITICAL,HIGH fersaku-api:<tag>
+```bash
+./scripts/security/image-scan.sh fersaku-api:<tag> fersaku-worker:<tag> fersaku-frontend:<tag>
+./scripts/security/iac-scan.sh
+REQUIRE_SIGNATURE=1 ./scripts/security/verify-provenance.sh release/dist/release-manifest.json
 ```
 
-Until CI image scan is wired, document image digest + base (`alpine:3.21`) in release notes and re-scan on alpine security advisories (RR-006).
+CI: `backend-docker` job runs SBOM/Grype; `release.yml` attaches SBOM + signs with cosign on publish; production promotion rejects unsigned manifests.

@@ -5,13 +5,14 @@
 # Build-time public env only via ARG → ENV before `next build`.
 # No secrets in image layers.
 
-FROM node:24-alpine AS deps
+# Digests: docs/security/base-image-digests.md (refresh via PR + image-scan).
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:24-alpine AS builder
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY --from=deps /app/node_modules ./node_modules
@@ -33,7 +34,7 @@ ENV NEXT_PUBLIC_APP_STAGE=$NEXT_PUBLIC_APP_STAGE \
 
 RUN npm run build
 
-FROM node:24-alpine AS runner
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \

@@ -11,9 +11,9 @@
 
 | Field | Value |
 | ----- | ----- |
-| Document version | 1.2 |
-| Task | BE-610 + PROD-G30 residual register |
-| Date prepared | 2026-07-17; dual-provider 2026-07-19; B50 close reconcile KEY-01 2026-07-19 |
+| Document version | 1.3 |
+| Task | BE-610 + PROD-G30 + GAP-10 supply-chain residual register |
+| Date prepared | 2026-07-17; dual-provider 2026-07-19; B50 close reconcile KEY-01 2026-07-19; GAP-10 2026-07-20 |
 | Security owner (sign) | ___________________________ / date ________ |
 | Product owner (sign) | ___________________________ / date ________ |
 | Engineering owner (sign) | ___________________________ / date ________ |
@@ -33,7 +33,8 @@ By signing, owners accept the residual risks listed as **Accepted** and confirm 
 | RR-003 | Insider admin abuse (emergency switches, impersonation) | High | RBAC least privilege, impersonation allowlist, audit chain, reason-required ops | Medium | Accepted | Security owner |
 | RR-004 | DNS rebinding race between resolve and dial | Medium | Re-resolve at dial + redirect revalidation in SSRF package | Low | Accepted | Engineering |
 | RR-005 | Dependency zero-day after last `govulncheck` | High | BE-610 upgraded AWS SDK, pgx, x/net, x/crypto, chi; go1.25 toolchain via GOTOOLCHAIN; `govulncheck` symbol results clean (exit 0); 7-day critical SLA | Medium | Accepted | Engineering |
-| RR-006 | Image base OS CVE in alpine runtime | Medium | Builder `golang:1.25-alpine`; runtime alpine:3.21 non-root; scan note; rebuild on CVE | Low–Medium | Accepted | Engineering |
+| RR-006 | Image base OS CVE in alpine runtime | Medium | Base digests pinned; Syft/Grype in CI; rebuild on CVE; non-root | Low | Accepted | Engineering |
+| RR-015 | Next nested postcss moderate XSS (GHSA-qx2v-qp2m-jg93) | Moderate | `overrides.postcss@8.5.10`; npm-audit-gate; rejected `audit fix --force`→next@9 | Low (mitigated) | **Mitigated** until Next ships fixed postcss; exception expires 2026-10-20 | FE engineering |
 | RR-007 | No formal external secret scanning SaaS (gitleaks CLI optional) | Medium | `security_scan.sh` ripgrep patterns + optional gitleaks; fail on high-confidence hits | Low | Accepted | Engineering |
 | RR-008 | Provider outage / compromise (Duitku payment and/or Xendit disbursement) | High | Dual-provider ADR-0008; separate payment vs payout credentials; runbooks; fail-closed config; no fake mode in production | Medium (business) | Accepted | Product + Payments |
 | RR-009 | KYC document retention / legal hold edge cases | Medium | Encryption at rest; retention table in ADR-0004; no browser presign | Low | Accepted | Compliance |
@@ -77,6 +78,7 @@ If external review is unavailable before go-live:
 - [x] `go test ./...` PASS (GOTOOLCHAIN=auto / go1.25.12)  
 - [x] `go test -tags=integration ./test/integration/ -run TestSecurity_` PASS  
 - [x] No open critical/high in called-symbol govulncheck results; external pentest = RR-001  
-- [x] Dual-provider residual rows RR-011..014 prepared (PROD-G30, 2026-07-19)  
+- [x] Dual-provider residual rows RR-011..014 prepared (PROD-G30, 2026-07-19)
+- [x] GAP-10: npm-audit-gate PASS (0 vulns after postcss override); image digests pinned; iac-scan PASS; grype fail-on critical PASS (2026-07-20)  
 - [x] RR-012/013 reconciled after B50 CLOSED (KEY-01, 2026-07-19); LIVE residual = RR-012b  
 - [ ] Owner signatures above completed  

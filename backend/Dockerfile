@@ -5,7 +5,8 @@
 #   docker build --target worker -t fersaku-worker .
 # No secrets are baked into images.
 
-FROM golang:1.25-alpine AS builder
+# Digests: docs/security/base-image-digests.md (refresh via PR + image-scan).
+FROM golang:1.25-alpine@sha256:56961d79ea8129efddcc0b8643fd8a5416b4e6228cfd477e3fd61deb2672c587 AS builder
 
 RUN apk add --no-cache ca-certificates git
 
@@ -28,7 +29,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     -o /out/fersaku-worker ./cmd/worker
 
 # Shared minimal non-root runtime (alpine for wget healthcheck).
-FROM alpine:3.21 AS runtime-base
+FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d AS runtime-base
 
 RUN apk add --no-cache ca-certificates wget \
  && addgroup -g 65532 -S nonroot \

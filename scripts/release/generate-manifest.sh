@@ -76,9 +76,9 @@ if [[ -z "$NPM_VERSION" ]] && command -v npm >/dev/null 2>&1; then
   NPM_VERSION="$(npm -v 2>/dev/null || true)"
 fi
 
-BASE_GOLANG="${BASE_GOLANG:-golang:1.25-alpine}"
-BASE_ALPINE="${BASE_ALPINE:-alpine:3.21}"
-BASE_NODE="${BASE_NODE:-node:24-alpine}"
+  BASE_GOLANG="${BASE_GOLANG:-golang:1.25-alpine@sha256:56961d79ea8129efddcc0b8643fd8a5416b4e6228cfd477e3fd61deb2672c587}"
+  BASE_ALPINE="${BASE_ALPINE:-alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d}"
+  BASE_NODE="${BASE_NODE:-node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd}"
 
 DOMAIN_MAP_FILE="${ROOT}/release/feature-domain-source-map.json"
 if [[ ! -f "$DOMAIN_MAP_FILE" ]]; then
@@ -121,6 +121,12 @@ cat >"$OUT" <<EOF
     "golang": { "ref": "${BASE_GOLANG}" },
     "alpine": { "ref": "${BASE_ALPINE}" },
     "node": { "ref": "${BASE_NODE}" }
+  },
+  "supplyChain": {
+    "packageLockSha256": "",
+    "goSumSha256": "",
+    "exceptionExpiry": null,
+    "policy": "docs/security/supply-chain-policy.md"
   },
   "images": {
     "api": $(artifact_json api "$API_DIGEST"),

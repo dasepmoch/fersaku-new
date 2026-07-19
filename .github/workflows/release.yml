@@ -44,7 +44,7 @@ jobs:
       short_sha: ${{ steps.meta.outputs.short }}
       manifest_path: release/dist/release-manifest.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Meta
         id: meta
@@ -55,12 +55,12 @@ jobs:
           echo "short=$SHORT" >>"$GITHUB_OUTPUT"
           echo "tag=$SHORT" >>"$GITHUB_OUTPUT"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
@@ -84,7 +84,7 @@ jobs:
           npm run test:run -- tests/unit/qlt-410-parent-framework.test.ts tests/unit/release-manifest.test.ts
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build API image (local load for digest)
         working-directory: backend
@@ -144,18 +144,26 @@ jobs:
 
       - name: Vulnerability scan (Grype) — fail on critical
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          chmod +x scripts/security/*.sh
           TAG="${{ steps.meta.outputs.short }}"
+          OUT_DIR=release/dist/sbom FAIL_ON=critical \
+            ./scripts/security/image-scan.sh \
+            "fersaku-api:${TAG}" "fersaku-worker:${TAG}" "fersaku-frontend:${TAG}"
+          # Normalize SBOM names for release manifest paths
           for img in fersaku-api fersaku-worker fersaku-frontend; do
-            grype "${img}:${TAG}" -o json >"release/dist/sbom/${img}.grype.json" || true
-            # Fail closed on critical if grype available
-            if grype "${img}:${TAG}" --fail-on critical; then
-              echo "grype ok $img"
-            else
-              echo "grype found critical in $img" >&2
-              exit 1
+            safe="${img}__${TAG}"
+            if [ -f "release/dist/sbom/${safe}.spdx.json" ]; then
+              cp "release/dist/sbom/${safe}.spdx.json" "release/dist/sbom/${img}.spdx.json"
+              cp "release/dist/sbom/${safe}.grype.json" "release/dist/sbom/${img}.grype.json" 2>/dev/null || true
             fi
           done
+
+      - name: IaC scan + lockfile evidence
+        run: |
+          chmod +x scripts/security/*.sh
+          ./scripts/security/iac-scan.sh
+          ./scripts/security/lockfile-evidence.sh release/dist/supply-chain-evidence.json
+          npm --prefix frontend run audit:gate
 
       - name: Generate release manifest
         env:
@@ -165,11 +173,14 @@ jobs:
           WORKER_DIGEST: ${{ steps.digests.outputs.worker_digest }}
           FRONTEND_DIGEST: ${{ steps.digests.outputs.frontend_digest }}
           RELEASE_ID: ${{ steps.meta.outputs.short }}
+          BASE_GOLANG: golang:1.25-alpine@sha256:56961d79ea8129efddcc0b8643fd8a5416b4e6228cfd477e3fd61deb2672c587
+          BASE_ALPINE: alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+          BASE_NODE: node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
         run: |
-          chmod +x scripts/release/*.sh
+          chmod +x scripts/release/*.sh scripts/security/*.sh
           ./scripts/release/generate-manifest.sh --git-sha "${{ steps.meta.outputs.sha }}"
           REQUIRE_DIGESTS=1 ./scripts/release/verify-manifest.sh release/dist/release-manifest.json
-          # Attach SBOM paths
+          # Attach SBOM paths + supply-chain evidence
           node -e '
             const fs=require("fs");
             const p="release/dist/release-manifest.json";
@@ -180,12 +191,25 @@ jobs:
               "release/dist/sbom/fersaku-worker.spdx.json",
               "release/dist/sbom/fersaku-frontend.spdx.json"
             ];
+            m.provenance.scanReportPaths=[
+              "release/dist/sbom/fersaku-api.grype.json",
+              "release/dist/sbom/fersaku-worker.grype.json",
+              "release/dist/sbom/fersaku-frontend.grype.json"
+            ];
+            m.provenance.signed=false;
             m.provenance.workflowRunUrl=process.env.GITHUB_SERVER_URL+"/"+process.env.GITHUB_REPOSITORY+"/actions/runs/"+process.env.GITHUB_RUN_ID;
+            try {
+              m.supplyChain=JSON.parse(fs.readFileSync("release/dist/supply-chain-evidence.json","utf8"));
+            } catch (_) {
+              m.supplyChain={};
+            }
             fs.writeFileSync(p, JSON.stringify(m,null,2)+"\n");
           '
+          REQUIRE_DIGESTS=1 REQUIRE_SBOM=1 REQUIRE_SIGNATURE=0 \
+            ./scripts/security/verify-provenance.sh release/dist/release-manifest.json
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-manifest-${{ steps.meta.outputs.short }}
           path: |
@@ -196,7 +220,7 @@ jobs:
 
       - name: Login GHCR
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -216,19 +240,47 @@ jobs:
             docker push "ghcr.io/${OWNER}/fersaku-${name}:sha-${TAG}"
           done
 
-      - name: Cosign keyless sign (optional when publish)
+      - name: Cosign keyless sign (required when publish)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
-        continue-on-error: true
+        id: cosign
         run: |
           curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.4.1/cosign-linux-amd64 -o /usr/local/bin/cosign
           chmod +x /usr/local/bin/cosign
           TAG="${{ steps.meta.outputs.short }}"
           OWNER="${{ github.repository_owner }}"
+          mkdir -p release/dist/cosign
           for name in api worker frontend; do
-            cosign sign --yes "ghcr.io/${OWNER}/fersaku-${name}:${TAG}"
+            REF="ghcr.io/${OWNER}/fersaku-${name}:${TAG}"
+            cosign sign --yes "$REF"
+            echo "$REF" >> release/dist/cosign/signed-refs.txt
           done
+          node -e '
+            const fs=require("fs");
+            const p="release/dist/release-manifest.json";
+            const m=JSON.parse(fs.readFileSync(p,"utf8"));
+            m.provenance=m.provenance||{};
+            m.provenance.signed=true;
+            m.provenance.cosignBundlePaths=["release/dist/cosign/signed-refs.txt"];
+            m.provenance.signer="cosign-keyless-github-oidc";
+            fs.writeFileSync(p, JSON.stringify(m,null,2)+"\n");
+          '
+          # Re-upload updated manifest with signed=true (artifact already has pre-sign copy; production uses this job output path)
+          echo "signed=true" >>"$GITHUB_OUTPUT"
 
-  # Manual production promotion gate — does not rebuild; verifies manifest digests only.
+      - name: Re-upload signed release artifacts
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-manifest-signed-${{ steps.meta.outputs.short }}
+          path: |
+            release/dist/release-manifest.json
+            release/dist/sbom/
+            release/dist/cosign/
+            release/dist/supply-chain-evidence.json
+            release/schema/release-manifest.schema.json
+          if-no-files-found: error
+
+  # Manual production promotion gate — does not rebuild; verifies digests + signed provenance.
   production-approval:
     name: production promotion (manual)
     needs: build-and-manifest
@@ -236,19 +288,30 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: release-manifest-${{ needs.build-and-manifest.outputs.short_sha }}
           path: release/dist
-      - name: Verify immutable digests (no rebuild)
+      - name: Prefer signed artifact when present
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-manifest-signed-${{ needs.build-and-manifest.outputs.short_sha }}
+          path: release/dist
+      - name: Verify immutable digests + provenance (reject unsigned)
         run: |
-          chmod +x scripts/release/*.sh
-          REQUIRE_DIGESTS=1 ./scripts/release/verify-manifest.sh release/dist/release-manifest.json
+          chmod +x scripts/release/*.sh scripts/security/*.sh
+          REQUIRE_DIGESTS=1 REQUIRE_SBOM=1 REQUIRE_SIGNATURE=1 \
+            ./scripts/security/verify-provenance.sh release/dist/release-manifest.json
           node -e '
             const m=require("./release/dist/release-manifest.json");
             if (m.promotion.rebuildOnPromote !== false) process.exit(1);
-            console.log("promote gate ok releaseId="+m.releaseId);
+            if (m.provenance?.signed !== true) {
+              console.error("FAIL: production rejects unsigned release");
+              process.exit(1);
+            }
+            console.log("promote gate ok releaseId="+m.releaseId+" signed=true");
             console.log("BLOCKED: managed cluster apply requires owner CD credentials");
           '
 
@@ -259,8 +322,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: release-manifest-${{ needs.build-and-manifest.outputs.short_sha }}
           path: release/dist
