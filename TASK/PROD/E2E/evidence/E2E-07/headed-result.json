@@ -1,0 +1,24 @@
+{
+  "steps": [
+    {
+      "name": "seller login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard"
+    },
+    {
+      "name": "orders has E2E-06 order",
+      "ok": true,
+      "notes": "ORD-19Y5GT1Z1H"
+    },
+    {
+      "name": "paid visible",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "balance area",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

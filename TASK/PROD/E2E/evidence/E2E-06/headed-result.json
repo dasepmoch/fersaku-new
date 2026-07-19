@@ -1,0 +1,42 @@
+{
+  "intentId": "pi_01KXX78RQQFNQ4FW19Y5GT1Z1J",
+  "orderNumber": "ORD-19Y5GT1Z1H",
+  "steps": [
+    {
+      "id": "06",
+      "n": "callback 200 OK",
+      "ok": true,
+      "notes": "HTTP 200"
+    },
+    {
+      "id": "06",
+      "n": "intent PAID",
+      "ok": true,
+      "notes": "PAID"
+    },
+    {
+      "id": "06",
+      "n": "order PAID",
+      "ok": true,
+      "notes": "PAID"
+    },
+    {
+      "id": "06",
+      "n": "settlement x1",
+      "ok": true,
+      "notes": "1"
+    },
+    {
+      "id": "06",
+      "n": "replay idempotent",
+      "ok": true,
+      "notes": "sett=1"
+    },
+    {
+      "id": "06",
+      "n": "success page",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/orders/ORD-19Y5GT1Z1H/success?total=50000"
+    }
+  ]
+}

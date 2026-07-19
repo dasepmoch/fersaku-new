@@ -1,0 +1,41 @@
+{
+  "steps": [
+    {
+      "name": "API seller login for CSRF",
+      "ok": true,
+      "notes": "csrf=true cookie=true"
+    },
+    {
+      "name": "list products API",
+      "ok": true,
+      "notes": "HTTP 200"
+    },
+    {
+      "name": "create draft product",
+      "ok": true,
+      "notes": "HTTP 201 id=01KXX6QYPSXGFA1S23FRD3N09P"
+    },
+    {
+      "name": "UI products list",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/products"
+    },
+    {
+      "name": "open seed product",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/products/01HQ0SEED00000000000000042"
+    },
+    {
+      "name": "draft appears in UI",
+      "ok": true,
+      "notes": "E2E-10-1784465324756"
+    },
+    {
+      "name": "survives refresh",
+      "ok": true,
+      "notes": "E2E-10-1784465324756"
+    }
+  ],
+  "title": "E2E-10-1784465324756",
+  "productId": "01KXX6QYPSXGFA1S23FRD3N09P"
+}

@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "landing",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "storefront",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "product detail",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "buy CTA",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "no simulate paid",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "pass": true
+}

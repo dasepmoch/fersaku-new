@@ -1,0 +1,9 @@
+{
+  "withdrawalId": "wd_01KXXB1E02KDH9H74V4ZNDT5NQ",
+  "status": "COMPLETED",
+  "providerReference": "6a5cd9456c8ac3a8d8129c63",
+  "amountDebited": 50000,
+  "netDisbursement": 46000,
+  "bankMasked": "****7890",
+  "paymentMode": "SANDBOX"
+}

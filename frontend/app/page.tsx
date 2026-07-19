@@ -23,6 +23,7 @@ import { RotatingQuote } from "@/components/rotating-quote";
 import { listFeaturedProducts } from "@/features/catalog/api";
 import { publicProductHref } from "@/features/catalog/mappers";
 import { getPublicFeeMarketingCopy } from "@/features/platform-fees";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 const features = [
   [
@@ -70,6 +71,8 @@ export default async function Home() {
     listFeaturedProducts(6),
     getPublicFeeMarketingCopy(),
   ]);
+  // KEY-23: prototype demo storefront only when publicCatalog is mock.
+  const showDemoStore = getDomainSource("publicCatalog") === "mock";
 
   return (
     <main className="landing-page overflow-hidden">
@@ -109,12 +112,14 @@ export default async function Home() {
             <PrimaryButton href="/register" className="w-full sm:w-auto">
               Mulai jualan gratis
             </PrimaryButton>
-            <Link
-              href="/@asep-ai-tools"
-              className="hairline inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border bg-white/65 px-6 text-sm font-bold backdrop-blur transition hover:bg-white sm:w-auto"
-            >
-              Lihat toko demo <ArrowRight className="size-4" />
-            </Link>
+            {showDemoStore ? (
+              <Link
+                href="/@asep-ai-tools"
+                className="hairline inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border bg-white/65 px-6 text-sm font-bold backdrop-blur transition hover:bg-white sm:w-auto"
+              >
+                Lihat toko demo <ArrowRight className="size-4" />
+              </Link>
+            ) : null}
           </div>
           <p className="animate-rise-3 mt-5 text-[11px] font-bold tracking-[.13em] text-[#8a958e] uppercase">
             Tanpa biaya bulanan • Siap dalam 3 menit
@@ -155,7 +160,7 @@ export default async function Home() {
                 className="group rounded-[26px] border border-white/10 bg-white/[.045] p-6 transition duration-300 hover:-translate-y-1 hover:bg-white/[.075]"
               >
                 <span
-                  className="grid size-11 place-items-center rounded-2xl text-[#173f2c]"
+                  className="ink-on-soft grid size-11 place-items-center rounded-2xl text-[#173f2c]"
                   style={{ backgroundColor: color as string }}
                 >
                   <Icon className="size-5" />

@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "wrong password no dashboard",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login"
+    },
+    {
+      "name": "logged-out → login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login?returnTo=%2Fdashboard"
+    },
+    {
+      "name": "API wrong password",
+      "ok": true,
+      "notes": "HTTP 401"
+    },
+    {
+      "name": "seller blocked admin API",
+      "ok": true,
+      "notes": "HTTP 403"
+    },
+    {
+      "name": "seller cannot use admin console",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login"
+    }
+  ],
+  "pass": true
+}

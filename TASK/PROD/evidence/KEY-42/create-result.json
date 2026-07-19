@@ -1,0 +1,44 @@
+{
+  "quote": {
+    "http": 201,
+    "id": "wq_01KXXB050TPZAH7GNZ68252GRP",
+    "amount": 50000,
+    "keys": [
+      "amountDebited",
+      "bankAccountId",
+      "bankAccountVersion",
+      "expiresAt",
+      "minimumAmount",
+      "netDisbursement",
+      "platformFee",
+      "policyVersion",
+      "providerProcessingFee",
+      "quoteId",
+      "status",
+      "totalFee"
+    ]
+  },
+  "withdrawal": {
+    "http": 201,
+    "id": "wd_01KXXB0516NG6960S6CQ7X3F0B",
+    "status": "PROCESSING",
+    "keys": [
+      "accountHolderName",
+      "allocations",
+      "amountDebited",
+      "bankAccountId",
+      "bankAccountMasked",
+      "bankCode",
+      "createdAt",
+      "id",
+      "netDisbursement",
+      "platformFee",
+      "policyVersion",
+      "providerProcessingFee",
+      "source",
+      "status",
+      "totalFee"
+    ],
+    "snip": "{\"data\":{\"accountHolderName\":\"Seed Merchant A\",\"allocations\":[{\"amount\":47800,\"settlementLotId\":\"lot_01KXWMGHGET97M5HA6ZQR7CJMW\",\"source\":\"STOREFRONT\"},{\"amount\":2200,\"settlementLotId\":\"lot_01KXX58EV2HAMEJN9W60X1JC19\",\"source\":\"STOREFRONT\"}],\"amountDebited\":50000,\"bankAccountId\":\"01HQ0SEED00000000000000141\",\"bankAccountMasked\":\"****1234\",\"bankCode\":\"BCA\",\"createdAt\":\"2026-07-19T14:03:07Z\",\"id\":\"wd_01KXXB0516NG6960S6CQ7X3F0B\",\"netDisbursement\":46000,\"platformFee\":1500,\"policyVersion\":\"LAUNCH_FEE_POLICY_V1\",\"providerProcessingFee\":2500,\"source\":\"STOREFRONT\",\"status\":\"PROCESSING\",\"totalFee\":4000}"
+  }
+}

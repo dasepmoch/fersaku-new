@@ -11,9 +11,9 @@
 
 | Field | Value |
 | ----- | ----- |
-| Document version | 1.1 |
+| Document version | 1.2 |
 | Task | BE-610 + PROD-G30 residual register |
-| Date prepared | 2026-07-17; dual-provider update 2026-07-19 |
+| Date prepared | 2026-07-17; dual-provider 2026-07-19; B50 close reconcile KEY-01 2026-07-19 |
 | Security owner (sign) | ___________________________ / date ________ |
 | Product owner (sign) | ___________________________ / date ________ |
 | Engineering owner (sign) | ___________________________ / date ________ |
@@ -39,9 +39,10 @@ By signing, owners accept the residual risks listed as **Accepted** and confirm 
 | RR-009 | KYC document retention / legal hold edge cases | Medium | Encryption at rest; retention table in ADR-0004; no browser presign | Low | Accepted | Compliance |
 | RR-010 | Rate-limit / DoS under volumetric attack | Medium | Middleware rate limit, timeouts, pool budgets; edge WAF expected | Medium | Accepted | Ops |
 | RR-011 | Dual-provider misconfiguration (wrong driver, fake in prod, cross-wired webhooks) | High | `PAYMENT_PROVIDER` / `DISBURSEMENT_PROVIDER` fail-closed; distinct webhook routes; unit/integration matrix (PROD-E20) | Medium | Accepted | Engineering + Ops |
-| RR-012 | Full live/sandbox PAID + ledger E2E not closed on demo host (B50) | High (money path unproven end-to-end on deploy) | CreateQRIS sandbox proven; integration checkout+callback tests; canary dry-run only | High until B50 closed or owner waiver | **Accepted** pending redeploy + pay/callback proof | Engineering |
-| RR-013 | Deployed API image may lag dual-provider routes (webhook 404 on older image) | High (missed callbacks) | Source routes present; rebuild/redeploy required before live callbacks | Medium until rebuild verified | **Accepted** pending deploy verification | Engineering + Ops |
-| RR-014 | Tunnel demo host is not production HA multi-replica | High (availability / single node) | Topology docs; G20 checklist; managed HA is owner gate | Medium (ops) until managed HA | **Accepted** pending ops provision | Ops |
+| RR-012 | ~~Sandbox PAID + ledger E2E not closed on demo host~~ **CLOSED** | — | **PROD-B50 CLOSED 2026-07-19:** dual-provider host path intent → Duitku signed callback → PAID → settlement×1 + ledger credit; replay-safe. Also re-proven in PROD E2E-05/06 headed re-run. | Residual for **LIVE** money only → tracked as RR-012b / KEY-62 | **Closed (sandbox)** | Engineering |
+| RR-012b | Production LIVE money canary not executed | High (first live pay) | Sandbox path proven (B50); G40/KEY-62 owner-gated; no agent live money without `GO LIVE CANARY` | High until KEY-62 | **Accepted** pending human GO | Product + Engineering |
+| RR-013 | ~~Deployed API image lag dual-provider (webhook 404)~~ **CLOSED on host** | — | Host image rebuilt; `POST /v1/webhooks/duitku` empty body → **401** (mounted); B50 + E2E-06 use live route | Residual: **staging/prod** image tag must stay dual-provider (KEY-22/31) | **Closed (demo host)**; ops verify each env | Engineering + Ops |
+| RR-014 | Tunnel demo host is not production HA multi-replica | High (availability / single node) | Topology docs; G20 checklist; KEY-11..14 managed platform | Medium (ops) until managed HA | **Accepted** pending KEY-11..14 | Ops |
 
 ---
 
@@ -77,4 +78,5 @@ If external review is unavailable before go-live:
 - [x] `go test -tags=integration ./test/integration/ -run TestSecurity_` PASS  
 - [x] No open critical/high in called-symbol govulncheck results; external pentest = RR-001  
 - [x] Dual-provider residual rows RR-011..014 prepared (PROD-G30, 2026-07-19)  
+- [x] RR-012/013 reconciled after B50 CLOSED (KEY-01, 2026-07-19); LIVE residual = RR-012b  
 - [ ] Owner signatures above completed  

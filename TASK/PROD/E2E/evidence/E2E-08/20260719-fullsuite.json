@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "open form",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/withdrawals/new"
+    },
+    {
+      "name": "min amount",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "bank visible",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "quote API",
+      "ok": false,
+      "notes": "HTTP 400"
+    },
+    {
+      "name": "no live payout",
+      "ok": true,
+      "notes": "stopped at quote"
+    }
+  ],
+  "pass": false
+}

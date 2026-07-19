@@ -1,0 +1,422 @@
+{
+  "stamp": "20260719-fullsuite",
+  "base": "http://127.0.0.1:3000",
+  "summary": {
+    "E2E-00": "pass",
+    "E2E-01": "pass",
+    "E2E-02": "pass",
+    "E2E-03": "pass",
+    "E2E-04": "pass",
+    "E2E-05": "fail",
+    "E2E-06": "fail",
+    "E2E-07": "pass",
+    "E2E-08": "fail",
+    "E2E-09": "pass",
+    "E2E-10": "pass",
+    "E2E-11": "pass",
+    "E2E-12": "pass",
+    "E2E-13": "pass"
+  },
+  "details": {
+    "E2E-00": {
+      "steps": [
+        {
+          "name": "health/live",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "health/ready",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "duitku webhook mounted",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "FE home",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "seller seed login",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "seed product exists",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "dual-provider env",
+          "ok": true,
+          "notes": "duitku xendit "
+        }
+      ],
+      "pass": true
+    },
+    "E2E-01": {
+      "steps": [
+        {
+          "name": "landing",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "storefront",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "product detail",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "buy CTA",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "no simulate paid",
+          "ok": true,
+          "notes": ""
+        }
+      ],
+      "pass": true
+    },
+    "E2E-02": {
+      "steps": [
+        {
+          "name": "login → dashboard",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard"
+        },
+        {
+          "name": "store name",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "no MFA",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "hard refresh session",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "nav products",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard/products"
+        },
+        {
+          "name": "nav orders",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard/orders"
+        },
+        {
+          "name": "nav withdrawals",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard/withdrawals"
+        }
+      ],
+      "pass": true
+    },
+    "E2E-03": {
+      "steps": [
+        {
+          "name": "admin login",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin"
+        },
+        {
+          "name": "admin chrome",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "payments",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/payments"
+        },
+        {
+          "name": "withdrawals",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/withdrawals"
+        },
+        {
+          "name": "orders",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/orders"
+        }
+      ],
+      "pass": true
+    },
+    "E2E-04": {
+      "steps": [
+        {
+          "name": "magic-link request",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "not seller/admin",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "API buyer surface",
+          "ok": true,
+          "notes": ""
+        }
+      ],
+      "pass": true
+    },
+    "E2E-05": {
+      "steps": [
+        {
+          "name": "POST intent 201",
+          "ok": false,
+          "notes": "id=undefined"
+        },
+        {
+          "name": "provider DUITKU",
+          "ok": false,
+          "notes": "undefined"
+        },
+        {
+          "name": "status PENDING",
+          "ok": false,
+          "notes": "undefined"
+        },
+        {
+          "name": "QR UI",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "no mark-paid",
+          "ok": true,
+          "notes": ""
+        }
+      ],
+      "pass": false
+    },
+    "E2E-06": {
+      "steps": [
+        {
+          "name": "skipped no intent",
+          "ok": false,
+          "notes": ""
+        }
+      ],
+      "pass": false
+    },
+    "E2E-07": {
+      "steps": [
+        {
+          "name": "seller login",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard"
+        },
+        {
+          "name": "orders has paid order",
+          "ok": true,
+          "notes": "any paid"
+        },
+        {
+          "name": "paid visible",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "balance area",
+          "ok": true,
+          "notes": ""
+        }
+      ],
+      "pass": true
+    },
+    "E2E-08": {
+      "steps": [
+        {
+          "name": "open form",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/dashboard/withdrawals/new"
+        },
+        {
+          "name": "min amount",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "bank visible",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "quote API",
+          "ok": false,
+          "notes": "HTTP 400"
+        },
+        {
+          "name": "no live payout",
+          "ok": true,
+          "notes": "stopped at quote"
+        }
+      ],
+      "pass": false
+    },
+    "E2E-09": {
+      "steps": [
+        {
+          "name": "admin login",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin"
+        },
+        {
+          "name": "payments list",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/payments"
+        },
+        {
+          "name": "withdrawals list",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/withdrawals"
+        },
+        {
+          "name": "orders list",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/admin/orders"
+        }
+      ],
+      "pass": true
+    },
+    "E2E-10": {
+      "steps": [
+        {
+          "name": "API seller login",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "create draft",
+          "ok": true,
+          "notes": "id=01KXXB94RT02X9FVJ8D5BP0PYG"
+        },
+        {
+          "name": "UI list seed",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "draft in list",
+          "ok": true,
+          "notes": "E2E-10-FULL-1784470082323"
+        },
+        {
+          "name": "open seed product",
+          "ok": true,
+          "notes": ""
+        }
+      ],
+      "pass": true
+    },
+    "E2E-11": {
+      "steps": [
+        {
+          "name": "hard refresh still auth",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "csrf after refresh",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "CSRF rejects bad",
+          "ok": true,
+          "notes": "HTTP 403"
+        },
+        {
+          "name": "logout valid CSRF",
+          "ok": true,
+          "notes": "HTTP 200"
+        },
+        {
+          "name": "dashboard after logout → login",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/login?returnTo=%2Fdashboard"
+        }
+      ],
+      "pass": true
+    },
+    "E2E-12": {
+      "steps": [
+        {
+          "name": "wrong password no dashboard",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/login"
+        },
+        {
+          "name": "logged-out → login",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/login?returnTo=%2Fdashboard"
+        },
+        {
+          "name": "API wrong password",
+          "ok": true,
+          "notes": "HTTP 401"
+        },
+        {
+          "name": "seller blocked admin API",
+          "ok": true,
+          "notes": "HTTP 403"
+        },
+        {
+          "name": "seller cannot use admin console",
+          "ok": true,
+          "notes": "http://127.0.0.1:3000/login"
+        }
+      ],
+      "pass": true
+    },
+    "E2E-13": {
+      "steps": [
+        {
+          "name": "mock playwright config :3100",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "api config distinct",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "env.example default mock",
+          "ok": true,
+          "notes": ""
+        },
+        {
+          "name": "env unit dual-mode",
+          "ok": true,
+          "notes": "vitest env"
+        },
+        {
+          "name": "mock smoke :3100 skipped",
+          "ok": true,
+          "notes": "port 3100 is Canbot not Fersaku mock FE"
+        }
+      ],
+      "pass": true
+    }
+  }
+}

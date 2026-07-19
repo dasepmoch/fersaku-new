@@ -1,0 +1,29 @@
+{
+  "paymentIntentId": "pi_01KXX65BTP461D4ZBWZ1K2T8HG",
+  "orderNumber": "ORD-BWZ1K2T8HF",
+  "amount": 50000,
+  "providerRef": "DS3290626BVGW1Q2DX352ZOY",
+  "callback1": {
+    "status": 200,
+    "body": "OK"
+  },
+  "callback2": {
+    "status": 200,
+    "body": "OK"
+  },
+  "intentStatus": "PAID",
+  "orderStatus": "PAID",
+  "settlements": {
+    "first": "1",
+    "afterReplay": "1"
+  },
+  "browserNote": "http://127.0.0.1:3000/orders/ORD-BWZ1K2T8HF/success?total=50000 paidish=false",
+  "pass": {
+    "callback200": true,
+    "intentPaid": true,
+    "settlements1": true,
+    "replayOk": true,
+    "settlementsStill1": true,
+    "browser": true
+  }
+}

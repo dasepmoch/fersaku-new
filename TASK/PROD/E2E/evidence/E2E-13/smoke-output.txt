@@ -1,0 +1,2453 @@
+
+Running 78 tests using 2 workers
+
+  ✓   1 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /features (963ms)
+  ✓   2 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › / (1.0s)
+  ✘   4 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /api (467ms)
+  ✓   3 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /pricing (644ms)
+  ✓   5 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /about (585ms)
+  ✘   7 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /careers (545ms)
+  ✘   6 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /docs/api (557ms)
+  ✘   8 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog (830ms)
+  ✓   9 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /contact (793ms)
+  ✘  10 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /help (412ms)
+  ✘  11 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog/checkout-qris-conversion (440ms)
+  ✘  12 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /status (445ms)
+  ✓  13 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /security (583ms)
+  ✓  15 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /privacy (544ms)
+  ✘  14 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /changelog (558ms)
+  ✓  16 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /terms (489ms)
+  ✓  17 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /login (675ms)
+  ✘  18 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /cookies (516ms)
+  ✓  19 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /register (516ms)
+  ✘  20 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@designkit-studio (468ms)
+  ✘  21 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools (466ms)
+  ✘  22 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools/ai-prompt-pack (536ms)
+  ✘  23 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /checkout/prod_01 (469ms)
+  ✘  24 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/invoice (638ms)
+  ✘  25 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /invoices/verify/FRS-240712-1848-6AD891CE (514ms)
+  ✘  26 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/success (713ms)
+  ✘  27 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/login (687ms)
+  ✘  28 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases (694ms)
+  ✘  29 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842 (692ms)
+  ✘  30 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842/invoice (734ms)
+  ✘  31 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/profile (708ms)
+  ✘  32 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/security (617ms)
+  ✘  33 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard (634ms)
+  ✘  34 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/onboarding (618ms)
+  ✘  35 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products (566ms)
+  ✘  36 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/new (576ms)
+  ✘  37 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/prod_01 (551ms)
+  ✘  38 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory (582ms)
+  ✘  39 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory/prod_account (534ms)
+  ✘  40 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders (632ms)
+  ✘  41 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders/FRS-240712-1842 (581ms)
+  ✘  42 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers (607ms)
+  ✘  43 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers/FRS-240712-1842 (556ms)
+  ✘  44 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/reviews (644ms)
+  ✘  45 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons (595ms)
+  ✘  46 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons/new (718ms)
+  ✘  47 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals (663ms)
+  ✘  48 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals/new (773ms)
+  ✘  49 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/storefront (1.0s)
+  ✘  50 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/webhooks (644ms)
+  ✘  51 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/settings (541ms)
+  ✘  52 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/api-keys (652ms)
+  ✘  53 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/balance (578ms)
+  ✘  54 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/login (674ms)
+  ✘  55 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin (1.4s)
+  ✘  56 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants (573ms)
+  ✘  57 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants/str_01H8A2 (579ms)
+  ✘  58 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers (550ms)
+  ✘  59 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers/byr_91K2 (582ms)
+  ✘  60 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/users (568ms)
+  ✓  61 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/profile (1.2s)
+  ✘  62 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles (763ms)
+  ✘  63 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/new (596ms)
+  ✘  64 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/role_finance (836ms)
+  ✘  65 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/campaigns (727ms)
+  ✓  66 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/orders (1.2s)
+  ✘  67 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/orders/FRS-240712-1842 (733ms)
+  ✘  68 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/payments (1.0s)
+  ✓  69 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/withdrawals (1.0s)
+  ✘  70 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/withdrawals/WD-120724-0092 (612ms)
+  ✘  71 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/inventory (628ms)
+  ✘  72 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/fulfillment (649ms)
+  ✘  73 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/reviews (648ms)
+  ✘  74 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/kyc (710ms)
+  ✘  75 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/webhooks (685ms)
+  ✘  76 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/providers (722ms)
+  ✓  77 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/audit-logs (1.2s)
+  ✘  78 [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/system (434ms)
+
+
+  1) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /api ────────
+
+    Error: /api returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-api-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-api-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-api-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-api-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-api-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /docs/api ───
+
+    Error: /docs/api returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-docs-api-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-docs-api-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-docs-api-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-docs-api-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-docs-api-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /careers ────
+
+    Error: /careers returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-careers-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-careers-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-careers-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-careers-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-careers-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog ───────
+
+    Error: /blog returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-blog-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-blog-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-blog-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-blog-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-blog-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog/checkout-qris-conversion 
+
+    Error: /blog/checkout-qris-conversion returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d1cc6-og-checkout-qris-conversion-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d1cc6-og-checkout-qris-conversion-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-d1cc6-og-checkout-qris-conversion-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d1cc6-og-checkout-qris-conversion-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-d1cc6-og-checkout-qris-conversion-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /help ───────
+
+    Error: /help returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-help-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-help-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-help-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-help-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-help-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /status ─────
+
+    Error: /status returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-status-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-status-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-status-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-status-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-status-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /changelog ──
+
+    Error: /changelog returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-changelog-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-changelog-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-changelog-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-changelog-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-changelog-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /cookies ────
+
+    Error: /cookies returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-cookies-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-cookies-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-cookies-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-cookies-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-cookies-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools 
+
+    Error: /@asep-ai-tools returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-asep-ai-tools-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-asep-ai-tools-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-asep-ai-tools-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-asep-ai-tools-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-asep-ai-tools-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@designkit-studio 
+
+    Error: /@designkit-studio returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-designkit-studio-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-designkit-studio-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-designkit-studio-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-designkit-studio-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-designkit-studio-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools/ai-prompt-pack 
+
+    Error: /@asep-ai-tools/ai-prompt-pack returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-48f97-sep-ai-tools-ai-prompt-pack-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-48f97-sep-ai-tools-ai-prompt-pack-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-48f97-sep-ai-tools-ai-prompt-pack-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-48f97-sep-ai-tools-ai-prompt-pack-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-48f97-sep-ai-tools-ai-prompt-pack-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /checkout/prod_01 
+
+    Error: /checkout/prod_01 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-checkout-prod-01-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-checkout-prod-01-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-checkout-prod-01-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-checkout-prod-01-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-checkout-prod-01-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/invoice 
+
+    Error: /orders/FRS-240712-1848/invoice returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f6269-ers-FRS-240712-1848-invoice-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f6269-ers-FRS-240712-1848-invoice-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-f6269-ers-FRS-240712-1848-invoice-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f6269-ers-FRS-240712-1848-invoice-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-f6269-ers-FRS-240712-1848-invoice-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /invoices/verify/FRS-240712-1848-6AD891CE 
+
+    Error: /invoices/verify/FRS-240712-1848-6AD891CE returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-49531-fy-FRS-240712-1848-6AD891CE-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-49531-fy-FRS-240712-1848-6AD891CE-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-49531-fy-FRS-240712-1848-6AD891CE-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-49531-fy-FRS-240712-1848-6AD891CE-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-49531-fy-FRS-240712-1848-6AD891CE-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/success 
+
+    Error: /orders/FRS-240712-1848/success returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-1cd6c-ers-FRS-240712-1848-success-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-1cd6c-ers-FRS-240712-1848-success-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-1cd6c-ers-FRS-240712-1848-success-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-1cd6c-ers-FRS-240712-1848-success-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-1cd6c-ers-FRS-240712-1848-success-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/login 
+
+    Error: /account/login returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-login-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-login-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-account-login-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-login-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-account-login-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases 
+
+    Error: /account/purchases returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-purchases-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-purchases-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-account-purchases-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-purchases-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-account-purchases-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842 
+
+    Error: /account/purchases/FRS-240712-1842 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-320a6-t-purchases-FRS-240712-1842-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-320a6-t-purchases-FRS-240712-1842-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-320a6-t-purchases-FRS-240712-1842-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-320a6-t-purchases-FRS-240712-1842-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-320a6-t-purchases-FRS-240712-1842-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842/invoice 
+
+    Error: /account/purchases/FRS-240712-1842/invoice returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-09e86-ses-FRS-240712-1842-invoice-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-09e86-ses-FRS-240712-1842-invoice-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-09e86-ses-FRS-240712-1842-invoice-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-09e86-ses-FRS-240712-1842-invoice-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-09e86-ses-FRS-240712-1842-invoice-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/profile 
+
+    Error: /account/profile returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-profile-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-profile-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-account-profile-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-profile-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-account-profile-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/security 
+
+    Error: /account/security returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-security-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-security-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-account-security-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-account-security-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-account-security-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard ─
+
+    Error: /dashboard returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/onboarding 
+
+    Error: /dashboard/onboarding returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-onboarding-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-onboarding-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-onboarding-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-onboarding-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-onboarding-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products 
+
+    Error: /dashboard/products returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-products-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-products-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  26) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/new 
+
+    Error: /dashboard/products/new returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-new-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-new-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-products-new-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-products-new-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-products-new-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  27) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/prod_01 
+
+    Error: /dashboard/products/prod_01 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39f93--dashboard-products-prod-01-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39f93--dashboard-products-prod-01-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-39f93--dashboard-products-prod-01-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39f93--dashboard-products-prod-01-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-39f93--dashboard-products-prod-01-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  28) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory 
+
+    Error: /dashboard/inventory returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-inventory-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-inventory-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-inventory-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-inventory-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-inventory-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  29) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory/prod_account 
+
+    Error: /dashboard/inventory/prod_account returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-97a69-oard-inventory-prod-account-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-97a69-oard-inventory-prod-account-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-97a69-oard-inventory-prod-account-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-97a69-oard-inventory-prod-account-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-97a69-oard-inventory-prod-account-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  30) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders 
+
+    Error: /dashboard/orders returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-orders-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-orders-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-orders-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-orders-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-orders-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  31) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders/FRS-240712-1842 
+
+    Error: /dashboard/orders/FRS-240712-1842 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-3c20d-oard-orders-FRS-240712-1842-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-3c20d-oard-orders-FRS-240712-1842-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-3c20d-oard-orders-FRS-240712-1842-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-3c20d-oard-orders-FRS-240712-1842-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-3c20d-oard-orders-FRS-240712-1842-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  32) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers 
+
+    Error: /dashboard/customers returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-customers-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-customers-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-customers-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-customers-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-customers-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  33) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers/FRS-240712-1842 
+
+    Error: /dashboard/customers/FRS-240712-1842 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39909-d-customers-FRS-240712-1842-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39909-d-customers-FRS-240712-1842-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-39909-d-customers-FRS-240712-1842-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-39909-d-customers-FRS-240712-1842-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-39909-d-customers-FRS-240712-1842-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  34) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/reviews 
+
+    Error: /dashboard/reviews returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-reviews-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-reviews-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-reviews-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-reviews-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-reviews-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  35) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons 
+
+    Error: /dashboard/coupons returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-coupons-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-coupons-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  36) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons/new 
+
+    Error: /dashboard/coupons/new returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-new-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-new-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-coupons-new-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-coupons-new-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-coupons-new-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  37) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals 
+
+    Error: /dashboard/withdrawals returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-withdrawals-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-withdrawals-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  38) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals/new 
+
+    Error: /dashboard/withdrawals/new returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-new-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-new-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-withdrawals-new-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-withdrawals-new-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-withdrawals-new-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  39) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/storefront 
+
+    Error: /dashboard/storefront returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-storefront-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-storefront-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-storefront-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-storefront-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-storefront-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  40) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/webhooks 
+
+    Error: /dashboard/webhooks returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-webhooks-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-webhooks-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-webhooks-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-webhooks-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-webhooks-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  41) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/settings 
+
+    Error: /dashboard/settings returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-settings-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-settings-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-settings-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-settings-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-settings-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  42) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/api-keys 
+
+    Error: /dashboard/api-keys returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-api-keys-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-api-keys-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-api-keys-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-api-keys-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-api-keys-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  43) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/balance 
+
+    Error: /dashboard/balance returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-balance-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-balance-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-dashboard-balance-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-dashboard-balance-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-dashboard-balance-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  44) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/login 
+
+    Error: /admin/login returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-login-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-login-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-login-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-login-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-login-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  45) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin ─────
+
+    Error: /admin should expose a primary heading
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+      27 |         await page.getByRole("heading").count(),
+      28 |         `${route} should expose a primary heading`,
+    > 29 |       ).toBeGreaterThan(0);
+         |         ^
+      30 |
+      31 |       expect(pageErrors, `${route} emitted uncaught exceptions`).toEqual([]);
+      32 |       expect(consoleErrors, `${route} emitted console errors`).toEqual([]);
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:29:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  46) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants 
+
+    Error: /admin/merchants returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-merchants-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-merchants-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-merchants-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-merchants-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-merchants-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  47) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants/str_01H8A2 
+
+    Error: /admin/merchants/str_01H8A2 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d3256--admin-merchants-str-01H8A2-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d3256--admin-merchants-str-01H8A2-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-d3256--admin-merchants-str-01H8A2-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-d3256--admin-merchants-str-01H8A2-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-d3256--admin-merchants-str-01H8A2-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  48) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers 
+
+    Error: /admin/buyers returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-buyers-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-buyers-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  49) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers/byr_91K2 
+
+    Error: /admin/buyers/byr_91K2 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-byr-91K2-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-byr-91K2-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-buyers-byr-91K2-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-buyers-byr-91K2-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-buyers-byr-91K2-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  50) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/users 
+
+    Error: /admin/users returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-users-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-users-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-users-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-users-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-users-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  51) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles 
+
+    Error: /admin/roles returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-roles-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-roles-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  52) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/new 
+
+    Error: /admin/roles/new returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-new-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-new-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-roles-new-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-new-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-roles-new-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  53) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/role_finance 
+
+    Error: /admin/roles/role_finance returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-role-finance-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-role-finance-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-roles-role-finance-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-roles-role-finance-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-roles-role-finance-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  54) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/campaigns 
+
+    Error: /admin/campaigns returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-campaigns-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-campaigns-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-campaigns-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-campaigns-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-campaigns-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  55) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/orders/FRS-240712-1842 
+
+    Error: /admin/orders/FRS-240712-1842 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-93200-dmin-orders-FRS-240712-1842-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-93200-dmin-orders-FRS-240712-1842-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-93200-dmin-orders-FRS-240712-1842-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-93200-dmin-orders-FRS-240712-1842-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-93200-dmin-orders-FRS-240712-1842-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  56) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/payments 
+
+    Error: /admin/payments should expose a primary heading
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+      27 |         await page.getByRole("heading").count(),
+      28 |         `${route} should expose a primary heading`,
+    > 29 |       ).toBeGreaterThan(0);
+         |         ^
+      30 |
+      31 |       expect(pageErrors, `${route} emitted uncaught exceptions`).toEqual([]);
+      32 |       expect(consoleErrors, `${route} emitted console errors`).toEqual([]);
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:29:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-payments-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-payments-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-payments-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-payments-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-payments-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  57) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/withdrawals/WD-120724-0092 
+
+    Error: /admin/withdrawals/WD-120724-0092 returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f1b22--withdrawals-WD-120724-0092-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f1b22--withdrawals-WD-120724-0092-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characte-f1b22--withdrawals-WD-120724-0092-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characte-f1b22--withdrawals-WD-120724-0092-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characte-f1b22--withdrawals-WD-120724-0092-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  58) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/inventory 
+
+    Error: /admin/inventory returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-inventory-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-inventory-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-inventory-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-inventory-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-inventory-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  59) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/fulfillment 
+
+    Error: /admin/fulfillment returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-fulfillment-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-fulfillment-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-fulfillment-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-fulfillment-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-fulfillment-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  60) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/reviews 
+
+    Error: /admin/reviews returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-reviews-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-reviews-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-reviews-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-reviews-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-reviews-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  61) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/kyc ─
+
+    Error: /admin/kyc returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-kyc-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-kyc-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-kyc-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-kyc-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-kyc-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  62) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/webhooks 
+
+    Error: /admin/webhooks returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-webhooks-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-webhooks-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-webhooks-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-webhooks-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-webhooks-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  63) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/providers 
+
+    Error: /admin/providers returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-providers-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-providers-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-providers-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-providers-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-providers-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  64) [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/system 
+
+    Error: /admin/system returned an HTTP error
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 400
+    Received:   404
+
+      21 |         response?.status(),
+      22 |         `${route} returned an HTTP error`,
+    > 23 |       ).toBeLessThan(400);
+         |         ^
+      24 |       await expect(page.locator("body")).toBeVisible();
+      25 |       await expect(page.getByRole("main").first()).toBeVisible();
+      26 |       expect(
+        at /var/www/fersaku-new/frontend/tests/e2e/smoke.spec.ts:23:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-system-desktop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-system-desktop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-route-smoke-characterization-admin-system-desktop-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-route-smoke-characterization-admin-system-desktop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-route-smoke-characterization-admin-system-desktop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  64 failed
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /api ─────────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /docs/api ────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /careers ─────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog ────────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /blog/checkout-qris-conversion 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /help ────────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /status ──────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /changelog ───
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /cookies ─────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@designkit-studio 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /@asep-ai-tools/ai-prompt-pack 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /checkout/prod_01 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/invoice 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /invoices/verify/FRS-240712-1848-6AD891CE 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /orders/FRS-240712-1848/success 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/login 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/purchases/FRS-240712-1842/invoice 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/profile 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /account/security 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard ───
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/onboarding 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/new 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/products/prod_01 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/inventory/prod_account 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/orders/FRS-240712-1842 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/customers/FRS-240712-1842 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/reviews 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/coupons/new 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/withdrawals/new 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/storefront 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/webhooks 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/settings 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/api-keys 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /dashboard/balance 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/login ─
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin ───────
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/merchants/str_01H8A2 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/buyers/byr_91K2 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/users ─
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles ─
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/new 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/roles/role_finance 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/campaigns 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/orders/FRS-240712-1842 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/payments 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/withdrawals/WD-120724-0092 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/inventory 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/fulfillment 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/reviews 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/kyc ───
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/webhooks 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/providers 
+    [desktop-chromium] › tests/e2e/smoke.spec.ts:8:9 › route smoke characterization › /admin/system 
+  14 passed (51.6s)

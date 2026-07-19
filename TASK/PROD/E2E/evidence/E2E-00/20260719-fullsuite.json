@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "name": "health/live",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "health/ready",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "duitku webhook mounted",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "FE home",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "seller seed login",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "seed product exists",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "dual-provider env",
+      "ok": true,
+      "notes": "duitku xendit "
+    }
+  ],
+  "pass": true
+}

@@ -24,9 +24,10 @@ const PLAYGROUND_SEND_DISABLED_TITLE =
 const presets: Record<string, string> = {
   "POST /v1/gateway/payment-intents":
     '{\n  "merchantReference": "invoice-2026-0001",\n  "amount": 99000,\n  "currency": "IDR",\n  "description": "Invoice #0001",\n  "expiresInMinutes": 15,\n  "metadata": { "customerId": "cust_opaque" }\n}',
-  "GET /v1/gateway/payment-intents/qris_mock_2Yc91p": "{}",
-  "POST /v1/gateway/payment-intents/qris_mock_2Yc91p/cancel": "{}",
-  "GET /v1/gateway/events/evt_mock_01": "{}",
+  "GET /v1/gateway/payment-intents/{paymentIntentId}": "{}",
+  "POST /v1/gateway/payment-intents/{paymentIntentId}/cancel":
+    '{\n  "reason": "customer_request"\n}',
+  "GET /v1/gateway/payment-intents/{paymentIntentId}/events": "{}",
 };
 
 export function ApiPlayground() {
@@ -70,12 +71,21 @@ export function ApiPlayground() {
               duration: 128,
               body: JSON.stringify(
                 {
-                  paymentIntentId: "qris_mock_2Yc91p",
-                  status: endpoint.endsWith("/cancel")
-                    ? "CANCELLED"
-                    : "PENDING",
-                  paymentMode: "SANDBOX",
-                  createdAt: new Date().toISOString(),
+                  data: {
+                    paymentIntentId: "pi_mock_2Yc91p",
+                    status: endpoint.includes("/cancel")
+                      ? "CANCELLED"
+                      : "PENDING",
+                    source: "QRIS_API",
+                    paymentMode: "SANDBOX",
+                    currency: "IDR",
+                    amount: 99000,
+                    createdAt: new Date().toISOString(),
+                  },
+                  meta: {
+                    requestId: "req_mock_01",
+                    timestamp: new Date().toISOString(),
+                  },
                 },
                 null,
                 2,
@@ -86,9 +96,10 @@ export function ApiPlayground() {
               duration: 42,
               body: JSON.stringify(
                 {
-                  error: {
-                    code: "invalid_json",
+                  problem: {
+                    code: "VALIDATION_FAILED",
                     message: "Request body contains invalid JSON.",
+                    requestId: "req_mock_01",
                   },
                 },
                 null,

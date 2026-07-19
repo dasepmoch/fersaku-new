@@ -1,0 +1,19 @@
+{
+  "steps": [
+    {
+      "name": "wrong password",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login"
+    },
+    {
+      "name": "logged-out dashboard",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login?returnTo=%2Fdashboard"
+    },
+    {
+      "name": "seller cannot admin",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login"
+    }
+  ]
+}

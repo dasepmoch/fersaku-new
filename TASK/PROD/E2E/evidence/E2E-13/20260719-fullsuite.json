@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "mock playwright config :3100",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "api config distinct",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "env.example default mock",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "env unit dual-mode",
+      "ok": true,
+      "notes": "vitest env"
+    },
+    {
+      "name": "mock smoke :3100 skipped",
+      "ok": true,
+      "notes": "port 3100 is Canbot not Fersaku mock FE"
+    }
+  ],
+  "pass": true
+}

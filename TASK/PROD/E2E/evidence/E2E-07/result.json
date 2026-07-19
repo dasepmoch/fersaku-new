@@ -1,0 +1,39 @@
+{
+  "steps": [
+    {
+      "name": "seller login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard"
+    },
+    {
+      "name": "dashboard balance area",
+      "ok": true,
+      "notes": "Rp100rb"
+    },
+    {
+      "name": "orders list has E2E-06 order",
+      "ok": true,
+      "notes": "ORD-BWZ1K2T8HF"
+    },
+    {
+      "name": "paid status visible in list",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "order detail PAID",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/orders"
+    },
+    {
+      "name": "finance balance non-zero or credited",
+      "ok": true,
+      "notes": "Rp643,4rb | Rp0rb | Rp0rb"
+    },
+    {
+      "name": "xendit disbursement label",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

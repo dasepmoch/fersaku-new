@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "hard refresh still auth",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "csrf after refresh",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "CSRF rejects bad",
+      "ok": true,
+      "notes": "HTTP 403"
+    },
+    {
+      "name": "logout valid CSRF",
+      "ok": true,
+      "notes": "HTTP 200"
+    },
+    {
+      "name": "dashboard after logout → login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/login?returnTo=%2Fdashboard"
+    }
+  ],
+  "pass": true
+}

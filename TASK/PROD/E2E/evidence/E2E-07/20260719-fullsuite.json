@@ -1,0 +1,25 @@
+{
+  "steps": [
+    {
+      "name": "seller login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard"
+    },
+    {
+      "name": "orders has paid order",
+      "ok": true,
+      "notes": "any paid"
+    },
+    {
+      "name": "paid visible",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "balance area",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "pass": true
+}

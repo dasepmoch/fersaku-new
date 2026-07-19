@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {
+      "id": "00",
+      "n": "FE home open (headed)",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/"
+    }
+  ]
+}

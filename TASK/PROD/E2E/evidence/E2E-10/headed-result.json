@@ -1,0 +1,26 @@
+{
+  "steps": [
+    {
+      "name": "create draft API",
+      "ok": true,
+      "notes": "id=01KXX7BHARS4VC7SV25E70CPKY"
+    },
+    {
+      "name": "UI list",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "draft in list",
+      "ok": true,
+      "notes": "E2E-10-HD-1784465966419"
+    },
+    {
+      "name": "open seed product",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "title": "E2E-10-HD-1784465966419",
+  "productId": "01KXX7BHARS4VC7SV25E70CPKY"
+}

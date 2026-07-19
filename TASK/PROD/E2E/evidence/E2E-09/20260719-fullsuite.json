@@ -1,0 +1,25 @@
+{
+  "steps": [
+    {
+      "name": "admin login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin"
+    },
+    {
+      "name": "payments list",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/payments"
+    },
+    {
+      "name": "withdrawals list",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/withdrawals"
+    },
+    {
+      "name": "orders list",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/orders"
+    }
+  ],
+  "pass": true
+}

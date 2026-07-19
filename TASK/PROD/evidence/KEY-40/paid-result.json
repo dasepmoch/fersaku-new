@@ -1,0 +1,21 @@
+{
+  "paymentIntentId": "pi_01KXXA7M07A4K7D6YCB5H7JWA7",
+  "orderNumber": "ORD-YCB5H7JWA6",
+  "callbackPublic": {
+    "status": 200,
+    "body": "OK"
+  },
+  "intentStatus": "PAID",
+  "orderStatus": "PAID",
+  "settlements": {
+    "first": "1",
+    "afterReplay": "1"
+  },
+  "replayStatus": 200,
+  "pass": {
+    "callback200": true,
+    "paid": true,
+    "settlement1": true,
+    "replayIdempotent": true
+  }
+}

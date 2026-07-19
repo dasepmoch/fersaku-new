@@ -119,7 +119,7 @@ Host demo money path: DONE (B50 PAID+ledger on dual-provider API)
 | E30 | done | Token bucket + Retry-After; FE session single-flight |
 | E40 | done | `security_scan.sh` exit 0; evidence clean |
 | F10 | done | Identity/CSRF integration cell; no MFA required |
-| F20 | done | Checkout+callback integration PASS; live PAID deferred B50 |
+| F20 | done | Checkout+callback integration PASS; host PAID+ledger closed in B50 (KEY-01) |
 | F30 | done | Withdrawal unit+integration + ledger; isolation notes |
 | F40 | done | canary-sandbox.md dry-run only; **no live money** |
 | F50 | done | 148 critical mock unit tests PASS |

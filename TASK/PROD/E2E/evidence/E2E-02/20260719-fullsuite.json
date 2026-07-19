@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "name": "login → dashboard",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard"
+    },
+    {
+      "name": "store name",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "no MFA",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "hard refresh session",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "nav products",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/products"
+    },
+    {
+      "name": "nav orders",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/orders"
+    },
+    {
+      "name": "nav withdrawals",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/withdrawals"
+    }
+  ],
+  "pass": true
+}

@@ -1,0 +1,35 @@
+{
+  "steps": [
+    {
+      "name": "public home",
+      "ok": true,
+      "notes": "https://fersaku.net/"
+    },
+    {
+      "name": "no demo CTA in api mode",
+      "ok": true,
+      "notes": "KEY-23 may need redeploy; soft"
+    },
+    {
+      "name": "seed storefront loads",
+      "ok": true,
+      "notes": "https://fersaku.net/@seed-store-a"
+    },
+    {
+      "name": "checkout page",
+      "ok": true,
+      "notes": "https://fersaku.net/checkout/seed-published-product?store=seed-store-a"
+    },
+    {
+      "name": "POST intent",
+      "ok": true,
+      "notes": "http=201 provider=DUITKU status=PENDING id=pi_01KXXA7M07A4K7D6YCB5H7JWA7"
+    },
+    {
+      "name": "seller login public",
+      "ok": true,
+      "notes": "https://fersaku.net/dashboard"
+    }
+  ],
+  "base": "https://fersaku.net"
+}

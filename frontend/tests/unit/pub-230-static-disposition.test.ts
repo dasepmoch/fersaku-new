@@ -55,14 +55,37 @@ describe("PUB-230 — static help/careers/blog/API playground disposition", () =
   it("docs page TOC targets real anchors and copy is functional", () => {
     const docs = readFileSync(path.join(root, "app/docs/api/page.tsx"), "utf8");
     expect(docs).not.toMatch(/href="#"/);
-    expect(docs).toMatch(/#api-playground/);
-    expect(docs).toMatch(/#errors/);
-    expect(docs).toMatch(/#autentikasi/);
+    // Nav section ids (hash targets) — includes playground + errors
+    for (const id of [
+      "mulai-cepat",
+      "autentikasi",
+      "qris-payments",
+      "payment-status",
+      "idempotency",
+      "webhooks",
+      "api-playground",
+      "errors",
+    ]) {
+      expect(docs).toContain(`id: "${id}"`);
+    }
     expect(docs).toMatch(/id="mulai-cepat"/);
     expect(docs).toMatch(/id="payment-status"/);
     expect(docs).toMatch(/id="idempotency"/);
     expect(docs).toMatch(/id="webhooks"/);
+    expect(docs).toMatch(/id="errors"/);
     expect(docs).toMatch(/navigator\.clipboard/);
+    // Sidebar active state is scroll/hash driven — not a hardcoded index
+    expect(docs).not.toMatch(/i === 2/);
+    expect(docs).toMatch(/IntersectionObserver|activeId/);
+    // Contract-aligned request fields from OpenAPI CreateGatewayPaymentRequest
+    expect(docs).toMatch(/merchantReference/);
+    expect(docs).toMatch(/webhookEndpointId/);
+    expect(docs).toMatch(/fsk_test_/);
+  });
+
+  it("docs index redirects to /docs/api", () => {
+    const index = readFileSync(path.join(root, "app/docs/page.tsx"), "utf8");
+    expect(index).toMatch(/redirect\(["']\/docs\/api["']\)/);
   });
 
   it("playground send is mock-only; api/disabled is authoritatively disabled", () => {

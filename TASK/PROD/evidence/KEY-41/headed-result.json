@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "name": "seller login",
+      "ok": true,
+      "notes": "https://fersaku.net/dashboard"
+    },
+    {
+      "name": "withdrawals page",
+      "ok": true,
+      "notes": "https://fersaku.net/dashboard/withdrawals"
+    },
+    {
+      "name": "withdrawal form",
+      "ok": true,
+      "notes": "https://fersaku.net/dashboard/withdrawals/new"
+    },
+    {
+      "name": "admin login",
+      "ok": true,
+      "notes": "https://fersaku.net/admin"
+    },
+    {
+      "name": "admin withdrawals",
+      "ok": true,
+      "notes": "https://fersaku.net/admin/withdrawals"
+    }
+  ]
+}

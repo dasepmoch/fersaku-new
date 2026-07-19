@@ -1,0 +1,34 @@
+{
+  "steps": [
+    {
+      "id": "01",
+      "n": "landing renders",
+      "ok": true,
+      "notes": "Fersaku — Sell digital products beautifully"
+    },
+    {
+      "id": "01",
+      "n": "storefront",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/@seed-store-a"
+    },
+    {
+      "id": "01",
+      "n": "product detail",
+      "ok": true,
+      "notes": "Seed Published Product"
+    },
+    {
+      "id": "01",
+      "n": "buy CTA",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "id": "01",
+      "n": "no simulate paid",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

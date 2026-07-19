@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "admin login",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin"
+    },
+    {
+      "name": "admin chrome",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "payments",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/payments"
+    },
+    {
+      "name": "withdrawals",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/withdrawals"
+    },
+    {
+      "name": "orders",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/admin/orders"
+    }
+  ],
+  "pass": true
+}

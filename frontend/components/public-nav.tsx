@@ -2,20 +2,31 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Logo } from "./brand";
 import { ThemeToggle } from "./theme-provider";
+import { getDomainSource } from "@/shared/data/domain-source";
 
-const links = [
+const baseLinks: [string, string][] = [
   ["Fitur", "/features"],
   ["Harga", "/pricing"],
   ["Untuk developer", "/api"],
   ["Pembelian", "/account/login"],
-  ["Demo toko", "/@asep-ai-tools"],
 ];
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);
+  // KEY-23: prototype demo storefront only when publicCatalog is mock.
+  const links = useMemo(() => {
+    try {
+      if (getDomainSource("publicCatalog") === "mock") {
+        return [...baseLinks, ["Demo toko", "/@asep-ai-tools"] as [string, string]];
+      }
+    } catch {
+      /* fail closed: hide demo on config error */
+    }
+    return baseLinks;
+  }, []);
   return (
     <header className="relative z-50 mx-auto flex h-20 max-w-[1240px] items-center justify-between px-5 lg:px-8">
       <Logo />

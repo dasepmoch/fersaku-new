@@ -1,0 +1,14 @@
+{
+  "steps": [
+    {
+      "name": "magic-link request",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/account/login"
+    },
+    {
+      "name": "not seller/admin",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

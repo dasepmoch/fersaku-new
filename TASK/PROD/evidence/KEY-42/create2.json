@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "bankId": "bank_01KXXB1DYGA9134X7FKYA3RB7H",
+    "bankStatus": "VERIFIED",
+    "quoteId": "wq_01KXXB1DZNCJ0YACH0K7SENMG1",
+    "withdrawalId": "wd_01KXXB1E02KDH9H74V4ZNDT5NQ",
+    "createStatus": "PROCESSING",
+    "getStatus": "PROCESSING",
+    "createHttp": 201
+  },
+  "create": {
+    "accountHolderName": "Seed Merchant A",
+    "allocations": [
+      {
+        "amount": 45600,
+        "settlementLotId": "lot_01KXX58EV2HAMEJN9W60X1JC19",
+        "source": "STOREFRONT"
+      },
+      {
+        "amount": 4400,
+        "settlementLotId": "lot_01KXX68TXHQZBJ9KJ7JDCFRJEB",
+        "source": "STOREFRONT"
+      }
+    ],
+    "amountDebited": 50000,
+    "bankAccountId": "bank_01KXXB1DYGA9134X7FKYA3RB7H",
+    "bankAccountMasked": "****7890",
+    "bankCode": "BCA",
+    "createdAt": "2026-07-19T14:03:49Z",
+    "id": "wd_01KXXB1E02KDH9H74V4ZNDT5NQ",
+    "netDisbursement": 46000,
+    "platformFee": 1500,
+    "policyVersion": "LAUNCH_FEE_POLICY_V1",
+    "providerProcessingFee": 2500,
+    "providerReference": "6a5cd9456c8ac3a8d8129c63",
+    "source": "STOREFRONT",
+    "status": "PROCESSING",
+    "totalFee": 4000
+  },
+  "get": {
+    "accountHolderName": "Seed Merchant A",
+    "allocations": [
+      {
+        "amount": 45600,
+        "settlementLotId": "lot_01KXX58EV2HAMEJN9W60X1JC19",
+        "source": "STOREFRONT"
+      },
+      {
+        "amount": 4400,
+        "settlementLotId": "lot_01KXX68TXHQZBJ9KJ7JDCFRJEB",
+        "source": "STOREFRONT"
+      }
+    ],
+    "amountDebited": 50000,
+    "bankAccountId": "bank_01KXXB1DYGA9134X7FKYA3RB7H",
+    "bankAccountMasked": "****7890",
+    "bankCode": "BCA",
+    "createdAt": "2026-07-19T14:03:49Z",
+    "id": "wd_01KXXB1E02KDH9H74V4ZNDT5NQ",
+    "netDisbursement": 46000,
+    "platformFee": 1500,
+    "policyVersion": "LAUNCH_FEE_POLICY_V1",
+    "providerProcessingFee": 2500,
+    "providerReference": "6a5cd9456c8ac3a8d8129c63",
+    "source": "STOREFRONT",
+    "status": "PROCESSING",
+    "totalFee": 4000
+  }
+}

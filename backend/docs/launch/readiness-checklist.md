@@ -15,7 +15,8 @@ This checklist is executable. Each row must have real proof (script output, test
 | ---- | ------ | ---- |
 | Launch evidence package complete (this tree + evidence) | **READY for owner sign** | Product / Eng / Security: ________ / date ________ |
 | BE-610 residual risks (`docs/security/residual-risks.md`) | **Accepted pending signatures** (RR-001 pentest) | Security: ________ |
-| Live Xendit dashboard: callback URL + token match secret manager | **OWNER** | Payments: ________ |
+| Live **Duitku** payment dashboard: callback URL + keys match secret manager | **OWNER** | Payments: ________ |
+| Live **Xendit** disbursement dashboard: webhook URL + token match secret manager | **OWNER** | Payments: ________ |
 | Production secrets loaded in secret manager (not compose files) | **OWNER** | Eng: ________ |
 | Managed HA Postgres + PITR + Redis TLS + R2 buckets provisioned | **OWNER** | Ops: ________ |
 | DNS / TLS / ingress CIDRs for `fersaku.net` + API host | **OWNER** | Ops: ________ |
@@ -46,16 +47,20 @@ This checklist is executable. Each row must have real proof (script output, test
 
 ---
 
-## 3. Callbacks (Xendit)
+## 3. Callbacks (dual-provider: Duitku payment + Xendit disbursement)
+
+> **ADR-0008 / PROD:** Payment ingress = **Duitku** (`POST /v1/webhooks/duitku`). Disbursement = **Xendit** (`POST /v1/webhooks/xendit` + disbursement webhook). Do not treat Xendit as primary QRIS for launch.
 
 | # | Check | How | Proof |
 | - | ----- | --- | ----- |
-| 3.1 | Invalid token rejected (401/403), no payment side effects | `TestCallback_InvalidToken_RejectionOnly` | Integration suite |
-| 3.2 | Missing token rejected | `TestCallback_MissingToken_Rejection` | Integration suite |
-| 3.3 | Synthetic invalid token | `scripts/synthetic_health.sh` | Evidence: `03-synthetic-health.txt` |
-| 3.4 | Failure-domain test plan + local evidence | `docs/launch/xendit-callback-failure-domain.md` | File + evidence |
-| 3.5 | Callback path isolation (inbound ≠ outbound webhooks) | Admin routes + runbook | `docs/runbooks/callback-failure.md` |
-| 3.6 | Live Xendit webhook URL points at HA API ingress | Dashboard | **OWNER** |
+| 3.1 | Xendit invalid/missing callback token rejected; no side effects | Integration callback tests + `synthetic_health.sh` | Integration suite; evidence synthetic |
+| 3.2 | Duitku empty/invalid signature rejected (401), route mounted (not 404) | `POST /v1/webhooks/duitku` empty body → 401 | PROD-B20; host + E2E-00 |
+| 3.3 | Duitku signed `resultCode=00` → PAID + single settlement (sandbox) | B50 + E2E-06 | `TASK/PROD/evidence/PROD-B50/`; E2E-06 evidence |
+| 3.4 | Replay callback idempotent (no double settlement) | B50 / E2E-06 replay | Same |
+| 3.5 | Inbound provider callbacks ≠ outbound seller webhooks | Admin routes + runbook | `docs/runbooks/callback-failure.md` |
+| 3.6 | Failure-domain notes (Xendit historical + Duitku) | `docs/launch/xendit-callback-failure-domain.md` + PROD-E20 matrix | Files + PROD-E20 |
+| 3.7 | Live Duitku callback URL on dashboard → HA API ingress | Dashboard | **OWNER** (KEY-40 / KEY-62) |
+| 3.8 | Live Xendit disbursement webhook URL + token | Dashboard | **OWNER** (KEY-41 / KEY-62) |
 
 ---
 
@@ -76,25 +81,33 @@ This checklist is executable. Each row must have real proof (script output, test
 | # | Check | How | Proof |
 | - | ----- | --- | ----- |
 | 5.1 | System roles/permissions from migration `000004_rbac` | migrate up | Migrations |
-| 5.2 | SUPER_ADMIN attach path | `scripts/seed.sh` + `cmd/seed` | Documented below |
-| 5.3 | Optional bootstrap in launch script | `BOOTSTRAP_ADMIN_EMAIL` | `launch_bootstrap.sh` |
-| 5.4 | First production admin registered + seeded | Ops | **OWNER** after register/verify |
+| 5.2 | QLT-110 persona seed | `cmd/seed` | **Nonprod only** — refuses `APP_ENV=production` (exit 2) |
+| 5.3 | Production SUPER_ADMIN attach | `cmd/bootstrap-admin` | Documented below (KEY-20) |
+| 5.4 | First production admin registered + bootstrapped | Ops | **OWNER** after register/verify |
 
-### Admin bootstrap path (existing authz)
+### Production admin bootstrap (no persona seed)
 
-1. Deploy migrations to head (`./scripts/migrate.sh up` as migrate identity).
-2. Register user via `POST /v1/auth/register` (or approved invite flow); verify email.
-3. Set `BOOTSTRAP_ADMIN_EMAIL=<that email>` and run:
+> **Do not** run `./scripts/seed.sh` / `cmd/seed` when `APP_ENV=production`. Seed is QLT-110 demo personas only.
 
- ```bash
- export DATABASE_URL='postgres://…' # migrate/app role as documented
- ./scripts/seed.sh
- # or: make seed
- ```
+1. Deploy migrations to head (`./scripts/migrate.sh up` as migrate identity). System roles come from migrations, not seed.
+2. Register the real operator via `POST /v1/auth/register` (seller surface is fine for first user); verify email.
+3. One-shot assign SUPER_ADMIN to that **existing** email:
 
-4. Seed attaches **SUPER_ADMIN** only if the user row exists (`cmd/seed`). System roles are **not** re-created by seed (migration owns them).
-5. Confirm: login → session has admin permissions; audit append for role assignment if applicable.
-6. Unset `BOOTSTRAP_ADMIN_EMAIL` in long-lived env; do not leave bootstrap email as a standing secret.
+```bash
+export DATABASE_URL='postgres://…'   # app/migrate role as documented
+export BOOTSTRAP_ADMIN_EMAIL='ops@yourdomain.com'
+# required when APP_ENV=production:
+export BOOTSTRAP_ADMIN_CONFIRM=yes
+go run ./cmd/bootstrap-admin
+# or: built binary bootstrap-admin
+```
+
+4. Confirm: login → admin permissions present.
+5. **Unset** `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_CONFIRM` from long-lived env. Do not leave them standing.
+
+### Nonprod demo seed (optional)
+
+Local/staging only: `./scripts/seed.sh` or `make seed` applies QLT-110 personas + optional `BOOTSTRAP_ADMIN_EMAIL` attach after personas. Still refuse production.
 
 ---
 

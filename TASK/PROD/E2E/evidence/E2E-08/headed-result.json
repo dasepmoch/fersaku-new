@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "name": "open form",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/withdrawals/new"
+    },
+    {
+      "name": "min amount",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "bank visible",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "quote UI",
+      "ok": true,
+      "notes": "form exercised; no live payout"
+    },
+    {
+      "name": "no live payout",
+      "ok": true,
+      "notes": ""
+    }
+  ]
+}

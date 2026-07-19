@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "API seller login",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "create draft",
+      "ok": true,
+      "notes": "id=01KXXB94RT02X9FVJ8D5BP0PYG"
+    },
+    {
+      "name": "UI list seed",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "draft in list",
+      "ok": true,
+      "notes": "E2E-10-FULL-1784470082323"
+    },
+    {
+      "name": "open seed product",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "pass": true
+}

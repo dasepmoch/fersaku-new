@@ -1,34 +1,108 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronRight, Copy, Search } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { ApiPlayground } from "@/components/api-playground";
 
-const sections = [
-  "Mulai cepat",
-  "Autentikasi",
-  "QRIS payments",
-  "Payment status",
-  "Idempotency",
-  "Webhooks",
-  "Errors",
-];
-const fields = [
-  ["amount", "integer", "required", "Amount in IDR, without decimals."],
-  ["description", "string", "required", "Shown in dashboard and webhooks."],
-  ["merchantReference", "string", "required", "Your unique invoice reference."],
-  ["customer", "object", "optional", "Opaque customer metadata."],
+/** Left nav + section anchors — labels match on-page headings. */
+const navSections = [
+  { id: "mulai-cepat", label: "Mulai cepat" },
+  { id: "autentikasi", label: "Autentikasi" },
+  { id: "qris-payments", label: "Request schema" },
+  { id: "payment-status", label: "Payment status" },
+  { id: "idempotency", label: "Idempotency" },
+  { id: "webhooks", label: "Webhooks" },
+  { id: "api-playground", label: "Playground" },
+  { id: "errors", label: "Errors" },
+] as const;
+
+/** CreateGatewayPaymentRequest — aligned with backend/api/openapi.yaml */
+const fields: [string, string, string, string][] = [
+  ["merchantReference", "string", "required", "Your unique invoice reference (max 128)."],
+  ["amount", "integer", "required", "Whole IDR gross (int64, no decimals)."],
+  ["currency", "string", "optional", "IDR only."],
+  ["description", "string", "optional", "Shown in dashboard and webhooks (max 500)."],
+  ["customer", "object", "optional", "Opaque customer metadata (reference, email)."],
   ["expiresInMinutes", "integer", "optional", "Between 5 and 60 minutes."],
-  ["metadata", "object", "optional", "Your own reference data."],
+  ["successUrl", "string", "optional", "Browser HTTPS redirect; origin must be allowlisted."],
+  ["failureUrl", "string", "optional", "Browser HTTPS redirect; origin must be allowlisted."],
+  ["webhookEndpointId", "string", "optional", "ACTIVE same-merchant endpoint id — never a URL."],
+  ["metadata", "object", "optional", "Bounded opaque JSON (8KiB, depth 4, 50 keys)."],
 ];
 
-function sectionId(label: string) {
-  return label.toLowerCase().replaceAll(" ", "-");
-}
+/** GatewayPaymentIntent sample (envelope: { data, meta }) */
+const exampleResponse = `{
+  "data": {
+    "paymentIntentId": "pi_01KXX78RQQFNQ4FW19Y5GT1Z1J",
+    "orderId": "ord_01KXX78RQQFNQ4FW19Y5GT1Z1H",
+    "merchantReference": "invoice-2026-0001",
+    "status": "PENDING",
+    "source": "QRIS_API",
+    "paymentMode": "SANDBOX",
+    "currency": "IDR",
+    "amount": 99000,
+    "fee": 3670,
+    "merchantNet": 95330,
+    "expiresAt": "2026-07-19T13:08:35Z",
+    "qrString": "00020101021226...",
+    "qrImageUrl": "https://sandbox.duitku.com/...",
+    "createdAt": "2026-07-19T12:38:35Z"
+  },
+  "meta": {
+    "requestId": "01KXX78RQQFNQ4FW19Y5GT1Z1K",
+    "timestamp": "2026-07-19T12:38:35Z"
+  }
+}`;
+
+const statusValues = [
+  "PENDING",
+  "PAID",
+  "FAILED",
+  "EXPIRED",
+  "CANCELLED",
+  "CANCEL_PENDING",
+  "EXPIRE_PENDING",
+  "UNKNOWN_OUTCOME",
+  "REQUIRES_PAYMENT",
+] as const;
 
 export default function DocsPage() {
+  const [activeId, setActiveId] = useState<string>("mulai-cepat");
+
+  useEffect(() => {
+    const ids = navSections.map((s) => s.id);
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]?.target?.id) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-20% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    elements.forEach((el) => observer.observe(el));
+
+    const onHash = () => {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (hash && ids.includes(hash as (typeof ids)[number])) setActiveId(hash);
+    };
+    onHash();
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#fbfaf6]">
       <header className="hairline sticky top-0 z-30 flex h-16 items-center border-b bg-[#fbfaf6]/90 px-5 backdrop-blur-xl lg:px-8">
@@ -45,39 +119,74 @@ export default function DocsPage() {
         </Link>
       </header>
       <div className="mx-auto grid max-w-[1420px] lg:grid-cols-[220px_1fr_220px]">
-        <aside className="hairline hidden min-h-[calc(100vh-64px)] border-r p-6 lg:block">
+        <aside className="hairline sticky top-16 hidden max-h-[calc(100vh-64px)] min-h-[calc(100vh-64px)] overflow-y-auto border-r p-6 lg:block">
           <p className="text-[10px] font-extrabold tracking-wider text-[#8a958e] uppercase">
             Dokumentasi API
           </p>
-          <nav className="mt-4 grid gap-1">
-            {sections.map((x, i) => (
-              <a
-                href={`#${sectionId(x)}`}
-                key={x}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold ${i === 2 ? "bg-[#e9ff9b] text-[#173f2c]" : "text-[#68756d] hover:bg-[#f0f1ec]"}`}
-              >
-                {x}
-              </a>
-            ))}
+          <nav className="mt-4 grid gap-1" aria-label="Dokumentasi API">
+            {navSections.map((s) => {
+              const active = activeId === s.id;
+              return (
+                <a
+                  href={`#${s.id}`}
+                  key={s.id}
+                  onClick={() => setActiveId(s.id)}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                    active
+                      ? "bg-[#e9ff9b] text-[#173f2c]"
+                      : "text-[#68756d] hover:bg-[#f0f1ec]"
+                  }`}
+                  aria-current={active ? "location" : undefined}
+                >
+                  {s.label}
+                </a>
+              );
+            })}
+          </nav>
+          <p className="mt-8 text-[10px] font-extrabold tracking-wider text-[#8a958e] uppercase">
+            Referensi
+          </p>
+          <nav className="mt-3 grid gap-1">
+            <Link
+              href="/docs/api"
+              className="rounded-lg bg-[#e9ff9b] px-3 py-2 text-xs font-semibold text-[#173f2c]"
+            >
+              QRIS Gateway API
+            </Link>
+            <Link
+              href="/api"
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#68756d] hover:bg-[#f0f1ec]"
+            >
+              QRIS product page
+            </Link>
+            <Link
+              href="/help"
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-[#68756d] hover:bg-[#f0f1ec]"
+            >
+              Help center
+            </Link>
           </nav>
         </aside>
         <article className="min-w-0 px-5 py-12 sm:px-10 lg:px-12">
           <div className="mx-auto max-w-[900px]">
             <div className="flex items-center gap-2 text-[11px] font-bold text-[#7a867f]">
-              API reference <ChevronRight className="size-3" /> Payments
+              <Link href="/docs" className="hover:text-[#173f2c]">
+                API reference
+              </Link>
+              <ChevronRight className="size-3" /> Payments
             </div>
             <h1
               id="mulai-cepat"
-              className="font-display mt-5 text-6xl tracking-[-.04em]"
+              className="font-display mt-5 scroll-mt-24 text-6xl tracking-[-.04em]"
             >
               Create a QRIS payment
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-[#647169]">
-              Creates an independent QRIS payment intent and returns dynamic
-              QRIS data. This gateway does not create products, inventory, or
-              storefront orders for you.
+              Creates an independent QRIS payment intent via the merchant API
+              key and returns dynamic QRIS data. This gateway does not create
+              products, inventory, or storefront orders for you.
             </p>
-            <div className="hairline mt-8 flex gap-3 border-b pb-8">
+            <div className="hairline mt-8 flex flex-wrap gap-3 border-b pb-8">
               <span className="rounded-lg bg-[#bdf8d0] px-3 py-2 text-[11px] font-extrabold text-[#194b34]">
                 POST
               </span>
@@ -86,23 +195,43 @@ export default function DocsPage() {
               </code>
             </div>
             <ApiPlayground />
-            <h2 id="autentikasi" className="mt-10 text-xl font-extrabold">
+            <h2
+              id="autentikasi"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Authentication
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Pass your secret API key in the Authorization header. Use test
-              keys while developing; production/live keys activate only after
-              QRIS API KYC approval.
+              Pass your secret merchant API key as a Bearer token. Use{" "}
+              <code className="rounded bg-[#eef0eb] px-1.5 py-0.5 text-[11px]">
+                fsk_test_…
+              </code>{" "}
+              (sandbox) while developing. Live keys require active QRIS API KYC
+              capability. Never put keys in query strings, cookies, or frontend
+              env.
             </p>
-            <CodeBlock code="Authorization: Bearer sk_test_your_key" />
-            <h2 id="qris-payments" className="mt-10 text-xl font-extrabold">
+            <CodeBlock code="Authorization: Bearer fsk_test_your_key" />
+            <CodeBlock code="Idempotency-Key: inv-2026-0001-create" />
+            <h2
+              id="qris-payments"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Request schema
             </h2>
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Body for{" "}
+              <code className="text-[11px]">POST /v1/gateway/payment-intents</code>
+              . Field names match the OpenAPI{" "}
+              <code className="text-[11px]">CreateGatewayPaymentRequest</code>{" "}
+              contract. Sending <code className="text-[11px]">webhookUrl</code>{" "}
+              is always rejected — use <code className="text-[11px]">webhookEndpointId</code>{" "}
+              only.
+            </p>
             <div className="hairline mt-4 overflow-hidden rounded-2xl border bg-white">
               {fields.map((row, i) => (
                 <div
                   key={row[0]}
-                  className={`grid gap-1 px-4 py-4 text-xs sm:grid-cols-[140px_100px_1fr] ${i ? "hairline border-t" : ""}`}
+                  className={`grid gap-1 px-4 py-4 text-xs sm:grid-cols-[160px_100px_1fr] ${i ? "hairline border-t" : ""}`}
                 >
                   <code className="font-bold text-[#245e42]">{row[0]}</code>
                   <span>
@@ -113,53 +242,96 @@ export default function DocsPage() {
                 </div>
               ))}
             </div>
-            <h2 id="payment-status" className="mt-10 text-xl font-extrabold">
+            <h2
+              id="payment-status"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Payment status
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Poll the payment intent or subscribe to signed webhooks. Status
-              values are server-authoritative; never treat client timers as
-              paid.
+              Poll{" "}
+              <code className="text-[11px]">
+                GET /v1/gateway/payment-intents/{"{paymentIntentId}"}
+              </code>{" "}
+              or subscribe to signed webhooks. Status values are
+              server-authoritative; never treat client timers as paid.
             </p>
-            <h2 id="idempotency" className="mt-10 text-xl font-extrabold">
+            <div className="mt-4 flex flex-wrap gap-2">
+              {statusValues.map((s) => (
+                <code
+                  key={s}
+                  className="rounded-lg bg-[#eef0eb] px-2.5 py-1.5 text-[10px] font-bold text-[#245e42]"
+                >
+                  {s}
+                </code>
+              ))}
+            </div>
+            <h2
+              id="idempotency"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Idempotency
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Send a unique Idempotency-Key on create. Same key and body return
-              the same intent; a changed body conflicts.
+              Send a unique <code className="text-[11px]">Idempotency-Key</code>{" "}
+              header on create. Same key and body return the same intent (HTTP
+              200 replay). A changed body with the same key conflicts.
             </p>
-            <h2 id="webhooks" className="mt-10 text-xl font-extrabold">
+            <h2
+              id="webhooks"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Webhooks
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Delivery is signed and retryable. Verify signatures before
-              updating merchant state.
+              Register HTTPS endpoints under your store webhooks API (SSRF-safe).
+              Pass the endpoint id as{" "}
+              <code className="text-[11px]">webhookEndpointId</code> on create —
+              never a raw URL. Delivery is signed and retryable; verify
+              signatures before updating merchant state. Inbound provider
+              callbacks (Duitku/Xendit) are server-side only.
             </p>
             <h2 className="mt-10 text-xl font-extrabold">Example response</h2>
-            <CodeBlock
-              code={
-                '{\n  "paymentIntentId": "qris_2Yc91p",\n  "status": "PENDING",\n  "amount": 99000,\n  "currency": "IDR",\n  "paymentMode": "SANDBOX",\n  "qrImageUrl": "https://...",\n  "expiresAt": "2026-07-12T12:30:00.000Z"\n}'
-              }
-            />
-            <h2 id="errors" className="mt-10 text-xl font-extrabold">
+            <p className="mt-3 text-sm leading-6 text-[#66736c]">
+              Success envelope: <code className="text-[11px]">{"{ data, meta }"}</code>.
+              Create returns <code className="text-[11px]">201</code> (or{" "}
+              <code className="text-[11px]">200</code> on idempotent replay).
+            </p>
+            <CodeBlock code={exampleResponse} />
+            <h2 id="errors" className="mt-10 scroll-mt-24 text-xl font-extrabold">
               Errors
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
               Errors use a consistent problem payload with a machine-readable
-              code. Invalid JSON and validation failures return 400; auth
-              failures return 401.
+              code. Invalid JSON and validation failures return 400; missing or
+              invalid API keys return 401; LIVE without KYC capability returns
+              403 (<code className="text-[11px]">KYC_REQUIRED_FOR_LIVE_API</code>
+              ).
             </p>
+            <CodeBlock
+              code={`{\n  "problem": {\n    "code": "VALIDATION_FAILED",\n    "message": "Request validation failed",\n    "requestId": "01KXX…"\n  }\n}`}
+            />
           </div>
         </article>
-        <aside className="hidden p-6 xl:block">
+        <aside className="sticky top-16 hidden max-h-[calc(100vh-64px)] overflow-y-auto p-6 xl:block">
           <p className="text-[10px] font-extrabold tracking-wider text-[#8a958e] uppercase">
             Di halaman ini
           </p>
           <div className="mt-4 grid gap-3 text-xs text-[#6f7b74]">
-            <a href="#autentikasi">Authentication</a>
-            <a href="#qris-payments">Request</a>
-            <a href="#api-playground">Playground</a>
-            <a href="#errors">Errors</a>
+            {navSections.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                onClick={() => setActiveId(s.id)}
+                className={
+                  activeId === s.id
+                    ? "font-bold text-[#173f2c]"
+                    : "hover:text-[#173f2c]"
+                }
+              >
+                {s.label}
+              </a>
+            ))}
           </div>
         </aside>
       </div>

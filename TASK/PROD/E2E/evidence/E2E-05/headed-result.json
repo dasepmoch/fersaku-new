@@ -1,0 +1,54 @@
+{
+  "steps": [
+    {
+      "id": "05",
+      "n": "product page",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "id": "05",
+      "n": "checkout route",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/checkout/seed-published-product?store=seed-store-a"
+    },
+    {
+      "id": "05",
+      "n": "POST intent 201",
+      "ok": true,
+      "notes": "id=pi_01KXX78RQQFNQ4FW19Y5GT1Z1J http=201"
+    },
+    {
+      "id": "05",
+      "n": "provider DUITKU",
+      "ok": true,
+      "notes": "DUITKU"
+    },
+    {
+      "id": "05",
+      "n": "status PENDING",
+      "ok": true,
+      "notes": "PENDING"
+    },
+    {
+      "id": "05",
+      "n": "QR UI",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "id": "05",
+      "n": "no mark-paid",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "meta": {
+    "id": "pi_01KXX78RQQFNQ4FW19Y5GT1Z1J",
+    "provider": "DUITKU",
+    "status": "PENDING",
+    "providerRef": "DS3290626S0NPOE8E3YB87RA",
+    "amount": 50000,
+    "orderNumber": "ORD-19Y5GT1Z1H"
+  }
+}

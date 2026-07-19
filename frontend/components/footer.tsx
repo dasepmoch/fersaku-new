@@ -1,7 +1,19 @@
 import Link from "next/link";
 import { Logo } from "./brand";
+import { getDomainSource } from "@/shared/data/domain-source";
 
 export function Footer() {
+  // KEY-23: prototype demo storefront only when publicCatalog is mock.
+  const showDemoStore = getDomainSource("publicCatalog") === "mock";
+  const productLinks: [string, string][] = [
+    ["Fitur", "/features"],
+    ["Harga", "/pricing"],
+    ...(showDemoStore
+      ? ([["Toko demo", "/@asep-ai-tools"]] as [string, string][])
+      : []),
+    ["Help center", "/help"],
+  ];
+
   return (
     <footer className="bg-[#102b20] px-5 py-12 text-white lg:px-8">
       <div className="mx-auto grid max-w-[1180px] gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
@@ -12,15 +24,7 @@ export function Footer() {
           </p>
         </div>
         {[
-          [
-            "Produk",
-            [
-              ["Fitur", "/features"],
-              ["Harga", "/pricing"],
-              ["Toko demo", "/@asep-ai-tools"],
-              ["Help center", "/help"],
-            ],
-          ],
+          ["Produk", productLinks],
           [
             "Developer",
             [

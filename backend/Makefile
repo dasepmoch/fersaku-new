@@ -18,16 +18,18 @@ export DATABASE_URL
 	compose-up compose-down compose-build compose-deps compose-ps compose-logs \
 	migrate migrate-down migrate-version seed sqlc check-generated \
 	test-integration test-integration-foundation test-contract openapi-lint openapi-bundle \
-	resilience-drills resilience-drills-dry resilience-drills-full help
+	resilience-drills resilience-drills-dry resilience-drills-full \
+	bootstrap-admin pg-backup-drill health-smoke help
 
 help:
 	@echo "Targets:"
 	@echo "  build test tidy vet fmt check-fmt run-api run-worker"
 	@echo "  compose-up compose-down compose-build compose-deps compose-ps"
-	@echo "  migrate migrate-down migrate-version seed sqlc check-generated"
-	@echo "  test-integration test-integration-foundation test-contract"
+	@echo "  migrate migrate-down migrate-version seed bootstrap-admin"
+	@echo "  sqlc check-generated test-integration test-integration-foundation test-contract"
 	@echo "  openapi-lint openapi-bundle"
 	@echo "  resilience-drills resilience-drills-dry resilience-drills-full"
+	@echo "  pg-backup-drill health-smoke"
 	@echo "GO=$(GO)"
 	@echo "DATABASE_URL=$(DATABASE_URL)"
 	@echo "QLT-210: make compose-deps && make migrate && make test-integration"
@@ -120,6 +122,24 @@ migrate-version:
 
 seed:
 	@sh scripts/seed.sh
+
+# KEY-20: one-shot SUPER_ADMIN attach (no persona seed). Production needs BOOTSTRAP_ADMIN_CONFIRM=yes.
+bootstrap-admin:
+	@test -n "$$BOOTSTRAP_ADMIN_EMAIL" || (echo "BOOTSTRAP_ADMIN_EMAIL required"; exit 1)
+	$(GO) run ./cmd/bootstrap-admin
+
+# KEY-11 support: local logical dump/restore drill (not managed PITR).
+pg-backup-drill:
+	@sh scripts/pg_logical_backup_drill.sh
+
+# Quick dual-provider + health smoke against local compose API.
+health-smoke:
+	@curl -sf "http://127.0.0.1:18080/health/live" >/dev/null && echo "live:ok" || (echo "live:fail"; exit 1)
+	@curl -sf "http://127.0.0.1:18080/health/ready" >/dev/null && echo "ready:ok" || (echo "ready:fail"; exit 1)
+	@code=$$(curl -sS -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:18080/v1/webhooks/duitku" -H 'Content-Type: application/json' -d '{}'); \
+	  test "$$code" = "401" && echo "duitku-webhook:ok ($$code)" || (echo "duitku-webhook:fail ($$code)"; exit 1)
+	@code=$$(curl -sS -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:18080/v1/webhooks/xendit/disbursement" -H 'Content-Type: application/json' -d '{}'); \
+	  test "$$code" = "401" && echo "xendit-disburse-webhook:ok ($$code)" || (echo "xendit-disburse-webhook:fail ($$code)"; exit 1)
 
 sqlc:
 	@if command -v sqlc >/dev/null 2>&1; then sqlc generate; \

@@ -1,0 +1,34 @@
+{
+  "steps": [
+    {
+      "name": "open withdrawals/new",
+      "ok": true,
+      "notes": "http://127.0.0.1:3000/dashboard/withdrawals/new"
+    },
+    {
+      "name": "min amount label",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "bank account visible",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "request quote",
+      "ok": true,
+      "notes": "201 01HQ0SEED00000000000000031/withdrawal-quotes"
+    },
+    {
+      "name": "no live payout executed",
+      "ok": true,
+      "notes": "stopped at quote UI"
+    },
+    {
+      "name": "API quote path",
+      "ok": true,
+      "notes": "HTTP 404"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {
+      "name": "skipped no intent",
+      "ok": false,
+      "notes": ""
+    }
+  ],
+  "pass": false
+}

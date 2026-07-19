@@ -14,7 +14,7 @@
 | --------------- | -------- |
 | Production LB weight | N/A |
 | Live Xendit / bank | **not** executed |
-| Duitku sandbox QRIS pay | **not** claimed PAID (B50 residual) |
+| Duitku sandbox QRIS pay | **CLOSED later same day** — see § UPDATE below (B50 PAID+ledger) |
 | Local health + synthetic + rollback docs | **executed / dry-run** |
 
 ## Preconditions checked
@@ -84,6 +84,21 @@ Compose files present: `backend/docker-compose.yml`, `docker-compose.staging.yml
 2. Sandbox Duitku create → pay or signed callback → single ledger credit (close B50).
 3. Optional sandbox disbursement with test keys (owner).
 4. Record success/latency/errors then sign.
+
+---
+
+## UPDATE — 2026-07-19 (KEY-01 reconcile)
+
+Historical F40 dry-run above is **preserved**. Same-day closures:
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| API dual-provider image + Duitku webhook mounted | **done** | empty body → 401; B20 |
+| Sandbox PAID + settlement + ledger (B50) | **done** | `evidence/PROD-B50/` |
+| Headed E2E checkout PAID (E2E-05/06) | **done** | `TASK/PROD/E2E/STATUS.md` |
+| Live money canary | **still blocked** | G40 / KEY-62 — needs `GO LIVE CANARY` |
+
+**Do not re-open B50.** Remaining canary work is staging parity (KEY-22) and LIVE GO (KEY-62).
 
 ## Sign-off
 

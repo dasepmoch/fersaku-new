@@ -1,0 +1,30 @@
+{
+  "steps": [
+    {
+      "name": "POST intent 201",
+      "ok": false,
+      "notes": "id=undefined"
+    },
+    {
+      "name": "provider DUITKU",
+      "ok": false,
+      "notes": "undefined"
+    },
+    {
+      "name": "status PENDING",
+      "ok": false,
+      "notes": "undefined"
+    },
+    {
+      "name": "QR UI",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "no mark-paid",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "pass": false
+}

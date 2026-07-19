@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "name": "magic-link request",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "not seller/admin",
+      "ok": true,
+      "notes": ""
+    },
+    {
+      "name": "API buyer surface",
+      "ok": true,
+      "notes": ""
+    }
+  ],
+  "pass": true
+}

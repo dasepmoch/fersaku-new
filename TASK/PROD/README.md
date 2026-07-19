@@ -74,6 +74,9 @@ Parallelism allowed only where dependency arrows are empty in each phase file.
 | [`09-EXECUTION-STATUS.md`](09-EXECUTION-STATUS.md) | Live status board |
 | [`10-SECRETS-AND-ENV-MATRIX.md`](10-SECRETS-AND-ENV-MATRIX.md) | Env var names only; source of values |
 | [`11-AGENT-RUNBOOK.md`](11-AGENT-RUNBOOK.md) | How an agent claims/finishes a task |
+| [`12-FULL-PROD-KEYSWAP-PROGRAM.md`](12-FULL-PROD-KEYSWAP-PROGRAM.md) | **Post A–G:** ops + deploy contract so go-live = key-swap only |
+| [`13-KEYSWAP-STATUS.md`](13-KEYSWAP-STATUS.md) | KEY-00…KEY-71 status board (key-swap readiness) |
+| [`ops/README.md`](ops/README.md) | **Detailed** SM templates + PG/Redis/R2/SMTP/key-swap runbooks |
 
 ---
 
