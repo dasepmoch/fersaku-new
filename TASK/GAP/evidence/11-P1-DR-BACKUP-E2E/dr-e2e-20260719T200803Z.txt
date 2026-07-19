@@ -1,0 +1,141 @@
+=== Fersaku GAP-11 DR restore E2E ===
+time_utc=20260719T200803Z
+root=/var/www/fersaku-new/backend
+src_db=fersaku clone_db=fersaku_restore_drill container=fersaku-backend-postgres-1
+dump_out=/tmp/opencode/fersaku-drills/fersaku-dr-e2e-20260719T200803Z.dump
+report=/tmp/opencode/fersaku-drills/reports/dr-e2e-20260719T200803Z.txt
+managed_ha_pitr=BLOCKED (owner provision required)
+
+
+=== 0. RPO/RTO decision record (local drill targets) ===
+approved_targets_doc=backend/docs/runbooks/backup-restore-integrity.md + TASK/PROD/ops/02-postgres-pitr-runbook.md
+postgres_rpo_target=<=5m (managed continuous WAL/PITR — NOT proven on this host)
+postgres_rto_target=<=60m isolated restore + app re-point (managed)
+local_logical_rpo=full dump point-in-time (no WAL; data loss window = since last dump)
+object_store_boundary=R2/MinIO bytes must pair with object_refs after DB restore
+next_drill_cadence=quarterly
+owner=platform-lead + finance (ledger window)
+alert=fersaku_audit_chain_status_total{result="broken"}
+PASS: RPO/RTO decision documented (local vs managed)
+
+=== 1. Pre-flight origin snapshot ===
+INFO: origin_migration_head=33
+origin_counts:
+audit_events|13
+idempotency_records|15
+ledger_journals|48
+object_refs_durable|0
+object_refs|0
+orders|27
+outbox_events|52
+payment_intents|20
+payment_provider_events|13
+withdrawals|8
+
+=== 2. Sanitized object probe seed (object inventory path) ===
+INFO: seeding probe object_id=obj_dr_probe_20260719T200803Z store=01KXQZ3E8CKY… (ids truncated in evidence)
+PASS: seeded sanitized object probe (sha256=64a2f980f9df… size=54)
+
+=== 3. Logical dump (restore start) ===
+restore_start_utc=2026-07-19T20:08:03Z
+INFO: dump_bytes=534713 path=/tmp/opencode/fersaku-drills/fersaku-dr-e2e-20260719T200803Z.dump
+PASS: pg_dump -Fc completed
+
+=== 4. Isolated restore (clone DB — never overwrite production/origin) ===
+PASS: pg_restore into isolated clone fersaku_restore_drill
+
+=== 5. Migration / version check ===
+INFO: clone_migration_head=33 origin_migration_head=33
+PASS: migration head parity origin=clone=33
+
+=== 6. Row parity (money + platform tables) ===
+PASS: parity payment_intents: origin=20 clone=20
+PASS: parity orders: origin=27 clone=27
+PASS: parity withdrawals: origin=8 clone=8
+PASS: parity outbox_events: origin=52 clone=52
+PASS: parity ledger_journals: origin=48 clone=48
+PASS: parity audit_events: origin=13 clone=13
+PASS: parity object_refs: origin=1 clone=1
+PASS: parity idempotency_records: origin=15 clone=15
+PASS: parity payment_provider_events: origin=13 clone=13
+
+=== 7. Ledger / audit / outbox integrity signals (clone) ===
+INFO: clone_ledger_journals=48
+PASS: ledger_journals readable on clone (n=48)
+INFO: clone_merchant_balances=12
+PASS: merchant_balances readable on clone (n=12)
+INFO: audit_sequence_gaps origin=1 clone=1
+WARN: origin audit has 1 pre-existing gap(s); clone matches (restore fidelity OK)
+PASS: audit gap count parity origin=clone (restore did not invent/drop events)
+audit_heads (hash hex only):
+default|seq=14|row_hash=6a1afa0b5d191aeaf0c0337141a2f1929aae3db01c6e288d799d9e78494de398
+PASS: audit head hash recorded (sanitized)
+INFO: outbox_status_dist: completed=11
+pending=41
+PASS: outbox dedupe_key unique (no duplicate money side-effect keys)
+PASS: payment_provider_events canonical dedupe key unique (provider,scope,mode,event_id)
+
+=== 8. Object inventory + checksum / retention validation ===
+INFO: object ok id=obj_dr_probe_2026071… status=READY retention=STANDARD
+INFO: object_inventory checked=1 ok=1 missing=0 retention_ok=1
+PASS: object_refs reconcile with object-store bytes (1/1)
+PASS: retention_class present on all checked refs
+PASS: bucket reachable: fersaku-private
+PASS: bucket reachable: fersaku-public
+
+=== 9. Clone connectivity + app readiness (live stack; clone not cut over) ===
+PASS: clone accepts SQL (SELECT 1)
+PASS: clone has essential application tables (8)
+PASS: live stack /health/ready=200 (origin DB; clone not cut over)
+PASS: live stack /health/live=200
+cutover_procedure:
+  1) restore to NEW managed instance (never overwrite prod)
+  2) verify migration head + integrity + object inventory on clone
+  3) inject DATABASE_URL from secret manager (external; never in dump)
+  4) boot API/worker against clone; require /health/ready 200
+  5) admin read-only smoke; synthetic non-money checkout/read
+  6) outbox replay is idempotent via dedupe_key — no duplicate money
+  7) owner sign-off; re-point traffic; keep original instance for rollback
+  8) never leave canary pointed at drill clone
+PASS: cutover/repoint procedure documented
+
+=== 10. Secrets boundary ===
+secrets_in_dump=NO (pg_dump contains app data only; credentials supplied externally)
+DATABASE_URL=secret-manager / env injection — not committed
+R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY=external
+evidence_sanitized=yes (hashes truncated/hex only; no DSN passwords)
+PASS: secrets supplied externally (not in dump artifact)
+
+=== 11. Timing / RTO measurement ===
+restore_start_utc=2026-07-19T20:08:03Z
+restore_end_utc=2026-07-19T20:08:07Z
+local_rto_seconds=4 (dump+restore+verify wall clock)
+total_drill_seconds=4
+data_loss_point=logical dump stamp 20260719T200803Z (no WAL between dump and failure on this host)
+PASS: local logical RTO 4s << 60m target
+
+=== 12. Quarterly schedule + owner handoff ===
+next_drill_date_utc=2026-10-17
+drill_owner=platform-lead
+on_call=platform-oncall
+escalation=platform-lead → finance (ledger) → security (audit chain)
+communication=status page + internal #incidents; no customer PII in public notes
+rollback=keep original primary offline until integrity green; re-point DNS/SM DSN back
+evidence_location=TASK/GAP/evidence/11-P1-DR-BACKUP-E2E/ + /tmp/opencode/fersaku-drills/reports/dr-e2e-20260719T200803Z.txt
+alert_hook=fersaku_audit_chain_status_total{result="broken"} → runbooks/backup-restore-integrity.md
+PASS: quarterly drill schedule + owner/on-call recorded
+
+=== 13. Managed HA/PITR residual (BLOCKED) ===
+BLOCKED: managed multi-AZ Postgres provisioning
+BLOCKED: continuous WAL / PITR enablement + encryption-at-rest verification
+BLOCKED: managed restore drill to new instance (owner)
+BLOCKED: production RPO ≤5m proof under managed continuous backup
+LOCAL_DONE: logical dump/restore + integrity + object inventory pairing
+PASS: honest residual: managed path owner-blocked; local E2E complete
+INFO: cleaning origin probe object_ref id=obj_dr_probe_20260719T200803Z
+INFO: dropping clone fersaku_restore_drill (use --keep-clone to retain)
+INFO: evidence report copied to /var/www/fersaku-new/TASK/GAP/evidence/11-P1-DR-BACKUP-E2E/dr-e2e-20260719T200803Z.txt
+
+=== Summary ===
+PASS: all selected DR restore E2E checks OK
+report=/tmp/opencode/fersaku-drills/reports/dr-e2e-20260719T200803Z.txt

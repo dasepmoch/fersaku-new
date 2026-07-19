@@ -52,11 +52,25 @@ curl -sS "$API/health/ready"
 # Use existing seller object upload path from FE/API docs — no secrets in CI logs
 ```
 
-## 6. Acceptance
+## 6. DR pairing with Postgres restore (GAP-11)
+
+PostgreSQL restore recovers `object_refs` / grants / KYC metadata only — **not** object bytes.
+After any DB restore drill:
+
+1. Inventory durable `object_refs` (`READY`/`SCANNING`/`REJECTED`).
+2. `Head`/`stat` each `(bucket, object_key)` on R2/MinIO; compare size when known.
+3. **Missing object fails the drill** (no silent broken downloads).
+4. Confirm private + public buckets reachable; retention class present on refs.
+
+Executable: `backend/scripts/dr_restore_e2e.sh` (local MinIO).  
+Policy: `backend/docs/BE-220-r2-bucket-lock.md` § Backup / PITR boundary.
+
+## 7. Acceptance
 
 | Item | Code/local | Managed R2 |
 |------|------------|------------|
 | MinIO forbidden in production | **unit PASS** | — |
 | Local buckets exist (demo) | **verified** | — |
+| Object inventory paired with DB restore | **done** (`dr_restore_e2e.sh`) | **ops** |
 | Real R2 buckets + SM keys | — | **ops** |
 | Upload/download smoke staging | — | **ops** |

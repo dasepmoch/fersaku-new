@@ -26,49 +26,54 @@
 
 > Proves backup tooling + restore procedure on **this demo host**. Does **not** replace managed PITR.
 
-### Commands used (2026-07-19)
+### Preferred: E2E script (GAP-11)
 
 ```bash
-# dump
+# Full E2E: dump → isolated clone → migration head → ledger/outbox/audit →
+# object_refs ↔ MinIO/R2 inventory (missing object fails) → RTO + quarterly fields
+./scripts/dr_restore_e2e.sh
+
+# Negative path: missing object must fail
+./scripts/dr_restore_e2e.sh --fail-missing-object
+```
+
+Reports: `/tmp/opencode/fersaku-drills/reports/`.  
+Evidence: `TASK/GAP/evidence/11-P1-DR-BACKUP-E2E/`, `TASK/PROD/evidence/KEY-11/`.
+
+### Lighter dump-only script
+
+```bash
+./scripts/pg_logical_backup_drill.sh
+```
+
+### Historical manual commands (2026-07-19 KEY-11)
+
+```bash
 docker exec fersaku-backend-postgres-1 \
   pg_dump -U fersaku -d fersaku -Fc -f /tmp/fersaku.dump
-
-# restore to clone DB
 docker exec fersaku-backend-postgres-1 \
   psql -U fersaku -d postgres -c "CREATE DATABASE fersaku_restore_drill OWNER fersaku;"
 docker exec fersaku-backend-postgres-1 \
   pg_restore -U fersaku -d fersaku_restore_drill --no-owner --role=fersaku /tmp/fersaku.dump
 ```
 
-### Results
-
-| Check | Result |
-|-------|--------|
+| Check | Result (2026-07-19) |
+|-------|---------------------|
 | Dump stamp | `20260719T142546Z` |
-| Dump size | ~524 KiB (`/tmp/opencode/fersaku-drills/…`) |
-| `payment_intents` origin vs clone | 20 = 20 |
-| `orders` | 27 = 27 |
-| `withdrawals` | 8 = 8 |
-| Clone `SELECT 1` | OK |
-
-### Approx timing (this host)
-
-| Phase | Approx |
-|-------|--------|
-| Dump | < 5 s |
-| Create DB + restore | < 15 s |
-| Verify counts | < 5 s |
+| `payment_intents` / `orders` / `withdrawals` | 20/20 · 27/27 · 8/8 |
 | **RTO (logical, small DB)** | **≪ 1 min** |
 
-## 4. Managed PITR drill (ops — production)
+## 4. Managed PITR drill (ops — production) — **OWNER-BLOCKED**
 
 1. Snapshot/PITR restore to **new** instance (do not overwrite prod).  
-2. Set SM staging/prod clone DSN temporarily for API canary pod.  
-3. Run migrate version check (expect already at head).  
-4. Boot API against clone; `/health/ready` 200.  
-5. Smoke: login + one read-only admin list.  
-6. Tear down clone; record RTO/RPO in evidence.  
-7. **Never** leave canary pointed at clone.
+2. Pair with object inventory/checksum for private + public buckets (see `04-r2-object-storage-runbook.md`).  
+3. Set SM staging/prod clone DSN temporarily for API canary pod (secrets external — not in dump).  
+4. Run migrate version check (expect already at head).  
+5. Integrity: audit chain, ledger readable, outbox `dedupe_key` unique, provider event dedupe.  
+6. Boot API against clone; `/health/ready` 200; admin read-only smoke; synthetic non-money path.  
+7. Measure restore start/end, data-loss point, queue replay (idempotent), webhook dedupe.  
+8. Tear down clone; record RTO/RPO in evidence; schedule next quarterly drill.  
+9. **Never** leave canary pointed at clone; rollback = re-point SM DSN to original instance.
 
 ## 5. Connection budget (ADR-0007)
 
@@ -83,7 +88,8 @@ See `backend/docs/performance/pool-tuning.md`.
 
 | Item | Local drill | Managed prod |
 |------|-------------|--------------|
-| Logical dump/restore works | **done** (evidence KEY-11) | N/A |
-| Managed HA + PITR provisioned | — | **ops** |
-| Quarterly PITR drill logged | — | **ops** |
+| Logical dump/restore + E2E integrity | **done** (`dr_restore_e2e.sh`, KEY-11 + GAP-11) | N/A |
+| Object inventory paired with DB restore | **done** (local MinIO; missing object fails) | **ops** (R2) |
+| Managed HA + PITR provisioned | — | **BLOCKED owner** |
+| Quarterly PITR drill logged | local schedule recorded | **ops** |
 | Prod DSN TLS + SM only | code rejects disable | **ops** |

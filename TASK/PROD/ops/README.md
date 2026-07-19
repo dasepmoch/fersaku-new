@@ -8,7 +8,7 @@
 | Doc | Task | Purpose |
 |-----|------|---------|
 | [01-secret-manager-templates.md](01-secret-manager-templates.md) | KEY-10 | Concrete SM path templates + inject patterns |
-| [02-postgres-pitr-runbook.md](02-postgres-pitr-runbook.md) | KEY-11 | Managed PG + local dump/restore drill |
+| [02-postgres-pitr-runbook.md](02-postgres-pitr-runbook.md) | KEY-11 / GAP-11 | Managed PG + local E2E restore (`dr_restore_e2e.sh`) |
 | [03-redis-runbook.md](03-redis-runbook.md) | KEY-12 | Managed Redis TLS + local AOF verify |
 | [04-r2-object-storage-runbook.md](04-r2-object-storage-runbook.md) | KEY-13 | Cloudflare R2 (no MinIO in prod) |
 | [05-smtp-mail-runbook.md](05-smtp-mail-runbook.md) | KEY-14 | Production SMTP + magic-link smoke |
