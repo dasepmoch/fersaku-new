@@ -85,6 +85,7 @@ test.describe("QLT-220 parent — project registration + isolation", () => {
     for (const rel of [
       "tests/e2e/api/harness-health.spec.ts",
       "tests/e2e/api/int-190-vertical-slice.spec.ts",
+      "tests/e2e/api/gap-08-live-source-smoke.spec.ts",
       "tests/e2e/api/qlt-220-parent-framework.spec.ts",
       "tests/e2e/api/helpers/auth.ts",
       "docs/QLT-220-API-E2E-COEVOLUTION.md",

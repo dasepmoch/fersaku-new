@@ -10,40 +10,66 @@ import {
 } from "@/features/admin/ui";
 
 import { Eye, MoreHorizontal, ShieldCheck, Users } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TablePagination } from "@/shared/ui/table-pagination";
 import { useClientPagination } from "@/shared/ui/use-client-pagination";
 import { ImpersonationDialog } from "@/features/admin/screens/merchants/impersonation-dialog";
 import {
-  demoSellerUsers,
   useAdminRoles,
   useAdminStaffDirectory,
+  useAdminUsers,
+  type AdminUserLookup,
 } from "@/features/admin/data";
 import { getDomainSource } from "@/shared/data/domain-source";
 
 function UsersPage() {
   const isMock = getDomainSource("adminRead") === "mock";
-  const { data: staffRows } = useAdminStaffDirectory();
+  const staffQuery = useAdminStaffDirectory();
+  const usersQuery = useAdminUsers({ limit: 50 });
   const { data: roles } = useAdminRoles();
-  const admins = staffRows ?? [];
-  const sellerUsers = isMock ? demoSellerUsers() : demoSellerUsers();
-  const [impersonationTarget, setImpersonationTarget] = useState<
-    (typeof sellerUsers)[number] | null
-  >(null);
+  const admins = staffQuery.data ?? [];
+  const sellerUsers = useMemo(
+    () => (usersQuery.data ?? []).filter((user) => !user.isAdmin),
+    [usersQuery.data],
+  );
+  const [impersonationTarget, setImpersonationTarget] =
+    useState<AdminUserLookup | null>(null);
   const { pageRows, pagination } = useClientPagination(admins);
-  const adminCount = admins.length || (isMock ? 12 : admins.length);
-  const roleCount = (roles ?? []).length || (isMock ? 4 : 0);
+  const adminCount = admins.length;
+  const roleCount = (roles ?? []).length;
+
+  const staffLoading = staffQuery.isLoading && !staffQuery.data;
+  const staffError =
+    !isMock && staffQuery.isError
+      ? (staffQuery.error?.message ?? "Administrator directory unavailable")
+      : null;
+  const staffDenied =
+    !isMock && !staffQuery.isLoading && !staffQuery.isError && !staffQuery.data;
+  const sellersLoading = usersQuery.isLoading && !usersQuery.data;
+  const sellersError =
+    !isMock && usersQuery.isError
+      ? (usersQuery.error?.message ?? "Seller lookup unavailable")
+      : null;
+  const sellersDenied =
+    !isMock && !usersQuery.isLoading && !usersQuery.isError && !usersQuery.data;
+
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-4">
         <Metric
           label="Seller users"
-          value={isMock ? "1.947" : "—"}
+          value={
+            isMock
+              ? "1.947"
+              : sellerUsers.length > 0
+                ? sellerUsers.length.toLocaleString("id-ID")
+                : "—"
+          }
           note={isMock ? "1,284 stores" : "Lookup via users.read"}
         />
         <Metric
           label="Administrators"
-          value={String(adminCount)}
+          value={staffLoading && adminCount === 0 ? "—" : String(adminCount)}
           note={`${roleCount} roles`}
         />
         <Metric
@@ -63,6 +89,14 @@ function UsersPage() {
           title="Administrator access"
           desc="Role-based access to Fersaku Control"
         />
+        {staffError && (
+          <div
+            role="alert"
+            className="border-t border-[#f1c7c1] bg-[#fff0ee] px-5 py-3 text-[8px] leading-4 text-[#92443d]"
+          >
+            {staffError}
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left">
             <TableHeader
@@ -123,6 +157,15 @@ function UsersPage() {
             </tbody>
           </table>
         </div>
+        {!staffLoading && pageRows.length === 0 && !staffError && (
+          <div className="border-t border-[#e8eaf0] px-5 py-4 text-[8px] text-[#8993a6]">
+            {staffDenied
+              ? "Administrator directory requires users.read."
+              : isMock
+                ? "No administrators in mock directory."
+                : "No administrators returned from users.read."}
+          </div>
+        )}
         <TablePagination {...pagination} />
       </section>
       <section className={`${adminPanel} mt-4 overflow-hidden`}>
@@ -131,39 +174,64 @@ function UsersPage() {
           desc="Search users to reset sessions, verify email, or lock access"
         />
         <TableToolbar placeholder="Search seller name, email, user ID..." />
+        {sellersError && (
+          <div
+            role="alert"
+            className="border-t border-[#f1c7c1] bg-[#fff0ee] px-5 py-3 text-[8px] leading-4 text-[#92443d]"
+          >
+            {sellersError}
+          </div>
+        )}
         <div className="divide-y divide-[#e8eaf0]">
-          {sellerUsers.map(([id, name, email, store, status]) => (
-            <div
-              key={id}
-              className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf1ff] text-[9px] font-black text-[#536fdf]">
-                {name
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")}
-              </span>
-              <div className="min-w-0">
-                <b className="block text-[10px]">{name}</b>
-                <span className="block truncate text-[8px] text-[#8993a6]">
-                  {email} • {store} • {id}
-                </span>
-              </div>
-              <AdminStatus status={status} />
-              <button
-                type="button"
-                onClick={() =>
-                  setImpersonationTarget(
-                    sellerUsers.find((user) => user[0] === id) ?? null,
-                  )
-                }
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold sm:ml-auto"
+          {sellerUsers.map((user) => {
+            const storeLabel = user.ownerMerchantId?.trim() || "—";
+            return (
+              <div
+                key={user.id}
+                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
               >
-                <Eye className="size-3.5" /> Open as user
-              </button>
-            </div>
-          ))}
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#edf1ff] text-[9px] font-black text-[#536fdf]">
+                  {user.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")}
+                </span>
+                <div className="min-w-0">
+                  <b className="block text-[10px]">{user.name}</b>
+                  <span className="block truncate text-[8px] text-[#8993a6]">
+                    {user.email} • {storeLabel} • {user.id}
+                  </span>
+                </div>
+                <AdminStatus status={user.status} />
+                <button
+                  type="button"
+                  disabled={!user.impersonatable}
+                  title={
+                    user.impersonatable
+                      ? undefined
+                      : "Impersonation not available for this account"
+                  }
+                  onClick={() => {
+                    if (!user.impersonatable) return;
+                    setImpersonationTarget(user);
+                  }}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold sm:ml-auto disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Eye className="size-3.5" /> Open as user
+                </button>
+              </div>
+            );
+          })}
         </div>
+        {!sellersLoading && sellerUsers.length === 0 && !sellersError && (
+          <div className="border-t border-[#e8eaf0] px-5 py-4 text-[8px] text-[#8993a6]">
+            {sellersDenied
+              ? "Seller lookup requires users.read."
+              : isMock
+                ? "No seller accounts in mock lookup."
+                : "No seller accounts returned from users.read."}
+          </div>
+        )}
         <div className="flex items-center gap-3 border-t border-[#e8eaf0] p-5 text-[8px] text-[#8993a6]">
           <Users className="size-4 text-[#a1a9b8]" />
           <span>
@@ -173,11 +241,11 @@ function UsersPage() {
           </span>
         </div>
       </section>
-      {impersonationTarget && (
+      {impersonationTarget && impersonationTarget.impersonatable && (
         <ImpersonationDialog
-          merchant={impersonationTarget[1]}
-          merchantId={impersonationTarget[0]}
-          targetEmail={impersonationTarget[2]}
+          merchant={impersonationTarget.name}
+          merchantId={impersonationTarget.id}
+          targetEmail={impersonationTarget.email}
           targetType="user"
           onClose={() => setImpersonationTarget(null)}
         />

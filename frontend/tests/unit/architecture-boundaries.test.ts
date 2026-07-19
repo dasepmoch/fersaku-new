@@ -769,6 +769,40 @@ describe("module architecture boundaries", () => {
     ).toEqual([]);
   });
 
+  it("GAP-08: admin users live mode must not render demo seller fixtures", () => {
+    /**
+     * Scoped presentation guard (not broad text grep — avoids INT-170 false
+     * positives). Users screen must wire useAdminUsers for seller lookup and
+     * must not call demoSellerUsers / hardcode fixture IDs in presentation.
+     */
+    const usersScreen = path.join(
+      root,
+      "features/admin/screens/access/users.tsx",
+    );
+    const source = readFileSync(usersScreen, "utf8");
+    expect(source).toMatch(/useAdminUsers/);
+    expect(source).toMatch(/useAdminStaffDirectory/);
+    expect(source).toMatch(/impersonatable/);
+    expect(source).not.toMatch(/demoSellerUsers\s*\(/);
+    expect(source).not.toMatch(/usr_01H8A2|asep@ai\.tools/);
+    // Identical mock/api ternary that always injects fixtures is forbidden
+    expect(source).not.toMatch(
+      /isMock\s*\?\s*demoSellerUsers\(\)\s*:\s*demoSellerUsers\(\)/,
+    );
+
+    const webhooks = path.join(
+      root,
+      "features/admin/operations/webhooks/index.tsx",
+    );
+    const webhooksSource = readFileSync(webhooks, "utf8");
+    expect(webhooksSource).toMatch(/medianLatency/);
+    expect(webhooksSource).toMatch(/isApi\s*\?\s*["']—["']/);
+    // Hardcoded live-looking latency must not be unconditional
+    expect(webhooksSource).not.toMatch(
+      /label=["']Median latency["'][\s\S]*?value=["']92 ms["']/,
+    );
+  });
+
   it("has no cycles between internal source modules", () => {
     const graph = new Map<string, string[]>();
     for (const file of files) {

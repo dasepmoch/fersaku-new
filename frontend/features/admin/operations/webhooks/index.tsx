@@ -180,10 +180,13 @@ export function WebhookOperations() {
     }
   };
 
-  const eventsToday =
-    isApi && baseRows.length > 0 ? String(baseRows.length) : "18.492";
-  const successRate =
-    isApi && baseRows.length > 0
+  const eventsToday = isApi
+    ? baseRows.length > 0
+      ? String(baseRows.length)
+      : "—"
+    : "18.492";
+  const successRate = isApi
+    ? baseRows.length > 0
       ? `${(
           (100 *
             baseRows.filter((r) => ["200", "202", "204"].includes(r.http))
@@ -192,7 +195,12 @@ export function WebhookOperations() {
         )
           .toFixed(2)
           .replace(".", ",")} %`
-      : "99,72%";
+      : "—"
+    : "99,72%";
+  const medianLatency = isApi ? "—" : "92 ms";
+  const medianLatencyNote = isApi
+    ? "Not aggregated in this window"
+    : "p95 840 ms";
 
   return (
     <>
@@ -220,8 +228,8 @@ export function WebhookOperations() {
         <AdminMetric
           icon={Clock3}
           label="Median latency"
-          value="92 ms"
-          note="p95 840 ms"
+          value={medianLatency}
+          note={medianLatencyNote}
         />
       </div>
 
