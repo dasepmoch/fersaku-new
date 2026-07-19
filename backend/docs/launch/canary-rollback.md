@@ -1,5 +1,9 @@
 # BE-630 Canary + rollback
 
+**Executable contract (preferred):** `scripts/release/canary-rollback.sh` +
+`backend/docs/launch/release-deployment.md` + release manifest digests.
+This document remains the human procedure; the script is the machine-checkable path.
+
 ## 1. Controlled live canary (production — OWNER)
 
 ### Preconditions

@@ -83,8 +83,12 @@ const proxyOrigin = apiProxyOrigin();
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Production container/runtime: self-contained Node server under .next/standalone
+  output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  // Source maps: never ship browser maps in production images (set GENERATE_SOURCEMAPS=1 only for debug builds).
+  productionBrowserSourceMaps: process.env.GENERATE_SOURCEMAPS === "1",
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

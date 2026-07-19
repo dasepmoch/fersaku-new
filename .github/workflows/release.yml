@@ -1,0 +1,278 @@
+# Build-once release pipeline: test → build immutable digests → SBOM → sign →
+# publish → staging smoke (manual env) → production approval gate.
+#
+# Promotion never rebuilds source. Digests from the release manifest are the
+# only deployable references. Managed CD platform apply remains OWNER/BLOCKED
+# when registry secrets / cluster credentials are absent.
+name: Release (build-once)
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Push images to registry (requires packages:write + registry secrets)"
+        type: boolean
+        default: false
+      run_staging_smoke:
+        description: "Run deploy-smoke against STAGING_API_BASE_URL secret"
+        type: boolean
+        default: false
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/fersaku
+
+jobs:
+  build-and-manifest:
+    name: build images + release manifest
+    runs-on: ubuntu-latest
+    outputs:
+      git_sha: ${{ steps.meta.outputs.sha }}
+      short_sha: ${{ steps.meta.outputs.short }}
+      manifest_path: release/dist/release-manifest.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Meta
+        id: meta
+        run: |
+          SHA="${GITHUB_SHA}"
+          SHORT="$(echo "$SHA" | cut -c1-12)"
+          echo "sha=$SHA" >>"$GITHUB_OUTPUT"
+          echo "short=$SHORT" >>"$GITHUB_OUTPUT"
+          echo "tag=$SHORT" >>"$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend unit (gate before image publish)
+        working-directory: backend
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt needed"; echo "$unformatted"; exit 1
+          fi
+          go vet ./...
+          go test ./... -count=1
+
+      - name: Frontend unit gate (subset)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run typecheck
+          npm run test:run -- tests/unit/qlt-410-parent-framework.test.ts tests/unit/release-manifest.test.ts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image (local load for digest)
+        working-directory: backend
+        run: |
+          docker build --target api \
+            --build-arg VERSION=${{ steps.meta.outputs.short }} \
+            -t fersaku-api:${{ steps.meta.outputs.short }} \
+            -t fersaku-api:ci \
+            .
+
+      - name: Build worker image
+        working-directory: backend
+        run: |
+          docker build --target worker \
+            --build-arg VERSION=${{ steps.meta.outputs.short }} \
+            -t fersaku-worker:${{ steps.meta.outputs.short }} \
+            -t fersaku-worker:ci \
+            .
+
+      - name: Build frontend image
+        working-directory: frontend
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_RELEASE_ID=${{ steps.meta.outputs.short }} \
+            --build-arg VERSION=${{ steps.meta.outputs.short }} \
+            -t fersaku-frontend:${{ steps.meta.outputs.short }} \
+            -t fersaku-frontend:ci \
+            .
+
+      - name: Capture local image digests (RepoDigest or Id)
+        id: digests
+        run: |
+          capture() {
+            local key="$1" name="$2" tag="$3"
+            local id
+            id=$(docker image inspect --format='{{.Id}}' "${name}:${tag}")
+            if [[ "$id" != sha256:* ]]; then
+              id="sha256:$(printf '%s' "$id" | sha256sum | awk '{print $1}')"
+            fi
+            echo "${key}_digest=${id}" >>"$GITHUB_OUTPUT"
+            echo "${key} id=$id"
+          }
+          TAG="${{ steps.meta.outputs.short }}"
+          capture api fersaku-api "$TAG"
+          capture worker fersaku-worker "$TAG"
+          capture frontend fersaku-frontend "$TAG"
+
+      - name: SBOM (Syft) for each image
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          mkdir -p release/dist/sbom
+          TAG="${{ steps.meta.outputs.short }}"
+          for img in fersaku-api fersaku-worker fersaku-frontend; do
+            syft "${img}:${TAG}" -o spdx-json >"release/dist/sbom/${img}.spdx.json"
+            test -s "release/dist/sbom/${img}.spdx.json"
+          done
+
+      - name: Vulnerability scan (Grype) — fail on critical
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          TAG="${{ steps.meta.outputs.short }}"
+          for img in fersaku-api fersaku-worker fersaku-frontend; do
+            grype "${img}:${TAG}" -o json >"release/dist/sbom/${img}.grype.json" || true
+            # Fail closed on critical if grype available
+            if grype "${img}:${TAG}" --fail-on critical; then
+              echo "grype ok $img"
+            else
+              echo "grype found critical in $img" >&2
+              exit 1
+            fi
+          done
+
+      - name: Generate release manifest
+        env:
+          IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+          IMAGE_TAG: ${{ steps.meta.outputs.short }}
+          API_DIGEST: ${{ steps.digests.outputs.api_digest }}
+          WORKER_DIGEST: ${{ steps.digests.outputs.worker_digest }}
+          FRONTEND_DIGEST: ${{ steps.digests.outputs.frontend_digest }}
+          RELEASE_ID: ${{ steps.meta.outputs.short }}
+        run: |
+          chmod +x scripts/release/*.sh
+          ./scripts/release/generate-manifest.sh --git-sha "${{ steps.meta.outputs.sha }}"
+          REQUIRE_DIGESTS=1 ./scripts/release/verify-manifest.sh release/dist/release-manifest.json
+          # Attach SBOM paths
+          node -e '
+            const fs=require("fs");
+            const p="release/dist/release-manifest.json";
+            const m=JSON.parse(fs.readFileSync(p,"utf8"));
+            m.provenance=m.provenance||{};
+            m.provenance.sbomPaths=[
+              "release/dist/sbom/fersaku-api.spdx.json",
+              "release/dist/sbom/fersaku-worker.spdx.json",
+              "release/dist/sbom/fersaku-frontend.spdx.json"
+            ];
+            m.provenance.workflowRunUrl=process.env.GITHUB_SERVER_URL+"/"+process.env.GITHUB_REPOSITORY+"/actions/runs/"+process.env.GITHUB_RUN_ID;
+            fs.writeFileSync(p, JSON.stringify(m,null,2)+"\n");
+          '
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest-${{ steps.meta.outputs.short }}
+          path: |
+            release/dist/release-manifest.json
+            release/dist/sbom/
+            release/schema/release-manifest.schema.json
+          if-no-files-found: error
+
+      - name: Login GHCR
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push immutable tags + retag by digest
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          TAG="${{ steps.meta.outputs.short }}"
+          OWNER="${{ github.repository_owner }}"
+          for name in api worker frontend; do
+            SRC="fersaku-${name}:${TAG}"
+            DST="ghcr.io/${OWNER}/fersaku-${name}:${TAG}"
+            docker tag "$SRC" "$DST"
+            docker tag "$SRC" "ghcr.io/${OWNER}/fersaku-${name}:sha-${TAG}"
+            docker push "$DST"
+            docker push "ghcr.io/${OWNER}/fersaku-${name}:sha-${TAG}"
+          done
+
+      - name: Cosign keyless sign (optional when publish)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || startsWith(github.ref, 'refs/tags/') }}
+        continue-on-error: true
+        run: |
+          curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.4.1/cosign-linux-amd64 -o /usr/local/bin/cosign
+          chmod +x /usr/local/bin/cosign
+          TAG="${{ steps.meta.outputs.short }}"
+          OWNER="${{ github.repository_owner }}"
+          for name in api worker frontend; do
+            cosign sign --yes "ghcr.io/${OWNER}/fersaku-${name}:${TAG}"
+          done
+
+  # Manual production promotion gate — does not rebuild; verifies manifest digests only.
+  production-approval:
+    name: production promotion (manual)
+    needs: build-and-manifest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-manifest-${{ needs.build-and-manifest.outputs.short_sha }}
+          path: release/dist
+      - name: Verify immutable digests (no rebuild)
+        run: |
+          chmod +x scripts/release/*.sh
+          REQUIRE_DIGESTS=1 ./scripts/release/verify-manifest.sh release/dist/release-manifest.json
+          node -e '
+            const m=require("./release/dist/release-manifest.json");
+            if (m.promotion.rebuildOnPromote !== false) process.exit(1);
+            console.log("promote gate ok releaseId="+m.releaseId);
+            console.log("BLOCKED: managed cluster apply requires owner CD credentials");
+          '
+
+  staging-smoke:
+    name: staging deploy smoke (optional)
+    needs: build-and-manifest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_staging_smoke }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-manifest-${{ needs.build-and-manifest.outputs.short_sha }}
+          path: release/dist
+      - name: Deploy smoke against staging URL
+        env:
+          API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+          FRONTEND_BASE_URL: ${{ secrets.STAGING_FRONTEND_BASE_URL }}
+          MANIFEST: release/dist/release-manifest.json
+        run: |
+          if [ -z "${API_BASE_URL}" ]; then
+            echo "BLOCKED: STAGING_API_BASE_URL secret not configured"
+            exit 0
+          fi
+          chmod +x scripts/release/*.sh
+          ./scripts/release/deploy-smoke.sh

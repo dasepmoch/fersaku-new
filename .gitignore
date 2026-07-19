@@ -68,3 +68,6 @@ frontend/next-env.d.ts
 backend/bin/
 backend/tmp/
 backend/api/openapi.bundle.yaml
+
+# release dist (generated manifests, SBOM, evidence) — keep schema tracked
+release/dist/

@@ -37,7 +37,11 @@ Compose remains **local/dev only**. Staging may use a multi-replica compose over
 └─────────────────┘ └───────────────────┘
 
 Pre-rollout (once): migrate job (advisory lock) → then rolling API/worker
+Frontend: fersaku-frontend (standalone Next) behind same or edge LB
 ```
+
+**Release contract:** immutable digests + `release/dist/release-manifest.json`
+(see `docs/launch/release-deployment.md`). Compose is rehearsal only.
 
 | Component | Min | Notes |
 | --------- | --- | ----- |

@@ -1,0 +1,15 @@
+{
+  "auth": "api",
+  "catalog": "api",
+  "checkout": "api",
+  "orders": "api",
+  "payments": "api",
+  "wallet": "api",
+  "withdrawals": "api",
+  "kyc": "api",
+  "admin": "api",
+  "notifications": "api",
+  "webhooks": "api",
+  "platformFees": "api",
+  "storefront": "api"
+}

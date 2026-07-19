@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fersaku.local/schemas/release-manifest.schema.json",
+  "title": "FersakuReleaseManifest",
+  "description": "Immutable release contract mapping tested git SHA to published image digests and deploy gates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "releaseId",
+    "gitSha",
+    "createdAt",
+    "configSchemaVersion",
+    "runtimes",
+    "images",
+    "migration",
+    "featureDomainSourceMap",
+    "baseImages"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "releaseId": {
+      "type": "string",
+      "minLength": 8,
+      "description": "Public non-secret release identifier (usually gitSha or gitSha-short + build id)."
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "gitRef": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "configSchemaVersion": {
+      "type": "string",
+      "description": "Version of env/config contract expected by this release."
+    },
+    "runtimes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["go", "node"],
+      "properties": {
+        "go": { "type": "string" },
+        "node": { "type": "string" },
+        "npm": { "type": "string" }
+      }
+    },
+    "baseImages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["golang", "alpine", "node"],
+      "properties": {
+        "golang": { "$ref": "#/$defs/imageRef" },
+        "alpine": { "$ref": "#/$defs/imageRef" },
+        "node": { "$ref": "#/$defs/imageRef" }
+      }
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api", "worker", "frontend"],
+      "properties": {
+        "api": { "$ref": "#/$defs/artifact" },
+        "worker": { "$ref": "#/$defs/artifact" },
+        "frontend": { "$ref": "#/$defs/artifact" }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "tool"],
+      "properties": {
+        "head": {
+          "type": "string",
+          "description": "Highest migration version expected after migrate job succeeds."
+        },
+        "tool": {
+          "type": "string",
+          "const": "golang-migrate"
+        },
+        "path": {
+          "type": "string",
+          "default": "backend/migrations"
+        },
+        "forwardCompatibleOnly": {
+          "type": "boolean",
+          "const": true
+        },
+        "autoDownMigrate": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "featureDomainSourceMap": {
+      "type": "object",
+      "description": "Domain → expected data source for this release (live/api/mock).",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["api", "mock", "hybrid"]
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sbomPaths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "cosignBundlePaths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "attestationPaths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "workflowRunUrl": {
+          "type": "string"
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "const": "build-once-digest"
+        },
+        "rebuildOnPromote": {
+          "type": "boolean",
+          "const": false
+        },
+        "stagingDigestVerified": { "type": "boolean" },
+        "productionDigestVerified": { "type": "boolean" },
+        "previousReleaseId": { "type": "string" }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "migrateBeforeRollout": { "type": "boolean", "const": true },
+        "readinessRequired": { "type": "boolean", "const": true },
+        "callbackSmokeRequired": { "type": "boolean", "const": true },
+        "syntheticRequired": { "type": "boolean", "const": true },
+        "manualProdApproval": { "type": "boolean", "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "imageRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Image name:tag or name@sha256:..."
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "tag"],
+      "properties": {
+        "repository": { "type": "string" },
+        "tag": { "type": "string" },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Immutable content digest; required before promote/canary."
+        },
+        "mediaType": { "type": "string" },
+        "builtFromGitSha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
+        }
+      }
+    }
+  }
+}

@@ -80,15 +80,22 @@ export async function listFeaturedProducts(
 ): Promise<FeaturedCatalogProduct[]> {
   if (shouldUseMockFixtures("publicCatalog")) return featuredFromDemo(limit);
 
-  const response = await apiRequest<FeaturedListEnvelope>(
-    "/v1/public/products/featured",
-    {
-      schema: featuredCatalogProductListEnvelopeSchema,
-      query: { limit },
-      signal,
-    },
-  );
-  return mapFeaturedCatalogProductListDto(response.data);
+  try {
+    const response = await apiRequest<FeaturedListEnvelope>(
+      "/v1/public/products/featured",
+      {
+        schema: featuredCatalogProductListEnvelopeSchema,
+        query: { limit },
+        signal,
+      },
+    );
+    return mapFeaturedCatalogProductListDto(response.data);
+  } catch (error) {
+    // Image build / cold SSR without API: empty featured list, revalidate later.
+    // Do not fail `next build` for transport outage on public marketing surface.
+    if (error instanceof ApiError && error.status === 0) return [];
+    throw error;
+  }
 }
 
 /**

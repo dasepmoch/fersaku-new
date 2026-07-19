@@ -58,6 +58,7 @@ When a domain task adds or changes SQL migrations, OpenAPI fields, workers/outbo
 | Migrate vs app role | `backend/migrations/README.md` |
 | Migrate runner | `backend/scripts/migrate.sh` |
 | Canary + image rollback | `backend/docs/launch/canary-rollback.md` |
+| Executable release contract | `backend/docs/launch/release-deployment.md`, `scripts/release/*`, `release/schema/release-manifest.schema.json` |
 | Topology (migrate job, rolling) | `backend/docs/launch/topology.md` |
 | Backup / restore point | `backend/docs/runbooks/backup-restore-integrity.md` |
 | Foundation migrate tests (QLT-210) | `backend/test/integration/foundation_test.go` |

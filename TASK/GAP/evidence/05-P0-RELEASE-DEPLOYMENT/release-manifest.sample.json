@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1",
+  "releaseId": "release-test",
+  "gitSha": "a54b132a425312112baef67e6f3384476d86da1f",
+  "gitRef": "gap/production-readiness",
+  "createdAt": "2026-07-19T19:25:53Z",
+  "configSchemaVersion": "1",
+  "runtimes": {
+    "go": "1.24.5",
+    "node": "24.15.0",
+    "npm": "11.16.0"
+  },
+  "baseImages": {
+    "golang": { "ref": "golang:1.25-alpine" },
+    "alpine": { "ref": "alpine:3.21" },
+    "node": { "ref": "node:24-alpine" }
+  },
+  "images": {
+    "api": {"repository":"ghcr.io/fersaku/fersaku-api","tag":"release-test","digest":"sha256:abc3416d41610b258a1defefade43fa7b65358c0f373151f8351ecef1efe84fa","builtFromGitSha":"a54b132a425312112baef67e6f3384476d86da1f"},
+    "worker": {"repository":"ghcr.io/fersaku/fersaku-worker","tag":"release-test","digest":"sha256:c494083fedbab589c2d2a3f200d2c2d1d7df464b1130385dfcbe3683bda5f41f","builtFromGitSha":"a54b132a425312112baef67e6f3384476d86da1f"},
+    "frontend": {"repository":"ghcr.io/fersaku/fersaku-frontend","tag":"release-test","digest":"sha256:a06cc37176c035747b1e26930316d9d4558710e08eb111890c20ea9bd35b3e7c","builtFromGitSha":"a54b132a425312112baef67e6f3384476d86da1f"}
+  },
+  "migration": {
+    "head": "35",
+    "tool": "golang-migrate",
+    "path": "backend/migrations",
+    "forwardCompatibleOnly": true,
+    "autoDownMigrate": false
+  },
+  "featureDomainSourceMap": { "auth": "api", "catalog": "api", "checkout": "api", "orders": "api", "payments": "api", "wallet": "api", "withdrawals": "api", "kyc": "api", "admin": "api", "notifications": "api", "webhooks": "api", "platformFees": "api", "storefront": "api"},
+  "provenance": {
+    "sbomPaths": [],
+    "cosignBundlePaths": [],
+    "attestationPaths": []
+  },
+  "promotion": {
+    "strategy": "build-once-digest",
+    "rebuildOnPromote": false,
+    "stagingDigestVerified": false,
+    "productionDigestVerified": false
+  },
+  "gates": {
+    "migrateBeforeRollout": true,
+    "readinessRequired": true,
+    "callbackSmokeRequired": true,
+    "syntheticRequired": true,
+    "manualProdApproval": true
+  }
+}

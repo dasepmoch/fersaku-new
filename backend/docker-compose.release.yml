@@ -1,0 +1,68 @@
+# Release rehearsal overlay: pin images by immutable tag/digest env vars.
+# Used by scripts/release/canary-rollback.sh (local/staging only).
+# Production remains managed container service (ADR-0007) — not compose.
+#
+#   export FERSAKU_API_IMAGE=ghcr.io/fersaku/fersaku-api@sha256:...
+#   export FERSAKU_WORKER_IMAGE=ghcr.io/fersaku/fersaku-worker@sha256:...
+#   export FERSAKU_FRONTEND_IMAGE=ghcr.io/fersaku/fersaku-frontend@sha256:...
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml up -d
+#
+# Migrate runs as a one-shot job before API/worker roll (not on boot).
+
+name: fersaku-backend
+
+services:
+  migrate:
+    image: migrate/migrate:v4.18.3
+    profiles: ["migrate"]
+    volumes:
+      - ./migrations:/migrations:ro
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://fersaku:fersaku_local@postgres:5432/fersaku?sslmode=disable}
+    entrypoint:
+      [
+        "migrate",
+        "-path",
+        "/migrations",
+        "-database",
+        "${DATABASE_URL:-postgres://fersaku:fersaku_local@postgres:5432/fersaku?sslmode=disable}",
+      ]
+    command: ["up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: ${FERSAKU_API_IMAGE:-fersaku-api:local}
+    pull_policy: ${FERSAKU_PULL_POLICY:-missing}
+
+  worker:
+    image: ${FERSAKU_WORKER_IMAGE:-fersaku-worker:local}
+    pull_policy: ${FERSAKU_PULL_POLICY:-missing}
+
+  frontend:
+    image: ${FERSAKU_FRONTEND_IMAGE:-fersaku-frontend:local}
+    pull_policy: ${FERSAKU_PULL_POLICY:-missing}
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # Runtime rewrite target (server-only; not baked into image layers as secret)
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8080}
+      NEXT_PUBLIC_APP_STAGE: ${NEXT_PUBLIC_APP_STAGE:-live}
+      NEXT_PUBLIC_DATA_SOURCE: ${NEXT_PUBLIC_DATA_SOURCE:-api}
+      NEXT_PUBLIC_RELEASE_ID: ${NEXT_PUBLIC_RELEASE_ID:-local}
+      RELEASE_ID: ${RELEASE_ID:-local}
+    ports:
+      - "13000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
