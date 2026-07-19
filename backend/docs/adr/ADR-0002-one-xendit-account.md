@@ -2,7 +2,7 @@
 
 | Field | Value |
 | ------ | ---------- |
-| Status | Accepted |
+| Status | Accepted — **payment half superseded by [ADR-0008](ADR-0008-duitku-payment-xendit-disbursement.md)** (QRIS create/callback only); disbursement half still applies |
 | Date | 2026-07-16 |
 | Task | BE-000 |
 

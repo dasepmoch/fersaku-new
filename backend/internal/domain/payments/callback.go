@@ -30,13 +30,16 @@ const (
 
 // Rejection reasons (provider_callback_rejections only; no business queue).
 const (
-	RejectInvalidToken   = "INVALID_TOKEN"
-	RejectMissingToken   = "MISSING_TOKEN"
-	RejectOversizeBody   = "OVERSIZE_BODY"
-	RejectBadContentType = "BAD_CONTENT_TYPE"
-	RejectMalformedJSON  = "MALFORMED_ENVELOPE"
-	RejectEmptyBody      = "EMPTY_BODY"
-	RejectAmbiguousScope = "AMBIGUOUS_SCOPE"
+	RejectInvalidToken     = "INVALID_TOKEN"
+	RejectMissingToken     = "MISSING_TOKEN"
+	RejectOversizeBody     = "OVERSIZE_BODY"
+	RejectBadContentType   = "BAD_CONTENT_TYPE"
+	RejectMalformedJSON    = "MALFORMED_ENVELOPE"
+	RejectEmptyBody        = "EMPTY_BODY"
+	RejectAmbiguousScope   = "AMBIGUOUS_SCOPE"
+	RejectInvalidSignature = "INVALID_SIGNATURE"
+	RejectMissingSignature = "MISSING_SIGNATURE"
+	RejectMerchantMismatch = "MERCHANT_MISMATCH"
 )
 
 // Mismatch / alert codes (quarantine or operational).
@@ -158,8 +161,17 @@ type NormalizedCallback struct {
 
 // FingerprintEventID derives fp_... when provider omits an event id.
 func FingerprintEventID(accountScope, paymentMode, providerRef, rawType string, bodyDigest string) string {
+	return FingerprintEventIDForProvider(ProviderXendit, accountScope, paymentMode, providerRef, rawType, bodyDigest)
+}
+
+// FingerprintEventIDForProvider derives fp_... scoped by provider name.
+func FingerprintEventIDForProvider(provider, accountScope, paymentMode, providerRef, rawType, bodyDigest string) string {
+	p := strings.ToLower(strings.TrimSpace(provider))
+	if p == "" {
+		p = "xendit"
+	}
 	h := sha256.Sum256([]byte(strings.Join([]string{
-		"xendit", accountScope, paymentMode, providerRef, rawType, bodyDigest,
+		p, accountScope, paymentMode, providerRef, rawType, bodyDigest,
 	}, "|")))
 	return "fp_" + hex.EncodeToString(h[:16])
 }

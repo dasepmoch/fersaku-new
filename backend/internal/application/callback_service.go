@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -19,7 +21,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
-// CallbackService implements inbound Xendit callback accept + finalization (BE-330).
+// CallbackService implements inbound provider callback accept + finalization (BE-330, PROD-B20).
 type CallbackService struct {
 	Store     CallbackStore
 	Coupons   *CouponService
@@ -38,12 +40,18 @@ type CallbackService struct {
 	Log       ports.Logger
 	// WebhookToken from XENDIT_WEBHOOK_TOKEN (constant-time compare).
 	WebhookToken string
-	// AccountScope from config (never from body).
+	// AccountScope from config (never from body) — Xendit primary.
 	AccountScope string
 	// DefaultPaymentMode when endpoint is not mode-split (local/test SANDBOX).
 	DefaultPaymentMode string
 	// TokenSecret for access token hashing on fulfillment.
 	TokenSecret string
+	// DuitkuMerchantCode expected merchant code (constant-time compare; never from body alone).
+	DuitkuMerchantCode string
+	// DuitkuAPIKey for callback signature verification only; never log.
+	DuitkuAPIKey string
+	// DuitkuAccountScope from config (default duitku-primary); never from body.
+	DuitkuAccountScope string
 }
 
 func (s *CallbackService) now() time.Time {
@@ -58,6 +66,13 @@ func (s *CallbackService) accountScope() string {
 		return s.AccountScope
 	}
 	return payments.AccountScopePrimary
+}
+
+func (s *CallbackService) duitkuAccountScope() string {
+	if strings.TrimSpace(s.DuitkuAccountScope) != "" {
+		return strings.TrimSpace(s.DuitkuAccountScope)
+	}
+	return payments.AccountScopeDuitkuPrimary
 }
 
 func (s *CallbackService) mode() string {
@@ -88,8 +103,13 @@ type IngressResult struct {
 	RejectionReason string
 }
 
-// HandleIngress verifies token first, then accepts or rejects. Never mutates payment on reject.
+// HandleIngress is the Xendit payment webhook ingress (backward-compatible alias).
 func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest) (IngressResult, error) {
+	return s.HandleXenditIngress(ctx, req)
+}
+
+// HandleXenditIngress verifies token first, then accepts or rejects. Never mutates payment on reject.
+func (s *CallbackService) HandleXenditIngress(ctx context.Context, req IngressRequest) (IngressResult, error) {
 	now := s.now()
 	mode := s.mode()
 	if req.PaymentModeOverride == payments.PaymentModeLive || req.PaymentModeOverride == payments.PaymentModeSandbox {
@@ -99,24 +119,24 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 
 	// 1) Body size
 	if len(req.Body) > payments.MaxCallbackBodyBytes {
-		_ = s.reject(ctx, payments.RejectOversizeBody, 413, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectOversizeBody, 413, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 413, RejectionReason: payments.RejectOversizeBody}, nil
 	}
 	if len(req.Body) == 0 {
-		_ = s.reject(ctx, payments.RejectEmptyBody, 400, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectEmptyBody, 400, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 400, RejectionReason: payments.RejectEmptyBody}, nil
 	}
 
 	// 2) Token first (constant-time). Missing/invalid → rejection only.
 	if strings.TrimSpace(req.TokenHeader) == "" {
-		_ = s.reject(ctx, payments.RejectMissingToken, 401, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectMissingToken, 401, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 401, RejectionReason: payments.RejectMissingToken}, nil
 	}
 	if !constantTimeTokenEqual(req.TokenHeader, s.WebhookToken) {
-		_ = s.reject(ctx, payments.RejectInvalidToken, 401, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectInvalidToken, 401, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 401, RejectionReason: payments.RejectInvalidToken}, nil
 	}
@@ -124,7 +144,7 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 	// 3) Content-Type soft check (JSON expected); still parse if empty for Xendit quirks.
 	ct := strings.ToLower(strings.TrimSpace(req.ContentType))
 	if ct != "" && !strings.Contains(ct, "application/json") && !strings.Contains(ct, "text/plain") {
-		_ = s.reject(ctx, payments.RejectBadContentType, 415, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectBadContentType, 415, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 415, RejectionReason: payments.RejectBadContentType}, nil
 	}
@@ -132,7 +152,7 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 	// 4) Parse envelope
 	norm, err := payments.ParseXenditEnvelope(req.Body)
 	if err != nil {
-		_ = s.reject(ctx, payments.RejectMalformedJSON, 400, req, scope, mode, now)
+		_ = s.reject(ctx, payments.ProviderXendit, payments.RejectMalformedJSON, 400, req, scope, mode, now)
 		metrics.Global.IncCallback("rejected")
 		return IngressResult{HTTPStatus: 400, RejectionReason: payments.RejectMalformedJSON}, nil
 	}
@@ -143,6 +163,111 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 		eventID = payments.FingerprintEventID(scope, mode, norm.ProviderReference, norm.RawEventType, digest)
 	}
 
+	return s.acceptNormalized(ctx, req, payments.ProviderXendit, scope, mode, eventID, digest, norm, now)
+}
+
+// DuitkuIngressRequest is raw HTTP ingress for Duitku payment callbacks.
+// Signature is verified from body fields + configured API key (never log API key).
+type DuitkuIngressRequest struct {
+	Body                []byte
+	ContentType         string
+	ClientIP            string
+	RequestID           string
+	PaymentModeOverride string
+}
+
+// HandleDuitkuIngress verifies merchant + callback signature, then accepts into the same pipeline.
+// Order: size → content-type → parse → merchant + signature → accept.
+func (s *CallbackService) HandleDuitkuIngress(ctx context.Context, req DuitkuIngressRequest) (IngressResult, error) {
+	now := s.now()
+	mode := s.mode()
+	if req.PaymentModeOverride == payments.PaymentModeLive || req.PaymentModeOverride == payments.PaymentModeSandbox {
+		mode = req.PaymentModeOverride
+	}
+	scope := s.duitkuAccountScope()
+	ingress := IngressRequest{
+		Body:                req.Body,
+		ContentType:         req.ContentType,
+		ClientIP:            req.ClientIP,
+		RequestID:           req.RequestID,
+		PaymentModeOverride: req.PaymentModeOverride,
+	}
+
+	// 1) Body size
+	if len(req.Body) > payments.MaxCallbackBodyBytes {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectOversizeBody, 413, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 413, RejectionReason: payments.RejectOversizeBody}, nil
+	}
+	if len(req.Body) == 0 {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectEmptyBody, 400, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 400, RejectionReason: payments.RejectEmptyBody}, nil
+	}
+
+	// 2) Content-Type: JSON or form-urlencoded (empty allowed for quirks).
+	ct := strings.ToLower(strings.TrimSpace(req.ContentType))
+	if ct != "" &&
+		!strings.Contains(ct, "application/json") &&
+		!strings.Contains(ct, "application/x-www-form-urlencoded") &&
+		!strings.Contains(ct, "text/plain") {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectBadContentType, 415, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 415, RejectionReason: payments.RejectBadContentType}, nil
+	}
+
+	// 3) Parse fields + envelope
+	fields, err := payments.ParseDuitkuCallbackFields(req.Body)
+	if err != nil {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectMalformedJSON, 400, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 400, RejectionReason: payments.RejectMalformedJSON}, nil
+	}
+	norm, err := payments.ParseDuitkuEnvelope(req.Body)
+	if err != nil {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectMalformedJSON, 400, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 400, RejectionReason: payments.RejectMalformedJSON}, nil
+	}
+
+	// 4) Merchant code (constant-time via digests).
+	if !duitkuMerchantCodeEqual(fields.MerchantCode, s.DuitkuMerchantCode) {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectMerchantMismatch, 401, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 401, RejectionReason: payments.RejectMerchantMismatch}, nil
+	}
+
+	// 5) Signature
+	if strings.TrimSpace(fields.Signature) == "" {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectMissingSignature, 401, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 401, RejectionReason: payments.RejectMissingSignature}, nil
+	}
+	if !duitkuVerifyCallbackSignature(fields.MerchantCode, fields.Amount, fields.MerchantOrderID, s.DuitkuAPIKey, fields.Signature) {
+		_ = s.reject(ctx, payments.ProviderDuitku, payments.RejectInvalidSignature, 401, ingress, scope, mode, now)
+		metrics.Global.IncCallback("rejected")
+		return IngressResult{HTTPStatus: 401, RejectionReason: payments.RejectInvalidSignature}, nil
+	}
+
+	digest := payments.DigestBody(req.Body)
+	eventID := norm.ProviderEventID
+	if eventID == "" {
+		eventID = payments.FingerprintEventIDForProvider(
+			payments.ProviderDuitku, scope, mode, norm.ProviderReference, norm.RawEventType, digest,
+		)
+	}
+
+	return s.acceptNormalized(ctx, ingress, payments.ProviderDuitku, scope, mode, eventID, digest, norm, now)
+}
+
+// acceptNormalized durable-inserts a provider event and runs ProcessEvent (shared by Xendit/Duitku).
+func (s *CallbackService) acceptNormalized(
+	ctx context.Context,
+	req IngressRequest,
+	provider, scope, mode, eventID, digest string,
+	norm payments.NormalizedCallback,
+	now time.Time,
+) (IngressResult, error) {
 	callbackID := s.IDs.New()
 	if !strings.HasPrefix(callbackID, "pcb_") {
 		callbackID = "pcb_" + callbackID
@@ -171,7 +296,7 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 
 	ev := payments.ProviderEvent{
 		CallbackID:        callbackID,
-		Provider:          payments.ProviderXendit,
+		Provider:          provider,
 		AccountScope:      scope,
 		PaymentMode:       mode,
 		ProviderEventID:   eventID,
@@ -191,7 +316,7 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 
 	inserted := false
 	var stored payments.ProviderEvent
-	err = s.Store.WithTx(ctx, func(ctx context.Context) error {
+	err := s.Store.WithTx(ctx, func(ctx context.Context) error {
 		row, ok, ierr := s.Store.InsertProviderEvent(ctx, ev)
 		if ierr != nil {
 			return ierr
@@ -199,23 +324,21 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 		inserted = ok
 		if ok {
 			stored = row
-			// Outbox for normalize job (canonical four-part key as dedupe).
 			payload, _ := json.Marshal(map[string]any{
 				"callbackId":      callbackID,
-				"provider":        payments.ProviderXendit,
+				"provider":        provider,
 				"accountScope":    scope,
 				"paymentMode":     mode,
 				"providerEventId": eventID,
 			})
-			dedupe := "provider_callback.process:" + payments.CanonicalEventKey(payments.ProviderXendit, scope, mode, eventID)
+			dedupe := "provider_callback.process:" + payments.CanonicalEventKey(provider, scope, mode, eventID)
 			modeCopy := mode
 			return s.Store.InsertOutbox(ctx, s.IDs.New(), payments.TopicProviderCallbackProcess, payload, &dedupe, &modeCopy, now)
 		}
-		// Duplicate: load existing (retry briefly for concurrent first-writer commit).
 		var existing payments.ProviderEvent
 		var gerr error
 		for attempt := 0; attempt < 8; attempt++ {
-			existing, gerr = s.Store.GetProviderEventByCanonical(ctx, payments.ProviderXendit, scope, mode, eventID)
+			existing, gerr = s.Store.GetProviderEventByCanonical(ctx, provider, scope, mode, eventID)
 			if gerr == nil {
 				stored = existing
 				return nil
@@ -223,16 +346,14 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 			if !s.Store.IsNotFound(gerr) {
 				return gerr
 			}
-			// Fall through: rare race; small backoff outside tx is better — re-query after commit.
 			break
 		}
 		return gerr
 	})
 	if err != nil {
-		// Race: conflict seen but row not visible yet — re-read outside TX.
 		if s.Store.IsNotFound(err) {
 			for attempt := 0; attempt < 20; attempt++ {
-				existing, gerr := s.Store.GetProviderEventByCanonical(ctx, payments.ProviderXendit, scope, mode, eventID)
+				existing, gerr := s.Store.GetProviderEventByCanonical(ctx, provider, scope, mode, eventID)
 				if gerr == nil {
 					stored = existing
 					err = nil
@@ -243,20 +364,17 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 		}
 		if err != nil && stored.CallbackID == "" {
 			if s.Log != nil {
-				s.Log.Error("callback accept failed", "err", err.Error(), "request_id", req.RequestID)
+				s.Log.Error("callback accept failed", "err", err.Error(), "request_id", req.RequestID, "provider", provider)
 			}
 			return IngressResult{HTTPStatus: 500}, apperr.Internal(apperr.CodeInternalError, "Callback accept failed")
 		}
 	}
 
-	// Process synchronously for durability of paid effects (worker also processes outbox).
-	// Exactly-once: concurrent ProcessEvent serializes on event row lock.
 	if stored.CallbackID != "" {
 		if procErr := s.ProcessEvent(ctx, stored.CallbackID); procErr != nil {
 			if s.Log != nil {
 				s.Log.Warn("callback process deferred", "callback_id", stored.CallbackID, "err", procErr.Error())
 			}
-			// Still 200 — durable accept; worker retries.
 		}
 	}
 
@@ -273,7 +391,7 @@ func (s *CallbackService) HandleIngress(ctx context.Context, req IngressRequest)
 	}, nil
 }
 
-func (s *CallbackService) reject(ctx context.Context, reason string, status int, req IngressRequest, scope, mode string, now time.Time) error {
+func (s *CallbackService) reject(ctx context.Context, provider, reason string, status int, req IngressRequest, scope, mode string, now time.Time) error {
 	id := s.IDs.New()
 	if !strings.HasPrefix(id, "rej_") {
 		id = "rej_" + id
@@ -286,7 +404,7 @@ func (s *CallbackService) reject(ctx context.Context, reason string, status int,
 	md := mode
 	r := payments.CallbackRejection{
 		ID:           id,
-		Provider:     payments.ProviderXendit,
+		Provider:     provider,
 		AccountScope: &sc,
 		PaymentMode:  &md,
 		Reason:       reason,
@@ -307,12 +425,13 @@ func (s *CallbackService) reject(ctx context.Context, reason string, status int,
 	}
 	if s.Log != nil {
 		s.Log.Info("provider callback rejected",
+			"provider", provider,
 			"reason", reason,
 			"http_status", status,
 			"body_bytes", len(req.Body),
 			"body_digest", digest,
 			"request_id", req.RequestID,
-			// never log token or raw body
+			// never log token, signature, api key, or raw body
 		)
 	}
 	return nil
@@ -364,10 +483,10 @@ func (s *CallbackService) ProcessEvent(ctx context.Context, callbackID string) (
 			LeaseUntil: &leaseUntil,
 		}, now)
 
-		// Re-parse from stored payload
+		// Re-parse from stored payload (provider-specific envelope).
 		var norm payments.NormalizedCallback
 		if len(ev.EncryptedPayload) > 0 {
-			norm, err = payments.ParseXenditEnvelope(ev.EncryptedPayload)
+			norm, err = parseProviderEnvelope(ev.Provider, ev.EncryptedPayload)
 			if err != nil {
 				qr := "parse_failed"
 				_, _ = s.Store.UpdateProviderEventState(ctx, callbackID, payments.CallbackQuarantined, CallbackEventPatch{
@@ -1049,6 +1168,50 @@ func ConstantTimeTokenEqual(got, want string) bool {
 	a := payments.DigestBody([]byte(got))
 	b := payments.DigestBody([]byte(want))
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+func parseProviderEnvelope(provider string, body []byte) (payments.NormalizedCallback, error) {
+	switch strings.ToUpper(strings.TrimSpace(provider)) {
+	case payments.ProviderDuitku:
+		return payments.ParseDuitkuEnvelope(body)
+	default:
+		return payments.ParseXenditEnvelope(body)
+	}
+}
+
+// Duitku callback signature: MD5(merchantCode + amount + merchantOrderId + apiKey) lowercase hex.
+// Implemented here (not via adapters import) to keep application free of adapter packages.
+func duitkuCallbackSignature(merchantCode, amount, merchantOrderID, apiKey string) string {
+	sum := md5.Sum([]byte(merchantCode + amount + merchantOrderID + apiKey))
+	return hex.EncodeToString(sum[:])
+}
+
+func duitkuVerifyCallbackSignature(merchantCode, amount, merchantOrderID, apiKey, provided string) bool {
+	merchantCode = strings.TrimSpace(merchantCode)
+	amount = strings.TrimSpace(amount)
+	merchantOrderID = strings.TrimSpace(merchantOrderID)
+	apiKey = strings.TrimSpace(apiKey)
+	provided = strings.ToLower(strings.TrimSpace(provided))
+	if merchantCode == "" || amount == "" || merchantOrderID == "" || apiKey == "" || provided == "" {
+		return false
+	}
+	want := strings.ToLower(duitkuCallbackSignature(merchantCode, amount, merchantOrderID, apiKey))
+	if len(want) != len(provided) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(want), []byte(provided)) == 1
+}
+
+func duitkuMerchantCodeEqual(got, want string) bool {
+	got = strings.TrimSpace(got)
+	want = strings.TrimSpace(want)
+	if want == "" {
+		return false
+	}
+	// Fixed-size digests so ConstantTimeCompare always runs equal-length inputs.
+	sumA := md5.Sum([]byte(got))
+	sumB := md5.Sum([]byte(want))
+	return subtle.ConstantTimeCompare(sumA[:], sumB[:]) == 1
 }
 
 func mapOrderTerminal(paymentStatus string) (pay, order string) {

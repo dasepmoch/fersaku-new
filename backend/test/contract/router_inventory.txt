@@ -306,6 +306,9 @@ GET /v1/stores/{storeId}/withdrawals/
 POST /v1/stores/{storeId}/withdrawals/
 GET /v1/stores/{storeId}/withdrawals/lock
 GET /v1/stores/{storeId}/withdrawals/{withdrawalId}
+POST /v1/webhooks/duitku
+POST /v1/webhooks/duitku/live
+POST /v1/webhooks/duitku/sandbox
 POST /v1/webhooks/xendit
 POST /v1/webhooks/xendit/disbursement
 POST /v1/webhooks/xendit/live

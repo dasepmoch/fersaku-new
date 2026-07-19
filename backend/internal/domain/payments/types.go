@@ -5,15 +5,17 @@ import (
 	"time"
 )
 
-// Provider identity (ADR-0002).
+// Provider identity (ADR-0002, ADR-0008).
 const (
-	ProviderXendit       = "XENDIT"
-	AccountScopePrimary  = "xendit-primary"
-	CurrencyIDR          = "IDR"
-	SourceStorefront     = "STOREFRONT"
-	SourceQRISAPI        = "QRIS_API"
-	PaymentModeSandbox   = "SANDBOX"
-	PaymentModeLive      = "LIVE"
+	ProviderXendit              = "XENDIT"
+	ProviderDuitku              = "DUITKU"
+	AccountScopePrimary         = "xendit-primary"
+	AccountScopeDuitkuPrimary   = "duitku-primary"
+	CurrencyIDR                 = "IDR"
+	SourceStorefront            = "STOREFRONT"
+	SourceQRISAPI               = "QRIS_API"
+	PaymentModeSandbox          = "SANDBOX"
+	PaymentModeLive             = "LIVE"
 )
 
 // Payment intent status machine (§5.3).

@@ -15,7 +15,7 @@ import (
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
 )
 
-// CallbackHandler serves inbound Xendit webhooks + admin replay (BE-330).
+// CallbackHandler serves inbound provider webhooks + admin replay (BE-330, PROD-B20).
 type CallbackHandler struct {
 	Svc *application.CallbackService
 }
@@ -91,6 +91,64 @@ func callbackToken(r *http.Request) string {
 		return strings.TrimSpace(auth[7:])
 	}
 	return ""
+}
+
+// DuitkuWebhook handles POST /v1/webhooks/duitku (+ /sandbox /live).
+// Auth: body signature MD5(merchantCode + amount + merchantOrderId + apiKey); merchantCode match.
+// Success response: 200 text/plain "OK" (Duitku common practice).
+func (h *CallbackHandler) DuitkuWebhook(w http.ResponseWriter, r *http.Request) {
+	if h.Svc == nil {
+		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Webhook unavailable"))
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, payments.MaxCallbackBodyBytes+1)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		// Oversize or read error — force oversize path when possible.
+		res, _ := h.Svc.HandleDuitkuIngress(r.Context(), application.DuitkuIngressRequest{
+			Body:        make([]byte, payments.MaxCallbackBodyBytes+1),
+			ContentType: r.Header.Get("Content-Type"),
+			ClientIP:    reqctx.ClientIP(r.Context()),
+			RequestID:   reqctx.RequestID(r.Context()),
+		})
+		if res.HTTPStatus == 0 {
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+			return
+		}
+		writeDuitkuWebhookResponse(w, res)
+		return
+	}
+
+	mode := ""
+	if strings.Contains(r.URL.Path, "/sandbox") {
+		mode = payments.PaymentModeSandbox
+	} else if strings.Contains(r.URL.Path, "/live") {
+		mode = payments.PaymentModeLive
+	}
+
+	res, err := h.Svc.HandleDuitkuIngress(r.Context(), application.DuitkuIngressRequest{
+		Body:                body,
+		ContentType:         r.Header.Get("Content-Type"),
+		ClientIP:            reqctx.ClientIP(r.Context()),
+		RequestID:           reqctx.RequestID(r.Context()),
+		PaymentModeOverride: mode,
+	})
+	if err != nil && res.HTTPStatus >= 500 {
+		presenters.WriteAppError(w, r, err)
+		return
+	}
+	writeDuitkuWebhookResponse(w, res)
+}
+
+func writeDuitkuWebhookResponse(w http.ResponseWriter, res application.IngressResult) {
+	// Duitku expects plain "OK" on accept; keep JSON-less body for provider retry semantics.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(res.HTTPStatus)
+	if res.Accepted {
+		_, _ = w.Write([]byte("OK"))
+		return
+	}
+	_, _ = w.Write([]byte("FAILED"))
 }
 
 // AdminList handles GET /v1/admin/provider-callbacks

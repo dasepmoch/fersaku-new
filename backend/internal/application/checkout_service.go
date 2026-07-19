@@ -33,8 +33,12 @@ type CheckoutService struct {
 	Log       ports.Logger
 	// PaymentMode is SANDBOX for local/test; LIVE only when configured.
 	PaymentMode string
-	// AccountScope from Xendit adapter (non-secret).
+	// AccountScope from Xendit adapter (non-secret). Legacy; prefer PaymentAccountScope for intents.
 	AccountScope string
+	// PaymentProvider is ports-level identity for intents: payments.ProviderXendit | payments.ProviderDuitku.
+	PaymentProvider string
+	// PaymentAccountScope e.g. xendit-primary | duitku-primary.
+	PaymentAccountScope string
 	// SimulateEnabled gates POST /v1/checkout/simulate-payment (local/test only).
 	SimulateEnabled bool
 	// TokenSecret for public order token hashing.
@@ -62,6 +66,20 @@ func (s *CheckoutService) accountScope() string {
 		return s.AccountScope
 	}
 	return payments.AccountScopePrimary
+}
+
+func (s *CheckoutService) paymentProvider() string {
+	if s.PaymentProvider != "" {
+		return s.PaymentProvider
+	}
+	return payments.ProviderXendit
+}
+
+func (s *CheckoutService) paymentAccountScope() string {
+	if s.PaymentAccountScope != "" {
+		return s.PaymentAccountScope
+	}
+	return s.accountScope()
 }
 
 func (s *CheckoutService) hashKey(raw string) string {
@@ -438,8 +456,8 @@ func (s *CheckoutService) CreateIntent(ctx context.Context, req CreateIntentRequ
 		MerchantID:             prod.MerchantID,
 		PaymentMode:            mode,
 		Source:                 payments.SourceStorefront,
-		Provider:               payments.ProviderXendit,
-		AccountScope:           s.accountScope(),
+		Provider:               s.paymentProvider(),
+		AccountScope:           s.paymentAccountScope(),
 		ExternalID:             externalID,
 		AmountIDR:              feeRes.GrossIDR,
 		Currency:               payments.CurrencyIDR,
@@ -543,7 +561,7 @@ func (s *CheckoutService) CreateIntent(ctx context.Context, req CreateIntentRequ
 		Description:    "Fersaku order " + orderNumber,
 		ExpiresAt:      expiresAt,
 		PaymentMode:    mode,
-		AccountScope:   s.accountScope(),
+		AccountScope:   s.paymentAccountScope(),
 		IdempotencyKey: req.IdempotencyKey,
 		Metadata: map[string]string{
 			"orderId":  orderID,

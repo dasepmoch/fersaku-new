@@ -2,6 +2,9 @@
 
 > **Auth policy (2026-07-19):** MFA/TOTP is **out of scope**. Admin, seller, and buyer use password or magic-link sessions only. Sensitive actions use permission + reason + idempotency (not authenticator apps). Historical task text that mentions MFA is superseded by this policy.
 
+> **Production / money path (2026-07-19):** Active execution for staging→canary→live and dual providers lives in **[`TASK/PROD/`](PROD/README.md)**.  
+> Payment QRIS = **Duitku**; withdrawal disbursement = **Xendit**.  
+> This root `TASK/00`–`10` package remains the historical FE↔BE integration program.
 
 > Snapshot audit: 17 Juli 2026, commit awal `48d659e` (`feat(backend): complete production backend BE-000..BE-630`).
 >

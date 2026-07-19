@@ -1234,8 +1234,16 @@ func (s *WithdrawalService) ResolveDueUnknowns(ctx context.Context, limit int32)
 
 // ---------- Admin review ----------
 
-// AdminReview applies approve/hold/reject (minimal BE-350; polish is BE-510).
+// AdminReview applies approve/hold/reject (permission at HTTP; reason required; no MFA).
+// Approve is safe to retry: already-approved / in-flight statuses skip double disbursement.
 func (s *WithdrawalService) AdminReview(ctx context.Context, withdrawalID, action, reason, actorID string) (withdrawals.Withdrawal, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return withdrawals.Withdrawal{}, apperr.Validation(apperr.CodeValidationFailed, "reason is required")
+	}
+	if strings.TrimSpace(actorID) == "" {
+		return withdrawals.Withdrawal{}, apperr.Unauthorized(apperr.CodeAuthRequired, "Authentication required")
+	}
 	now := s.now()
 	var out withdrawals.Withdrawal
 	err := s.Store.WithTx(ctx, func(txCtx context.Context) error {
@@ -1243,7 +1251,18 @@ func (s *WithdrawalService) AdminReview(ctx context.Context, withdrawalID, actio
 		if err != nil {
 			return err
 		}
-		switch strings.ToLower(action) {
+		// Idempotent approve: already past review → return current row (disburse path is separately idempotent).
+		act := strings.ToLower(strings.TrimSpace(action))
+		if act == "approve" {
+			switch w.Status {
+			case withdrawals.StatusApproved, withdrawals.StatusProcessing,
+				withdrawals.StatusCompleted, withdrawals.StatusUnknownOutcome,
+				withdrawals.StatusFailed:
+				out = w
+				return nil
+			}
+		}
+		switch act {
 		case "approve":
 			if !withdrawals.CanTransition(w.Status, withdrawals.StatusApproved) {
 				return withdrawals.ErrInvalidStatus
@@ -1340,9 +1359,21 @@ func (s *WithdrawalService) AdminGetWithdrawal(ctx context.Context, withdrawalID
 }
 
 // HandleDisbursementCallback resolves status from provider webhook payload fields.
+// Status should already be normalized (xendit.MapDisburseStatus); applyLookup is
+// idempotent for COMPLETED/FAILED (exactly-once journals / reserve release).
+//
+// Mapping (provider raw or normalized → withdrawal effect):
+//
+//	COMPLETED | SUCCEEDED | SUCCESS → completeWithdrawal (ledger complete + fee settle)
+//	FAILED | REJECTED | CANCELLED   → failAndRelease (release reserve once)
+//	PENDING / PROCESSING / UNKNOWN  → bind ref, stay PROCESSING or schedule lookup
+//	NOT_FOUND                       → scheduleLookup (no silent balance change)
 func (s *WithdrawalService) HandleDisbursementCallback(ctx context.Context, providerRef string, status string, actualFee *int64, netAmount int64) error {
 	if providerRef == "" {
 		return apperr.Validation(apperr.CodeValidationFailed, "provider reference required")
+	}
+	if s.Store == nil {
+		return apperr.Internal(apperr.CodeInternalError, "Withdrawal store unavailable")
 	}
 	w, err := s.Store.GetWithdrawalByProviderRef(ctx, withdrawals.ProviderXendit, s.scope(), s.mode(""), providerRef)
 	if err != nil {

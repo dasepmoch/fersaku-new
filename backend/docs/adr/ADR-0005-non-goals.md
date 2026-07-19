@@ -28,8 +28,8 @@ The following are **explicitly out of scope** for launch and must not appear as 
  - QRIS Payment Gateway API is payment-only: create/status/cancel intent, callback/webhook.
  - No product CRUD, upload, list, inventory, or catalog API on the gateway surface.
 
-4. **No multi-provider / Duitku / failover**
- - Xendit only (see ADR-0002).
+4. **No multi-provider failover / automatic routing**
+  - Dual path is fixed by ADR-0008: Duitku payment (QRIS) + Xendit disbursement. No runtime “if Duitku down use Xendit QRIS”, no multi-account dashboard, no failover UI.
 
 5. **No subscription / paid plan platform**
  - No `plans`, `subscriptions`, `billing_accounts`, `paid_entitlements`, platform billing checkout, purchasable feature gates, or fee-triggered access (see ADR-0006).

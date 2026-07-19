@@ -40,7 +40,7 @@ log "go_toolchain=$($GO env GOVERSION 2>/dev/null || true)"
 log ""
 
 # --- 1. go vet (SAST baseline) ---
-log "--- [1/5] go vet ./... ---"
+log "--- [1/6] go vet ./... ---"
 if $GO vet ./... >>"$REPORT" 2>&1; then
   log "PASS go vet"
 else
@@ -50,7 +50,7 @@ fi
 log ""
 
 # --- 2. govulncheck (dependency / stdlib vulns) ---
-log "--- [2/5] govulncheck ./... ---"
+log "--- [2/6] govulncheck ./... ---"
 GOVULN="$(command -v govulncheck 2>/dev/null || true)"
 if [ -z "$GOVULN" ] && [ -x "$HOME/go/bin/govulncheck" ]; then
   GOVULN="$HOME/go/bin/govulncheck"
@@ -73,7 +73,7 @@ fi
 log ""
 
 # --- 3. Secret scan ---
-log "--- [3/5] secret scan ---"
+log "--- [3/6] secret scan ---"
 SECRET_HITS=0
 if command -v gitleaks >/dev/null 2>&1; then
   set +e
@@ -121,7 +121,7 @@ log "secret_hits=$SECRET_HITS"
 log ""
 
 # --- 4. Dependency list ---
-log "--- [4/5] go list -m all (module inventory) ---"
+log "--- [4/6] go list -m all (module inventory) ---"
 $GO list -m all >"$REPORT_DIR/go-modules-$STAMP.txt" 2>>"$REPORT" || true
 log "wrote $REPORT_DIR/go-modules-$STAMP.txt"
 $GO list -m -json all >"$REPORT_DIR/go-modules-$STAMP.json" 2>/dev/null || true
@@ -129,7 +129,24 @@ log "module_count=$($GO list -m all 2>/dev/null | wc -l | tr -d ' ')"
 log ""
 
 # --- 5. Docker image note ---
-log "--- [5/5] docker image note ---"
+log "--- [5/6] dual-provider policy (ADR-0008 / PROD-B40) ---"
+# Expect Duitku payment adapter package; do not ban Duitku (supersedes historical "no Duitku" greps).
+if [ -d "$ROOT/internal/adapters/duitku" ]; then
+  log "PASS adapters/duitku present (payment QRIS primary path)"
+else
+  log "FAIL adapters/duitku missing (PAYMENT_PROVIDER=duitku requires package)"
+  FAIL=1
+fi
+if [ -d "$ROOT/internal/adapters/xendit" ]; then
+  log "PASS adapters/xendit present (disbursement + legacy QRIS code)"
+else
+  log "FAIL adapters/xendit missing"
+  FAIL=1
+fi
+log "policy: payment=duitku|fake|xendit; disbursement=xendit|fake; no multi-provider failover UI"
+log ""
+
+log "--- [6/6] docker image note ---"
 log "Dockerfile: multi-target api/worker, non-root UID 65532, no secrets in image."
 log "Base: golang:1.25-alpine builder; alpine:3.21 runtime (see Dockerfile)."
 log "Remediation SLA: docs/security/scan-sla.md"

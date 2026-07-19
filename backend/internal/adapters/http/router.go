@@ -575,12 +575,15 @@ func NewRouterWith(d RouterDeps) http.Handler {
 		}
 	}
 
-	// BE-330 Inbound Xendit callback (token verify; no session CSRF for provider ingress).
+	// BE-330 / PROD-B20 Inbound provider callbacks (auth per provider; no session CSRF).
 	if d.CallbackService != nil {
 		cbh := &handlers.CallbackHandler{Svc: d.CallbackService}
 		r.Post("/v1/webhooks/xendit", cbh.XenditWebhook)
 		r.Post("/v1/webhooks/xendit/sandbox", cbh.XenditWebhook)
 		r.Post("/v1/webhooks/xendit/live", cbh.XenditWebhook)
+		r.Post("/v1/webhooks/duitku", cbh.DuitkuWebhook)
+		r.Post("/v1/webhooks/duitku/sandbox", cbh.DuitkuWebhook)
+		r.Post("/v1/webhooks/duitku/live", cbh.DuitkuWebhook)
 		// Admin inbound read model + replay (webhooks.read for list/detail; replay still separate).
 		r.Route("/v1/admin/provider-callbacks", func(ar chi.Router) {
 			ar.Use(handlers.RequireAuth)

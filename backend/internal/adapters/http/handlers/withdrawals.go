@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/decode"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/presenters"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/reqctx"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/xendit"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/payments"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/withdrawals"
@@ -20,12 +22,20 @@ import (
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
 )
 
+// DisbursementWebhookApplier is the apply surface used after ingress auth (PROD-C10).
+// Production wires WithdrawalService; unit tests inject a fake for happy-path coverage.
+type DisbursementWebhookApplier interface {
+	HandleDisbursementCallback(ctx context.Context, providerRef string, status string, actualFee *int64, netAmount int64) error
+}
+
 // WithdrawalHandler serves seller bank/quote/withdrawal + minimal admin review (BE-350).
 type WithdrawalHandler struct {
 	Svc *application.WithdrawalService
 	// WebhookToken is XENDIT_WEBHOOK_TOKEN for disbursement ingress (INT-180).
-	// Constant-time compared; empty rejects all.
+	// Constant-time compared; empty rejects all (fail-closed; staging/prod config also rejects empty).
 	WebhookToken string
+	// Apply is optional; when nil, Svc is used for disbursement callbacks.
+	Apply DisbursementWebhookApplier
 }
 
 func (h *WithdrawalHandler) ListBanks(w http.ResponseWriter, r *http.Request) {
@@ -364,11 +374,26 @@ func (h *WithdrawalHandler) AdminReview(w http.ResponseWriter, r *http.Request) 
 }
 
 // DisbursementWebhook is POST /v1/webhooks/xendit/disbursement.
-// INT-180: same ingress security as payment callbacks — bounded body, constant-time token,
-// reject invalid/oversize without mutating withdrawal state.
+// PROD-C10 / INT-180: bounded body, constant-time token, empty configured token fail-closed,
+// status normalized via xendit.MapDisburseStatus, apply is idempotent (service exactly-once).
+// Status mapping (provider → apply):
+//
+//	COMPLETED|SUCCEEDED|SUCCESS|PAID → COMPLETED
+//	FAILED|REJECTED|CANCELLED|REVERSED → FAILED
+//	ACCEPTED|PENDING|LOCKED|REQUESTED → PENDING
+//	PROCESSING|SENDING → PROCESSING
+//	empty → UNKNOWN (schedule lookup / stay non-terminal)
 func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.Request) {
-	if h.Svc == nil {
+	applier := h.disbursementApplier()
+	if applier == nil {
 		presenters.WriteAppError(w, r, apperr.Internal(apperr.CodeInternalError, "Withdrawals unavailable"))
+		return
+	}
+	// Fail-closed when webhook token is not configured (staging/prod config also rejects empty).
+	if strings.TrimSpace(h.WebhookToken) == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"ok":false,"reason":"token_not_configured"}`))
 		return
 	}
 	// Bounded raw body (+1 to detect oversize).
@@ -402,12 +427,12 @@ func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.R
 	}
 
 	var body struct {
-		ID             string `json:"id"`
-		ExternalID     string `json:"external_id"`
-		Status         string `json:"status"`
-		Amount         int64  `json:"amount"`
-		Fee            *int64 `json:"fee"`
-		ProviderFee    *int64 `json:"provider_fee"`
+		ID          string `json:"id"`
+		ExternalID  string `json:"external_id"`
+		Status      string `json:"status"`
+		Amount      int64  `json:"amount"`
+		Fee         *int64 `json:"fee"`
+		ProviderFee *int64 `json:"provider_fee"`
 	}
 	if err := json.Unmarshal(raw, &body); err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -429,7 +454,8 @@ func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.R
 	if fee == nil {
 		fee = body.ProviderFee
 	}
-	if err := h.Svc.HandleDisbursementCallback(r.Context(), ref, body.Status, fee, body.Amount); err != nil {
+	status := xendit.MapDisburseStatus(body.Status)
+	if err := applier.HandleDisbursementCallback(r.Context(), ref, status, fee, body.Amount); err != nil {
 		// Business not-found/quarantine: ack 200 when resource missing to limit retry storms;
 		// auth already passed. Persistence failures surface as 5xx.
 		if ae, ok := apperr.AsAppError(err); ok && ae.Kind == apperr.KindNotFound {
@@ -444,6 +470,16 @@ func (h *WithdrawalHandler) DisbursementWebhook(w http.ResponseWriter, r *http.R
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
+func (h *WithdrawalHandler) disbursementApplier() DisbursementWebhookApplier {
+	if h.Apply != nil {
+		return h.Apply
+	}
+	if h.Svc != nil {
+		return h.Svc
+	}
+	return nil
 }
 
 func disbursementCallbackToken(r *http.Request) string {

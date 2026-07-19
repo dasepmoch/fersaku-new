@@ -4320,6 +4320,70 @@ paths:
           description: Oversize body (rejection table only)
       security:
       - xenditCallbackToken: []
+  /v1/webhooks/duitku:
+    post:
+      operationId: duitkuInboundWebhook
+      summary: Inbound Duitku payment callback (PROD-B20)
+      description: |
+        Verifies merchantCode against configured DUITKU_MERCHANT_CODE and callback
+        signature MD5(merchantCode + amount + merchantOrderId + apiKey) (lowercase hex,
+        constant-time compare) before any business mutation. Accepts application/json or
+        application/x-www-form-urlencoded. Invalid signature/merchant/oversize/malformed
+        appends provider_callback_rejections only. Valid events are unique on (provider=DUITKU,
+        account_scope, payment_mode, provider_event_id). Does not trust body for account_scope
+        or payment_mode. Success body is plain text "OK".
+      tags:
+      - webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              properties:
+                merchantCode:
+                  type: string
+                amount:
+                  oneOf:
+                  - type: string
+                  - type: number
+                paymentAmount:
+                  oneOf:
+                  - type: string
+                  - type: number
+                merchantOrderId:
+                  type: string
+                resultCode:
+                  type: string
+                  description: '00 success, 01 pending, 02 failed/canceled'
+                reference:
+                  type: string
+                signature:
+                  type: string
+                  description: MD5 hex of merchantCode+amount+merchantOrderId+apiKey
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Durable accept (including idempotent duplicate); body plain "OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+        '401':
+          description: Missing/invalid signature or merchant mismatch (rejection table only)
+        '400':
+          description: Malformed/empty body (rejection table only)
+        '413':
+          description: Oversize body (rejection table only)
+        '415':
+          description: Unsupported content type (rejection table only)
+      security:
+      - duitkuCallbackSignature: []
   /v1/admin/provider-callbacks:
     get:
       operationId: adminListProviderCallbacks
@@ -8465,6 +8529,52 @@ paths:
       - $ref: '#/components/parameters/XCallbackToken'
       description: Same handler as POST /v1/webhooks/xendit with live account disposition. Requires X-Callback-Token; no session
         CSRF.
+  /v1/webhooks/duitku/sandbox:
+    post:
+      operationId: duitkuInboundWebhookSandbox
+      summary: Inbound Duitku payment callback (sandbox disposition path)
+      tags:
+      - webhooks
+      responses:
+        '200':
+          description: Durable accept; body plain "OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+        default:
+          description: Rejected (no money mutation)
+          content:
+            text/plain:
+              schema:
+                type: string
+      security:
+      - duitkuCallbackSignature: []
+      description: Same handler as POST /v1/webhooks/duitku with sandbox payment mode override. Signature in body; no session CSRF.
+  /v1/webhooks/duitku/live:
+    post:
+      operationId: duitkuInboundWebhookLive
+      summary: Inbound Duitku payment callback (live disposition path)
+      tags:
+      - webhooks
+      responses:
+        '200':
+          description: Durable accept; body plain "OK"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+        default:
+          description: Rejected (no money mutation)
+          content:
+            text/plain:
+              schema:
+                type: string
+      security:
+      - duitkuCallbackSignature: []
+      description: Same handler as POST /v1/webhooks/duitku with live payment mode override. Signature in body; no session CSRF.
 components:
   securitySchemes:
     sessionCookie:
@@ -8486,6 +8596,15 @@ components:
       name: X-Callback-Token
       description: Inbound Xendit provider callback token. Constant-time verified before any business mutation. Not a session
         cookie and not a merchant API key.
+    duitkuCallbackSignature:
+      type: apiKey
+      in: header
+      name: X-Duitku-Callback-Auth
+      description: |
+        Documentation-only scheme for Duitku payment callbacks. Auth is not a header:
+        verify body fields merchantCode (must match DUITKU_MERCHANT_CODE) and signature =
+        MD5(merchantCode + amount + merchantOrderId + apiKey) lowercase hex with constant-time
+        compare. Never a session cookie or merchant API key.
     capabilityToken:
       type: apiKey
       in: header

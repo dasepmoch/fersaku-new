@@ -203,7 +203,7 @@ func (r *Real) CreateDisbursement(ctx context.Context, in ports.CreateDisburseme
 	return ports.CreateDisbursementResult{
 		ProviderReference: firstNonEmpty(resp.ID, resp.PayoutID),
 		ExternalID:        firstNonEmpty(resp.ExternalID, in.ExternalID),
-		Status:            mapDisburseStatus(resp.Status),
+		Status:            MapDisburseStatus(resp.Status),
 		NetAmountIDR:      firstInt64(resp.Amount, in.NetAmountIDR),
 		ProviderFeeIDR:    feePtr,
 		CreatedAt:         parseTime(resp.Created),
@@ -230,7 +230,7 @@ func (r *Real) GetDisbursement(ctx context.Context, providerRef string) (ports.P
 	return ports.ProviderDisbursement{
 		ProviderReference: firstNonEmpty(resp.ID, resp.PayoutID, providerRef),
 		ExternalID:        resp.ExternalID,
-		Status:            mapDisburseStatus(resp.Status),
+		Status:            MapDisburseStatus(resp.Status),
 		NetAmountIDR:      resp.Amount,
 		Currency:          firstNonEmpty(resp.Currency, "IDR"),
 		ProviderFeeIDR:    feePtr,
@@ -397,7 +397,17 @@ func mapQRStatus(s string) string {
 	}
 }
 
-func mapDisburseStatus(s string) string {
+// MapDisburseStatus normalizes Xendit payout/disbursement status strings to the
+// port contract used by withdrawal apply (PROD-C10):
+//
+//	ACCEPTED|PENDING|LOCKED|REQUESTED → PENDING
+//	PROCESSING|SENDING                 → PROCESSING
+//	COMPLETED|SUCCEEDED|SUCCESS|PAID   → COMPLETED
+//	FAILED|REJECTED|CANCELLED|REVERSED → FAILED
+//	NOT_FOUND                          → NOT_FOUND
+//	empty                              → UNKNOWN
+//	other                              → uppercased (treated as UNKNOWN-class by apply)
+func MapDisburseStatus(s string) string {
 	switch strings.ToUpper(strings.TrimSpace(s)) {
 	case "ACCEPTED", "PENDING", "LOCKED", "REQUESTED":
 		return "PENDING"

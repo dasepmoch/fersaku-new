@@ -43,16 +43,40 @@
 
 ---
 
-## Xendit (only payment/disbursement provider)
+## Dual providers (ADR-0008 / PROD-A20)
+
+Payment QRIS and disbursement are **independent**. Production launch: `PAYMENT_PROVIDER=duitku`, `DISBURSEMENT_PROVIDER=xendit`. No multi-provider failover UI.
 
 | Variable | Local | Staging | Production | Notes |
 | -------- | ----- | ------- | ---------- | ----- |
-| `XENDIT_MODE` | `fake` | `fake` or `live` | **must be `live`** | Fake forbidden in production |
-| `XENDIT_SECRET_KEY` | empty if fake | required if live | **required** | Secret manager |
-| `XENDIT_WEBHOOK_TOKEN` | empty if fake | required if live | **required** | Matches Xendit dashboard; constant-time compare |
-| `XENDIT_ACCOUNT_SCOPE` | `xendit-primary` | same | same | Single account (ADR-0002) |
+| `PAYMENT_PROVIDER` | `fake` | `duitku` (or `fake` drill) | **`duitku`** | `fake`\|`duitku`\|`xendit` (xendit = legacy QRIS only) |
+| `DISBURSEMENT_PROVIDER` | `fake` | `xendit` (or `fake` drill) | **`xendit`** | `fake`\|`xendit` |
+| `ALLOW_FAKE_PROVIDERS` | n/a | `0` or `1` drill | **forbidden effect** | Staging drill only |
 
-No Duitku / multi-provider failover variables exist by design.
+### Payment — Duitku (when `PAYMENT_PROVIDER=duitku`)
+
+| Variable | Local | Staging | Production | Notes |
+| -------- | ----- | ------- | ---------- | ----- |
+| `DUITKU_MERCHANT_CODE` | sandbox | required | **required** | Host secret |
+| `DUITKU_API_KEY` | sandbox | required | **required** | Host secret; never log |
+| `DUITKU_ENV` | `sandbox` | `sandbox` | `production` | |
+| `DUITKU_BASE_URL` | optional | sandbox URL | prod URL | Default from adapter if empty |
+| `DUITKU_CALLBACK_URL` | local tunnel | `https://api…/v1/webhooks/duitku` | same | |
+| `DUITKU_RETURN_URL` | optional | buyer return | buyer return | Non-authoritative |
+| `DUITKU_QRIS_PAYMENT_METHOD` | `SP` | `SP` | `SP` | |
+| `DUITKU_ACCOUNT_SCOPE` | `duitku-primary` | same | same | Non-secret identity |
+
+### Disbursement — Xendit (when `DISBURSEMENT_PROVIDER=xendit`)
+
+| Variable | Local | Staging | Production | Notes |
+| -------- | ----- | ------- | ---------- | ----- |
+| `XENDIT_MODE` | `fake` | legacy alias | prefer `DISBURSEMENT_PROVIDER` | Fake forbidden in production |
+| `XENDIT_SECRET_KEY` | empty if fake | required if live | **required** | Secret manager |
+| `XENDIT_WEBHOOK_TOKEN` | empty if fake | required if live | **required** | Disbursement (+ late payment) webhooks |
+| `XENDIT_ACCOUNT_SCOPE` | `xendit-primary` | same | same | Single disbursement account (ADR-0002 half) |
+| `XENDIT_BASE_URL` | default | default | default | |
+
+Xendit QRIS create is **not** the primary path when `PAYMENT_PROVIDER=duitku` (PROD-B40 option A: code kept, composition selects Duitku). Xendit payment webhook may still accept historical/late events.
 
 ---
 
@@ -107,13 +131,14 @@ No Duitku / multi-provider failover variables exist by design.
 | TLS termination | At LB/ingress |
 | Trusted proxy CIDRs | Only LB/proxy ranges (see `topology.md`) |
 | Request ID | Preserve / inject; app emits `X-Request-ID` |
-| Xendit callback path | `POST /v1/webhooks/xendit` on API service (not worker) |
+| Duitku payment callback | `POST /v1/webhooks/duitku` on API service (not worker) |
+| Xendit disbursement (+ late payment) | `POST /v1/webhooks/xendit` (+ `/disbursement` as mounted) on API service |
 
 ---
 
 ## What must never appear in git
 
-- Live `XENDIT_*` keys/tokens 
+- Live `XENDIT_*` / `DUITKU_*` keys/tokens 
 - Production `SESSION_SECRET` / `CSRF_SECRET` / encryption keys 
 - Production `DATABASE_URL` passwords 
 - R2 production access keys 

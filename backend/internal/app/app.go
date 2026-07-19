@@ -22,11 +22,13 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/queue"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/r2"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/redis"
+	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/duitku"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/xendit"
 	"github.com/dasepmoch/fersaku-new/backend/internal/application"
 	"github.com/dasepmoch/fersaku-new/backend/internal/config"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/admin"
 	domainauth "github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
+	"github.com/dasepmoch/fersaku-new/backend/internal/domain/payments"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/jobs"
@@ -39,13 +41,25 @@ type DBPinger interface {
 	Ping(ctx context.Context) error
 }
 
-// paymentAdapter is QRIS + disbursement (Fake or Real).
+// paymentAdapter is QRIS + disbursement (Fake or Real) when both share one adapter.
+// PROD-A20 may wire separate adapters; Runtime still exposes a combined view when possible.
 type paymentAdapter interface {
 	ports.QRISProvider
 	ports.DisbursementProvider
 	Name() string
 	IsFake() bool
 }
+
+// dualProviderAdapter composes separate QRIS and disbursement adapters (PROD-A20).
+type dualProviderAdapter struct {
+	ports.QRISProvider
+	ports.DisbursementProvider
+	kind string
+	fake bool
+}
+
+func (d dualProviderAdapter) Name() string { return d.kind }
+func (d dualProviderAdapter) IsFake() bool { return d.fake }
 
 // RedisPinger is satisfied by redis.Client and redis.Noop wrappers.
 type RedisPinger interface {
@@ -75,14 +89,20 @@ type Runtime struct {
 	DBPing DBPinger
 	// Redis is real client on staging/production; noop only local/test.
 	Redis RedisPinger
-	// Payment is Fake (local/test) or Real (live mode).
+	// Payment is the composed QRIS+disbursement view (may be dual adapters; PROD-A20).
 	Payment paymentAdapter
+	// QRIS is the payment (QRIS) port; Disburse is the withdrawal port.
+	QRIS     ports.QRISProvider
+	Disburse ports.DisbursementProvider
 	// XenditFake is non-nil only when fake adapter selected (local/test).
 	XenditFake *xendit.Fake
 	// Adapter kinds for truthful readiness/admin health (never secrets).
-	XenditKind string
-	MailKind   string
-	RedisKind  string
+	// XenditKind remains for compat; prefer PaymentKind + DisbursementKind.
+	XenditKind         string
+	PaymentKind        string
+	DisbursementKind   string
+	MailKind           string
+	RedisKind          string
 	// RateLimiter is process-local on local/test; Redis-backed on staging/production.
 	RateLimiter middleware.Limiter
 	R2          r2.Noop
@@ -185,30 +205,27 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		return nil, fmt.Errorf("app: REDIS_URL required on staging/production (INT-180)")
 	}
 
-	// --- Xendit payment + disbursement ---
+	// --- Payment (QRIS) + disbursement (PROD-A20 dual-provider) ---
 	accountScope := cfg.XenditAccountScope
 	if accountScope == "" {
 		accountScope = "xendit-primary"
 	}
-	var pay paymentAdapter
-	var xdFake *xendit.Fake
-	xenditKind := "fake"
-	if cfg.UseFakeXendit() {
-		if cfg.IsLiveRuntime() {
-			return nil, fmt.Errorf("app: XENDIT_MODE=fake is forbidden on staging/production (INT-180)")
-		}
-		xdFake = xendit.NewFake()
-		xdFake.AccountScope = accountScope
-		pay = xdFake
+	qris, disburse, xdFake, paymentKind, disbursementKind, err := wireMoneyProviders(cfg, accountScope, log)
+	if err != nil {
+		return nil, err
+	}
+	// Compat health label: fake only when both sides fake; else real if any xendit real path.
+	xenditKind := "real"
+	if paymentKind == "fake" && disbursementKind == "fake" {
 		xenditKind = "fake"
-	} else {
-		real, xerr := xendit.NewReal(accountScope, cfg.XenditSecretKey, "")
-		if xerr != nil {
-			return nil, fmt.Errorf("app: xendit real adapter: %w", xerr)
-		}
-		real.Log = log
-		pay = real
-		xenditKind = "real"
+	} else if paymentKind == "fake" || disbursementKind == "fake" {
+		xenditKind = "mixed"
+	}
+	pay := dualProviderAdapter{
+		QRISProvider:         qris,
+		DisbursementProvider: disburse,
+		kind:                 "payment=" + paymentKind + "+disbursement=" + disbursementKind,
+		fake:                 paymentKind == "fake" && disbursementKind == "fake",
 	}
 
 	// --- Object store ---
@@ -245,7 +262,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 
 	var pool *postgres.Pool
 	var dbPing DBPinger = postgres.Noop{}
-	adapters := xenditKind + "+" + mailKind + "+" + redisKind
+	adapters := paymentKind + "/" + disbursementKind + "+" + mailKind + "+" + redisKind
 	if cfg.DatabaseURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -282,8 +299,15 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	}
 	if cfg.IsLiveRuntime() {
 		healthChecks = append(healthChecks, func() error {
-			if xenditKind == "fake" || pay == nil || pay.IsFake() {
-				return fmt.Errorf("xendit: fake adapter not allowed on live runtime")
+			// Staging drill may allow fake via ALLOW_FAKE_PROVIDERS; production never.
+			if cfg.AppEnv == config.EnvProduction {
+				if paymentKind == "fake" || disbursementKind == "fake" {
+					return fmt.Errorf("providers: fake payment/disbursement not allowed on production")
+				}
+			} else if !cfg.AllowFakeProviders {
+				if paymentKind == "fake" || disbursementKind == "fake" {
+					return fmt.Errorf("providers: fake payment/disbursement not allowed on live runtime without ALLOW_FAKE_PROVIDERS")
+				}
 			}
 			return nil
 		})
@@ -442,32 +466,38 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			HashSecret:     cfg.SessionSecret,
 			HashKeyVersion: "v1",
 		}
+		// Intent provider identity for callbacks (PROD-B30): match PAYMENT_PROVIDER.
+		payProvider, payScope := paymentIntentIdentity(cfg, accountScope)
 		checkoutSvc = &application.CheckoutService{
-			Store:           postgres.NewCheckoutRepo(pool.Pool()),
-			Fees:            feeSvc,
-			Coupons:         couponSvc,
-			Inventory:       inventorySvc,
-			Analytics:       analyticsSvc,
-			QRIS:            pay,
-			IDs:             ids,
-			Clock:           clock,
-			Log:             log,
-			PaymentMode:     paymentMode,
-			AccountScope:    accountScope,
-			SimulateEnabled: (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) && xdFake != nil,
-			TokenSecret:     cfg.SessionSecret,
+			Store:               postgres.NewCheckoutRepo(pool.Pool()),
+			Fees:                feeSvc,
+			Coupons:             couponSvc,
+			Inventory:           inventorySvc,
+			Analytics:           analyticsSvc,
+			QRIS:                qris,
+			IDs:                 ids,
+			Clock:               clock,
+			Log:                 log,
+			PaymentMode:         paymentMode,
+			AccountScope:        accountScope,
+			PaymentProvider:     payProvider,
+			PaymentAccountScope: payScope,
+			SimulateEnabled:     (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) && xdFake != nil,
+			TokenSecret:         cfg.SessionSecret,
 		}
 		// BE-320: QRIS gateway shares fee service + QRIS provider; mode from API key.
 		gatewaySvc = &application.GatewayService{
-			Store:         postgres.NewGatewayRepo(pool.Pool()),
-			Fees:          feeSvc,
-			Analytics:     analyticsSvc,
-			QRIS:          pay,
-			IDs:           ids,
-			Clock:         clock,
-			Log:           log,
-			KeyHashSecret: cfg.SessionSecret,
-			AccountScope:  accountScope,
+			Store:               postgres.NewGatewayRepo(pool.Pool()),
+			Fees:                feeSvc,
+			Analytics:           analyticsSvc,
+			QRIS:                qris,
+			IDs:                 ids,
+			Clock:               clock,
+			Log:                 log,
+			KeyHashSecret:       cfg.SessionSecret,
+			AccountScope:        payScope,
+			PaymentProvider:     payProvider,
+			PaymentAccountScope: payScope,
 		}
 		// BE-340: unified ledger; local/test force immediate available (delay 0 policy via ForceImmediateRelease).
 		ledgerSvc = &application.LedgerService{
@@ -501,6 +531,10 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		if webhookToken == "" && (cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest) {
 			webhookToken = "local-xendit-webhook-token"
 		}
+		duitkuScope := strings.TrimSpace(cfg.DuitkuAccountScope)
+		if duitkuScope == "" {
+			duitkuScope = "duitku-primary"
+		}
 		callbackSvc = &application.CallbackService{
 			Store:              postgres.NewCallbackRepo(pool.Pool()),
 			Coupons:            couponSvc,
@@ -517,6 +551,9 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			AccountScope:       accountScope,
 			DefaultPaymentMode: paymentMode,
 			TokenSecret:        cfg.SessionSecret,
+			DuitkuMerchantCode: cfg.DuitkuMerchantCode,
+			DuitkuAPIKey:       cfg.DuitkuAPIKey,
+			DuitkuAccountScope: duitkuScope,
 		}
 		// BE-350: bank accounts, quotes, reserve, disbursement.
 		encKey := stockKey
@@ -531,7 +568,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Store:              postgres.NewWithdrawalRepo(pool.Pool()),
 			Ledger:             ledgerSvc,
 			Fees:               feeSvc,
-			Disburse:           pay,
+			Disburse:           disburse,
 			IDs:                ids,
 			Clock:              clock,
 			Log:                log,
@@ -622,7 +659,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 			Clock:       clock,
 			Log:         log,
 			ComponentHealth: func(ctx context.Context) []admin.ComponentHealth {
-				return platformComponentHealth(ctx, pool, clock, xenditKind, mailKind, redisKind, rd, objStore, cfg)
+				return platformComponentHealth(ctx, pool, clock, xenditKind, paymentKind, disbursementKind, mailKind, redisKind, rd, objStore, cfg)
 			},
 		}
 		// BE-520: admin impersonation (derived session + scope gate).
@@ -666,11 +703,15 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		DB:            pool,
 		DBPing:        dbPing,
 		Redis:         rd,
-		Payment:       pay,
-		XenditFake:    xdFake,
-		XenditKind:    xenditKind,
-		MailKind:      mailKind,
-		RedisKind:     redisKind,
+		Payment:          pay,
+		QRIS:             qris,
+		Disburse:         disburse,
+		XenditFake:       xdFake,
+		XenditKind:       xenditKind,
+		PaymentKind:      paymentKind,
+		DisbursementKind: disbursementKind,
+		MailKind:         mailKind,
+		RedisKind:        redisKind,
 		RateLimiter:   rateLimiter,
 		R2:            r2.Noop{},
 		ObjectStore:   objStore,
@@ -711,6 +752,8 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		"app_env", string(cfg.AppEnv),
 		"service", cfg.ServiceName,
 		"adapters", adapters,
+		"payment_provider", paymentKind,
+		"disbursement_provider", disbursementKind,
 		"database", cfg.DatabaseURL != "",
 	)
 	return rt, nil
@@ -781,6 +824,124 @@ func effectiveWebhookToken(cfg config.Config) string {
 		return "local-xendit-webhook-token"
 	}
 	return ""
+}
+
+// paymentIntentIdentity maps PAYMENT_PROVIDER to intent Provider + AccountScope (PROD-B30 / PROD-B40).
+// Fake adapter is still xendit.Fake — intents stay XENDIT / xendit-primary for local.
+// When payment=duitku, create path uses Duitku QRIS only; Xendit QRIS remains on disk unwired (option A).
+func paymentIntentIdentity(cfg config.Config, xenditAccountScope string) (provider, accountScope string) {
+	provider = payments.ProviderXendit
+	accountScope = xenditAccountScope
+	if accountScope == "" {
+		accountScope = payments.AccountScopePrimary
+	}
+	switch cfg.PaymentProvider {
+	case config.PaymentProviderDuitku:
+		provider = payments.ProviderDuitku
+		accountScope = strings.TrimSpace(cfg.DuitkuAccountScope)
+		if accountScope == "" {
+			accountScope = payments.AccountScopeDuitkuPrimary
+		}
+	case config.PaymentProviderFake, config.PaymentProviderXendit:
+		// fake uses xendit.Fake; keep XENDIT identity for local simulate/callback paths
+		provider = payments.ProviderXendit
+	}
+	return provider, accountScope
+}
+
+// wireMoneyProviders selects QRIS payment and disbursement adapters from config
+// (PROD-A20 / PROD-B10 / PROD-B40). Composition (option A):
+//   payment=duitku  → Duitku QRIS only (Xendit CreateQRIS not selected)
+//   payment=xendit  → legacy Xendit QRIS (local/transition)
+//   payment=fake    → xendit.Fake QRIS (local)
+// Disbursement is independent (fake | xendit). Xendit payment webhook may stay mounted for late events.
+func wireMoneyProviders(cfg config.Config, accountScope string, log ports.Logger) (
+	qris ports.QRISProvider,
+	disburse ports.DisbursementProvider,
+	xdFake *xendit.Fake,
+	paymentKind, disbursementKind string,
+	err error,
+) {
+	// Fail closed on fake for live runtimes (config already validates; belt-and-suspenders).
+	if cfg.IsLiveRuntime() {
+		if cfg.AppEnv == config.EnvProduction {
+			if cfg.UseFakePayment() || cfg.UseFakeDisbursement() {
+				return nil, nil, nil, "", "", fmt.Errorf("app: fake payment/disbursement forbidden on production (INT-180)")
+			}
+		} else if !cfg.AllowFakeProviders {
+			if cfg.UseFakePayment() || cfg.UseFakeDisbursement() {
+				return nil, nil, nil, "", "", fmt.Errorf("app: fake payment/disbursement forbidden on staging without ALLOW_FAKE_PROVIDERS=1 (INT-180)")
+			}
+		}
+	}
+
+	var needFake, needXenditReal bool
+	switch cfg.PaymentProvider {
+	case config.PaymentProviderFake:
+		needFake = true
+		paymentKind = "fake"
+	case config.PaymentProviderXendit:
+		needXenditReal = true
+		paymentKind = "xendit"
+	case config.PaymentProviderDuitku:
+		paymentKind = "duitku"
+	default:
+		return nil, nil, nil, "", "", fmt.Errorf("app: unsupported PAYMENT_PROVIDER=%q", cfg.PaymentProvider)
+	}
+
+	switch cfg.DisbursementProvider {
+	case config.DisbursementProviderFake:
+		needFake = true
+		disbursementKind = "fake"
+	case config.DisbursementProviderXendit:
+		needXenditReal = true
+		disbursementKind = "xendit"
+	default:
+		return nil, nil, nil, "", "", fmt.Errorf("app: unsupported DISBURSEMENT_PROVIDER=%q", cfg.DisbursementProvider)
+	}
+
+	if needFake {
+		xdFake = xendit.NewFake()
+		xdFake.AccountScope = accountScope
+	}
+	var xdReal *xendit.Real
+	if needXenditReal {
+		baseURL := strings.TrimSpace(cfg.XenditBaseURL)
+		xdReal, err = xendit.NewReal(accountScope, cfg.XenditSecretKey, baseURL)
+		if err != nil {
+			return nil, nil, nil, "", "", fmt.Errorf("app: xendit real adapter: %w", err)
+		}
+		xdReal.Log = log
+	}
+
+	switch cfg.PaymentProvider {
+	case config.PaymentProviderFake:
+		qris = xdFake
+	case config.PaymentProviderXendit:
+		qris = xdReal
+	case config.PaymentProviderDuitku:
+		dk, derr := duitku.NewReal(
+			cfg.DuitkuMerchantCode,
+			cfg.DuitkuAPIKey,
+			cfg.DuitkuBaseURL,
+			cfg.DuitkuCallbackURL,
+			cfg.DuitkuReturnURL,
+			cfg.DuitkuQRISPaymentMethod,
+			cfg.DuitkuAccountScope,
+		)
+		if derr != nil {
+			return nil, nil, nil, "", "", fmt.Errorf("app: duitku real adapter: %w", derr)
+		}
+		dk.Log = log
+		qris = dk
+	}
+	switch cfg.DisbursementProvider {
+	case config.DisbursementProviderFake:
+		disburse = xdFake
+	case config.DisbursementProviderXendit:
+		disburse = xdReal
+	}
+	return qris, disburse, xdFake, paymentKind, disbursementKind, nil
 }
 
 // wireMailer selects capture (local/test), smtp (live), or fails closed.
@@ -970,13 +1131,14 @@ func authHashToken(raw, secret string) string {
 	return domainauth.HashTokenKeyed(raw, secret)
 }
 
-// platformComponentHealth probes Xendit/R2/Redis/mail without exposing secrets (BE-530 / INT-180).
+// platformComponentHealth probes money providers/R2/Redis/mail without exposing secrets (BE-530 / INT-180 / PROD-B40).
 // Fake/noop on live runtime is reported DOWN, never OK.
+// paymentKind / disbursementKind distinguish QRIS ingress vs withdrawal (ADR-0008).
 func platformComponentHealth(
 	ctx context.Context,
 	pool *postgres.Pool,
 	clock ports.Clock,
-	xenditKind, mailKind, redisKind string,
+	xenditKind, paymentKind, disbursementKind, mailKind, redisKind string,
 	rd RedisPinger,
 	objStore ports.ObjectStore,
 	cfg config.Config,
@@ -988,16 +1150,29 @@ func platformComponentHealth(
 	out := make([]admin.ComponentHealth, 0, 4)
 	live := cfg.IsLiveRuntime()
 
-	// Xendit: never include API keys.
-	xStatus, xMsg := "OK", "adapter kind="+xenditKind
-	if xenditKind == "fake" {
-		if live {
-			xStatus, xMsg = "DOWN", "fake adapter forbidden on live runtime"
+	// Money providers (compat component name "xendit"; message splits payment vs disbursement).
+	// Never include API keys.
+	dualMsg := "payment=" + paymentKind + " disbursement=" + disbursementKind
+	xStatus, xMsg := "OK", dualMsg
+	switch xenditKind {
+	case "fake":
+		if live && !cfg.AllowFakeProviders {
+			xStatus, xMsg = "DOWN", "fake adapters forbidden on live runtime; "+dualMsg
+		} else if live && cfg.AllowFakeProviders {
+			xStatus, xMsg = "OK", "fake adapters (staging drill ALLOW_FAKE_PROVIDERS); "+dualMsg
 		} else {
-			xStatus, xMsg = "OK", "fake adapter (local/test only)"
+			xStatus, xMsg = "OK", "fake adapters (local/test only); "+dualMsg
 		}
-	} else if xenditKind != "real" {
-		xStatus, xMsg = "DOWN", "xendit adapter not configured"
+	case "mixed":
+		xStatus, xMsg = "OK", "dual providers; "+dualMsg
+		if live && cfg.AppEnv == config.EnvProduction {
+			// Production must not run mixed fake; config should have rejected.
+			xStatus, xMsg = "DEGRADED", "mixed providers on production unexpected; "+dualMsg
+		}
+	case "real":
+		xStatus, xMsg = "OK", dualMsg
+	default:
+		xStatus, xMsg = "DOWN", "money providers not configured; "+dualMsg
 	}
 	out = append(out, admin.ComponentHealth{Component: "xendit", Status: xStatus, CheckedAt: now, Message: xMsg})
 

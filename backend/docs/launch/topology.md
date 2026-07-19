@@ -194,10 +194,34 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --scale
 
 ---
 
-## 8. References
+## 8. Dual-provider callbacks (PROD-A30)
+
+Payment and disbursement use **separate** providers (ADR-0008). HTTP surface (target):
+
+| Method | Path | Owner |
+| ------ | ---- | ----- |
+| POST | `/v1/webhooks/duitku` | Duitku payment (primary) |
+| POST | `/v1/webhooks/duitku/sandbox` | Duitku payment (sandbox) |
+| POST | `/v1/webhooks/duitku/live` | Duitku payment (live) |
+| POST | `/v1/webhooks/xendit/disbursement` | Xendit disbursement |
+| POST | `/v1/webhooks/xendit` | Legacy Xendit **payment** — no new traffic after cutover |
+
+Public staging/demo callback base (this host tunnel): `https://api.fersaku.net` + path above.
+
+**Host tunnel table, FE monorepo path, and ingress checklist:**  
+`TASK/PROD/evidence/PROD-A30/topology.md`  
+(Architecture authority: `TASK/PROD/01-PROVIDER-ARCHITECTURE.md` §4.)
+
+Tunnel remains **dev/staging demo edge only** — not production HA (see §1–§2).
+
+---
+
+## 9. References
 
 - `docs/adr/ADR-0007-production-runtime-topology.md` 
+- `docs/adr/ADR-0008-duitku-payment-xendit-disbursement.md` 
 - `docs/performance/pool-tuning.md` 
 - `docs/performance/horizontal-scaling.md` 
 - `docs/performance/resilience-drills.md` 
 - `docs/slo.md` 
+- `TASK/PROD/evidence/PROD-A30/topology.md` 

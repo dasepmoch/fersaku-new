@@ -33,8 +33,12 @@ type GatewayService struct {
 	Log       ports.Logger
 	// KeyHashSecret for HMAC of API keys (same class as session secret).
 	KeyHashSecret string
-	// AccountScope from Xendit adapter.
+	// AccountScope from money provider (xendit-primary | duitku-primary).
 	AccountScope string
+	// PaymentProvider is ports-level identity for intents: payments.ProviderXendit | payments.ProviderDuitku.
+	PaymentProvider string
+	// PaymentAccountScope e.g. xendit-primary | duitku-primary.
+	PaymentAccountScope string
 	// QRISCheckoutDisabled emergency switch (zero value = enabled).
 	QRISCheckoutDisabled bool
 	// EmergencyDisabled when set consults platform_emergency_controls (BE-510).
@@ -57,6 +61,20 @@ func (s *GatewayService) accountScope() string {
 		return s.AccountScope
 	}
 	return payments.AccountScopePrimary
+}
+
+func (s *GatewayService) paymentProvider() string {
+	if s.PaymentProvider != "" {
+		return s.PaymentProvider
+	}
+	return payments.ProviderXendit
+}
+
+func (s *GatewayService) paymentAccountScope() string {
+	if s.PaymentAccountScope != "" {
+		return s.PaymentAccountScope
+	}
+	return s.accountScope()
 }
 
 func (s *GatewayService) hashKey(raw string) string {
@@ -544,8 +562,8 @@ func (s *GatewayService) CreatePayment(ctx context.Context, req CreatePaymentReq
 		MerchantID:             req.Auth.MerchantID,
 		PaymentMode:            mode,
 		Source:                 payments.SourceQRISAPI,
-		Provider:               payments.ProviderXendit,
-		AccountScope:           s.accountScope(),
+		Provider:               s.paymentProvider(),
+		AccountScope:           s.paymentAccountScope(),
 		ExternalID:             externalID,
 		AmountIDR:              feeRes.GrossIDR,
 		Currency:               payments.CurrencyIDR,
@@ -641,7 +659,7 @@ func (s *GatewayService) CreatePayment(ctx context.Context, req CreatePaymentReq
 		Description:    desc,
 		ExpiresAt:      expiresAt,
 		PaymentMode:    mode,
-		AccountScope:   s.accountScope(),
+		AccountScope:   s.paymentAccountScope(),
 		IdempotencyKey: req.IdempotencyKey,
 		Metadata: map[string]string{
 			"orderId":  orderID,

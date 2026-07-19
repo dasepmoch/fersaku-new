@@ -16,6 +16,8 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("SESSION_SECRET", "")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("REDIS_URL", "")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
 
 	cfg, err := config.Load("fersaku-api")
 	if err != nil {
@@ -29,6 +31,9 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if !cfg.UseFakeXendit() {
 		t.Fatal("expected fake xendit in local")
+	}
+	if !cfg.UseFakePayment() || !cfg.UseFakeDisbursement() {
+		t.Fatalf("expected fake payment+disbursement, got pay=%q dis=%q", cfg.PaymentProvider, cfg.DisbursementProvider)
 	}
 }
 
@@ -64,6 +69,8 @@ func TestLocalAllowsMissingSecretsAndFakeXendit(t *testing.T) {
 	t.Setenv("XENDIT_SECRET_KEY", "")
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("REDIS_URL", "")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
 
 	cfg, err := config.Load("fersaku-api")
 	if err != nil {
@@ -71,6 +78,31 @@ func TestLocalAllowsMissingSecretsAndFakeXendit(t *testing.T) {
 	}
 	if cfg.IsProduction() {
 		t.Fatal("expected non-production")
+	}
+}
+
+func TestLocalAllowsExplicitFakeProviders(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("XENDIT_MODE", "")
+	t.Setenv("XENDIT_SECRET_KEY", "")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("local fake providers: %v", err)
+	}
+	if cfg.PaymentProvider != config.PaymentProviderFake {
+		t.Fatalf("PaymentProvider=%q", cfg.PaymentProvider)
+	}
+	if cfg.DisbursementProvider != config.DisbursementProviderFake {
+		t.Fatalf("DisbursementProvider=%q", cfg.DisbursementProvider)
+	}
+	if !cfg.UseFakePayment() || !cfg.UseFakeDisbursement() || !cfg.UseFakeXendit() {
+		t.Fatal("expected all fake helpers true")
 	}
 }
 
@@ -107,10 +139,49 @@ func TestLocalRejectsMalformedDatabaseURL(t *testing.T) {
 func TestProductionRejectsFakeXendit(t *testing.T) {
 	setMinimalProduction(t)
 	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "fake") {
 		t.Fatalf("expected fake forbidden in production, got %v", err)
+	}
+}
+
+func TestProductionRejectsFakePaymentProvider(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "xendit")
+	t.Setenv("XENDIT_MODE", "live")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "PAYMENT_PROVIDER=fake") {
+		t.Fatalf("expected PAYMENT_PROVIDER=fake forbidden, got %v", err)
+	}
+}
+
+func TestProductionRejectsFakeDisbursementProvider(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("PAYMENT_PROVIDER", "xendit")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("XENDIT_MODE", "live")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "DISBURSEMENT_PROVIDER=fake") {
+		t.Fatalf("expected DISBURSEMENT_PROVIDER=fake forbidden, got %v", err)
+	}
+}
+
+func TestProductionRejectsFakeEvenWithAllowFakeProviders(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "1")
+	t.Setenv("XENDIT_MODE", "")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "fake") {
+		t.Fatalf("production must reject fake even with ALLOW_FAKE_PROVIDERS, got %v", err)
 	}
 }
 
@@ -167,6 +238,12 @@ func TestProductionAcceptsHardenedConfig(t *testing.T) {
 	if cfg.UseFakeXendit() {
 		t.Fatal("expected live xendit")
 	}
+	if cfg.PaymentProvider != config.PaymentProviderXendit {
+		t.Fatalf("PaymentProvider=%q", cfg.PaymentProvider)
+	}
+	if cfg.DisbursementProvider != config.DisbursementProviderXendit {
+		t.Fatalf("DisbursementProvider=%q", cfg.DisbursementProvider)
+	}
 }
 
 func setMinimalProduction(t *testing.T) {
@@ -175,6 +252,9 @@ func setMinimalProduction(t *testing.T) {
 	t.Setenv("HTTP_ADDR", ":8080")
 	t.Setenv("LOG_LEVEL", "info")
 	t.Setenv("XENDIT_MODE", "live")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "")
 	t.Setenv("XENDIT_SECRET_KEY", "xnd_production_test_key_not_real")
 	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_token_production_test_xx")
 	t.Setenv("SESSION_SECRET", "prod-session-secret-32chars-min!!")
@@ -194,11 +274,33 @@ func setMinimalProduction(t *testing.T) {
 	t.Setenv("MAIL_FROM", "noreply@example.com")
 }
 
+func setMinimalStaging(t *testing.T) {
+	t.Helper()
+	t.Setenv("APP_ENV", "staging")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "live")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "")
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_staging_test")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_staging")
+	t.Setenv("SESSION_SECRET", "staging-session-secret-16")
+	t.Setenv("CSRF_SECRET", "staging-csrf-secret")
+	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
+	t.Setenv("MAIL_MODE", "smtp")
+	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
+	t.Setenv("MAIL_FROM", "noreply@example.com")
+}
+
 func TestStagingRejectsFakeXendit(t *testing.T) {
 	t.Setenv("APP_ENV", "staging")
 	t.Setenv("HTTP_ADDR", ":8080")
 	t.Setenv("LOG_LEVEL", "info")
 	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "")
 	t.Setenv("SESSION_SECRET", "staging-session-secret-16")
 	t.Setenv("CSRF_SECRET", "staging-csrf-secret")
 	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
@@ -208,6 +310,41 @@ func TestStagingRejectsFakeXendit(t *testing.T) {
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "fake") {
 		t.Fatalf("expected staging fake xendit forbidden, got %v", err)
+	}
+}
+
+func TestStagingRejectsFakeWithoutAllowFlag(t *testing.T) {
+	setMinimalStaging(t)
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("XENDIT_MODE", "")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "0")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "fake") {
+		t.Fatalf("expected staging fake forbidden without drill flag, got %v", err)
+	}
+}
+
+func TestStagingAllowsFakeWithAllowFakeProviders(t *testing.T) {
+	setMinimalStaging(t)
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("XENDIT_MODE", "")
+	t.Setenv("ALLOW_FAKE_PROVIDERS", "1")
+	// Fake path: no Xendit keys required.
+	t.Setenv("XENDIT_SECRET_KEY", "")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("staging drill with ALLOW_FAKE_PROVIDERS should load: %v", err)
+	}
+	if !cfg.AllowFakeProviders {
+		t.Fatal("expected AllowFakeProviders")
+	}
+	if !cfg.UseFakePayment() || !cfg.UseFakeDisbursement() {
+		t.Fatal("expected fake providers")
 	}
 }
 
@@ -238,5 +375,161 @@ func TestProductionRejectsNoopMail(t *testing.T) {
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "noop") {
 		t.Fatalf("expected production noop mail forbidden, got %v", err)
+	}
+}
+
+func TestLegacyXenditModeLiveMapsProvidersAndRequiresKeys(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "live")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
+	t.Setenv("XENDIT_SECRET_KEY", "")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "XENDIT_SECRET_KEY") {
+		t.Fatalf("expected keys required for live mapping, got %v", err)
+	}
+
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_local_test")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_local")
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("live with keys: %v", err)
+	}
+	if cfg.PaymentProvider != config.PaymentProviderXendit {
+		t.Fatalf("PaymentProvider=%q", cfg.PaymentProvider)
+	}
+	if cfg.DisbursementProvider != config.DisbursementProviderXendit {
+		t.Fatalf("DisbursementProvider=%q", cfg.DisbursementProvider)
+	}
+	if cfg.UseFakeXendit() || cfg.UseFakePayment() || cfg.UseFakeDisbursement() {
+		t.Fatal("expected non-fake after XENDIT_MODE=live")
+	}
+	if cfg.XenditMode != config.XenditModeLive {
+		t.Fatalf("XenditMode=%q", cfg.XenditMode)
+	}
+}
+
+func TestLegacyXenditModeFakeMapsProvidersOnLocal(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("PAYMENT_PROVIDER", "")
+	t.Setenv("DISBURSEMENT_PROVIDER", "")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("legacy fake: %v", err)
+	}
+	if cfg.PaymentProvider != config.PaymentProviderFake || cfg.DisbursementProvider != config.DisbursementProviderFake {
+		t.Fatalf("providers pay=%q dis=%q", cfg.PaymentProvider, cfg.DisbursementProvider)
+	}
+}
+
+func TestExplicitProvidersOverrideLegacyMode(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "live")
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("XENDIT_SECRET_KEY", "")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("explicit fake should win over XENDIT_MODE=live on local: %v", err)
+	}
+	if !cfg.UseFakePayment() || !cfg.UseFakeDisbursement() {
+		t.Fatal("expected explicit fake providers")
+	}
+	// Both fake → derived XenditMode=fake for compat.
+	if cfg.XenditMode != config.XenditModeFake {
+		t.Fatalf("XenditMode=%q", cfg.XenditMode)
+	}
+}
+
+func TestLocalDuitkuRequiresCredentials(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "duitku")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+	t.Setenv("DUITKU_MERCHANT_CODE", "")
+	t.Setenv("DUITKU_API_KEY", "")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "DUITKU_MERCHANT_CODE") {
+		t.Fatalf("expected duitku credentials required, got %v", err)
+	}
+
+	t.Setenv("DUITKU_MERCHANT_CODE", "DXXXX")
+	t.Setenv("DUITKU_API_KEY", "duitku-test-key-not-real")
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("duitku with keys: %v", err)
+	}
+	if cfg.PaymentProvider != config.PaymentProviderDuitku {
+		t.Fatalf("PaymentProvider=%q", cfg.PaymentProvider)
+	}
+	if cfg.DuitkuQRISPaymentMethod != "SP" {
+		t.Fatalf("DuitkuQRISPaymentMethod default=%q", cfg.DuitkuQRISPaymentMethod)
+	}
+	if cfg.DuitkuAccountScope != "duitku-primary" {
+		t.Fatalf("DuitkuAccountScope=%q", cfg.DuitkuAccountScope)
+	}
+}
+
+func TestRejectUnknownPaymentProvider(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "stripe")
+	t.Setenv("DISBURSEMENT_PROVIDER", "fake")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "PAYMENT_PROVIDER") {
+		t.Fatalf("expected unknown payment provider error, got %v", err)
+	}
+}
+
+func TestRejectUnknownDisbursementProvider(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "duitku")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "DISBURSEMENT_PROVIDER") {
+		t.Fatalf("expected unknown disbursement provider error, got %v", err)
+	}
+}
+
+func TestMixedProvidersLocalFakePayRealDisburse(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("PAYMENT_PROVIDER", "fake")
+	t.Setenv("DISBURSEMENT_PROVIDER", "xendit")
+	t.Setenv("XENDIT_SECRET_KEY", "xnd_local_test")
+	t.Setenv("XENDIT_WEBHOOK_TOKEN", "webhook_local")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("mixed: %v", err)
+	}
+	if !cfg.UseFakePayment() || cfg.UseFakeDisbursement() {
+		t.Fatal("expected fake pay + real disburse")
+	}
+	if cfg.UseFakeXendit() {
+		t.Fatal("UseFakeXendit should be false when only one side is fake")
+	}
+	if cfg.XenditMode != config.XenditModeLive {
+		t.Fatalf("XenditMode=%q want live when either real", cfg.XenditMode)
 	}
 }

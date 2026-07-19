@@ -324,6 +324,9 @@ func TestOpenAPIDeclaresGatewayAndXenditSurface(t *testing.T) {
 		"/v1/webhooks/xendit/sandbox",
 		"/v1/webhooks/xendit/live",
 		"/v1/webhooks/xendit/disbursement",
+		"/v1/webhooks/duitku",
+		"/v1/webhooks/duitku/sandbox",
+		"/v1/webhooks/duitku/live",
 		"/v1/checkout/simulate-payment",
 		"/v1/_scaffold/echo",
 	}

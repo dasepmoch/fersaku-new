@@ -7,7 +7,7 @@ Evidence run timestamps: `backend/tmp/launch-evidence/`.
 | ----------- | ------------------------------ | ------------- |
 | Mandatory store | `test/integration/onboarding_test.go` (complete w/o product, last-store guard); migration onboarding constraints | `11-go-integration.txt` |
 | API-only KYC | `kyc_test.go` + `gateway_test.go` (live denied before capability; storefront not forced) | `11-go-integration.txt` |
-| One Xendit account | ADR-0002; `XENDIT_ACCOUNT_SCOPE=xendit-primary`; no Duitku routes/code (`security_scan` / grep policy) | ADR + code |
+| Dual money path (ADR-0008) | Payment QRIS: Duitku (`PAYMENT_PROVIDER=duitku`, `adapters/duitku`); disbursement: Xendit (`DISBURSEMENT_PROVIDER=xendit`, `XENDIT_ACCOUNT_SCOPE=xendit-primary`). Xendit QRIS code kept unwired (PROD-B40 option A). Xendit payment webhook may remain for historical/late events but is not the primary create path when payment=duitku. | ADR-0008 + composition tests |
 | Launch fee invariant | `fees_test.go` domain + integration (100k→3700/96300); `RejectFeeMutation` 405; seed `LAUNCH_FEE_POLICY_V1` | unit + `11-go-integration.txt` |
 | All scoped features free | ADR-0006; no plan/entitlement schema; fee never gates access | ADR + OpenAPI |
 | Unified wallet | `ledger_test.go` source totals sum; rebuild equals projection | `11-go-integration.txt` |

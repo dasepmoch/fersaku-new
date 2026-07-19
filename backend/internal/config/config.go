@@ -22,12 +22,26 @@ const (
 	EnvTest       Env = "test"
 )
 
-// XenditMode selects the payment provider adapter.
+// XenditMode is a legacy alias for dual-provider selection (PROD-A20).
+// Prefer PaymentProvider + DisbursementProvider. Kept for backward compatibility.
 type XenditMode string
 
 const (
 	XenditModeFake XenditMode = "fake"
 	XenditModeLive XenditMode = "live"
+)
+
+// Payment provider values (PAYMENT_PROVIDER).
+const (
+	PaymentProviderFake   = "fake"
+	PaymentProviderDuitku = "duitku"
+	PaymentProviderXendit = "xendit" // legacy QRIS until PROD-B40
+)
+
+// Disbursement provider values (DISBURSEMENT_PROVIDER).
+const (
+	DisbursementProviderFake   = "fake"
+	DisbursementProviderXendit = "xendit"
 )
 
 // Config is typed process configuration for api and worker binaries.
@@ -46,11 +60,35 @@ type Config struct {
 	DatabaseURL string
 	RedisURL    string
 
+	// PaymentProvider selects QRIS payment adapter.
+	// Values: duitku | fake | xendit (xendit = temporary legacy QRIS until PROD-B40).
+	PaymentProvider string
+	// DisbursementProvider selects withdrawal adapter.
+	// Values: xendit | fake
+	DisbursementProvider string
+	// AllowFakeProviders permits PAYMENT/DISBURSEMENT_PROVIDER=fake on staging only
+	// (dry drills). Production always rejects fake even when this flag is set.
+	// Env: ALLOW_FAKE_PROVIDERS=1
+	AllowFakeProviders bool
+
+	// Duitku credentials and endpoints (empty ok when payment=fake).
+	DuitkuMerchantCode      string
+	DuitkuAPIKey            string
+	DuitkuEnv               string // sandbox|production
+	DuitkuBaseURL           string
+	DuitkuCallbackURL       string
+	DuitkuReturnURL         string
+	DuitkuQRISPaymentMethod string // default SP
+	DuitkuAccountScope      string // default duitku-primary
+
 	// Xendit adapter selection and credentials (secrets never logged).
+	// XenditMode is legacy (fake|live); derived from providers when unset.
 	XenditMode         XenditMode
 	XenditSecretKey    string
 	XenditWebhookToken string
 	XenditAccountScope string
+	XenditEnv          string // sandbox|production optional
+	XenditBaseURL      string // default https://api.xendit.co when empty at adapter wire
 
 	// Session / CSRF
 	SessionCookieName string
@@ -94,38 +132,65 @@ type Config struct {
 // serviceName should be "fersaku-api" or "fersaku-worker".
 func Load(serviceName string) (Config, error) {
 	cfg := Config{
-		AppEnv:             Env(strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "local")))),
-		HTTPAddr:           getEnv("HTTP_ADDR", ":8080"),
-		LogLevel:           strings.ToLower(strings.TrimSpace(getEnv("LOG_LEVEL", "info"))),
-		ServiceName:        serviceName,
-		ShutdownTimeout:    15 * time.Second,
-		WorkerRunOnce:      false,
-		DatabaseURL:        strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		RedisURL:           strings.TrimSpace(os.Getenv("REDIS_URL")),
-		XenditMode:         XenditMode(strings.ToLower(strings.TrimSpace(getEnv("XENDIT_MODE", "fake")))),
-		XenditSecretKey:    strings.TrimSpace(os.Getenv("XENDIT_SECRET_KEY")),
-		XenditWebhookToken: strings.TrimSpace(os.Getenv("XENDIT_WEBHOOK_TOKEN")),
-		XenditAccountScope: strings.TrimSpace(getEnv("XENDIT_ACCOUNT_SCOPE", "xendit-primary")),
-		SessionCookieName:  strings.TrimSpace(getEnv("SESSION_COOKIE_NAME", "fersaku_session")),
-		SessionSecret:      strings.TrimSpace(os.Getenv("SESSION_SECRET")),
-		CSRFSecret:         strings.TrimSpace(os.Getenv("CSRF_SECRET")),
-		KYCEncryptionKey:   strings.TrimSpace(os.Getenv("KYC_ENCRYPTION_KEY")),
-		StockEncryptionKey: strings.TrimSpace(os.Getenv("STOCK_ENCRYPTION_KEY")),
-		R2Endpoint:         strings.TrimSpace(os.Getenv("R2_ENDPOINT")),
-		R2BucketPublic:     strings.TrimSpace(os.Getenv("R2_BUCKET_PUBLIC")),
-		R2BucketPrivate:    strings.TrimSpace(os.Getenv("R2_BUCKET_PRIVATE")),
-		R2AccessKeyID:      strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID")),
-		R2SecretAccessKey:  strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
-		R2Region:           strings.TrimSpace(getEnv("R2_REGION", "auto")),
-		R2ForcePathStyle:   false,
-		MailSMTPHost:       strings.TrimSpace(os.Getenv("MAIL_SMTP_HOST")),
-		MailSMTPPort:       strings.TrimSpace(getEnv("MAIL_SMTP_PORT", "587")),
-		MailFrom:           strings.TrimSpace(os.Getenv("MAIL_FROM")),
-		MailSMTPUser:       strings.TrimSpace(os.Getenv("MAIL_SMTP_USER")),
-		MailSMTPPassword:   strings.TrimSpace(os.Getenv("MAIL_SMTP_PASSWORD")),
-		MailMode:           strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_MODE"))),
-		OTELEndpoint:        strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
-		BootstrapAdminEmail: strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
+		AppEnv:                  Env(strings.ToLower(strings.TrimSpace(getEnv("APP_ENV", "local")))),
+		HTTPAddr:                getEnv("HTTP_ADDR", ":8080"),
+		LogLevel:                strings.ToLower(strings.TrimSpace(getEnv("LOG_LEVEL", "info"))),
+		ServiceName:             serviceName,
+		ShutdownTimeout:         15 * time.Second,
+		WorkerRunOnce:           false,
+		DatabaseURL:             strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RedisURL:                strings.TrimSpace(os.Getenv("REDIS_URL")),
+		PaymentProvider:         strings.ToLower(strings.TrimSpace(os.Getenv("PAYMENT_PROVIDER"))),
+		DisbursementProvider:    strings.ToLower(strings.TrimSpace(os.Getenv("DISBURSEMENT_PROVIDER"))),
+		DuitkuMerchantCode:      strings.TrimSpace(os.Getenv("DUITKU_MERCHANT_CODE")),
+		DuitkuAPIKey:            strings.TrimSpace(os.Getenv("DUITKU_API_KEY")),
+		DuitkuEnv:               strings.ToLower(strings.TrimSpace(os.Getenv("DUITKU_ENV"))),
+		DuitkuBaseURL:           strings.TrimSpace(os.Getenv("DUITKU_BASE_URL")),
+		DuitkuCallbackURL:       strings.TrimSpace(os.Getenv("DUITKU_CALLBACK_URL")),
+		DuitkuReturnURL:         strings.TrimSpace(os.Getenv("DUITKU_RETURN_URL")),
+		DuitkuQRISPaymentMethod: strings.TrimSpace(getEnv("DUITKU_QRIS_PAYMENT_METHOD", "SP")),
+		DuitkuAccountScope:      strings.TrimSpace(getEnv("DUITKU_ACCOUNT_SCOPE", "duitku-primary")),
+		XenditMode:              XenditMode(strings.ToLower(strings.TrimSpace(os.Getenv("XENDIT_MODE")))),
+		XenditSecretKey:         strings.TrimSpace(os.Getenv("XENDIT_SECRET_KEY")),
+		XenditWebhookToken:      strings.TrimSpace(os.Getenv("XENDIT_WEBHOOK_TOKEN")),
+		XenditAccountScope:      strings.TrimSpace(getEnv("XENDIT_ACCOUNT_SCOPE", "xendit-primary")),
+		XenditEnv:               strings.ToLower(strings.TrimSpace(os.Getenv("XENDIT_ENV"))),
+		XenditBaseURL:           strings.TrimSpace(os.Getenv("XENDIT_BASE_URL")),
+		SessionCookieName:       strings.TrimSpace(getEnv("SESSION_COOKIE_NAME", "fersaku_session")),
+		SessionSecret:           strings.TrimSpace(os.Getenv("SESSION_SECRET")),
+		CSRFSecret:              strings.TrimSpace(os.Getenv("CSRF_SECRET")),
+		KYCEncryptionKey:        strings.TrimSpace(os.Getenv("KYC_ENCRYPTION_KEY")),
+		StockEncryptionKey:      strings.TrimSpace(os.Getenv("STOCK_ENCRYPTION_KEY")),
+		R2Endpoint:              strings.TrimSpace(os.Getenv("R2_ENDPOINT")),
+		R2BucketPublic:          strings.TrimSpace(os.Getenv("R2_BUCKET_PUBLIC")),
+		R2BucketPrivate:         strings.TrimSpace(os.Getenv("R2_BUCKET_PRIVATE")),
+		R2AccessKeyID:           strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID")),
+		R2SecretAccessKey:       strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY")),
+		R2Region:                strings.TrimSpace(getEnv("R2_REGION", "auto")),
+		R2ForcePathStyle:        false,
+		MailSMTPHost:            strings.TrimSpace(os.Getenv("MAIL_SMTP_HOST")),
+		MailSMTPPort:            strings.TrimSpace(getEnv("MAIL_SMTP_PORT", "587")),
+		MailFrom:                strings.TrimSpace(os.Getenv("MAIL_FROM")),
+		MailSMTPUser:            strings.TrimSpace(os.Getenv("MAIL_SMTP_USER")),
+		MailSMTPPassword:        strings.TrimSpace(os.Getenv("MAIL_SMTP_PASSWORD")),
+		MailMode:                strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_MODE"))),
+		OTELEndpoint:            strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
+		BootstrapAdminEmail:     strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
+	}
+
+	if v := strings.TrimSpace(os.Getenv("ALLOW_FAKE_PROVIDERS")); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			// Accept "1" / "0" as well as true/false
+			if v == "1" {
+				b = true
+			} else if v == "0" {
+				b = false
+			} else {
+				return Config{}, fmt.Errorf("config: ALLOW_FAKE_PROVIDERS must be bool or 0|1, got %q", v)
+			}
+		}
+		cfg.AllowFakeProviders = b
 	}
 
 	if v := strings.TrimSpace(os.Getenv("SHUTDOWN_TIMEOUT_SEC")); v != "" {
@@ -152,15 +217,65 @@ func Load(serviceName string) (Config, error) {
 		cfg.R2ForcePathStyle = b
 	}
 
+	if err := cfg.resolveProviders(); err != nil {
+		return Config{}, err
+	}
+
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
 }
 
+// resolveProviders maps legacy XENDIT_MODE into PaymentProvider / DisbursementProvider
+// and keeps XenditMode populated for backward-compatible call sites.
+func (c *Config) resolveProviders() error {
+	legacyMode := c.XenditMode
+	if legacyMode == "" {
+		// Historical default when nothing set: local fake adapters.
+		if c.PaymentProvider == "" && c.DisbursementProvider == "" {
+			legacyMode = XenditModeFake
+		}
+	}
+	switch legacyMode {
+	case XenditModeFake, XenditModeLive, "":
+	default:
+		return fmt.Errorf("config: XENDIT_MODE must be fake|live, got %q", legacyMode)
+	}
+
+	if c.PaymentProvider == "" {
+		switch legacyMode {
+		case XenditModeLive:
+			c.PaymentProvider = PaymentProviderXendit
+		default:
+			c.PaymentProvider = PaymentProviderFake
+		}
+	}
+	if c.DisbursementProvider == "" {
+		switch legacyMode {
+		case XenditModeLive:
+			c.DisbursementProvider = DisbursementProviderXendit
+		default:
+			c.DisbursementProvider = DisbursementProviderFake
+		}
+	}
+
+	// Normalize and validate known values early so XenditMode derivation is clean.
+	c.PaymentProvider = strings.ToLower(strings.TrimSpace(c.PaymentProvider))
+	c.DisbursementProvider = strings.ToLower(strings.TrimSpace(c.DisbursementProvider))
+
+	// Compat: XenditMode=fake only when both sides are fake; otherwise live.
+	if c.UseFakePayment() && c.UseFakeDisbursement() {
+		c.XenditMode = XenditModeFake
+	} else {
+		c.XenditMode = XenditModeLive
+	}
+	return nil
+}
+
 // Validate fails fast on invalid configuration.
 // Local/test allow fake adapters and missing production secrets.
-// Production fails closed for fake Xendit, missing SESSION_SECRET, etc.
+// Production fails closed for fake providers, missing SESSION_SECRET, etc.
 func (c Config) Validate() error {
 	switch c.AppEnv {
 	case EnvLocal, EnvStaging, EnvProduction, EnvTest:
@@ -186,13 +301,36 @@ func (c Config) Validate() error {
 		return fmt.Errorf("config: ShutdownTimeout out of range")
 	}
 
+	switch c.PaymentProvider {
+	case PaymentProviderFake, PaymentProviderDuitku, PaymentProviderXendit:
+	default:
+		return fmt.Errorf("config: PAYMENT_PROVIDER must be fake|duitku|xendit, got %q", c.PaymentProvider)
+	}
+	switch c.DisbursementProvider {
+	case DisbursementProviderFake, DisbursementProviderXendit:
+	default:
+		return fmt.Errorf("config: DISBURSEMENT_PROVIDER must be fake|xendit, got %q", c.DisbursementProvider)
+	}
+
 	switch c.XenditMode {
-	case XenditModeFake, XenditModeLive, "":
-		if c.XenditMode == "" {
-			return fmt.Errorf("config: XENDIT_MODE must be fake|live")
-		}
+	case XenditModeFake, XenditModeLive:
 	default:
 		return fmt.Errorf("config: XENDIT_MODE must be fake|live, got %q", c.XenditMode)
+	}
+
+	if c.DuitkuEnv != "" {
+		switch c.DuitkuEnv {
+		case "sandbox", "production":
+		default:
+			return fmt.Errorf("config: DUITKU_ENV must be sandbox|production, got %q", c.DuitkuEnv)
+		}
+	}
+	if c.XenditEnv != "" {
+		switch c.XenditEnv {
+		case "sandbox", "production":
+		default:
+			return fmt.Errorf("config: XENDIT_ENV must be sandbox|production, got %q", c.XenditEnv)
+		}
 	}
 
 	if c.DatabaseURL != "" {
@@ -213,9 +351,30 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// UseFakeXendit reports whether the fake provider adapter is selected.
+// UseFakePayment reports whether the fake QRIS payment adapter is selected.
+func (c Config) UseFakePayment() bool {
+	return c.PaymentProvider == PaymentProviderFake
+}
+
+// UseFakeDisbursement reports whether the fake disbursement adapter is selected.
+func (c Config) UseFakeDisbursement() bool {
+	return c.DisbursementProvider == DisbursementProviderFake
+}
+
+// UseFakeXendit is deprecated: true only when both payment and disbursement are fake.
+// Prefer UseFakePayment / UseFakeDisbursement (PROD-A20 dual-provider).
 func (c Config) UseFakeXendit() bool {
-	return c.XenditMode == XenditModeFake
+	return c.UseFakePayment() && c.UseFakeDisbursement()
+}
+
+// NeedsXenditCredentials is true when any path still uses the Xendit adapter.
+func (c Config) NeedsXenditCredentials() bool {
+	return c.PaymentProvider == PaymentProviderXendit || c.DisbursementProvider == DisbursementProviderXendit
+}
+
+// NeedsDuitkuCredentials is true when payment uses Duitku.
+func (c Config) NeedsDuitkuCredentials() bool {
+	return c.PaymentProvider == PaymentProviderDuitku
 }
 
 // IsProduction is true when APP_ENV=production.
@@ -223,7 +382,7 @@ func (c Config) IsProduction() bool {
 	return c.AppEnv == EnvProduction
 }
 
-// IsLiveRuntime is true for staging or production (no fake/noop authority).
+// IsLiveRuntime is true for staging or production (no fake/noop authority by default).
 func (c Config) IsLiveRuntime() bool {
 	return c.AppEnv == EnvStaging || c.AppEnv == EnvProduction
 }
@@ -247,34 +406,21 @@ func (c Config) RequiresDistributedLimiter() bool {
 }
 
 func (c Config) validateByEnv() error {
+	if err := c.validateFakeProviders(); err != nil {
+		return err
+	}
+	if err := c.validateProviderCredentials(); err != nil {
+		return err
+	}
+
 	switch c.AppEnv {
 	case EnvLocal, EnvTest:
-		// Fake adapters and missing production secrets are allowed.
-		// If Xendit live is forced in local, still require keys (fail closed for misconfig).
-		if c.XenditMode == XenditModeLive {
-			if c.XenditSecretKey == "" {
-				return fmt.Errorf("config: XENDIT_SECRET_KEY required when XENDIT_MODE=live")
-			}
-			if c.XenditWebhookToken == "" {
-				return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN required when XENDIT_MODE=live")
-			}
-		}
 		if m := c.EffectiveMailMode(); m != "capture" && m != "smtp" && m != "noop" {
 			return fmt.Errorf("config: MAIL_MODE must be capture|smtp|noop, got %q", m)
 		}
 		return nil
 
 	case EnvStaging:
-		// INT-180: staging must not boot with fake payment authority.
-		if c.XenditMode == XenditModeFake {
-			return fmt.Errorf("config: XENDIT_MODE=fake is forbidden when APP_ENV=staging (INT-180)")
-		}
-		if c.XenditSecretKey == "" {
-			return fmt.Errorf("config: XENDIT_SECRET_KEY is required when APP_ENV=staging")
-		}
-		if c.XenditWebhookToken == "" {
-			return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN is required when APP_ENV=staging")
-		}
 		if c.SessionSecret == "" {
 			return fmt.Errorf("config: SESSION_SECRET is required when APP_ENV=staging")
 		}
@@ -294,15 +440,6 @@ func (c Config) validateByEnv() error {
 
 	case EnvProduction:
 		// Production fails closed (§3.4 + INT-180).
-		if c.XenditMode == XenditModeFake {
-			return fmt.Errorf("config: XENDIT_MODE=fake is forbidden when APP_ENV=production")
-		}
-		if c.XenditSecretKey == "" {
-			return fmt.Errorf("config: XENDIT_SECRET_KEY is required when APP_ENV=production")
-		}
-		if c.XenditWebhookToken == "" {
-			return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN is required when APP_ENV=production")
-		}
 		if c.SessionSecret == "" {
 			return fmt.Errorf("config: SESSION_SECRET is required when APP_ENV=production")
 		}
@@ -350,6 +487,64 @@ func (c Config) validateByEnv() error {
 			return err
 		}
 		return nil
+	}
+	return nil
+}
+
+// validateFakeProviders enforces fail-closed fake rules (ADR-0008 / INT-180).
+// production: always reject fake payment and fake disbursement.
+// staging: reject fake unless ALLOW_FAKE_PROVIDERS=1.
+// local/test: allow fake.
+func (c Config) validateFakeProviders() error {
+	fakePay := c.UseFakePayment()
+	fakeDis := c.UseFakeDisbursement()
+	if !fakePay && !fakeDis {
+		return nil
+	}
+
+	switch c.AppEnv {
+	case EnvLocal, EnvTest:
+		return nil
+	case EnvProduction:
+		if fakePay {
+			return fmt.Errorf("config: PAYMENT_PROVIDER=fake is forbidden when APP_ENV=production")
+		}
+		if fakeDis {
+			return fmt.Errorf("config: DISBURSEMENT_PROVIDER=fake is forbidden when APP_ENV=production")
+		}
+	case EnvStaging:
+		if c.AllowFakeProviders {
+			// Staging dry-drill escape hatch only (document ALLOW_FAKE_PROVIDERS=1).
+			return nil
+		}
+		if fakePay {
+			return fmt.Errorf("config: PAYMENT_PROVIDER=fake is forbidden when APP_ENV=staging (set ALLOW_FAKE_PROVIDERS=1 for drills only; INT-180)")
+		}
+		if fakeDis {
+			return fmt.Errorf("config: DISBURSEMENT_PROVIDER=fake is forbidden when APP_ENV=staging (set ALLOW_FAKE_PROVIDERS=1 for drills only; INT-180)")
+		}
+	}
+	return nil
+}
+
+func (c Config) validateProviderCredentials() error {
+	if c.NeedsDuitkuCredentials() {
+		if c.DuitkuMerchantCode == "" {
+			return fmt.Errorf("config: DUITKU_MERCHANT_CODE is required when PAYMENT_PROVIDER=duitku")
+		}
+		if c.DuitkuAPIKey == "" {
+			return fmt.Errorf("config: DUITKU_API_KEY is required when PAYMENT_PROVIDER=duitku")
+		}
+	}
+
+	if c.NeedsXenditCredentials() {
+		// Live runtime always requires keys; local/test only when xendit path selected.
+		if c.XenditSecretKey == "" {
+			return fmt.Errorf("config: XENDIT_SECRET_KEY is required when payment or disbursement uses xendit")
+		}
+		if c.XenditWebhookToken == "" {
+			return fmt.Errorf("config: XENDIT_WEBHOOK_TOKEN is required when payment or disbursement uses xendit")
+		}
 	}
 	return nil
 }
