@@ -96,7 +96,11 @@ type RouterDeps struct {
 	SameSiteStrict bool
 
 	// RateLimiter is optional; nil disables rate limiting.
+	// Prefer a ClassLimiter implementation for per-route-class budgets.
 	RateLimiter middleware.Limiter
+
+	// RateLimitErrors optional counter for Redis/backend limiter failures (readiness).
+	RateLimitErrors *middleware.ClassLimiterErrors
 
 	// XenditWebhookToken for inbound payment + disbursement callback auth (INT-180).
 	// Never logged; constant-time compared at handlers.
@@ -106,7 +110,10 @@ type RouterDeps struct {
 	RequestTimeout time.Duration
 
 	// TrustedProxies are CIDRs trusted for X-Forwarded-For (optional).
+	// Empty = direct mode (never trust XFF).
 	TrustedProxies []string
+	// TrustedProxyMode is "direct" or "proxy" for safe diagnostics.
+	TrustedProxyMode string
 }
 
 // NewRouter builds the chi router with the BE-110/BE-600 middleware order:
@@ -123,8 +130,8 @@ func NewRouter(log ports.Logger, ids ports.IDGenerator, service string, ready fu
 		Ready:           ready,
 		StartedAt:       time.Now().UTC(),
 		CSRFSoftDisable: true,
-		RateLimiter:     middleware.NewTokenBucketLimiter(120, 20),
-		RequestTimeout:  30 * time.Second,
+		RateLimiter:    middleware.NewMemoryClassLimiter(nil),
+		RequestTimeout: 30 * time.Second,
 	})
 }
 
@@ -169,7 +176,12 @@ func NewRouterWith(d RouterDeps) http.Handler {
 		SessionCookieName: d.SessionCookieName,
 		TokenHasher:       d.TokenHasher,
 	}))
-	r.Use(middleware.RateLimit(d.RateLimiter))
+	// Rate limit after auth so subject-scoped keys are available; class separates budgets.
+	if cl, ok := d.RateLimiter.(middleware.ClassLimiter); ok {
+		r.Use(middleware.RateLimitByClass(cl, d.RateLimitErrors))
+	} else {
+		r.Use(middleware.RateLimit(d.RateLimiter))
+	}
 
 	// Not found / method not allowed → problem envelope.
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
@@ -194,10 +206,13 @@ func NewRouterWith(d RouterDeps) http.Handler {
 	r.Get("/metrics", metrics.Metrics)
 
 	status := handlers.StatusDeps{
-		Service:   d.Service,
-		Version:   d.Version,
-		AppEnv:    d.AppEnv,
-		StartedAt: d.StartedAt,
+		Service:          d.Service,
+		Version:          d.Version,
+		AppEnv:           d.AppEnv,
+		StartedAt:        d.StartedAt,
+		TrustedProxyMode: d.TrustedProxyMode,
+		TrustedProxyCIDRs: append([]string(nil), d.TrustedProxies...),
+		RateLimitErrors:  d.RateLimitErrors,
 	}
 	r.Get("/v1/status", status.Status)
 

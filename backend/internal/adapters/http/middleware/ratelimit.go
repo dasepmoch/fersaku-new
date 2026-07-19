@@ -73,10 +73,15 @@ func (l *TokenBucketLimiter) Allow(key string) (bool, int, time.Duration) {
 	return true, int(b.tokens), 0
 }
 
-// RateLimit applies Limiter using client IP as the key.
+// RateLimit applies Limiter using client IP as the key (legacy single-bucket).
+// Prefer RateLimitByClass for production multi-class budgets.
 // On deny: 429 + RATE_LIMITED problem + Retry-After seconds.
 // If lim is nil, the middleware is a no-op.
+// When lim also implements ClassLimiter, per-route-class budgets are used.
 func RateLimit(lim Limiter) func(http.Handler) http.Handler {
+	if cl, ok := lim.(ClassLimiter); ok {
+		return RateLimitByClass(cl, nil)
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if lim == nil {
@@ -87,7 +92,10 @@ func RateLimit(lim Limiter) func(http.Handler) http.Handler {
 			if key == "" {
 				key = r.RemoteAddr
 			}
-			ok, _, retry := lim.Allow(key)
+			// Prefix with class so legacy single-bucket still separates surfaces
+			// when the same Limiter is shared (MemoryClassLimiter path preferred).
+			class := ClassifyRequest(r)
+			ok, _, retry := lim.Allow(string(class) + ":" + key)
 			if !ok {
 				if retry > 0 {
 					sec := int(retry.Seconds())
@@ -97,10 +105,14 @@ func RateLimit(lim Limiter) func(http.Handler) http.Handler {
 					w.Header().Set("Retry-After", itoa(sec))
 				}
 				presenters.WriteProblem(w, r, http.StatusTooManyRequests,
-					apperr.CodeRateLimited, "Too many requests", nil)
+					apperr.CodeRateLimited, "Too many requests", map[string]any{
+						"routeClass": string(class),
+						"identity":   BoundIdentity("ip:" + key),
+					})
 				return
 			}
-			next.ServeHTTP(w, r)
+			ctx := reqctx.WithRouteClass(r.Context(), string(class))
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

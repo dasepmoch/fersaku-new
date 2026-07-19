@@ -43,6 +43,11 @@ func Logging(log ports.Logger) func(http.Handler) http.Handler {
 			if log == nil {
 				return
 			}
+			// Route class from path (not user header); independent of rate-limit middleware order.
+			rc := reqctx.RouteClass(r.Context())
+			if rc == "" {
+				rc = string(ClassifyRoute(r.URL.Path))
+			}
 			log.Info("http_request",
 				"method", r.Method,
 				"path", r.URL.Path,
@@ -52,6 +57,7 @@ func Logging(log ports.Logger) func(http.Handler) http.Handler {
 				"request_id", reqctx.RequestID(r.Context()),
 				"trace_id", reqctx.TraceID(r.Context()),
 				"client_ip", reqctx.ClientIP(r.Context()),
+				"route_class", rc,
 			)
 		})
 	}

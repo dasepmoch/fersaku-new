@@ -275,6 +275,9 @@ func setMinimalProduction(t *testing.T) {
 	// GAP-02 malware scanner
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
+	// GAP-03: explicit direct mode when no LB CIDRs in unit tests.
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "")
 }
 
 func setMinimalStaging(t *testing.T) {
@@ -297,6 +300,9 @@ func setMinimalStaging(t *testing.T) {
 	// GAP-02 malware scanner
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
+	// GAP-03: explicit direct mode when no LB CIDRs in unit tests.
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "")
 }
 
 func TestStagingRejectsFakeXendit(t *testing.T) {
@@ -314,6 +320,7 @@ func TestStagingRejectsFakeXendit(t *testing.T) {
 	t.Setenv("MAIL_FROM", "noreply@example.com")
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "fake") {
@@ -395,6 +402,7 @@ func TestStagingRejectsCaptureMail(t *testing.T) {
 	t.Setenv("MAIL_MODE", "capture")
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "capture") {
@@ -545,6 +553,7 @@ func TestProductionDuitkuRejectsSandboxBaseURL(t *testing.T) {
 	t.Setenv("MAIL_FROM", "noreply@example.com")
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "sandbox") {
@@ -579,6 +588,7 @@ func TestProductionDuitkuAllowsPassport(t *testing.T) {
 	t.Setenv("MAIL_FROM", "noreply@example.com")
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 
 	cfg, err := config.Load("fersaku-api")
 	if err != nil {
@@ -636,5 +646,102 @@ func TestMixedProvidersLocalFakePayRealDisburse(t *testing.T) {
 	}
 	if cfg.XenditMode != config.XenditModeLive {
 		t.Fatalf("XenditMode=%q want live when either real", cfg.XenditMode)
+	}
+}
+
+func TestLocalDefaultsTrustedProxyDirect(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "")
+	t.Setenv("TRUSTED_PROXY_MODE", "")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.TrustedProxyMode != "direct" {
+		t.Fatalf("TrustedProxyMode=%q", cfg.TrustedProxyMode)
+	}
+	if len(cfg.TrustedProxyCIDRs) != 0 {
+		t.Fatalf("expected empty CIDRs, got %v", cfg.TrustedProxyCIDRs)
+	}
+	pol := cfg.TrustedProxyPolicy()
+	if pol["xffTrusted"] != false {
+		t.Fatalf("policy=%v", pol)
+	}
+}
+
+func TestProductionRequiresTrustedProxyExplicit(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("TRUSTED_PROXY_MODE", "")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "TRUSTED_PROXY") {
+		t.Fatalf("expected TRUSTED_PROXY fail-closed, got %v", err)
+	}
+}
+
+func TestProductionAcceptsTrustedProxyCIDRs(t *testing.T) {
+	setMinimalProduction(t)
+	t.Setenv("TRUSTED_PROXY_MODE", "")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8, 2001:db8::1")
+
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.TrustedProxyMode != "proxy" {
+		t.Fatalf("mode=%q", cfg.TrustedProxyMode)
+	}
+	if len(cfg.TrustedProxyCIDRs) != 2 {
+		t.Fatalf("cidrs=%v", cfg.TrustedProxyCIDRs)
+	}
+	pol := cfg.TrustedProxyPolicy()
+	if pol["xffTrusted"] != true || pol["cidrCount"] != 2 {
+		t.Fatalf("policy=%v", pol)
+	}
+}
+
+func TestTrustedProxyInvalidCIDR(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "not-a-cidr")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "TRUSTED_PROXY_CIDRS") {
+		t.Fatalf("expected invalid CIDR error, got %v", err)
+	}
+}
+
+func TestTrustedProxyModeProxyRequiresCIDRs(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("TRUSTED_PROXY_MODE", "proxy")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "requires TRUSTED_PROXY_CIDRS") {
+		t.Fatalf("expected mode=proxy requires CIDRs, got %v", err)
+	}
+}
+
+func TestTrustedProxyDirectConflictsWithCIDRs(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("HTTP_ADDR", ":8080")
+	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv("XENDIT_MODE", "fake")
+	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("TRUSTED_PROXY_CIDRS", "10.0.0.1/32")
+
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "cannot be combined") {
+		t.Fatalf("expected conflict error, got %v", err)
 	}
 }

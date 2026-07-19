@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -137,6 +138,15 @@ type Config struct {
 	// BootstrapAdminEmail when set attaches SUPER_ADMIN on seed (BE-130).
 	// User must already exist (register/verify first). Does not create accounts.
 	BootstrapAdminEmail string
+
+	// TrustedProxyCIDRs are CIDRs/IPs of reverse proxies allowed to set X-Forwarded-For.
+	// Empty means direct mode (RemoteAddr only; XFF never trusted).
+	// Env: TRUSTED_PROXY_CIDRS (comma-separated). Production behind LB must set this.
+	TrustedProxyCIDRs []string
+	// TrustedProxyMode is "direct" (no XFF trust) or "proxy" (CIDRs required).
+	// Env: TRUSTED_PROXY_MODE; empty defaults to direct when CIDRs empty, proxy when set.
+	// Production/staging with empty CIDRs must be explicit direct or fail validation.
+	TrustedProxyMode string
 }
 
 // Load reads configuration from environment variables and validates.
@@ -189,6 +199,18 @@ func Load(serviceName string) (Config, error) {
 		MailMode:                strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_MODE"))),
 		OTELEndpoint:            strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
 		BootstrapAdminEmail:     strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
+		TrustedProxyMode:        strings.ToLower(strings.TrimSpace(os.Getenv("TRUSTED_PROXY_MODE"))),
+	}
+
+	if raw := strings.TrimSpace(os.Getenv("TRUSTED_PROXY_CIDRS")); raw != "" {
+		parts := strings.Split(raw, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			cfg.TrustedProxyCIDRs = append(cfg.TrustedProxyCIDRs, p)
+		}
 	}
 
 	if v := strings.TrimSpace(os.Getenv("ALLOW_FAKE_PROVIDERS")); v != "" {
@@ -248,6 +270,11 @@ func Load(serviceName string) (Config, error) {
 	}
 
 	if err := cfg.resolveProviders(); err != nil {
+		return Config{}, err
+	}
+
+	// Normalize trusted proxy policy before Validate (mutates cfg).
+	if err := cfg.validateTrustedProxies(); err != nil {
 		return Config{}, err
 	}
 
@@ -377,11 +404,126 @@ func (c Config) Validate() error {
 		}
 	}
 
+	// Trusted proxy CIDRs already normalized in Load; re-check policy for Validate-only callers.
+	if err := c.checkTrustedProxyPolicy(); err != nil {
+		return err
+	}
+
 	if err := c.validateByEnv(); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// validateTrustedProxies parses CIDRs and enforces production/staging policy.
+// Invalid CIDR always fails. Empty CIDRs = direct mode (no XFF trust).
+// On live runtime, empty CIDRs require TRUSTED_PROXY_MODE=direct or fail closed.
+func (c *Config) validateTrustedProxies() error {
+	mode := strings.ToLower(strings.TrimSpace(c.TrustedProxyMode))
+	switch mode {
+	case "", "direct", "proxy":
+	default:
+		return fmt.Errorf("config: TRUSTED_PROXY_MODE must be direct|proxy, got %q", c.TrustedProxyMode)
+	}
+
+	parsed := make([]string, 0, len(c.TrustedProxyCIDRs))
+	for _, s := range c.TrustedProxyCIDRs {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		norm, err := normalizeProxyCIDR(s)
+		if err != nil {
+			return fmt.Errorf("config: TRUSTED_PROXY_CIDRS invalid entry %q: %w", s, err)
+		}
+		parsed = append(parsed, norm)
+	}
+	c.TrustedProxyCIDRs = parsed
+
+	if len(parsed) > 0 {
+		if mode == "direct" {
+			return fmt.Errorf("config: TRUSTED_PROXY_MODE=direct cannot be combined with TRUSTED_PROXY_CIDRS")
+		}
+		c.TrustedProxyMode = "proxy"
+		return nil
+	}
+
+	// No CIDRs → direct peer only.
+	if mode == "proxy" {
+		return fmt.Errorf("config: TRUSTED_PROXY_MODE=proxy requires TRUSTED_PROXY_CIDRS")
+	}
+	if c.IsLiveRuntime() && mode == "" {
+		return fmt.Errorf("config: TRUSTED_PROXY_CIDRS is empty on %s; set LB CIDRs or TRUSTED_PROXY_MODE=direct for explicit direct-peer mode", c.AppEnv)
+	}
+	c.TrustedProxyMode = "direct"
+	return nil
+}
+
+// checkTrustedProxyPolicy is a non-mutating validation used by Validate.
+func (c Config) checkTrustedProxyPolicy() error {
+	mode := strings.ToLower(strings.TrimSpace(c.TrustedProxyMode))
+	switch mode {
+	case "", "direct", "proxy":
+	default:
+		return fmt.Errorf("config: TRUSTED_PROXY_MODE must be direct|proxy, got %q", c.TrustedProxyMode)
+	}
+	for _, s := range c.TrustedProxyCIDRs {
+		if _, err := normalizeProxyCIDR(s); err != nil {
+			return fmt.Errorf("config: TRUSTED_PROXY_CIDRS invalid entry %q: %w", s, err)
+		}
+	}
+	if len(c.TrustedProxyCIDRs) > 0 && mode == "direct" {
+		return fmt.Errorf("config: TRUSTED_PROXY_MODE=direct cannot be combined with TRUSTED_PROXY_CIDRS")
+	}
+	if len(c.TrustedProxyCIDRs) == 0 && mode == "proxy" {
+		return fmt.Errorf("config: TRUSTED_PROXY_MODE=proxy requires TRUSTED_PROXY_CIDRS")
+	}
+	if c.IsLiveRuntime() && len(c.TrustedProxyCIDRs) == 0 && mode == "" {
+		return fmt.Errorf("config: TRUSTED_PROXY_CIDRS is empty on %s; set LB CIDRs or TRUSTED_PROXY_MODE=direct for explicit direct-peer mode", c.AppEnv)
+	}
+	return nil
+}
+
+func normalizeProxyCIDR(s string) (string, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "", fmt.Errorf("empty")
+	}
+	if !strings.Contains(s, "/") {
+		ip := net.ParseIP(s)
+		if ip == nil {
+			return "", fmt.Errorf("not an IP or CIDR")
+		}
+		if ip.To4() != nil {
+			s = s + "/32"
+		} else {
+			s = s + "/128"
+		}
+	}
+	_, n, err := net.ParseCIDR(s)
+	if err != nil {
+		return "", err
+	}
+	return n.String(), nil
+}
+
+// TrustedProxyPolicy is a safe diagnostics snapshot (no raw headers).
+func (c Config) TrustedProxyPolicy() map[string]any {
+	mode := c.TrustedProxyMode
+	if mode == "" {
+		if len(c.TrustedProxyCIDRs) == 0 {
+			mode = "direct"
+		} else {
+			mode = "proxy"
+		}
+	}
+	return map[string]any{
+		"mode":       mode,
+		"cidrCount":  len(c.TrustedProxyCIDRs),
+		"cidrs":      append([]string(nil), c.TrustedProxyCIDRs...),
+		"xffTrusted": mode == "proxy" && len(c.TrustedProxyCIDRs) > 0,
+	}
 }
 
 // UseFakePayment reports whether the fake QRIS payment adapter is selected.

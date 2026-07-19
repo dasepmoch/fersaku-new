@@ -57,7 +57,7 @@ Pre-rollout (once): migrate job (advisory lock) → then rolling API/worker
 | Rule | Detail |
 | ---- | ------ |
 | TLS | Terminated at LB; app may speak plain HTTP inside VPC |
-| Trusted proxies | Configure only LB/proxy CIDRs on `TrustedProxy` middleware (`internal/adapters/http/middleware/trusted_proxy.go`) |
+| Trusted proxies | Set `TRUSTED_PROXY_CIDRS` (comma-separated LB CIDRs) or explicit `TRUSTED_PROXY_MODE=direct`. Wired via `RouterDeps.TrustedProxies` from config. Empty CIDRs on staging/production fail closed unless mode=direct. |
 | Client IP | From `X-Forwarded-For` **only** when peer is trusted |
 | Request ID | Preserve inbound `X-Request-ID` or generate; return on response |
 | Sticky sessions | **Forbidden** — sessions in Postgres |

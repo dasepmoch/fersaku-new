@@ -19,6 +19,7 @@ JSON logs via `slog` (`internal/adapters/observability`). Never log raw request/
 | `status` | int | HTTP status |
 | `latency_ms` | int | request duration |
 | `client_ip` | string | trusted-proxy resolved IP only |
+| `route_class` | string | rate-limit class (`health`/`auth`/`mutation`/`callback`/…) — not user-controlled |
 | `error_code` | string | stable platform error code when applicable |
 | `operation` | string | use-case name when set by application |
 | `result` | string | outcome class (`accepted`, `rejected`, `ok`, `broken`) |

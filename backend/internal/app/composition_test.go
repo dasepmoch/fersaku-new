@@ -3,7 +3,6 @@ package app
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/middleware"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/redis"
@@ -123,20 +122,28 @@ func TestWireMailer_SMTP(t *testing.T) {
 }
 
 func TestRateLimiterSelection_LocalIsProcessLocal(t *testing.T) {
-	// Document expected selection: local uses TokenBucketLimiter type.
-	lim := middleware.NewTokenBucketLimiter(10, 1)
-	ok, _, _ := lim.Allow("1.2.3.4")
+	// Document expected selection: local uses multi-class memory limiter.
+	lim := middleware.NewMemoryClassLimiter(nil)
+	ok, _, _, _ := lim.AllowClass(middleware.RouteClassDefault, "1.2.3.4")
 	if !ok {
 		t.Fatal("process-local should allow first request")
 	}
 }
 
 func TestRateLimiterSelection_RedisFailClosed(t *testing.T) {
-	// Nil redis client inside limiter fails closed.
-	lim := redis.NewTokenBucketLimiter(nil, 10, time.Minute)
-	ok, _, _ := lim.Allow("1.2.3.4")
+	// Nil redis client inside class limiter fails closed for money/auth classes.
+	lim := redis.NewClassTokenBucketLimiter(nil, nil)
+	ok, _, _, errBackend := lim.AllowClass(middleware.RouteClassMutation, "1.2.3.4")
 	if ok {
-		t.Fatal("redis limiter without client must fail closed")
+		t.Fatal("redis limiter without client must fail closed for mutation")
+	}
+	if !errBackend {
+		t.Fatal("expected errBackend")
+	}
+	// Health may allow during Redis outage (probe must not share money fail-closed).
+	okH, _, _, errH := lim.AllowClass(middleware.RouteClassHealth, "1.2.3.4")
+	if !okH || !errH {
+		t.Fatal("health class should allow with backend error signal")
 	}
 }
 

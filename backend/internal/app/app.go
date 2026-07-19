@@ -104,9 +104,11 @@ type Runtime struct {
 	DisbursementKind   string
 	MailKind           string
 	RedisKind          string
-	// RateLimiter is process-local on local/test; Redis-backed on staging/production.
+	// RateLimiter is process-local on local/test; Redis multi-class on staging/production.
 	RateLimiter middleware.Limiter
-	R2          r2.Noop
+	// RateLimitErrors counts Redis/backend limiter failures for readiness/status.
+	RateLimitErrors *middleware.ClassLimiterErrors
+	R2              r2.Noop
 	Health      *application.HealthService
 	// Auth is wired when DATABASE_URL is set (BE-120).
 	Auth *application.AuthService
@@ -259,14 +261,27 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	}
 	localScanPass := cfg.AppEnv == config.EnvLocal || cfg.AppEnv == config.EnvTest
 
-	// --- Rate limiter: process-local local/test; Redis on live ---
-	var rateLimiter middleware.Limiter = middleware.NewTokenBucketLimiter(120, 20)
+	// --- Rate limiter: process-local local/test; Redis multi-class on live ---
+	// Per-class budgets so health/auth/checkout/callback do not share one IP bucket.
+	rateLimitErrors := &middleware.ClassLimiterErrors{}
+	var rateLimiter middleware.Limiter = middleware.NewMemoryClassLimiter(nil)
 	if cfg.RequiresDistributedLimiter() {
 		if redisClient == nil {
 			return nil, fmt.Errorf("app: redis rate limiter required on staging/production (INT-180)")
 		}
-		rateLimiter = redis.NewTokenBucketLimiter(redisClient, 120, time.Minute)
+		rl := redis.NewClassTokenBucketLimiter(redisClient, middleware.DefaultClassBudgets())
+		rl.OnBackendError = rateLimitErrors.Inc
+		rateLimiter = rl
+		log.Info("rate_limiter_ready",
+			"kind", "redis-class",
+			"budgets", middleware.FormatClassBudgetsDiag(middleware.DefaultClassBudgets()),
+		)
 	}
+	log.Info("trusted_proxy_policy",
+		"mode", cfg.TrustedProxyMode,
+		"cidr_count", len(cfg.TrustedProxyCIDRs),
+		"xff_trusted", cfg.TrustedProxyMode == "proxy" && len(cfg.TrustedProxyCIDRs) > 0,
+	)
 
 	var pool *postgres.Pool
 	var dbPing DBPinger = postgres.Noop{}
@@ -735,8 +750,9 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		DisbursementKind: disbursementKind,
 		MailKind:         mailKind,
 		RedisKind:        redisKind,
-		RateLimiter:   rateLimiter,
-		R2:            r2.Noop{},
+		RateLimiter:     rateLimiter,
+		RateLimitErrors: rateLimitErrors,
+		R2:              r2.Noop{},
 		ObjectStore:   objStore,
 		Health:        health,
 		Auth:          authSvc,
@@ -1069,8 +1085,11 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		SecureCookies:        rt.Config.AppEnv == config.EnvProduction || rt.Config.AppEnv == config.EnvStaging,
 		SameSiteStrict:    false, // Lax: documented default for buyer/seller storefronts
 		RateLimiter:        rt.RateLimiter,
+		RateLimitErrors:    rt.RateLimitErrors,
 		XenditWebhookToken: effectiveWebhookToken(rt.Config),
 		RequestTimeout:     30 * time.Second,
+		TrustedProxies:     append([]string(nil), rt.Config.TrustedProxyCIDRs...),
+		TrustedProxyMode:   rt.Config.TrustedProxyMode,
 	})
 	srv := &http.Server{
 		Addr:              rt.Config.HTTPAddr,

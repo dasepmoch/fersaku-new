@@ -13,6 +13,7 @@ const (
 	gatewayAuthKey
 	traceIDKey
 	traceparentKey
+	routeClassKey
 )
 
 // WithRequestID stores the correlation request ID.
@@ -56,6 +57,17 @@ func WithClientIP(ctx context.Context, ip string) context.Context {
 // ClientIP returns the client IP or empty string.
 func ClientIP(ctx context.Context) string {
 	v, _ := ctx.Value(clientIPKey).(string)
+	return v
+}
+
+// WithRouteClass stores the rate-limit route class label.
+func WithRouteClass(ctx context.Context, class string) context.Context {
+	return context.WithValue(ctx, routeClassKey, class)
+}
+
+// RouteClass returns the route class or empty string.
+func RouteClass(ctx context.Context) string {
+	v, _ := ctx.Value(routeClassKey).(string)
 	return v
 }
 
