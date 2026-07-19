@@ -139,47 +139,44 @@ export function StoreOnboarding() {
     };
   }, []);
 
-  const runSlugCheck = useCallback(
-    (clean: string) => {
-      latestSlugRef.current = clean;
-      setAvailable(null);
-      if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
-      slugAbortRef.current?.abort();
+  const runSlugCheck = useCallback((clean: string) => {
+    latestSlugRef.current = clean;
+    setAvailable(null);
+    if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
+    slugAbortRef.current?.abort();
 
-      if (clean.length <= 3) {
-        setChecking(false);
-        return;
-      }
+    if (clean.length <= 3) {
+      setChecking(false);
+      return;
+    }
 
-      setChecking(true);
-      const seq = ++slugRequestSeq.current;
-      slugTimerRef.current = setTimeout(() => {
-        const ac = new AbortController();
-        slugAbortRef.current = ac;
-        void (async () => {
-          try {
-            const result = await checkSlugAvailability(clean, ac.signal);
-            if (seq !== slugRequestSeq.current) return;
-            if (result.slug !== latestSlugRef.current) return;
-            setAvailable(result.available);
-          } catch (err) {
-            if (ac.signal.aborted) return;
-            if (seq !== slugRequestSeq.current) return;
-            if (
-              err instanceof DOMException &&
-              (err.name === "AbortError" || err.name === "TimeoutError")
-            ) {
-              return;
-            }
-            setAvailable(null);
-          } finally {
-            if (seq === slugRequestSeq.current) setChecking(false);
+    setChecking(true);
+    const seq = ++slugRequestSeq.current;
+    slugTimerRef.current = setTimeout(() => {
+      const ac = new AbortController();
+      slugAbortRef.current = ac;
+      void (async () => {
+        try {
+          const result = await checkSlugAvailability(clean, ac.signal);
+          if (seq !== slugRequestSeq.current) return;
+          if (result.slug !== latestSlugRef.current) return;
+          setAvailable(result.available);
+        } catch (err) {
+          if (ac.signal.aborted) return;
+          if (seq !== slugRequestSeq.current) return;
+          if (
+            err instanceof DOMException &&
+            (err.name === "AbortError" || err.name === "TimeoutError")
+          ) {
+            return;
           }
-        })();
-      }, SLUG_DEBOUNCE_MS);
-    },
-    [],
-  );
+          setAvailable(null);
+        } finally {
+          if (seq === slugRequestSeq.current) setChecking(false);
+        }
+      })();
+    }, SLUG_DEBOUNCE_MS);
+  }, []);
 
   const checkSlug = (value: string) => {
     const clean = normalizeStoreSlug(value);
@@ -290,10 +287,7 @@ export function StoreOnboarding() {
     setStep((s) => Math.max(0, s - 1));
   };
 
-  const completion = mapCompletionDisplay(
-    progress,
-    apiMode ? "api" : "mock",
-  );
+  const completion = mapCompletionDisplay(progress, apiMode ? "api" : "mock");
   const displayName = name || progress?.store?.name || "";
   const displaySlug = slug || progress?.store?.slug || "toko-kamu";
 
@@ -607,4 +601,3 @@ function Label({
     </label>
   );
 }
-

@@ -116,8 +116,10 @@ describe("PUB-110 public fee adapter", () => {
       meta,
     } as never);
 
-    const { getPublicFeeMarketingCopy: getCopy, getActiveFeePolicyDto: getDto } =
-      await import("@/features/platform-fees/api");
+    const {
+      getPublicFeeMarketingCopy: getCopy,
+      getActiveFeePolicyDto: getDto,
+    } = await import("@/features/platform-fees/api");
 
     const { dto, source } = await getDto();
     expect(source).toBe("api");

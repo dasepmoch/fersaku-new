@@ -63,14 +63,13 @@ function fieldViolationsFromDetails(
   const fields = details.fields;
   if (!Array.isArray(fields)) return [];
   return fields
-    .filter(
-      (item): item is { field: string; code: string; message?: string } =>
-        Boolean(
-          item &&
-            typeof item === "object" &&
-            typeof (item as { field?: unknown }).field === "string" &&
-            typeof (item as { code?: unknown }).code === "string",
-        ),
+    .filter((item): item is { field: string; code: string; message?: string } =>
+      Boolean(
+        item &&
+        typeof item === "object" &&
+        typeof (item as { field?: unknown }).field === "string" &&
+        typeof (item as { code?: unknown }).code === "string",
+      ),
     )
     .map((item) => ({
       field: item.field,
@@ -312,26 +311,39 @@ export function classifyApiError(
   });
 }
 
-export function classifyThrown(error: unknown, options?: ClassifyOptions): ClassifiedApiError {
+export function classifyThrown(
+  error: unknown,
+  options?: ClassifyOptions,
+): ClassifiedApiError {
   if (error instanceof ApiError) {
     return classifyApiError(error.status, error.problem, options);
   }
   if (error instanceof Error) {
-    return classifyApiError(0, {
-      code: PROBLEM_CODES.NETWORK_ERROR,
-      message: error.message || "The API request could not reach the server.",
-    }, options);
+    return classifyApiError(
+      0,
+      {
+        code: PROBLEM_CODES.NETWORK_ERROR,
+        message: error.message || "The API request could not reach the server.",
+      },
+      options,
+    );
   }
-  return classifyApiError(0, {
-    code: PROBLEM_CODES.NETWORK_ERROR,
-    message: "The API request could not reach the server.",
-  }, options);
+  return classifyApiError(
+    0,
+    {
+      code: PROBLEM_CODES.NETWORK_ERROR,
+      message: "The API request could not reach the server.",
+    },
+    options,
+  );
 }
 
 /**
  * Parse Retry-After header (seconds or HTTP-date). Returns seconds delay or undefined.
  */
-export function parseRetryAfterHeader(value: string | null | undefined): number | undefined {
+export function parseRetryAfterHeader(
+  value: string | null | undefined,
+): number | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;

@@ -4,11 +4,11 @@
 
 **Private data in Server Components must use `serverApiRequest` (or feature adapters that call it), never the browser `apiRequest` alone for session-bound SSR.**
 
-| Surface | Client | Base URL | Auth path |
-| --- | --- | --- | --- |
-| Browser (Client Components, event handlers) | `shared/api/http-client` → `apiRequest` | same-origin relative `/v1` | `credentials: "include"` |
+| Surface                                      | Client                                               | Base URL                                                         | Auth path                                         |
+| -------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------- |
+| Browser (Client Components, event handlers)  | `shared/api/http-client` → `apiRequest`              | same-origin relative `/v1`                                       | `credentials: "include"`                          |
 | Server Components / Route Handlers (private) | `shared/api/server-http-client` → `serverApiRequest` | **server-only** `API_INTERNAL_URL` via `requireApiInternalUrl()` | **explicit Cookie allowlist** from `next/headers` |
-| Public catalog SSR (optional) | `serverApiRequest` with `privacy: "public"` | same internal URL | cookies optional (`skipCookies` / no session) |
+| Public catalog SSR (optional)                | `serverApiRequest` with `privacy: "public"`          | same internal URL                                                | cookies optional (`skipCookies` / no session)     |
 
 ## Why
 

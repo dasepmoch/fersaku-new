@@ -365,15 +365,17 @@ export const authSessionDataSchema = z.object({
   impersonation: authSessionImpersonationSchema.optional(),
 });
 
-export const authSessionEnvelopeSchema =
-  successEnvelopeSchema(authSessionDataSchema);
+export const authSessionEnvelopeSchema = successEnvelopeSchema(
+  authSessionDataSchema,
+);
 
 export const authMessageDataSchema = z.object({
   message: z.string().min(1),
 });
 
-export const authMessageEnvelopeSchema =
-  successEnvelopeSchema(authMessageDataSchema);
+export const authMessageEnvelopeSchema = successEnvelopeSchema(
+  authMessageDataSchema,
+);
 
 /** AUT-120 — password change may rotate session CSRF. */
 export const authPasswordChangeDataSchema = z.object({
@@ -498,7 +500,9 @@ export const checkoutPriceEnvelopeSchema = successEnvelopeSchema(
   checkoutPriceDtoSchema,
 );
 
-export type CheckoutQuoteRequestDto = z.infer<typeof checkoutQuoteRequestSchema>;
+export type CheckoutQuoteRequestDto = z.infer<
+  typeof checkoutQuoteRequestSchema
+>;
 export type CheckoutPriceDto = z.infer<typeof checkoutPriceDtoSchema>;
 
 // --- Checkout intent create (CHK-110) — POST /v1/checkout/intents ---
@@ -570,7 +574,9 @@ export type CreateCheckoutIntentRequestDto = z.infer<
   typeof createCheckoutIntentRequestSchema
 >;
 export type CheckoutIntentDto = z.infer<typeof checkoutIntentDtoSchema>;
-export type CheckoutIntentStatusDto = z.infer<typeof checkoutIntentStatusSchema>;
+export type CheckoutIntentStatusDto = z.infer<
+  typeof checkoutIntentStatusSchema
+>;
 
 // --- Public/buyer order result (CHK-130) — payment fields only; no delivery secrets ---
 
@@ -606,9 +612,8 @@ export const orderResultDtoSchema = z.object({
   storeSlug: z.string().optional(),
 });
 
-export const orderResultEnvelopeSchema = successEnvelopeSchema(
-  orderResultDtoSchema,
-);
+export const orderResultEnvelopeSchema =
+  successEnvelopeSchema(orderResultDtoSchema);
 
 export type OrderResultDto = z.infer<typeof orderResultDtoSchema>;
 
@@ -623,12 +628,7 @@ export const deliveryAccessDtoSchema = z.object({
   grantId: z.string().min(1),
   orderId: z.string().min(1),
   orderItemId: z.string().min(1),
-  deliveryKind: z.enum([
-    "DOWNLOAD",
-    "PROTECTED_LINK",
-    "CREDENTIAL",
-    "CODE",
-  ]),
+  deliveryKind: z.enum(["DOWNLOAD", "PROTECTED_LINK", "CREDENTIAL", "CODE"]),
   status: z.string().min(1),
   accessCount: z.number().int().min(0).optional(),
   maxAccesses: z.number().int().min(0).optional(),
@@ -704,7 +704,10 @@ export const invoiceSnapshotDtoSchema = z
     merchantNetIdr: moneyIdrSchema.optional(),
     couponCode: z.string().optional(),
     couponVersion: z.number().int().optional().nullable(),
-    paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional().nullable(),
+    paidAt: z
+      .union([rfc3339TimestampSchema, z.string().min(1)])
+      .optional()
+      .nullable(),
     buyer: invoiceBuyerSnapshotDtoSchema.optional(),
     issuer: invoiceIssuerSnapshotDtoSchema.optional(),
     lines: z.array(invoiceLineSnapshotDtoSchema).optional(),
@@ -736,7 +739,9 @@ export const invoiceDtoSchema = z.object({
    * Immutable financial/product snapshot. OpenAPI allows free-form object;
    * when structured fields present, money must be int IDR.
    */
-  snapshot: z.union([invoiceSnapshotDtoSchema, z.record(z.string(), z.unknown())]).optional(),
+  snapshot: z
+    .union([invoiceSnapshotDtoSchema, z.record(z.string(), z.unknown())])
+    .optional(),
   /** Raw public verify code only if BE ever projects it (usually omitted after issue). */
   publicCode: z.string().min(1).optional(),
 });
@@ -764,10 +769,14 @@ export const publicInvoiceVerifyEnvelopeSchema = successEnvelopeSchema(
   publicInvoiceVerifyDtoSchema,
 );
 
-export type InvoiceLineSnapshotDto = z.infer<typeof invoiceLineSnapshotDtoSchema>;
+export type InvoiceLineSnapshotDto = z.infer<
+  typeof invoiceLineSnapshotDtoSchema
+>;
 export type InvoiceSnapshotDto = z.infer<typeof invoiceSnapshotDtoSchema>;
 export type InvoiceDto = z.infer<typeof invoiceDtoSchema>;
-export type PublicInvoiceVerifyDto = z.infer<typeof publicInvoiceVerifyDtoSchema>;
+export type PublicInvoiceVerifyDto = z.infer<
+  typeof publicInvoiceVerifyDtoSchema
+>;
 
 // --- Buyer purchases (BUY-100) — ownership-scoped; no delivery secrets ---
 
@@ -784,7 +793,10 @@ export const buyerPurchaseSummaryDtoSchema = z.object({
   source: z.string().optional(),
   currency: z.string().optional(),
   grossIdr: moneyIdrSchema,
-  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
   itemCount: z.number().int().min(0).optional(),
   deliveryStatus: z.string().optional(),
@@ -824,7 +836,10 @@ export const buyerPurchaseDetailDtoSchema = z.object({
   tipIdr: moneyIdrSchema.optional(),
   feeIdr: moneyIdrSchema.optional(),
   grossIdr: moneyIdrSchema,
-  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
   items: z.array(buyerPurchaseItemDtoSchema),
 });
@@ -865,9 +880,8 @@ export const buyerReviewDtoSchema = z.object({
   sellerReply: z.string().nullable().optional(),
 });
 
-export const buyerReviewEnvelopeSchema = successEnvelopeSchema(
-  buyerReviewDtoSchema,
-);
+export const buyerReviewEnvelopeSchema =
+  successEnvelopeSchema(buyerReviewDtoSchema);
 
 /** Create: exact rating/title/body; optional productId/storeId as mismatch guards only. */
 export const buyerCreateReviewRequestSchema = z.object({
@@ -922,7 +936,9 @@ export const buyerSessionRevokeEnvelopeSchema = successEnvelopeSchema(
 );
 
 export type BuyerSessionDto = z.infer<typeof buyerSessionDtoSchema>;
-export type BuyerSessionListDataDto = z.infer<typeof buyerSessionListDataSchema>;
+export type BuyerSessionListDataDto = z.infer<
+  typeof buyerSessionListDataSchema
+>;
 export type BuyerCreateReviewRequest = z.infer<
   typeof buyerCreateReviewRequestSchema
 >;
@@ -1141,13 +1157,7 @@ export const sellerReviewReplyEnvelopeSchema = successEnvelopeSchema(
 );
 
 export const reportSellerReviewRequestSchema = z.object({
-  reasonCode: z.enum([
-    "SPAM",
-    "ABUSE",
-    "OFF_TOPIC",
-    "OTHER",
-    "INACCURATE",
-  ]),
+  reasonCode: z.enum(["SPAM", "ABUSE", "OFF_TOPIC", "OTHER", "INACCURATE"]),
   context: z.string().max(1000).optional(),
 });
 
@@ -1197,7 +1207,10 @@ export const sellerOrderSummaryDtoSchema = z.object({
   feeIdr: moneyIdrSchema,
   merchantNetIdr: moneyIdrSchema,
   deliveryStatus: z.string().optional(),
-  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
 });
 
@@ -1221,11 +1234,23 @@ export const sellerOrderGrantMetaDtoSchema = z.object({
   status: z.string().min(1),
   accessCount: z.number().int().min(0),
   maxAccesses: z.number().int().min(0),
-  activatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
-  revokedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
-  failedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  activatedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
+  revokedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
+  failedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   failReason: z.string().nullable().optional(),
-  lastAccessedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  lastAccessedAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
 });
 
@@ -1260,7 +1285,10 @@ export const sellerOrderDetailDtoSchema = z.object({
   feeIdr: moneyIdrSchema,
   grossIdr: moneyIdrSchema,
   merchantNetIdr: moneyIdrSchema,
-  paidAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).nullable().optional(),
+  paidAt: z
+    .union([rfc3339TimestampSchema, z.string().min(1)])
+    .nullable()
+    .optional(),
   createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
   productTitle: z.string().optional(),
   items: z.array(sellerOrderItemDtoSchema),
@@ -1313,9 +1341,7 @@ export const sellerCustomerSummaryDtoSchema = z.object({
   orderCount: z.number().int().min(0),
   spentIdr: moneyIdrSchema,
   lastPurchaseAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
-  firstSeenAt: z
-    .union([rfc3339TimestampSchema, z.string().min(1)])
-    .optional(),
+  firstSeenAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
   lastProductTitle: z.string().optional(),
   lastOrderGrossIdr: moneyIdrSchema.optional(),
   lastPaymentStatus: z.string().optional(),
@@ -1338,9 +1364,7 @@ export const sellerCustomerNoteDtoSchema = z.object({
   body: z.string(),
   version: z.number().int().min(1),
   updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]),
-  createdAt: z
-    .union([rfc3339TimestampSchema, z.string().min(1)])
-    .optional(),
+  createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
 });
 
 export const sellerCustomerConsentDtoSchema = z.object({
@@ -1491,7 +1515,9 @@ export const slugAvailabilityEnvelopeSchema = successEnvelopeSchema(
 );
 
 export type OnboardingStateDto = z.infer<typeof onboardingStateSchema>;
-export type OnboardingProgressDto = z.infer<typeof onboardingProgressDataSchema>;
+export type OnboardingProgressDto = z.infer<
+  typeof onboardingProgressDataSchema
+>;
 export type OnboardingStoreSummaryDto = z.infer<
   typeof onboardingStoreSummarySchema
 >;
@@ -1575,7 +1601,9 @@ export type AnalyticsChannelBreakdownDto = z.infer<
   typeof analyticsChannelBreakdownSchema
 >;
 export type AnalyticsTrafficRowDto = z.infer<typeof analyticsTrafficRowSchema>;
-export type AnalyticsTrafficPageDto = z.infer<typeof analyticsTrafficPageSchema>;
+export type AnalyticsTrafficPageDto = z.infer<
+  typeof analyticsTrafficPageSchema
+>;
 
 // --- Seller finance summary / revenue / ledger (SEL-400) ---
 
@@ -1680,7 +1708,9 @@ export const financeLedgerEnvelopeSchema = successEnvelopeSchema(
 );
 
 export type FinanceSummaryDto = z.infer<typeof financeSummaryDataSchema>;
-export type FinanceSourceAmountsDto = z.infer<typeof financeSourceAmountsSchema>;
+export type FinanceSourceAmountsDto = z.infer<
+  typeof financeSourceAmountsSchema
+>;
 export type FinanceRevenuePointDto = z.infer<typeof financeRevenuePointSchema>;
 export type FinanceLedgerItemDto = z.infer<typeof financeLedgerItemSchema>;
 export type FinanceLedgerPageDto = z.infer<typeof financeLedgerPageSchema>;
@@ -1714,9 +1744,8 @@ export const bankAccountListEnvelopeSchema = successEnvelopeSchema(
   bankAccountListDataSchema,
 );
 
-export const bankAccountEnvelopeSchema = successEnvelopeSchema(
-  bankAccountDtoSchema,
-);
+export const bankAccountEnvelopeSchema =
+  successEnvelopeSchema(bankAccountDtoSchema);
 
 /** POST create body — full accountNumber is write-only; never returned. */
 export const bankAccountCreateRequestSchema = z.object({
@@ -1823,9 +1852,8 @@ export const withdrawalListEnvelopeSchema = successEnvelopeSchema(
   withdrawalListDataSchema,
 );
 
-export const withdrawalEnvelopeSchema = successEnvelopeSchema(
-  withdrawalDtoSchema,
-);
+export const withdrawalEnvelopeSchema =
+  successEnvelopeSchema(withdrawalDtoSchema);
 
 /**
  * BE lock DTO: locked + lockedUntil + reason when active.
@@ -2220,9 +2248,8 @@ export const storeDomainListEnvelopeSchema = successEnvelopeSchema(
   z.array(storeDomainDtoSchema),
 );
 
-export const storeDomainEnvelopeSchema = successEnvelopeSchema(
-  storeDomainDtoSchema,
-);
+export const storeDomainEnvelopeSchema =
+  successEnvelopeSchema(storeDomainDtoSchema);
 
 export const storeDomainCreateRequestSchema = z.object({
   hostname: z.string().min(1).max(253),
@@ -2247,9 +2274,8 @@ export const hostResolveDtoSchema = z.object({
   storeName: z.string().optional(),
 });
 
-export const hostResolveEnvelopeSchema = successEnvelopeSchema(
-  hostResolveDtoSchema,
-);
+export const hostResolveEnvelopeSchema =
+  successEnvelopeSchema(hostResolveDtoSchema);
 
 export type StoreDomainDto = z.infer<typeof storeDomainDtoSchema>;
 export type StoreDomainCreateRequest = z.infer<
@@ -2288,9 +2314,7 @@ export const storefrontStudioDtoSchema = z.object({
   storefrontRevision: z.number().int().optional(),
   publishedETag: z.string().optional(),
   publishedConfig: storefrontConfigDtoSchema.optional(),
-  publishedAt: z
-    .union([rfc3339TimestampSchema, z.string().min(1)])
-    .optional(),
+  publishedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
 });
 
 export const storefrontStudioEnvelopeSchema = successEnvelopeSchema(
@@ -2325,7 +2349,9 @@ export const storefrontPublishEnvelopeSchema = successEnvelopeSchema(
 export type StorefrontConfigDto = z.infer<typeof storefrontConfigDtoSchema>;
 export type StorefrontRevisionDto = z.infer<typeof storefrontRevisionDtoSchema>;
 export type StorefrontStudioDto = z.infer<typeof storefrontStudioDtoSchema>;
-export type StorefrontDraftRequest = z.infer<typeof storefrontDraftRequestSchema>;
+export type StorefrontDraftRequest = z.infer<
+  typeof storefrontDraftRequestSchema
+>;
 export type StorefrontPublishRequest = z.infer<
   typeof storefrontPublishRequestSchema
 >;
@@ -2385,9 +2411,8 @@ export const objectMetaDtoSchema = z.object({
   updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
 });
 
-export const objectMetaEnvelopeSchema = successEnvelopeSchema(
-  objectMetaDtoSchema,
-);
+export const objectMetaEnvelopeSchema =
+  successEnvelopeSchema(objectMetaDtoSchema);
 
 /**
  * Presign envelope. `uploadUrl` is a short-lived secret capability —
@@ -2729,14 +2754,16 @@ export function adminListEnvelopeSchema<TSchema extends z.ZodType>(
   });
 }
 
-export const adminMerchantListEnvelopeSchema =
-  adminListEnvelopeSchema(adminMerchantDtoSchema);
+export const adminMerchantListEnvelopeSchema = adminListEnvelopeSchema(
+  adminMerchantDtoSchema,
+);
 export const adminBuyerListEnvelopeSchema =
   adminListEnvelopeSchema(adminBuyerDtoSchema);
 export const adminOrderListEnvelopeSchema =
   adminListEnvelopeSchema(adminOrderDtoSchema);
-export const adminPaymentListEnvelopeSchema =
-  adminListEnvelopeSchema(adminPaymentDtoSchema);
+export const adminPaymentListEnvelopeSchema = adminListEnvelopeSchema(
+  adminPaymentDtoSchema,
+);
 export const adminWithdrawalListEnvelopeSchema = adminListEnvelopeSchema(
   adminWithdrawalDtoSchema,
 );
@@ -2747,9 +2774,8 @@ export const adminAuditEventListEnvelopeSchema = adminListEnvelopeSchema(
 export const adminReviewListEnvelopeSchema =
   adminListEnvelopeSchema(adminReviewDtoSchema);
 
-export const adminReviewEnvelopeSchema = successEnvelopeSchema(
-  adminReviewDtoSchema,
-);
+export const adminReviewEnvelopeSchema =
+  successEnvelopeSchema(adminReviewDtoSchema);
 
 /** ADM-330 — POST /v1/admin/reviews/{reviewId}/transition result. */
 export const adminReviewModerateDataSchema = z.object({
@@ -2775,8 +2801,9 @@ export const adminBuyerEnvelopeSchema =
   successEnvelopeSchema(adminBuyerDtoSchema);
 export const adminOrderEnvelopeSchema =
   successEnvelopeSchema(adminOrderDtoSchema);
-export const adminPaymentEnvelopeSchema =
-  successEnvelopeSchema(adminPaymentDtoSchema);
+export const adminPaymentEnvelopeSchema = successEnvelopeSchema(
+  adminPaymentDtoSchema,
+);
 export const adminPaymentMismatchListEnvelopeSchema = successEnvelopeSchema(
   adminPaymentMismatchListDataSchema,
 );
@@ -2930,7 +2957,9 @@ export const impersonationTerminateEnvelopeSchema = successEnvelopeSchema(
   impersonationTerminateDataSchema,
 );
 
-export type ImpersonationBannerDto = z.infer<typeof impersonationBannerDtoSchema>;
+export type ImpersonationBannerDto = z.infer<
+  typeof impersonationBannerDtoSchema
+>;
 export type ImpersonationStartDataDto = z.infer<
   typeof impersonationStartDataSchema
 >;
@@ -3006,13 +3035,15 @@ export const adminMaskedCredentialDtoSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export const adminCredentialIssuanceDtoSchema = z.object({
-  id: z.string().min(1).optional(),
-  status: z.string().optional(),
-  merchantId: z.string().optional(),
-  authorizedAt: z.string().optional(),
-  reason: z.string().optional(),
-}).passthrough();
+export const adminCredentialIssuanceDtoSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    status: z.string().optional(),
+    merchantId: z.string().optional(),
+    authorizedAt: z.string().optional(),
+    reason: z.string().optional(),
+  })
+  .passthrough();
 
 export const adminMerchantCredentialsDataSchema = z.object({
   credentials: z.array(adminMaskedCredentialDtoSchema),
@@ -3034,7 +3065,9 @@ export const adminCredentialAuthorizeDataSchema = z
     (v) =>
       !JSON.stringify(v).includes("fsk_live_") &&
       !JSON.stringify(v).includes("fsk_test_"),
-    { message: "Admin credential response must never include raw key material" },
+    {
+      message: "Admin credential response must never include raw key material",
+    },
   );
 
 export const adminCredentialAuthorizeEnvelopeSchema = successEnvelopeSchema(
@@ -3621,9 +3654,7 @@ export const adminProviderCallbackDtoSchema = z
     paymentMode: z.string().optional(),
     providerEventId: z.string().optional(),
     processingState: z.string().min(1),
-    receivedAt: z
-      .union([rfc3339TimestampSchema, z.string().min(1)])
-      .optional(),
+    receivedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
     attemptCount: z.number().int().optional(),
     replayCount: z.number().int().optional(),
     normalizedType: z.string().optional(),
@@ -3685,12 +3716,8 @@ export const adminSellerWebhookDeliveryDtoSchema = z
     deliveredAt: z
       .union([rfc3339TimestampSchema, z.string().min(1)])
       .optional(),
-    createdAt: z
-      .union([rfc3339TimestampSchema, z.string().min(1)])
-      .optional(),
-    updatedAt: z
-      .union([rfc3339TimestampSchema, z.string().min(1)])
-      .optional(),
+    createdAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
+    updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
   })
   .passthrough()
   .superRefine((val, ctx) =>
@@ -3751,9 +3778,7 @@ export const adminEmergencyControlDtoSchema = z.object({
   reason: z.string().optional().default(""),
   incidentTicket: z.string().optional(),
   updatedBy: z.string().nullable().optional(),
-  effectiveAt: z
-    .union([rfc3339TimestampSchema, z.string().min(1)])
-    .optional(),
+  effectiveAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
   updatedAt: z.union([rfc3339TimestampSchema, z.string().min(1)]).optional(),
 });
 
@@ -3845,4 +3870,3 @@ export type AdminFeePreviewDto = z.infer<typeof adminFeePreviewDtoSchema>;
 export type AdminFeePreviewRequest = z.infer<
   typeof adminFeePreviewRequestSchema
 >;
-

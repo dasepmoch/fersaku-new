@@ -30,7 +30,10 @@ import {
   maxBytesForPurpose,
   validateClientFile,
 } from "@/features/seller/objects/validate";
-import { bufferToHex, normalizeChecksumHex } from "@/features/seller/objects/checksum";
+import {
+  bufferToHex,
+  normalizeChecksumHex,
+} from "@/features/seller/objects/checksum";
 import {
   PRODUCT_FILE_MAX_BYTES,
   PUBLIC_ASSET_MAX_BYTES,
@@ -265,9 +268,7 @@ describe("SEL-230 API adapters", () => {
     });
 
     const [path, opts] = apiRequestMock.mock.calls[0]!;
-    expect(path).toBe(
-      "/v1/stores/store_a/objects/obj_1/complete",
-    );
+    expect(path).toBe("/v1/stores/store_a/objects/obj_1/complete");
     expect(opts.method).toBe("POST");
     expect(opts.body).toEqual({ checksumSha256: "b".repeat(64) });
     expect(result.status).toBe("READY");

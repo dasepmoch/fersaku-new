@@ -272,9 +272,7 @@ function CouponForm() {
             type="button"
             className="mt-5 h-11 w-full rounded-xl bg-[#173f2c] text-[10px] font-extrabold text-white disabled:opacity-60"
             disabled={
-              createMutation.isPending ||
-              activateMutation.isPending ||
-              !storeId
+              createMutation.isPending || activateMutation.isPending || !storeId
             }
             onClick={onSaveAndActivate}
           >

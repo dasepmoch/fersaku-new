@@ -27,9 +27,7 @@ export function hasPermission(
     "authenticated" in session
       ? Boolean(session.authenticated)
       : Boolean((session as SessionClaims).subjectId);
-  return (
-    authenticated && (perms.includes("*") || perms.includes(permission))
-  );
+  return authenticated && (perms.includes("*") || perms.includes(permission));
 }
 
 export function toFrontendSession(claims: SessionClaims): FrontendSession {

@@ -30,10 +30,10 @@ import (
 type WebhookService struct {
 	Store WebhookStore
 	// Auth optional for MFA on secret claim.
-	Auth *AuthService
-	IDs  ports.IDGenerator
+	Auth  *AuthService
+	IDs   ports.IDGenerator
 	Clock ports.Clock
-	Log  ports.Logger
+	Log   ports.Logger
 	// EncryptionKey for envelope-encrypting signing secrets.
 	EncryptionKey string
 	// ClaimHashSecret for one-time secret claim tokens.
@@ -555,11 +555,11 @@ func (s *WebhookService) EnqueuePaymentPaid(ctx context.Context, pi paymentsInte
 		return nil
 	}
 	body, _ := json.Marshal(map[string]any{
-		"id":              eventID,
-		"type":            webhooks.EventPaymentPaid,
-		"payloadVersion":  webhooks.PayloadVersionV1,
-		"createdAt":       s.now().UTC().Format(time.RFC3339),
-		"test":            false,
+		"id":             eventID,
+		"type":           webhooks.EventPaymentPaid,
+		"payloadVersion": webhooks.PayloadVersionV1,
+		"createdAt":      s.now().UTC().Format(time.RFC3339),
+		"test":           false,
 		"data": map[string]any{
 			"paymentIntentId": pi.ID,
 			"orderId":         pi.OrderID,

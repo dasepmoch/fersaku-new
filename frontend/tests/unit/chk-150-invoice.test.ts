@@ -383,9 +383,7 @@ describe("CHK-150 mock path", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { getBuyerInvoice } = await import(
-      "@/features/commerce/invoice/api"
-    );
+    const { getBuyerInvoice } = await import("@/features/commerce/invoice/api");
     const result = await getBuyerInvoice("FRS-240712-1848");
     expect(result?.grossIdr).toBe(129_000);
     expect(result?.issuerName).toBe("Asep AI Tools");

@@ -16,15 +16,15 @@ type TransactionFeeResult struct {
 // WithdrawalFeeResult is the pure breakdown for a wallet debit withdrawal.
 // amount is merchant wallet debit, not target net received.
 type WithdrawalFeeResult struct {
-	AmountIDR           int64
-	PercentBps          int64
-	PlatformFeeIDR      int64
-	ProviderFeeIDR      int64
-	TotalFeeIDR         int64
-	NetDisbursementIDR  int64
-	MinimumAmountIDR    int64
-	Currency            string
-	PolicyVersionID     string
+	AmountIDR          int64
+	PercentBps         int64
+	PlatformFeeIDR     int64
+	ProviderFeeIDR     int64
+	TotalFeeIDR        int64
+	NetDisbursementIDR int64
+	MinimumAmountIDR   int64
+	Currency           string
+	PolicyVersionID    string
 }
 
 // CalculateTransactionFee applies:

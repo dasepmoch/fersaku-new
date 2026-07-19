@@ -28,7 +28,6 @@ function repoPath(rel: string): string {
   return path.join(root, "frontend", rel);
 }
 
-
 function countPng(dir: string): number {
   if (!existsSync(dir)) return 0;
   let n = 0;
@@ -49,16 +48,14 @@ function snapshotName(route: string): string {
 test.describe("QLT-230 parent — mock registration + isolation", () => {
   test("mock Playwright projects are desktop + mobile; API isolated", () => {
     const mockCfg = readFileSync(repoPath("playwright.config.ts"), "utf8");
-    const apiCfg = readFileSync(
-      repoPath("playwright.api.config.ts"),
-      "utf8",
-    );
+    const apiCfg = readFileSync(repoPath("playwright.api.config.ts"), "utf8");
 
     expect(mockCfg.includes("desktop-chromium"), "desktop project").toBe(true);
     expect(mockCfg.includes("mobile-chromium"), "mobile project").toBe(true);
-    expect(mockCfg.includes('testIgnore: ["**/api/**"]'), "mock ignores api/").toBe(
-      true,
-    );
+    expect(
+      mockCfg.includes('testIgnore: ["**/api/**"]'),
+      "mock ignores api/",
+    ).toBe(true);
     expect(
       mockCfg.includes("__screenshots__") ||
         mockCfg.includes("snapshotPathTemplate"),
@@ -67,9 +64,9 @@ test.describe("QLT-230 parent — mock registration + isolation", () => {
     expect(mockCfg.includes("3100"), "mock base port 3100").toBe(true);
 
     // API suite must not own mock visual baselines or mock visual.spec.
-    expect(apiCfg.includes("visual.spec") || apiCfg.includes("smoke.spec")).toBe(
-      false,
-    );
+    expect(
+      apiCfg.includes("visual.spec") || apiCfg.includes("smoke.spec"),
+    ).toBe(false);
     expect(apiCfg.includes("api-desktop-chromium")).toBe(true);
   });
 
@@ -152,15 +149,11 @@ test.describe("QLT-230 parent — a11y + interaction samples", () => {
     // Documented contrast debt must stay explicit, not silently dropped.
     expect(src.includes("color-contrast")).toBe(true);
     // At least the frozen a11y sample routes remain listed.
-    for (const route of [
-      "/",
-      "/checkout/prod_01",
-      "/dashboard",
-      "/admin",
-    ]) {
-      expect(src.includes(`"${route}"`) || src.includes(`'${route}'`), route).toBe(
-        true,
-      );
+    for (const route of ["/", "/checkout/prod_01", "/dashboard", "/admin"]) {
+      expect(
+        src.includes(`"${route}"`) || src.includes(`'${route}'`),
+        route,
+      ).toBe(true);
     }
   });
 
@@ -219,10 +212,7 @@ test.describe("QLT-230 parent — baseline review + API co-evolution policy", ()
   test("mock baselines path is not an API-mode capture dump", () => {
     // Parent policy: mock __screenshots__ stay mock-authority; API must not
     // silently share this tree without distinct project (documented in coevo).
-    const apiCfg = readFileSync(
-      repoPath("playwright.api.config.ts"),
-      "utf8",
-    );
+    const apiCfg = readFileSync(repoPath("playwright.api.config.ts"), "utf8");
     expect(
       apiCfg.includes("tests/e2e/__screenshots__") &&
         apiCfg.includes("toHaveScreenshot"),

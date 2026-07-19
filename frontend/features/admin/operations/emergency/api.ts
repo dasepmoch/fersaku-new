@@ -107,13 +107,10 @@ export async function listAdminProviders(
     return demoComponentHealth();
   }
 
-  const response = await apiRequest<ProvidersEnvelope>(
-    "/v1/admin/providers",
-    {
-      schema: adminProviderHealthListEnvelopeSchema,
-      signal,
-    },
-  );
+  const response = await apiRequest<ProvidersEnvelope>("/v1/admin/providers", {
+    schema: adminProviderHealthListEnvelopeSchema,
+    signal,
+  });
   const items = response.data.items as AdminProviderHealthDto[];
   return items.map(mapProviderHealthDto);
 }
@@ -155,15 +152,10 @@ export async function listAdminProviderInfrastructure(
     listAdminProviders(signal),
   ]);
 
-  const system =
-    sysSettled.status === "fulfilled" ? sysSettled.value : null;
-  const providers =
-    provSettled.status === "fulfilled" ? provSettled.value : [];
+  const system = sysSettled.status === "fulfilled" ? sysSettled.value : null;
+  const providers = provSettled.status === "fulfilled" ? provSettled.value : [];
 
-  const rows = composeProviderRows(
-    system?.componentHealth ?? [],
-    providers,
-  );
+  const rows = composeProviderRows(system?.componentHealth ?? [], providers);
 
   let emergencyControls = system?.emergencyControls ?? [];
   if (!system && emergencyControls.length === 0) {
@@ -174,8 +166,9 @@ export async function listAdminProviderInfrastructure(
     }
   }
 
-  const overallKind = system?.overallKind
-    ?? (rows.length
+  const overallKind =
+    system?.overallKind ??
+    (rows.length
       ? rows.some((r) => r.statusKind === "down")
         ? "down"
         : rows.some((r) => r.statusKind === "degraded")
@@ -319,7 +312,10 @@ export async function setAdminEmergencyControl(
       conflict: false,
     };
   } catch (error) {
-    if (error instanceof ApiError && (error.status === 409 || error.code === PROBLEM_CODES.CONFLICT)) {
+    if (
+      error instanceof ApiError &&
+      (error.status === 409 || error.code === PROBLEM_CODES.CONFLICT)
+    ) {
       throw error;
     }
     throw error;
@@ -364,9 +360,8 @@ export async function previewAdminSystemFees(
   });
 
   if (shouldUseMockFixtures("adminRead")) {
-    const { calculateTransactionFee, calculateWithdrawalFee } = await import(
-      "@/shared/finance/fee-policy"
-    );
+    const { calculateTransactionFee, calculateWithdrawalFee } =
+      await import("@/shared/finance/fee-policy");
     if (body.kind === "withdrawal") {
       const w = calculateWithdrawalFee(body.amount, body.providerFee);
       return {

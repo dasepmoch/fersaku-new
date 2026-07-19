@@ -101,21 +101,21 @@ type StaffInvitation struct {
 
 // MerchantInvitation invites a seller/staff to a merchant tenant.
 type MerchantInvitation struct {
-	ID                 string
-	EmailNormalized    string
-	EmailDisplay       string
-	InviterUserID      string
-	MerchantID         *string
-	RoleInMerchant     MerchantMemberRole
-	OnboardingPurpose  string
-	TokenHash          string
-	Status             InvitationStatus
-	ExpiresAt          time.Time
-	AcceptedAt         *time.Time
-	AcceptedUserID     *string
-	RevokedAt          *time.Time
-	RevokedBy          *string
-	IdempotencyKey     *string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                string
+	EmailNormalized   string
+	EmailDisplay      string
+	InviterUserID     string
+	MerchantID        *string
+	RoleInMerchant    MerchantMemberRole
+	OnboardingPurpose string
+	TokenHash         string
+	Status            InvitationStatus
+	ExpiresAt         time.Time
+	AcceptedAt        *time.Time
+	AcceptedUserID    *string
+	RevokedAt         *time.Time
+	RevokedBy         *string
+	IdempotencyKey    *string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }

@@ -9,10 +9,7 @@ import type {
   SystemHealthSnapshot,
 } from "./data";
 import { emergencySeed } from "./data";
-import {
-  overallHealthKind,
-  overallHealthLabel,
-} from "./mappers";
+import { overallHealthKind, overallHealthLabel } from "./mappers";
 
 export function demoEmergencyControls(): EmergencyControl[] {
   return emergencySeed.map((c) => ({ ...c }));

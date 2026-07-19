@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -23,9 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -39,8 +33,5 @@
     ".next-e2e-api/types/**/*.ts",
     ".next-e2e-api/dev/types/**/*.ts"
   ],
-  "exclude": [
-    ".next-e2e-api",
-    "node_modules"
-  ]
+  "exclude": [".next-e2e-api", "node_modules"]
 }

@@ -41,8 +41,7 @@ export function BuyerReviewCard({
   const mockMode = getDomainSource("buyer") === "mock";
   const apiMode = isBuyerReviewApiDomain();
   const canSubmit =
-    mockMode ||
-    (apiMode && Boolean(orderItemId || serverReview?.id));
+    mockMode || (apiMode && Boolean(orderItemId || serverReview?.id));
 
   if (submitted)
     return (

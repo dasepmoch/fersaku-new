@@ -27,7 +27,11 @@ import { buildLoginHref, loginPathForSurface } from "./return-to";
 
 export type ServerSessionResult =
   | { ok: true; claims: SessionClaims }
-  | { ok: false; kind: "anonymous" | "expired" | "error" | "mock"; code?: string };
+  | {
+      ok: false;
+      kind: "anonymous" | "expired" | "error" | "mock";
+      code?: string;
+    };
 
 /**
  * Read current session on the server. Mock domain returns prototype claims.
@@ -70,8 +74,7 @@ export async function readServerSession(options?: {
       if (error.status === 401) {
         return {
           ok: false,
-          kind:
-            error.code === "AUTH_SESSION_EXPIRED" ? "expired" : "anonymous",
+          kind: error.code === "AUTH_SESSION_EXPIRED" ? "expired" : "anonymous",
           code: error.code,
         };
       }

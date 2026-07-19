@@ -10,7 +10,10 @@ import {
   usePublishSellerProductMutation,
   useSellerProduct,
 } from "@/features/catalog/hooks";
-import type { ProductFieldError, ProductFormField } from "@/features/catalog/contracts";
+import type {
+  ProductFieldError,
+  ProductFormField,
+} from "@/features/catalog/contracts";
 import {
   mapProductCommandThrown,
   normalizeProductSlug,
@@ -111,15 +114,15 @@ export function ProductDetail({ id }: { id: string }) {
     [],
   );
 
-  useEffect(() => {
-    if (!product || product.id === hydratedId) return;
+  // Hydrate form fields when product identity changes (render-time adjust).
+  if (product && product.id !== hydratedId) {
+    setHydratedId(product.id);
     setTitle(product.title);
     setSlug(product.slug);
     setDescription(product.description);
     setPriceText(String(product.price));
     setArchived(product.status === "archived");
-    setHydratedId(product.id);
-  }, [product, hydratedId]);
+  }
 
   const applyErrors = (err: unknown) => {
     const mapped = mapProductCommandThrown(err);
@@ -558,11 +561,7 @@ export function ProductDetail({ id }: { id: string }) {
                       error={fieldMsg(fieldErrors, "price")}
                     />
                   ) : (
-                    <Input
-                      label="Harga"
-                      value={String(p.price)}
-                      prefix="Rp"
-                    />
+                    <Input label="Harga" value={String(p.price)} prefix="Rp" />
                   )}
                   <Select
                     label="Status"

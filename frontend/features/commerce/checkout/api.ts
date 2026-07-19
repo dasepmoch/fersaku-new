@@ -71,15 +71,12 @@ export async function requestCheckoutQuote(
   const response = await apiRequest<
     { data: Parameters<typeof mapCheckoutPriceDto>[0] },
     typeof body
-  >(
-    "/v1/checkout/quote",
-    {
-      schema: checkoutPriceEnvelopeSchema,
-      method: "POST",
-      body,
-      signal: options?.signal,
-    },
-  );
+  >("/v1/checkout/quote", {
+    schema: checkoutPriceEnvelopeSchema,
+    method: "POST",
+    body,
+    signal: options?.signal,
+  });
   return mapCheckoutPriceDto(response.data);
 }
 

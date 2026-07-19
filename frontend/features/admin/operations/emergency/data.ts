@@ -12,10 +12,7 @@ export const EMERGENCY_SWITCH_NAMES = [
 export type EmergencySwitchName = (typeof EMERGENCY_SWITCH_NAMES)[number];
 
 /** UI row id used by existing switchboard chrome. */
-export type EmergencyControlUiId =
-  | "registration"
-  | "qris"
-  | "withdrawals";
+export type EmergencyControlUiId = "registration" | "qris" | "withdrawals";
 
 export type EmergencyControl = {
   id: EmergencyControlUiId;
@@ -32,11 +29,7 @@ export type EmergencyControl = {
   updatedAt?: string;
 };
 
-export type HealthStatusKind =
-  | "ok"
-  | "degraded"
-  | "down"
-  | "unknown";
+export type HealthStatusKind = "ok" | "degraded" | "down" | "unknown";
 
 export type ProviderHealthRow = {
   id: string;

@@ -273,7 +273,10 @@ describe("SEL-220 seller product commands", () => {
     expect(publishCall[1].idempotencyKey).toBe("idem-pub-1");
     expect(publishCall[1].body).toBeUndefined();
 
-    const archiveCall = apiRequestMock.mock.calls[1] as [string, { method: string }];
+    const archiveCall = apiRequestMock.mock.calls[1] as [
+      string,
+      { method: string },
+    ];
     expect(archiveCall[0]).toBe(
       "/v1/stores/store_live/products/prod_new/archive",
     );

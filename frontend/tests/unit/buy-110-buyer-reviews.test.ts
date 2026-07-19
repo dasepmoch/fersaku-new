@@ -99,9 +99,9 @@ describe("BUY-110 buyer review schemas", () => {
       body: "Updated",
     });
     expect(parsed.expectedVersion).toBe(1);
-    expect(
-      buyerPatchReviewRequestSchema.safeParse({ rating: 4 }).success,
-    ).toBe(false);
+    expect(buyerPatchReviewRequestSchema.safeParse({ rating: 4 }).success).toBe(
+      false,
+    );
   });
 
   it("parses buyer review DTO + envelope", () => {
@@ -169,9 +169,8 @@ describe("BUY-110 createBuyerReview adapter", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { createBuyerReview, isBuyerReviewApiDomain } = await import(
-      "@/features/buyer/data/api"
-    );
+    const { createBuyerReview, isBuyerReviewApiDomain } =
+      await import("@/features/buyer/data/api");
     expect(isBuyerReviewApiDomain()).toBe(false);
     const review = await createBuyerReview({
       orderItemId: "oi_mock",
@@ -186,9 +185,9 @@ describe("BUY-110 createBuyerReview adapter", () => {
   });
 
   it("api create posts exact body and maps response", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: reviewDto, meta }, 201),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ data: reviewDto, meta }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
     const { createBuyerReview, isBuyerReviewApiDomain } = await loadApiMode();
@@ -333,9 +332,8 @@ describe("BUY-110 patchBuyerReview adapter", () => {
 
 describe("BUY-110 purchase detail maps orderItemId for review create", () => {
   it("detail mapper exposes orderItemId", async () => {
-    const { mapBuyerPurchaseDetailDto } = await import(
-      "@/features/buyer/data/mappers"
-    );
+    const { mapBuyerPurchaseDetailDto } =
+      await import("@/features/buyer/data/mappers");
     const view = mapBuyerPurchaseDetailDto({
       orderId: "01HQ0ORDER000000000000001",
       orderNumber: "FRS-240712-1842",
@@ -365,9 +363,8 @@ describe("BUY-110 purchase detail maps orderItemId for review create", () => {
 
 describe("BUY-110 version-update control disposition", () => {
   it("api purchase never enables sellerUpdates (no fake version command)", async () => {
-    const { mapBuyerPurchaseDetailDto } = await import(
-      "@/features/buyer/data/mappers"
-    );
+    const { mapBuyerPurchaseDetailDto } =
+      await import("@/features/buyer/data/mappers");
     const view = mapBuyerPurchaseDetailDto({
       orderId: "01HQ0ORDER000000000000001",
       orderNumber: "FRS-1",

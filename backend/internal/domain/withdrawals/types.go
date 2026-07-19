@@ -40,7 +40,7 @@ const (
 	SourceQRISAPI    = "QRIS_API"
 	SourceMixed      = "MIXED"
 
-	CurrencyIDR = "IDR"
+	CurrencyIDR    = "IDR"
 	ProviderXendit = "xendit"
 )
 
@@ -53,22 +53,22 @@ const (
 
 // BankAccount is a merchant payout target (number ciphertext never leaves service layer).
 type BankAccount struct {
-	ID                    string
-	MerchantID            string
-	BankCode              string
-	BankName              string
-	AccountHolderName     string
-	AccountNumberCipher   []byte
-	EncryptionKeyVersion  string
-	AccountNumberMasked   string
-	AccountNumberLast4    string
-	Status                string
-	IsPrimary             bool
-	Version               int64
-	VerifiedAt            *time.Time
-	ArchivedAt            *time.Time
-	CreatedAt             time.Time
-	UpdatedAt             time.Time
+	ID                   string
+	MerchantID           string
+	BankCode             string
+	BankName             string
+	AccountHolderName    string
+	AccountNumberCipher  []byte
+	EncryptionKeyVersion string
+	AccountNumberMasked  string
+	AccountNumberLast4   string
+	Status               string
+	IsPrimary            bool
+	Version              int64
+	VerifiedAt           *time.Time
+	ArchivedAt           *time.Time
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 // Quote is a short-lived locked fee/bank snapshot.

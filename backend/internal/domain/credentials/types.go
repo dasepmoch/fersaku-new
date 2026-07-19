@@ -12,7 +12,7 @@ const (
 
 // Claim kinds.
 const (
-	ClaimKindAPIKey               = "API_KEY"
+	ClaimKindAPIKey                = "API_KEY"
 	ClaimKindWebhookEndpointSecret = "WEBHOOK_ENDPOINT_SECRET"
 )
 
@@ -26,18 +26,18 @@ const (
 
 // Claim TTL and bounds.
 const (
-	ClaimTTL           = 15 * time.Minute
-	IssuanceAuthTTL    = 7 * 24 * time.Hour
-	MaxClaimAttempts   = 5
-	ClaimTokenBytes    = 32
+	ClaimTTL         = 15 * time.Minute
+	IssuanceAuthTTL  = 7 * 24 * time.Hour
+	MaxClaimAttempts = 5
+	ClaimTokenBytes  = 32
 )
 
 // Outbox topics (no raw secrets in payload).
 const (
-	TopicCredentialClaimed  = "credential.claimed"
-	TopicCredentialRevoked  = "credential.revoked"
+	TopicCredentialClaimed   = "credential.claimed"
+	TopicCredentialRevoked   = "credential.revoked"
 	TopicCredentialSuspended = "credential.suspended"
-	TopicIssuanceRequested  = "credential.issuance.requested"
+	TopicIssuanceRequested   = "credential.issuance.requested"
 )
 
 // NormalizePurpose maps UI purpose strings to stored values.
@@ -85,21 +85,21 @@ type IssuanceView struct {
 
 // SecretClaim is a one-time claim row (hash only).
 type SecretClaim struct {
-	ID                   string
-	Kind                 string
-	ResourceType         string
-	ResourceID           string
-	ResourceVersion      int32
-	MerchantID           string
-	RecipientUserID      string
-	ClaimTokenHash       string
-	Status               string
-	Attempts             int32
-	MaxAttempts          int32
-	ExpiresAt            time.Time
-	ConsumedAt           *time.Time
-	MFABindingSessionID  *string
-	IssuanceRequestID    *string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	ID                  string
+	Kind                string
+	ResourceType        string
+	ResourceID          string
+	ResourceVersion     int32
+	MerchantID          string
+	RecipientUserID     string
+	ClaimTokenHash      string
+	Status              string
+	Attempts            int32
+	MaxAttempts         int32
+	ExpiresAt           time.Time
+	ConsumedAt          *time.Time
+	MFABindingSessionID *string
+	IssuanceRequestID   *string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }

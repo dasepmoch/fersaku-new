@@ -153,7 +153,9 @@ func (s *rejectOnlyStore) MarkPaymentTerminal(context.Context, string, string, *
 func (s *rejectOnlyStore) SetFinancialState(context.Context, string, string, time.Time) error {
 	panic("unexpected")
 }
-func (s *rejectOnlyStore) MarkOrderPaid(context.Context, string, time.Time) error { panic("unexpected") }
+func (s *rejectOnlyStore) MarkOrderPaid(context.Context, string, time.Time) error {
+	panic("unexpected")
+}
 func (s *rejectOnlyStore) MarkOrderTerminal(context.Context, string, string, string, time.Time) error {
 	panic("unexpected")
 }
@@ -181,5 +183,5 @@ func (s *rejectOnlyStore) CountProviderEventsByCanonical(context.Context, string
 func (s *rejectOnlyStore) CountRejections(context.Context, string) (int64, error) {
 	return int64(s.rejections), nil
 }
-func (s *rejectOnlyStore) IsNotFound(error) bool         { return false }
-func (s *rejectOnlyStore) IsUniqueViolation(error) bool  { return false }
+func (s *rejectOnlyStore) IsNotFound(error) bool        { return false }
+func (s *rejectOnlyStore) IsUniqueViolation(error) bool { return false }

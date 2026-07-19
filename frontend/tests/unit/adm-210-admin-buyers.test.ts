@@ -28,9 +28,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -121,7 +121,9 @@ describe("ADM-210 admin buyer support surface", () => {
       seller: "Asep AI Tools",
       status: "Paid",
     });
-    expect(JSON.stringify(view)).not.toMatch(/password|secret|credential|A8K2L/i);
+    expect(JSON.stringify(view)).not.toMatch(
+      /password|secret|credential|A8K2L/i,
+    );
     assertNoSecretsInAdminBuyerProjection(view);
   });
 

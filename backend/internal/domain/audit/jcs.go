@@ -39,11 +39,11 @@ func CanonicalizeLogicalEvent(e LogicalEvent) ([]byte, error) {
 	e.OccurredAt = e.OccurredAt.UTC()
 	// Build a map with stable keys and omit empty optional strings.
 	m := map[string]any{
-		"eventId":     e.EventID,
-		"action":      e.Action,
+		"eventId":      e.EventID,
+		"action":       e.Action,
 		"resourceType": e.ResourceType,
-		"resourceId":  e.ResourceID,
-		"occurredAt":  e.OccurredAt.Format(time.RFC3339Nano),
+		"resourceId":   e.ResourceID,
+		"occurredAt":   e.OccurredAt.Format(time.RFC3339Nano),
 	}
 	if e.ActorUserID != "" {
 		m["actorUserId"] = e.ActorUserID

@@ -21,21 +21,21 @@ const (
 
 // Invoice is the authorized invoice header.
 type Invoice struct {
-	ID              string
-	OrderID         string
-	StoreID         string
-	MerchantID      string
-	InvoiceNumber   string
-	PublicCodeHash  string
-	PublicCodeHint  string
-	Status          string
-	Currency        string
-	GrossIDR        int64
-	PaidAt          *time.Time
-	CurrentVersion  int32
-	BuyerUserID     *string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID             string
+	OrderID        string
+	StoreID        string
+	MerchantID     string
+	InvoiceNumber  string
+	PublicCodeHash string
+	PublicCodeHint string
+	Status         string
+	Currency       string
+	GrossIDR       int64
+	PaidAt         *time.Time
+	CurrentVersion int32
+	BuyerUserID    *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // Version is an immutable financial/document snapshot.
@@ -55,25 +55,25 @@ type Version struct {
 
 // Snapshot is the canonical immutable invoice body stored in jsonb.
 type Snapshot struct {
-	InvoiceNumber   string           `json:"invoiceNumber"`
-	OrderID         string           `json:"orderId"`
-	OrderNumber     string           `json:"orderNumber"`
-	StoreID         string           `json:"storeId"`
-	MerchantID      string           `json:"merchantId"`
-	Currency        string           `json:"currency"`
-	SubtotalIDR     int64            `json:"subtotalIdr"`
-	DiscountIDR     int64            `json:"discountIdr"`
-	TipIDR          int64            `json:"tipIdr"`
-	FeeIDR          int64            `json:"feeIdr"`
-	GrossIDR        int64            `json:"grossIdr"`
-	MerchantNetIDR  int64            `json:"merchantNetIdr"`
-	CouponCode      string           `json:"couponCode,omitempty"`
-	CouponVersion   *int32           `json:"couponVersion,omitempty"`
-	PaidAt          *time.Time       `json:"paidAt,omitempty"`
-	Buyer           BuyerSnapshot    `json:"buyer"`
-	Issuer          IssuerSnapshot   `json:"issuer"`
-	Lines           []LineSnapshot   `json:"lines"`
-	RendererVersion string           `json:"rendererVersion"`
+	InvoiceNumber   string         `json:"invoiceNumber"`
+	OrderID         string         `json:"orderId"`
+	OrderNumber     string         `json:"orderNumber"`
+	StoreID         string         `json:"storeId"`
+	MerchantID      string         `json:"merchantId"`
+	Currency        string         `json:"currency"`
+	SubtotalIDR     int64          `json:"subtotalIdr"`
+	DiscountIDR     int64          `json:"discountIdr"`
+	TipIDR          int64          `json:"tipIdr"`
+	FeeIDR          int64          `json:"feeIdr"`
+	GrossIDR        int64          `json:"grossIdr"`
+	MerchantNetIDR  int64          `json:"merchantNetIdr"`
+	CouponCode      string         `json:"couponCode,omitempty"`
+	CouponVersion   *int32         `json:"couponVersion,omitempty"`
+	PaidAt          *time.Time     `json:"paidAt,omitempty"`
+	Buyer           BuyerSnapshot  `json:"buyer"`
+	Issuer          IssuerSnapshot `json:"issuer"`
+	Lines           []LineSnapshot `json:"lines"`
+	RendererVersion string         `json:"rendererVersion"`
 }
 
 // BuyerSnapshot is privacy-safe buyer identity frozen at issue time.

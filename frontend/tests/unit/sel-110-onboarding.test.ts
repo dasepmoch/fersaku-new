@@ -33,9 +33,9 @@ import { createIdempotencyIntentHolder } from "@/shared/query/mutation-policy";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -206,20 +206,22 @@ describe("SEL-110 slug race / stale response", () => {
       resolveSlow = resolve;
     });
 
-    apiRequestMock.mockImplementation(async (path: string, opts?: { query?: { slug?: string } }) => {
-      const slug = opts?.query?.slug ?? "";
-      if (slug === "slow-shop") {
-        await slow;
+    apiRequestMock.mockImplementation(
+      async (path: string, opts?: { query?: { slug?: string } }) => {
+        const slug = opts?.query?.slug ?? "";
+        if (slug === "slow-shop") {
+          await slow;
+          return {
+            data: { slug: "slow-shop", available: true },
+            meta: { requestId: "r1", timestamp: "2026-07-17T00:00:00Z" },
+          };
+        }
         return {
-          data: { slug: "slow-shop", available: true },
-          meta: { requestId: "r1", timestamp: "2026-07-17T00:00:00Z" },
+          data: { slug: "fast-shop", available: false },
+          meta: { requestId: "r2", timestamp: "2026-07-17T00:00:00Z" },
         };
-      }
-      return {
-        data: { slug: "fast-shop", available: false },
-        meta: { requestId: "r2", timestamp: "2026-07-17T00:00:00Z" },
-      };
-    });
+      },
+    );
 
     const latest = { slug: "slow-shop" };
     const apply = (result: { slug: string; available: boolean }) => {
@@ -272,9 +274,7 @@ describe("SEL-110 duplicate create is idempotent", () => {
     );
     expect(keys[0]).toBe(key);
     expect(keys[1]).toBe(key);
-    expect(keys[0]).toMatch(
-      /^[0-9a-f-]{36}$|^idem_[a-z0-9]+_[a-z0-9]+$/i,
-    );
+    expect(keys[0]).toMatch(/^[0-9a-f-]{36}$|^idem_[a-z0-9]+_[a-z0-9]+$/i);
   });
 
   it("mock create returns same store on second submit", async () => {
@@ -352,7 +352,10 @@ describe("SEL-110 completion server-authoritative", () => {
 
   it("PATCH advances draft fields without inventing COMPLETE", async () => {
     apiRequestMock.mockResolvedValue({
-      data: progressDto({ state: "PRODUCT_OPTIONAL", step: "PRODUCT_OPTIONAL" }),
+      data: progressDto({
+        state: "PRODUCT_OPTIONAL",
+        step: "PRODUCT_OPTIONAL",
+      }),
       meta: { requestId: "r", timestamp: "2026-07-17T00:00:00Z" },
     });
     const p = await patchOnboardingStore({

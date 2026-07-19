@@ -8,10 +8,7 @@ export type ProductStatus = "draft" | "published" | "archived";
  * `credentials` maps to wire type `code` + delivery kind CREDENTIAL (SEL-220).
  */
 export type ProductDeliveryOption =
-  | "download"
-  | "link"
-  | "code"
-  | "credentials";
+  "download" | "link" | "code" | "credentials";
 
 /** Inventory/delivery kind after catalog type freeze (SEL-220 / SEL-240). */
 export type ProductDeliveryKind = "DOWNLOAD" | "LINK" | "CODE" | "CREDENTIAL";
@@ -32,13 +29,7 @@ export const SELLER_PRODUCT_LIST_LIMIT = 50;
 
 /** Form field keys that map to existing product editor regions. */
 export type ProductFormField =
-  | "title"
-  | "slug"
-  | "description"
-  | "price"
-  | "type"
-  | "short"
-  | "generic";
+  "title" | "slug" | "description" | "price" | "type" | "short" | "generic";
 
 export type ProductFieldError = {
   field: ProductFormField;

@@ -82,24 +82,18 @@ export function Withdrawals() {
         <MiniStat
           label="Siap ditarik"
           value={
-            financeApi
-              ? compactRupiah(summary.availableAmount)
-              : "Rp18,24jt"
+            financeApi ? compactRupiah(summary.availableAmount) : "Rp18,24jt"
           }
           note="Storefront + QRIS API"
         />
         <MiniStat
           label="Sedang diproses"
-          value={
-            financeApi ? compactRupiah(processingTotal) : "Rp7jt"
-          }
+          value={financeApi ? compactRupiah(processingTotal) : "Rp7jt"}
           note="Estimasi hari ini"
         />
         <MiniStat
           label="Total ditarik"
-          value={
-            financeApi ? compactRupiah(completedTotal) : "Rp42,5jt"
-          }
+          value={financeApi ? compactRupiah(completedTotal) : "Rp42,5jt"}
           note="Sepanjang waktu"
         />
       </div>

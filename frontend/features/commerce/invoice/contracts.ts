@@ -83,6 +83,7 @@ export const INVOICE_SEMANTICS = {
     "Print/download only from verified server projection (window.print); no-store on private reads.",
   publicVerify:
     "Path/code token is public verify code (hashed at rest); response never includes buyer PII/secrets.",
-  invalid: "Invalid/tampered/revoked → invalid composition; never fabricate valid.",
+  invalid:
+    "Invalid/tampered/revoked → invalid composition; never fabricate valid.",
   noSecrets: "Delivery secrets never on invoice projection.",
 } as const;

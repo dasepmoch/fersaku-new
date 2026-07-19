@@ -33,9 +33,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -202,7 +202,10 @@ describe("ADM-120 admin overview/read foundation", () => {
 
   it("permission deny path: missing admin.dashboard.read fails closed", () => {
     expect(
-      claimsHavePermission(["merchants.read", "orders.read"], "admin.dashboard.read"),
+      claimsHavePermission(
+        ["merchants.read", "orders.read"],
+        "admin.dashboard.read",
+      ),
     ).toBe(false);
     expect(claimsHavePermission([], "admin.dashboard.read")).toBe(false);
     expect(claimsHavePermission(null, "admin.dashboard.read")).toBe(false);

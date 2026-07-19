@@ -41,7 +41,9 @@ type StatusEnvelope = z.infer<typeof adminMerchantStatusUpdateEnvelopeSchema>;
 type ApiAccessEnvelope = z.infer<
   typeof adminMerchantApiAccessUpdateEnvelopeSchema
 >;
-type FinanceEnvelope = z.infer<typeof adminMerchantFinanceSummaryEnvelopeSchema>;
+type FinanceEnvelope = z.infer<
+  typeof adminMerchantFinanceSummaryEnvelopeSchema
+>;
 type CredentialsEnvelope = z.infer<
   typeof adminMerchantCredentialsEnvelopeSchema
 >;
@@ -293,10 +295,7 @@ export async function authorizeMerchantCredential(
     };
   }
 
-  const response = await apiRequest<
-    AuthorizeEnvelope,
-    { reason: string }
-  >(
+  const response = await apiRequest<AuthorizeEnvelope, { reason: string }>(
     `/v1/admin/merchants/${encodeURIComponent(input.merchantId)}/api-credentials/${pathSuffix}`,
     {
       schema: adminCredentialAuthorizeEnvelopeSchema,

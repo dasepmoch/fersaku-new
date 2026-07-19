@@ -204,7 +204,9 @@ func (s *duitkuHandlerStore) MarkPaymentTerminal(context.Context, string, string
 func (s *duitkuHandlerStore) SetFinancialState(context.Context, string, string, time.Time) error {
 	panic("unexpected")
 }
-func (s *duitkuHandlerStore) MarkOrderPaid(context.Context, string, time.Time) error { panic("unexpected") }
+func (s *duitkuHandlerStore) MarkOrderPaid(context.Context, string, time.Time) error {
+	panic("unexpected")
+}
 func (s *duitkuHandlerStore) MarkOrderTerminal(context.Context, string, string, string, time.Time) error {
 	panic("unexpected")
 }

@@ -38,12 +38,12 @@ const (
 type DeliveryStatus string
 
 const (
-	DeliveryPending     DeliveryStatus = "PENDING"
-	DeliveryProcessing  DeliveryStatus = "PROCESSING"
-	DeliverySent        DeliveryStatus = "SENT"
-	DeliveryFailed      DeliveryStatus = "FAILED"
-	DeliverySuppressed  DeliveryStatus = "SUPPRESSED"
-	DeliverySkipped     DeliveryStatus = "SKIPPED"
+	DeliveryPending    DeliveryStatus = "PENDING"
+	DeliveryProcessing DeliveryStatus = "PROCESSING"
+	DeliverySent       DeliveryStatus = "SENT"
+	DeliveryFailed     DeliveryStatus = "FAILED"
+	DeliverySuppressed DeliveryStatus = "SUPPRESSED"
+	DeliverySkipped    DeliveryStatus = "SKIPPED"
 )
 
 // Notification is one in-app inbox row (recipient-scoped).

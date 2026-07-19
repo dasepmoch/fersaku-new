@@ -111,9 +111,9 @@ function installMockSeller() {
 
 describe("SEL-320 schemas", () => {
   it("accepts endpoint list without raw secret fields", () => {
-    expect(sellerWebhookEndpointDtoSchema.safeParse(activeEndpoint).success).toBe(
-      true,
-    );
+    expect(
+      sellerWebhookEndpointDtoSchema.safeParse(activeEndpoint).success,
+    ).toBe(true);
     const env = sellerWebhookEndpointListEnvelopeSchema.safeParse({
       data: { endpoints: [activeEndpoint, pendingEndpoint] },
       meta,
@@ -312,9 +312,8 @@ describe("SEL-320 api adapters", () => {
       data: { endpoints: [activeEndpoint, pendingEndpoint] },
       meta,
     });
-    const { listSellerWebhooks } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { listSellerWebhooks } =
+      await import("@/features/seller/webhooks/api");
     const list = await listSellerWebhooks("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/webhooks",
@@ -339,9 +338,8 @@ describe("SEL-320 api adapters", () => {
       },
       meta,
     });
-    const { createSellerWebhook } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { createSellerWebhook } =
+      await import("@/features/seller/webhooks/api");
     const offer = await createSellerWebhook("store_live", {
       url: "https://hooks.merchant.example/fsk",
       paymentMode: "SANDBOX",
@@ -368,9 +366,8 @@ describe("SEL-320 api adapters", () => {
       },
       meta,
     });
-    const { claimSellerWebhookSecret } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { claimSellerWebhookSecret } =
+      await import("@/features/seller/webhooks/api");
     const reveal = await claimSellerWebhookSecret(
       "store_live",
       "whep_live_01",
@@ -414,9 +411,8 @@ describe("SEL-320 api adapters", () => {
         message: "Resource not found",
       }),
     );
-    const { listSellerWebhooks } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { listSellerWebhooks } =
+      await import("@/features/seller/webhooks/api");
     await expect(listSellerWebhooks("store_foreign")).rejects.toBeInstanceOf(
       ApiError,
     );
@@ -435,9 +431,8 @@ describe("SEL-320 api adapters", () => {
       },
       meta,
     });
-    const { testSellerWebhook } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { testSellerWebhook } =
+      await import("@/features/seller/webhooks/api");
     const result = await testSellerWebhook("store_live", "whep_live_01");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/webhooks/whep_live_01/test",
@@ -456,9 +451,8 @@ describe("SEL-320 api adapters", () => {
       data: { deliveries: [deliveryOk, deliveryFail] },
       meta,
     });
-    const { listSellerWebhookDeliveries } = await import(
-      "@/features/seller/webhooks/api"
-    );
+    const { listSellerWebhookDeliveries } =
+      await import("@/features/seller/webhooks/api");
     const list = await listSellerWebhookDeliveries("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/webhooks/deliveries",

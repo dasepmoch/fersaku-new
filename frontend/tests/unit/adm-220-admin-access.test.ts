@@ -39,9 +39,9 @@ import {
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -170,7 +170,8 @@ describe("ADM-220 admin staff/roles/invitations", () => {
       token: "opaque-one-time-token",
     });
     expect(created.token).toBe("opaque-one-time-token");
-    const { token: _t, ...listSafe } = created;
+    const { token: _token, ...listSafe } = created;
+    void _token;
     const listed = mapAdminStaffInvitationDto(listSafe);
     expect(listed).not.toHaveProperty("token");
   });
@@ -360,12 +361,7 @@ describe("ADM-220 admin staff/roles/invitations", () => {
   it("query keys isolate roles, users, assignments, invitations", () => {
     expect(queryKeys.admin.roles()).toEqual(["admin", "roles"]);
     expect(queryKeys.admin.role("r1")).toEqual(["admin", "roles", "r1"]);
-    expect(queryKeys.admin.users()).toEqual([
-      "admin",
-      "users",
-      "bounded",
-      {},
-    ]);
+    expect(queryKeys.admin.users()).toEqual(["admin", "users", "bounded", {}]);
     expect(queryKeys.admin.user("u1")).toEqual(["admin", "users", "u1"]);
     expect(queryKeys.admin.userRoles("u1")).toEqual([
       "admin",
@@ -410,9 +406,7 @@ describe("ADM-220 admin staff/roles/invitations", () => {
       meta: { requestId: "req_ur", timestamp: AS_OF },
     });
     const rows = await listUserRoles("u1");
-    expect(apiRequestMock.mock.calls[0]![0]).toBe(
-      "/v1/admin/users/u1/roles",
-    );
+    expect(apiRequestMock.mock.calls[0]![0]).toBe("/v1/admin/users/u1/roles");
     expect(rows[0]?.roleName).toBe("Support");
   });
 });

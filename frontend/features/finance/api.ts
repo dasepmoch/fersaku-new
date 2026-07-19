@@ -217,8 +217,7 @@ export async function requestSellerWithdrawalQuote(
     return quote;
   }
 
-  const idempotencyKey =
-    input.idempotencyKey?.trim() || createIdempotencyKey();
+  const idempotencyKey = input.idempotencyKey?.trim() || createIdempotencyKey();
   const response = await apiRequest<
     QuoteEnvelope,
     { amount: number; bankAccountId: string }
@@ -286,20 +285,18 @@ export async function createSellerWithdrawal(
   const body: WithdrawalCreateRequest = withdrawalCreateRequestSchema.parse({
     quoteId: input.quoteId,
   });
-  const response = await apiRequest<WithdrawalEnvelope, WithdrawalCreateRequest>(
-    `/v1/stores/${encodeURIComponent(input.storeId)}/withdrawals/`,
-    {
-      schema: withdrawalEnvelopeSchema,
-      method: "POST",
-      body,
-      signal,
-      idempotencyKey: input.idempotencyKey,
-      requireRecentMfa: true,
-      ...(input.recentMfaProof
-        ? { recentMfaProof: input.recentMfaProof }
-        : {}),
-    },
-  );
+  const response = await apiRequest<
+    WithdrawalEnvelope,
+    WithdrawalCreateRequest
+  >(`/v1/stores/${encodeURIComponent(input.storeId)}/withdrawals/`, {
+    schema: withdrawalEnvelopeSchema,
+    method: "POST",
+    body,
+    signal,
+    idempotencyKey: input.idempotencyKey,
+    requireRecentMfa: true,
+    ...(input.recentMfaProof ? { recentMfaProof: input.recentMfaProof } : {}),
+  });
   return mapWithdrawalDto(response.data, input.storeId);
 }
 

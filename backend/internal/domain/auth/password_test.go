@@ -62,4 +62,3 @@ func TestNormalizeEmail(t *testing.T) {
 		t.Fatal("expected empty")
 	}
 }
-

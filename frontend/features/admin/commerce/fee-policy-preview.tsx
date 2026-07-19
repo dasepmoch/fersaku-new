@@ -155,8 +155,10 @@ function FeePreviewModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (isMock) {
-      setServerPreview(null);
-      setPreviewError(null);
+      queueMicrotask(() => {
+        setServerPreview(null);
+        setPreviewError(null);
+      });
       return;
     }
     let cancelled = false;
@@ -172,9 +174,7 @@ function FeePreviewModal({ onClose }: { onClose: () => void }) {
           if (!cancelled) {
             setServerPreview(null);
             setPreviewError(
-              err instanceof Error
-                ? err.message
-                : "Fee preview unavailable",
+              err instanceof Error ? err.message : "Fee preview unavailable",
             );
           }
         });
@@ -193,20 +193,14 @@ function FeePreviewModal({ onClose }: { onClose: () => void }) {
 
   const transactionRows = isMock
     ? [
-        [
-          `Platform fee (${txRate}%)`,
-          rupiah(localTransaction.platformFee),
-        ],
+        [`Platform fee (${txRate}%)`, rupiah(localTransaction.platformFee)],
         ["Payment processing", rupiah(localTransaction.processingFee)],
         ["Total fee", rupiah(localTransaction.totalFee)],
         ["Seller/API balance", rupiah(localTransaction.netAmount)],
       ]
     : serverPreview && serverPreview.kind === "transaction"
       ? [
-          [
-            "Platform fee",
-            rupiah(serverPreview.platformFee),
-          ],
+          ["Platform fee", rupiah(serverPreview.platformFee)],
           [
             "Payment processing",
             serverPreview.processingFee == null
@@ -235,10 +229,7 @@ function FeePreviewModal({ onClose }: { onClose: () => void }) {
 
   const withdrawalRows = isMock
     ? [
-        [
-          `Platform fee (${wdRate}%)`,
-          rupiah(localWithdrawal.platformFee),
-        ],
+        [`Platform fee (${wdRate}%)`, rupiah(localWithdrawal.platformFee)],
         ["Xendit processing", "Biaya proses"],
         ["Total fee", "3% + biaya proses"],
         ["Disbursed amount", "Nominal − biaya"],
@@ -280,8 +271,8 @@ function FeePreviewModal({ onClose }: { onClose: () => void }) {
       : Boolean(serverPreview?.belowMinimum));
   const minimumAmount = isMock
     ? localWithdrawal.minimumAmount
-    : serverPreview?.minimumAmount ??
-      FERSAKU_FEE_POLICY.withdrawalMinimumAmount;
+    : (serverPreview?.minimumAmount ??
+      FERSAKU_FEE_POLICY.withdrawalMinimumAmount);
   const policyNote =
     serverPreview?.policyVersion ??
     (isMock ? "LAUNCH_FEE_POLICY_V1" : "server preview");

@@ -86,9 +86,10 @@ describe("QLT-310 parent — co-evolution + category registration", () => {
       "utf8",
     );
     expect(src.includes("§3.7") || src.includes("3.7")).toBe(true);
-    expect(src.toLowerCase().includes("load-test") || src.toLowerCase().includes("load test")).toBe(
-      true,
-    );
+    expect(
+      src.toLowerCase().includes("load-test") ||
+        src.toLowerCase().includes("load test"),
+    ).toBe(true);
     expect(src.includes("Not") || src.includes("does **not**")).toBe(true);
   });
 });
@@ -102,11 +103,7 @@ describe("QLT-310 parent — required non-empty samples", () => {
 
   it("bundle budget script keeps size caps", () => {
     const src = readFileSync(abs("scripts/check-bundle-budget.mjs"), "utf8");
-    for (const needle of [
-      "maxChunkBytes",
-      "maxTotalBytes",
-      "Bundle budget",
-    ]) {
+    for (const needle of ["maxChunkBytes", "maxTotalBytes", "Bundle budget"]) {
       expect(src.includes(needle), `check-bundle-budget: ${needle}`).toBe(true);
     }
   });
@@ -157,7 +154,11 @@ describe("QLT-310 parent — required non-empty samples", () => {
 
   it("http-client timeout sample aborts on elapsed timeout", () => {
     const client = readFileSync(abs("shared/api/http-client.ts"), "utf8");
-    for (const needle of ["timeoutMs", "DEFAULT_TIMEOUT_MS", "AbortController"]) {
+    for (const needle of [
+      "timeoutMs",
+      "DEFAULT_TIMEOUT_MS",
+      "AbortController",
+    ]) {
       expect(client.includes(needle), `http-client: ${needle}`).toBe(true);
     }
 

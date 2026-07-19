@@ -21,8 +21,8 @@ const (
 
 // Impersonation audit actions.
 const (
-	ActionImpersonationStart     = "impersonation.start"
-	ActionImpersonationTerminate = "impersonation.terminate"
+	ActionImpersonationStart        = "impersonation.start"
+	ActionImpersonationTerminate    = "impersonation.terminate"
 	ActionImpersonationSupportWrite = "impersonation.support_write"
 )
 

@@ -7,7 +7,10 @@ import type { ImpersonationStartDataDto } from "@/shared/api/schemas";
 export const IMPERSONATION_STORAGE_KEY = "fersaku-impersonation-session-v1";
 export const IMPERSONATION_SCOPES = ["read-only", "support-write"] as const;
 export const IMPERSONATION_TTLS = [15, 30, 60] as const;
-export const WIRE_IMPERSONATION_SCOPES = ["READ_ONLY", "SUPPORT_WRITE"] as const;
+export const WIRE_IMPERSONATION_SCOPES = [
+  "READ_ONLY",
+  "SUPPORT_WRITE",
+] as const;
 
 export type ImpersonationScope = (typeof IMPERSONATION_SCOPES)[number];
 export type WireImpersonationScope = (typeof WIRE_IMPERSONATION_SCOPES)[number];
@@ -148,8 +151,7 @@ export function mapServerStartToSession(
   const parsed = impersonationSessionSchema.safeParse({
     version: 1,
     sessionId,
-    targetId:
-      input.targetType === "merchant" ? input.targetId : targetId,
+    targetId: input.targetType === "merchant" ? input.targetId : targetId,
     targetName: banner?.targetName?.trim() || input.targetName,
     ...(banner?.targetEmail || input.targetEmail
       ? { targetEmail: banner?.targetEmail || input.targetEmail }

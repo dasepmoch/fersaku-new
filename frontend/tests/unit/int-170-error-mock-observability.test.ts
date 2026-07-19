@@ -248,16 +248,20 @@ describe("INT-170 reporter wiring", () => {
       requestId: "req_op_1",
     });
 
-    reportTransportError(err, {
-      surface: "seller",
-      operationId: "listSellerOrders",
-      requestId: "req_op_1",
-      status: 500,
-      code: PROBLEM_CODES.INTERNAL_ERROR,
-      routeTemplate: "/v1/stores/{str}/orders",
-      phase: "http_error",
-      source: "http-client",
-    }, { authorization: "Bearer secret", cookie: "a=b" });
+    reportTransportError(
+      err,
+      {
+        surface: "seller",
+        operationId: "listSellerOrders",
+        requestId: "req_op_1",
+        status: 500,
+        code: PROBLEM_CODES.INTERNAL_ERROR,
+        routeTemplate: "/v1/stores/{str}/orders",
+        phase: "http_error",
+        source: "http-client",
+      },
+      { authorization: "Bearer secret", cookie: "a=b" },
+    );
 
     expect(reporter.captureError).toHaveBeenCalledTimes(1);
     const report = reporter.captureError.mock.calls[0][0];
@@ -285,10 +289,13 @@ describe("INT-170 reporter wiring", () => {
   it("buildTelemetryContext redacts and preserves requestId", () => {
     setObservabilityReleaseId("rel_x");
     expect(
-      buildTelemetryContext({
-        requestId: "req_2",
-        code: "X",
-      }, { apiKey: "k" }),
+      buildTelemetryContext(
+        {
+          requestId: "req_2",
+          code: "X",
+        },
+        { apiKey: "k" },
+      ),
     ).toMatchObject({
       releaseId: "rel_x",
       requestId: "req_2",
@@ -400,13 +407,39 @@ describe("INT-170 no silent mock fallback on API errors", () => {
     ];
     for (const rel of adapters) {
       const content = fs.readFileSync(path.join(root, rel), "utf8");
-      // No catch that returns demo/fixture after apiRequest
-      expect(content).not.toMatch(
-        /catch\s*\([^)]*\)\s*\{[\s\S]*?return\s+(demo|mock)/,
-      );
-      expect(content).not.toMatch(
-        /catch\s*\([^)]*\)\s*\{[\s\S]*?shouldUseMockFixtures/,
-      );
+      // Scoped catch-body scan (brace-balanced) — avoid false positives across
+      // function boundaries when a later mock gate follows a catch that only
+      // returns null / rethrows.
+      let searchFrom = 0;
+      while (true) {
+        const catchIdx = content.indexOf("catch", searchFrom);
+        if (catchIdx === -1) break;
+        const open = content.indexOf("{", catchIdx);
+        if (open === -1) break;
+        let depth = 0;
+        let j = open;
+        for (; j < content.length; j++) {
+          const ch = content[j];
+          if (ch === "{") depth += 1;
+          else if (ch === "}") {
+            depth -= 1;
+            if (depth === 0) {
+              j += 1;
+              break;
+            }
+          }
+        }
+        const body = content.slice(open, j);
+        expect(
+          body,
+          `${rel} catch must not return demo/mock fixture`,
+        ).not.toMatch(/\breturn\s+(demo|mock)\w*/);
+        expect(
+          body,
+          `${rel} catch must not call shouldUseMockFixtures`,
+        ).not.toMatch(/shouldUseMockFixtures/);
+        searchFrom = j;
+      }
       // Mode gate is pre-call only
       if (content.includes("apiRequest")) {
         expect(content).toMatch(/shouldUseMockFixtures/);

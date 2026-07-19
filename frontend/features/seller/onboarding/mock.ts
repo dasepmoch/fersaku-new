@@ -2,10 +2,7 @@
  * SEL-110 — mock fixtures for sellerCatalog mock mode (prototype parity).
  */
 
-import type {
-  OnboardingProgress,
-  SlugAvailability,
-} from "./contracts";
+import type { OnboardingProgress, SlugAvailability } from "./contracts";
 
 const MOCK_TAKEN = new Set(["admin", "fersaku", "asep-ai-tools"]);
 
@@ -36,7 +33,10 @@ export function resetMockOnboardingProgress(): void {
 }
 
 export function getMockOnboardingProgress(): OnboardingProgress {
-  return { ...mockProgress, store: mockProgress.store ? { ...mockProgress.store } : null };
+  return {
+    ...mockProgress,
+    store: mockProgress.store ? { ...mockProgress.store } : null,
+  };
 }
 
 export function createMockOnboardingStore(input: {

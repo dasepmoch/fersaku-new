@@ -117,7 +117,7 @@ export function evaluateDomainSources(
   if (stage === "live" && bootstrap === "mock" && !input.overrides) {
     // Live must not default the whole surface to mock; fail closed at evaluation.
     throw new DomainSourceConfigError(
-      'Live stage rejects bootstrap mock. Use api bootstrap or explicit per-domain api|disabled overrides.',
+      "Live stage rejects bootstrap mock. Use api bootstrap or explicit per-domain api|disabled overrides.",
     );
   }
 

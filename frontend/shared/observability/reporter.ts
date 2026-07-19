@@ -4,7 +4,12 @@
  * Schema/provider errors must never dump response bodies (callers pass codes only).
  */
 
-import { redactContext, redactError, redactValue, isSensitiveKey } from "./redact";
+import {
+  redactContext,
+  redactError,
+  redactValue,
+  isSensitiveKey,
+} from "./redact";
 
 export type ReportContext = Record<string, unknown>;
 

@@ -12,10 +12,7 @@ import {
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand";
 import { ProductArt } from "@/components/product-art";
-import {
-  getPublicProduct,
-  getPublicStorefront,
-} from "@/features/catalog/api";
+import { getPublicProduct, getPublicStorefront } from "@/features/catalog/api";
 import {
   listPublicProductReviews,
   getPublicProductRating,

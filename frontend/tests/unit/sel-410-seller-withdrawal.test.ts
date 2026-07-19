@@ -30,7 +30,10 @@ import {
   listSellerWithdrawals,
   requestSellerWithdrawalQuote,
 } from "@/features/finance/api";
-import { demoSellerWithdrawals, demoWithdrawalLock } from "@/features/finance/demo-data";
+import {
+  demoSellerWithdrawals,
+  demoWithdrawalLock,
+} from "@/features/finance/demo-data";
 import { queryKeys } from "@/shared/query/query-keys";
 import { DEMO_STORE_ID } from "@/shared/config/demo";
 import {
@@ -41,9 +44,9 @@ import {
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -117,8 +120,12 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
 
   it("parses integer IDR money on quote/withdrawal DTOs", () => {
     expect(moneyIdrSchema.parse(100_000)).toBe(100_000);
-    expect(withdrawalQuoteDtoSchema.parse(quoteDto).amountDebited).toBe(100_000);
-    expect(withdrawalDtoSchema.parse(withdrawalDto).amountDebited).toBe(100_000);
+    expect(withdrawalQuoteDtoSchema.parse(quoteDto).amountDebited).toBe(
+      100_000,
+    );
+    expect(withdrawalDtoSchema.parse(withdrawalDto).amountDebited).toBe(
+      100_000,
+    );
     expect(() =>
       withdrawalQuoteDtoSchema.parse({ ...quoteDto, amountDebited: 100_000.5 }),
     ).toThrow();
@@ -191,12 +198,12 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
 
   it("detects expired quote for requote gate", () => {
     const quote = mapWithdrawalQuoteDto(quoteDto, "store_a");
-    expect(isSellerWithdrawalQuoteFresh(quote, Date.parse("2026-07-17T07:30:00Z"))).toBe(
-      true,
-    );
-    expect(isSellerWithdrawalQuoteFresh(quote, Date.parse("2026-07-17T09:00:00Z"))).toBe(
-      false,
-    );
+    expect(
+      isSellerWithdrawalQuoteFresh(quote, Date.parse("2026-07-17T07:30:00Z")),
+    ).toBe(true);
+    expect(
+      isSellerWithdrawalQuoteFresh(quote, Date.parse("2026-07-17T09:00:00Z")),
+    ).toBe(false);
   });
 
   it("create request schema is quoteId only (no reauthProof body)", () => {
@@ -349,9 +356,9 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
     expect(quote.providerProcessingFee).toBe(2_500);
     expect(list.length).toBeGreaterThan(0);
     expect(lock).toEqual(demoWithdrawalLock);
-    expect(list.some((w) => w.id === demoSellerWithdrawals(DEMO_STORE_ID)[0]!.id)).toBe(
-      true,
-    );
+    expect(
+      list.some((w) => w.id === demoSellerWithdrawals(DEMO_STORE_ID)[0]!.id),
+    ).toBe(true);
   });
 
   it("mock create requires fresh quote and stable idempotency key", async () => {
@@ -390,9 +397,7 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
   });
 
   it("parses lock and list envelopes", () => {
-    expect(
-      withdrawalLockDtoSchema.parse({ locked: false }).locked,
-    ).toBe(false);
+    expect(withdrawalLockDtoSchema.parse({ locked: false }).locked).toBe(false);
     expect(
       withdrawalListEnvelopeSchema.parse({
         data: { items: [withdrawalDto] },

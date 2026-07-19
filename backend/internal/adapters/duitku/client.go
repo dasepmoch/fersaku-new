@@ -239,14 +239,14 @@ type inquiryResponse struct {
 }
 
 type statusResponse struct {
-	MerchantOrderID string      `json:"merchantOrderId"`
-	Reference       string      `json:"reference"`
-	Amount          flexInt64   `json:"amount"`
-	PaymentAmount   flexInt64   `json:"paymentAmount"`
-	StatusCode      string      `json:"statusCode"`
-	StatusMessage   string      `json:"statusMessage"`
-	SettlementDate  string      `json:"settlementDate"`
-	PaymentDate     string      `json:"paymentDate"`
+	MerchantOrderID string    `json:"merchantOrderId"`
+	Reference       string    `json:"reference"`
+	Amount          flexInt64 `json:"amount"`
+	PaymentAmount   flexInt64 `json:"paymentAmount"`
+	StatusCode      string    `json:"statusCode"`
+	StatusMessage   string    `json:"statusMessage"`
+	SettlementDate  string    `json:"settlementDate"`
+	PaymentDate     string    `json:"paymentDate"`
 }
 
 // flexInt64 accepts JSON number or whole-IDR string (provider status docs use both shapes).

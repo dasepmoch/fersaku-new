@@ -9,9 +9,7 @@ import {
   useSellerWithdrawalLock,
   useSellerWithdrawalQuoteMutation,
 } from "@/features/finance/hooks";
-import {
-  isSellerWithdrawalQuoteFresh,
-} from "@/features/finance/mappers";
+import { isSellerWithdrawalQuoteFresh } from "@/features/finance/mappers";
 import { useSellerStoreId } from "@/shared/seller/current-store";
 import { rupiah } from "@/shared/format/money";
 import { FieldInput, FormGroup } from "@/shared/ui/form-controls";

@@ -50,10 +50,7 @@ import {
   listAuditEvents,
 } from "./audit";
 import { demoInventory, getInventory } from "./inventory";
-import {
-  demoAdminFulfillments,
-  listAdminFulfillments,
-} from "./fulfillments";
+import { demoAdminFulfillments, listAdminFulfillments } from "./fulfillments";
 import { demoAdminReviews, getAdminReview, listAdminReviews } from "./reviews";
 import { demoMerchants, getMerchant, listMerchants } from "./merchants";
 import {
@@ -535,10 +532,7 @@ export function useAdminFulfillments(filters: AdminListFilters = {}) {
     surface: "private",
     keepPrevious: true,
     enabled,
-    placeholderData: mockPlaceholderData(
-      "adminRead",
-      demoAdminFulfillments(),
-    ),
+    placeholderData: mockPlaceholderData("adminRead", demoAdminFulfillments()),
   });
 }
 

@@ -19,7 +19,9 @@ export function getDemoInventoryProduct(id: string): InventoryProduct | null {
   return { ...row };
 }
 
-export function getDemoInventorySchema(productId: string): InventorySchemaView | null {
+export function getDemoInventorySchema(
+  productId: string,
+): InventorySchemaView | null {
   const product = getDemoInventoryProduct(productId);
   if (!product) return null;
   return {

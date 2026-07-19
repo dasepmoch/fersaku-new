@@ -38,10 +38,7 @@ export function mapWebhookEndpointDto(
   dto: SellerWebhookEndpointDto,
 ): SellerWebhookEndpoint {
   const url = dto.url?.trim() || "";
-  const urlHost =
-    dto.urlHost?.trim() ||
-    (url ? safeHost(url) : "") ||
-    "—";
+  const urlHost = dto.urlHost?.trim() || (url ? safeHost(url) : "") || "—";
   return {
     id: dto.id,
     storeId: dto.storeId,
@@ -112,10 +109,7 @@ export function mapWebhookDeliveryDto(
     attemptCount: Math.max(0, Math.trunc(dto.attemptCount ?? 0)),
     lastHttpStatus: dto.lastHttpStatus,
     lastLatencyMs: dto.lastLatencyMs,
-    responseLabel: formatDeliveryResponseLabel(
-      dto.status,
-      dto.lastHttpStatus,
-    ),
+    responseLabel: formatDeliveryResponseLabel(dto.status, dto.lastHttpStatus),
     latencyLabel: formatDeliveryLatencyLabel(dto.lastLatencyMs),
     createdAt: dto.createdAt,
   };
@@ -149,9 +143,7 @@ export function mapSecretClaimDto(
     signingSecret: data.signingSecret,
     fingerprint: data.fingerprint,
     secretVersion: data.secretVersion,
-    endpoint: data.endpoint
-      ? mapWebhookEndpointDto(data.endpoint)
-      : undefined,
+    endpoint: data.endpoint ? mapWebhookEndpointDto(data.endpoint) : undefined,
   };
 }
 

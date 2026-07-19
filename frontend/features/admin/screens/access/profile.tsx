@@ -94,7 +94,8 @@ function AdminProfileSettings() {
   const [recoveryCodeInput, setRecoveryCodeInput] = useState("");
   const [recoveryPrompt, setRecoveryPrompt] = useState(false);
 
-  const baseProfile = serverProfile ?? (profileIsApi ? null : demoAdminProfile());
+  const baseProfile =
+    serverProfile ?? (profileIsApi ? null : demoAdminProfile());
 
   const fullName = draft?.fullName ?? baseProfile?.fullName ?? "";
   const jobTitle = draft?.jobTitle ?? baseProfile?.jobTitle ?? "";
@@ -102,8 +103,7 @@ function AdminProfileSettings() {
   const email = baseProfile?.email ?? "";
   const revision = baseProfile?.revision ?? 1;
   const initials =
-    baseProfile?.initials ??
-    (fullName ? profileInitials(fullName) : "—");
+    baseProfile?.initials ?? (fullName ? profileInitials(fullName) : "—");
   const kyc = draft?.kyc ?? baseProfile?.kyc ?? true;
   const withdrawals = draft?.withdrawals ?? baseProfile?.withdrawals ?? true;
   const incidents = draft?.incidents ?? baseProfile?.incidents ?? true;
@@ -333,7 +333,11 @@ function AdminProfileSettings() {
                 </p>
               </div>
               <span title="MFA is mandatory for Super Administrators">
-                <Toggle value={mfaEnabled} disabled onChange={() => undefined} />
+                <Toggle
+                  value={mfaEnabled}
+                  disabled
+                  onChange={() => undefined}
+                />
               </span>
             </div>
             <div className="mt-4 rounded-xl bg-[#edf1ff] p-3 text-[8px] text-[#536ba9]">
@@ -368,7 +372,9 @@ function AdminProfileSettings() {
               disabled={
                 busy ||
                 !mfaEnabled ||
-                (recoveryPrompt && authIsApi && recoveryCodeInput.trim().length < 6)
+                (recoveryPrompt &&
+                  authIsApi &&
+                  recoveryCodeInput.trim().length < 6)
               }
               title={
                 mfaEnabled

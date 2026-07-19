@@ -335,7 +335,9 @@ describe("BUY-100 api adapter (api mode)", () => {
   it("401 on detail rethrows (auth flow, not not-found)", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(problemResponse(401, PROBLEM_CODES.AUTH_REQUIRED)),
+      vi
+        .fn()
+        .mockResolvedValue(problemResponse(401, PROBLEM_CODES.AUTH_REQUIRED)),
     );
     const { getBuyerPurchase } = await loadApiMode();
     await expect(getBuyerPurchase("x")).rejects.toMatchObject({ status: 401 });
@@ -359,9 +361,8 @@ describe("BUY-100 mock mode still works", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { listBuyerPurchases, getBuyerPurchase } = await import(
-      "@/features/buyer/data/api"
-    );
+    const { listBuyerPurchases, getBuyerPurchase } =
+      await import("@/features/buyer/data/api");
     const purchases = await listBuyerPurchases();
     expect(purchases.length).toBeGreaterThan(0);
     const found = await getBuyerPurchase(purchases[0].orderId);

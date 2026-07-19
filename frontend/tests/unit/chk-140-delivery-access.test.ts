@@ -286,7 +286,9 @@ describe("CHK-140 api adapter — owner grant / foreign deny", () => {
       token: "guest_cap_memory_only",
     });
     const url = String(fetchMock.mock.calls[0][0]);
-    expect(url).toContain("/v1/orders/01HQ0ORDER000000000000001/delivery/access");
+    expect(url).toContain(
+      "/v1/orders/01HQ0ORDER000000000000001/delivery/access",
+    );
     expect(url).not.toContain("token=");
     expect(url).not.toContain("guest_cap");
     const init = fetchMock.mock.calls[0][1] as RequestInit;
@@ -296,11 +298,7 @@ describe("CHK-140 api adapter — owner grant / foreign deny", () => {
   it("order access foreign/denied → null", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          problemResponse(403, "DELIVERY_ACCESS_DENIED"),
-        ),
+      vi.fn().mockResolvedValue(problemResponse(403, "DELIVERY_ACCESS_DENIED")),
     );
     const { accessOrderDelivery } = await loadApiMode("checkout");
     const claim = await accessOrderDelivery("x", { token: "bad" });
@@ -357,9 +355,8 @@ describe("CHK-140 mock path", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { accessBuyerDelivery } = await import(
-      "@/features/commerce/delivery-access/api"
-    );
+    const { accessBuyerDelivery } =
+      await import("@/features/commerce/delivery-access/api");
     const claim = await accessBuyerDelivery("FRS-mock");
     expect(claim?.secrets?.code).toBeTruthy();
     expect(claim?.deliveryKind).toBe("CODE");

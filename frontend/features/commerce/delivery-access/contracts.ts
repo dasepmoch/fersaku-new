@@ -5,10 +5,7 @@
 
 /** Backend delivery kinds on access DTO. */
 export type DeliveryAccessKind =
-  | "DOWNLOAD"
-  | "PROTECTED_LINK"
-  | "CREDENTIAL"
-  | "CODE";
+  "DOWNLOAD" | "PROTECTED_LINK" | "CREDENTIAL" | "CODE";
 
 /**
  * Claimed delivery access held in component memory only.

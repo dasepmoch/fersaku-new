@@ -50,9 +50,9 @@ describe("ADM-110 permission registry", () => {
   it("allows superuser wildcard only for known codes", () => {
     expect(claimsHavePermission(["*"], "merchants.read")).toBe(true);
     expect(claimsHavePermission(["*"], "platform.emergency")).toBe(true);
-    expect(sessionHasPermission(createMockClaims("admin"), "merchants.read")).toBe(
-      true,
-    );
+    expect(
+      sessionHasPermission(createMockClaims("admin"), "merchants.read"),
+    ).toBe(true);
   });
 });
 
@@ -79,7 +79,9 @@ describe("ADM-110 route permission map", () => {
     expect(getAdminPageMeta(["kyc"]).permission).toBe("kyc.review");
     expect(getAdminPageMeta(["providers"]).permission).toBe("payments.read");
     expect(getAdminPageMeta(["system"]).permission).toBe("platform.emergency");
-    expect(getAdminPageMeta(["campaigns"]).disposition).toBe("decision_pending");
+    expect(getAdminPageMeta(["campaigns"]).disposition).toBe(
+      "decision_pending",
+    );
   });
 
   it("denies missing permission on direct route access", () => {

@@ -325,10 +325,10 @@ type EmailChangeConfirmInput struct {
 }
 
 type EmailChangeConfirmResult struct {
-	Message   string
-	Complete  bool
-	Issue     *SessionIssue // set when complete (sessions rotated)
-	NewEmail  string
+	Message  string
+	Complete bool
+	Issue    *SessionIssue // set when complete (sessions rotated)
+	NewEmail string
 }
 
 func (s *AuthService) ConfirmEmailChangeCurrent(ctx context.Context, in EmailChangeConfirmInput) (EmailChangeConfirmResult, error) {

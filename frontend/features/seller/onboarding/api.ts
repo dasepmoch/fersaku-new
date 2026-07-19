@@ -26,7 +26,9 @@ import {
 } from "./mock";
 import { normalizeStoreSlug } from "./slug";
 
-type OnboardingProgressEnvelope = z.infer<typeof onboardingProgressEnvelopeSchema>;
+type OnboardingProgressEnvelope = z.infer<
+  typeof onboardingProgressEnvelopeSchema
+>;
 type SlugAvailabilityEnvelope = z.infer<typeof slugAvailabilityEnvelopeSchema>;
 
 function isSellerMock(): boolean {
@@ -38,10 +40,13 @@ export async function getOnboardingProgress(
 ): Promise<OnboardingProgress> {
   if (isSellerMock()) return getMockOnboardingProgress();
 
-  const response = await apiRequest<OnboardingProgressEnvelope>("/v1/onboarding", {
-    schema: onboardingProgressEnvelopeSchema,
-    signal,
-  });
+  const response = await apiRequest<OnboardingProgressEnvelope>(
+    "/v1/onboarding",
+    {
+      schema: onboardingProgressEnvelopeSchema,
+      signal,
+    },
+  );
   return mapOnboardingProgressDto(response.data);
 }
 
@@ -96,25 +101,23 @@ export async function patchOnboardingStore(
   if (input.accentColor !== undefined) body.accentColor = input.accentColor;
   if (input.step !== undefined) body.step = input.step;
 
-  const response = await apiRequest<OnboardingProgressEnvelope, Record<string, string>>(
-    "/v1/onboarding/store",
-    {
-      method: "PATCH",
-      body,
-      schema: onboardingProgressEnvelopeSchema,
-      signal,
-    },
-  );
+  const response = await apiRequest<
+    OnboardingProgressEnvelope,
+    Record<string, string>
+  >("/v1/onboarding/store", {
+    method: "PATCH",
+    body,
+    schema: onboardingProgressEnvelopeSchema,
+    signal,
+  });
   return mapOnboardingProgressDto(response.data);
 }
 
-export async function completeOnboarding(
-  options?: {
-    skipProduct?: boolean;
-    signal?: AbortSignal;
-    idempotencyKey?: string;
-  },
-): Promise<OnboardingProgress> {
+export async function completeOnboarding(options?: {
+  skipProduct?: boolean;
+  signal?: AbortSignal;
+  idempotencyKey?: string;
+}): Promise<OnboardingProgress> {
   if (isSellerMock()) return completeMockOnboarding();
 
   const response = await apiRequest<
@@ -166,7 +169,4 @@ export async function checkSlugAvailability(
   }
 }
 
-export {
-  getMockOnboardingProgress,
-  resetMockOnboardingProgress,
-} from "./mock";
+export { getMockOnboardingProgress, resetMockOnboardingProgress } from "./mock";

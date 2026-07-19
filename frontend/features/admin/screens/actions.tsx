@@ -14,10 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ADMIN_ACTION_PERMISSIONS } from "@/features/admin/config/permissions";
-import {
-  createStaffInvitation,
-  useAdminRoles,
-} from "@/features/admin/data";
+import { createStaffInvitation, useAdminRoles } from "@/features/admin/data";
 import { useRouter } from "next/navigation";
 import { useHasPermission } from "@/shared/auth/session-provider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,9 +41,7 @@ export function AdminAction({ section }: { section: string }) {
         <AdminButton
           disabled={!canInviteStaff}
           title={
-            canInviteStaff
-              ? undefined
-              : "Requires roles.assign permission"
+            canInviteStaff ? undefined : "Requires roles.assign permission"
           }
           onClick={() => {
             if (!canInviteStaff) return;
@@ -78,9 +73,7 @@ export function AdminAction({ section }: { section: string }) {
       <AdminButton
         secondary
         disabled={!canExportAudit}
-        title={
-          canExportAudit ? undefined : "Requires audit.read permission"
-        }
+        title={canExportAudit ? undefined : "Requires audit.read permission"}
         onClick={() => {
           if (!canExportAudit) return;
           window.dispatchEvent(new Event("fersaku-admin-audit-export"));

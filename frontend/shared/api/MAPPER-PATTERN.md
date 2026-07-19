@@ -12,14 +12,14 @@ generated OpenAPI types          shared/api/generated/openapi.ts
   → existing screens (unchanged)
 ```
 
-| Layer | Location | Must not |
-| --- | --- | --- |
-| Generated types | `shared/api/generated/**` | Hand-edit; import into JSX |
-| Runtime schema | `shared/api/schemas.ts` + feature schemas | Coerce unknown → success |
-| Transport aliases | `features/<domain>/transport.ts` | Re-export view models |
-| Mapper | `features/<domain>/mappers.ts` | Import React/components |
-| View model | `features/<domain>/contracts.ts` | Know HTTP status codes |
-| Screen | `features/**/screens`, `app/**` | Import DTO / generated types |
+| Layer             | Location                                  | Must not                     |
+| ----------------- | ----------------------------------------- | ---------------------------- |
+| Generated types   | `shared/api/generated/**`                 | Hand-edit; import into JSX   |
+| Runtime schema    | `shared/api/schemas.ts` + feature schemas | Coerce unknown → success     |
+| Transport aliases | `features/<domain>/transport.ts`          | Re-export view models        |
+| Mapper            | `features/<domain>/mappers.ts`            | Import React/components      |
+| View model        | `features/<domain>/contracts.ts`          | Know HTTP status codes       |
+| Screen            | `features/**/screens`, `app/**`           | Import DTO / generated types |
 
 ## Rules
 

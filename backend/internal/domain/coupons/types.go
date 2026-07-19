@@ -33,10 +33,10 @@ const (
 type ReservationState string
 
 const (
-	ReservationReserved     ReservationState = "RESERVED"
-	ReservationConsumed     ReservationState = "CONSUMED"
-	ReservationReleased     ReservationState = "RELEASED"
-	ReservationHeldUnknown  ReservationState = "HELD_UNKNOWN"
+	ReservationReserved    ReservationState = "RESERVED"
+	ReservationConsumed    ReservationState = "CONSUMED"
+	ReservationReleased    ReservationState = "RELEASED"
+	ReservationHeldUnknown ReservationState = "HELD_UNKNOWN"
 )
 
 // Coupon is the seller-managed promo aggregate.

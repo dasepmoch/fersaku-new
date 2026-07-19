@@ -49,11 +49,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function problemResponse(
-  status: number,
-  code: string,
-  message = "error",
-) {
+function problemResponse(status: number, code: string, message = "error") {
   return jsonResponse(
     {
       problem: {
@@ -168,7 +164,9 @@ describe("INT-130 CSRF store / recovery", () => {
     expect(getCsrfToken()).toBe("csrf_reissued");
     expect(String(fetchMock.mock.calls[0][0])).toContain("/v1/auth/session");
     expect(fetchMock.mock.calls[0][1].method ?? "GET").toMatch(/GET/i);
-    expect(fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF)).toBeNull();
+    expect(
+      fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF),
+    ).toBeNull();
   });
 
   it("recoverCsrfOnce re-issues at most once", async () => {
@@ -201,28 +199,34 @@ describe("INT-130 CSRF store / recovery", () => {
     const seenKeys: string[] = [];
     let postCount = 0;
 
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-      const path = String(url);
-      if (path.includes("/v1/auth/session")) {
-        return Promise.resolve(
-          jsonResponse(
-            envelope({ csrfToken: "csrf_recovered", sessionId: "s1" }),
-          ),
-        );
-      }
-      if (path.includes("/v1/demo/mutate")) {
-        postCount += 1;
-        const headers = new Headers(init?.headers);
-        seenKeys.push(headers.get(HTTP_HEADERS.IDEMPOTENCY) || "");
-        if (postCount === 1) {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        const path = String(url);
+        if (path.includes("/v1/auth/session")) {
           return Promise.resolve(
-            problemResponse(403, PROBLEM_CODES.AUTH_CSRF_INVALID, "Invalid CSRF"),
+            jsonResponse(
+              envelope({ csrfToken: "csrf_recovered", sessionId: "s1" }),
+            ),
           );
         }
+        if (path.includes("/v1/demo/mutate")) {
+          postCount += 1;
+          const headers = new Headers(init?.headers);
+          seenKeys.push(headers.get(HTTP_HEADERS.IDEMPOTENCY) || "");
+          if (postCount === 1) {
+            return Promise.resolve(
+              problemResponse(
+                403,
+                PROBLEM_CODES.AUTH_CSRF_INVALID,
+                "Invalid CSRF",
+              ),
+            );
+          }
+          return Promise.resolve(jsonResponse(envelope({ ok: true })));
+        }
         return Promise.resolve(jsonResponse(envelope({ ok: true })));
-      }
-      return Promise.resolve(jsonResponse(envelope({ ok: true })));
-    });
+      });
     vi.stubGlobal("fetch", fetchMock);
     wireHttpClientCsrfHooks();
     setCsrfToken("stale_csrf");
@@ -236,9 +240,7 @@ describe("INT-130 CSRF store / recovery", () => {
       }),
     );
 
-    expect(result).toEqual(
-      expect.objectContaining({ data: { ok: true } }),
-    );
+    expect(result).toEqual(expect.objectContaining({ data: { ok: true } }));
     expect(postCount).toBe(2);
     expect(seenKeys).toEqual([key, key]);
     expect(getCsrfToken()).toBe("csrf_recovered");
@@ -247,9 +249,7 @@ describe("INT-130 CSRF store / recovery", () => {
   it("withCsrfRecovery does not retry non-CSRF errors", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(
-        problemResponse(403, PROBLEM_CODES.FORBIDDEN, "nope"),
-      );
+      .mockResolvedValue(problemResponse(403, PROBLEM_CODES.FORBIDDEN, "nope"));
     vi.stubGlobal("fetch", fetchMock);
     setCsrfToken("csrf_ok");
     wireHttpClientCsrfHooks();
@@ -269,11 +269,13 @@ describe("INT-130 CSRF store / recovery", () => {
   });
 
   it("missing/invalid CSRF surfaces as AUTH_CSRF_INVALID (typed)", async () => {
-    const fetchMock = vi.fn().mockImplementation(() =>
-      Promise.resolve(
-        problemResponse(403, PROBLEM_CODES.AUTH_CSRF_INVALID, "Invalid CSRF"),
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(
+          problemResponse(403, PROBLEM_CODES.AUTH_CSRF_INVALID, "Invalid CSRF"),
+        ),
+      );
     vi.stubGlobal("fetch", fetchMock);
     clearHttpClientSessionHooks();
 

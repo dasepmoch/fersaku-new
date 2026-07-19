@@ -16,10 +16,10 @@ import (
 // AnalyticsService implements storefront attribution + aggregates (BE-360).
 // Cannot authorize or affect payment, ledger, delivery, KYC, or withdrawal.
 type AnalyticsService struct {
-	Store       AnalyticsStore
-	IDs         ports.IDGenerator
-	Clock       ports.Clock
-	Log         ports.Logger
+	Store AnalyticsStore
+	IDs   ports.IDGenerator
+	Clock ports.Clock
+	Log   ports.Logger
 	// HashSecret for rotatable visitor/session hashes (never exposed in reads).
 	HashSecret string
 	// HashKeyVersion labels the current secret generation.

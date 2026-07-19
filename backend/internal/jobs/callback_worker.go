@@ -15,9 +15,9 @@ import (
 
 // CallbackWorker processes provider_callback.process outbox rows.
 type CallbackWorker struct {
-	Pool *pgxpool.Pool
-	Svc  *application.CallbackService
-	Log  ports.Logger
+	Pool  *pgxpool.Pool
+	Svc   *application.CallbackService
+	Log   ports.Logger
 	Owner string
 }
 

@@ -123,8 +123,7 @@ export function mapPlatformVolumeBuckets(
   const max = amounts.reduce((m, v) => (v > m ? v : m), 0);
   const points = amounts.map((amountIdr) => ({
     amountIdr,
-    heightPct:
-      max <= 0 ? 0 : Math.max(2, Math.round((amountIdr / max) * 100)),
+    heightPct: max <= 0 ? 0 : Math.max(2, Math.round((amountIdr / max) * 100)),
   }));
   return { points, asOf };
 }
@@ -321,7 +320,9 @@ export function assertNoSecretsInAdminBuyerProjection(value: unknown): void {
   ];
   for (const key of forbidden) {
     if (blob.includes(key)) {
-      throw new Error(`Admin buyer projection must not include secret material (${key})`);
+      throw new Error(
+        `Admin buyer projection must not include secret material (${key})`,
+      );
     }
   }
 }
@@ -508,7 +509,10 @@ export function humanizeAdminWithdrawalStatus(
 export function toAdminWithdrawalReviewAction(
   target: string,
 ): AdminWithdrawalReviewAction | null {
-  const t = String(target ?? "").trim().toLowerCase().replaceAll(" ", "_");
+  const t = String(target ?? "")
+    .trim()
+    .toLowerCase()
+    .replaceAll(" ", "_");
   if (t === "approve" || t === "processing") return "approve";
   if (t === "hold" || t === "on_hold" || t === "onhold") return "hold";
   if (t === "reject" || t === "rejected") return "reject";
@@ -587,7 +591,8 @@ function auditDisplayTime(
   createdAt: string | number | undefined,
   timeAlias: string | undefined,
 ): string {
-  if (typeof timeAlias === "string" && timeAlias.trim()) return timeAlias.trim();
+  if (typeof timeAlias === "string" && timeAlias.trim())
+    return timeAlias.trim();
   if (createdAt == null) return "—";
   if (typeof createdAt === "number" && Number.isFinite(createdAt)) {
     return new Date(createdAt).toISOString();
@@ -630,7 +635,7 @@ export function mapAdminAuditEventDto(
     auditOptionalString(dto.target) ??
     (resourceType && resourceId
       ? `${resourceType}:${resourceId}`
-      : resourceId ?? resourceType ?? "—");
+      : (resourceId ?? resourceType ?? "—"));
   const ip =
     auditOptionalString(dto.ip) ??
     auditMetadataString(dto.metadata, "ip") ??
@@ -705,7 +710,9 @@ export function mapAdminAuditIntegrityDto(
 export function mapAdminAuditExportDto(
   dto: AdminAuditExportDto,
 ): AdminAuditExportJob {
-  const toIso = (v: string | number | null | undefined): string | null | undefined => {
+  const toIso = (
+    v: string | number | null | undefined,
+  ): string | null | undefined => {
     if (v == null) return v === null ? null : undefined;
     if (typeof v === "number") return new Date(v).toISOString();
     const s = String(v).trim();
@@ -768,10 +775,7 @@ const ADMIN_REVIEW_STATUS_VIEW: Record<string, string> = {
 
 /** BE ModerateReview allowlist: PUBLISHED|NEEDS_EDIT|REMOVED|PENDING. */
 export type AdminReviewStatusWire =
-  | "PUBLISHED"
-  | "NEEDS_EDIT"
-  | "REMOVED"
-  | "PENDING";
+  "PUBLISHED" | "NEEDS_EDIT" | "REMOVED" | "PENDING";
 
 export function humanizeAdminReviewStatus(raw: string): string {
   const s = raw.trim();
@@ -890,19 +894,16 @@ export function mapAdminInventoryRevealDto(
   return {
     itemId: dto.itemId,
     values: { ...dto.secrets },
-    expiresAt:
-      expiresAt ?? new Date(Date.now() + 60_000).toISOString(),
+    expiresAt: expiresAt ?? new Date(Date.now() + 60_000).toISOString(),
   };
 }
 
 /** Runtime guard: redacted inventory list must not carry secret bags. */
-export function assertNoSecretsInAdminInventory(
-  snapshot: {
-    products: unknown[];
-    items: AdminStockItem[];
-    schema: unknown[];
-  },
-): void {
+export function assertNoSecretsInAdminInventory(snapshot: {
+  products: unknown[];
+  items: AdminStockItem[];
+  schema: unknown[];
+}): void {
   for (const item of snapshot.items) {
     const rec = item as unknown as Record<string, unknown>;
     if ("values" in rec && rec.values != null) {
@@ -937,9 +938,7 @@ export function assertNoSecretsInAdminInventory(
   }
 }
 
-export function mapAdminInventorySnapshotDto(
-  dto: AdminInventorySnapshotDto,
-) {
+export function mapAdminInventorySnapshotDto(dto: AdminInventorySnapshotDto) {
   const snapshot = {
     products: dto.products.map((p) => ({
       id: p.id,
@@ -1110,7 +1109,9 @@ export function mapPermissionRegistryToGroups(
     }));
 }
 
-export function mapAdminUserLookupDto(dto: AdminUserLookupDto): AdminUserLookup {
+export function mapAdminUserLookupDto(
+  dto: AdminUserLookupDto,
+): AdminUserLookup {
   return {
     id: dto.id,
     name: dto.name,
@@ -1166,7 +1167,8 @@ export function mapAdminStaffMember(
     id: user.id,
     name: user.name,
     email: user.email,
-    roleLabel: roleNames.filter(Boolean).join(", ") || (user.isAdmin ? "Staff" : "User"),
+    roleLabel:
+      roleNames.filter(Boolean).join(", ") || (user.isAdmin ? "Staff" : "User"),
     status,
     lastActive: user.createdAt || "—",
     mfaEnabled: user.isAdmin,
@@ -1182,5 +1184,7 @@ export function slugifyRoleCode(name: string): string {
     .replace(/[^A-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 48);
-  return base.length >= 2 ? base : `CUSTOM_${Date.now().toString(36).toUpperCase()}`;
+  return base.length >= 2
+    ? base
+    : `CUSTOM_${Date.now().toString(36).toUpperCase()}`;
 }

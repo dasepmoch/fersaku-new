@@ -15,12 +15,12 @@ const (
 
 // Sentinel domain errors (wrapped as AppError at application boundary when needed).
 var (
-	ErrMoneyOverflow       = apperr.Validation(CodeFeeOverflow, "Money arithmetic overflow")
-	ErrNegativeMoney       = apperr.Validation(CodeFeeNegativeComponent, "Negative money component is not allowed")
-	ErrInvalidAmount       = apperr.Validation(CodeFeeInvalidAmount, "Amount must be a positive whole-rupiah integer")
-	ErrNonPositiveNet      = apperr.Validation(CodeFeeNonPositiveNet, "Net amount must be positive after fees")
-	ErrBelowMinWithdrawal  = apperr.Validation(CodeFeeBelowMinWithdrawal, "Withdrawal amount is below the minimum")
-	ErrPaymentOutOfBounds  = apperr.Validation(CodeFeePaymentOutOfBounds, "Payment amount is outside allowed bounds")
-	ErrFractionalInput     = apperr.Validation(apperr.CodeValidationFailed, "Amount must be a whole IDR integer")
-	ErrPolicyNotFound      = apperr.NotFound(CodeFeePolicyNotFound, "Active fee policy not found")
+	ErrMoneyOverflow      = apperr.Validation(CodeFeeOverflow, "Money arithmetic overflow")
+	ErrNegativeMoney      = apperr.Validation(CodeFeeNegativeComponent, "Negative money component is not allowed")
+	ErrInvalidAmount      = apperr.Validation(CodeFeeInvalidAmount, "Amount must be a positive whole-rupiah integer")
+	ErrNonPositiveNet     = apperr.Validation(CodeFeeNonPositiveNet, "Net amount must be positive after fees")
+	ErrBelowMinWithdrawal = apperr.Validation(CodeFeeBelowMinWithdrawal, "Withdrawal amount is below the minimum")
+	ErrPaymentOutOfBounds = apperr.Validation(CodeFeePaymentOutOfBounds, "Payment amount is outside allowed bounds")
+	ErrFractionalInput    = apperr.Validation(apperr.CodeValidationFailed, "Amount must be a whole IDR integer")
+	ErrPolicyNotFound     = apperr.NotFound(CodeFeePolicyNotFound, "Active fee policy not found")
 )

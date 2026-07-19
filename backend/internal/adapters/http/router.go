@@ -130,8 +130,8 @@ func NewRouter(log ports.Logger, ids ports.IDGenerator, service string, ready fu
 		Ready:           ready,
 		StartedAt:       time.Now().UTC(),
 		CSRFSoftDisable: true,
-		RateLimiter:    middleware.NewMemoryClassLimiter(nil),
-		RequestTimeout: 30 * time.Second,
+		RateLimiter:     middleware.NewMemoryClassLimiter(nil),
+		RequestTimeout:  30 * time.Second,
 	})
 }
 
@@ -206,13 +206,13 @@ func NewRouterWith(d RouterDeps) http.Handler {
 	r.Get("/metrics", metrics.Metrics)
 
 	status := handlers.StatusDeps{
-		Service:          d.Service,
-		Version:          d.Version,
-		AppEnv:           d.AppEnv,
-		StartedAt:        d.StartedAt,
-		TrustedProxyMode: d.TrustedProxyMode,
+		Service:           d.Service,
+		Version:           d.Version,
+		AppEnv:            d.AppEnv,
+		StartedAt:         d.StartedAt,
+		TrustedProxyMode:  d.TrustedProxyMode,
 		TrustedProxyCIDRs: append([]string(nil), d.TrustedProxies...),
-		RateLimitErrors:  d.RateLimitErrors,
+		RateLimitErrors:   d.RateLimitErrors,
 	}
 	r.Get("/v1/status", status.Status)
 

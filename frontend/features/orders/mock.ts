@@ -26,8 +26,16 @@ export function demoOrders(): SellerOrder[] {
           }
         : undefined,
     timeline: [
-      { label: "Pesanan dibuat", atDisplay: "12 Jul 2026", timeDisplay: "14:32:08" },
-      { label: "QRIS dibuat", atDisplay: "12 Jul 2026", timeDisplay: "14:32:09" },
+      {
+        label: "Pesanan dibuat",
+        atDisplay: "12 Jul 2026",
+        timeDisplay: "14:32:08",
+      },
+      {
+        label: "QRIS dibuat",
+        atDisplay: "12 Jul 2026",
+        timeDisplay: "14:32:09",
+      },
       {
         label: "Pembayaran terkonfirmasi",
         atDisplay: "12 Jul 2026",

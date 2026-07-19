@@ -20,10 +20,7 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, ".") } },
   test: {
     environment: "node",
-    include: [
-      "tests/unit/**/*.test.ts",
-      "tests/contract/**/*.test.ts",
-    ],
+    include: ["tests/unit/**/*.test.ts", "tests/contract/**/*.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "json-summary"],

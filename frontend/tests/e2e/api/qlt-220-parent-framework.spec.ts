@@ -1,10 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import {
-  apiOrigin,
-  assertNonProductionHarness,
-} from "./helpers";
+import { apiOrigin, assertNonProductionHarness } from "./helpers";
 import {
   clearEphemeralAuthState,
   isBlockedMockUrl,
@@ -22,16 +19,10 @@ import { QLT110_SEED } from "./helpers/seed";
  * Failures here mean harness/registration/policy regressions, not domain product cells.
  */
 
-test.describe("QLT-220 parent — project registration + isolation", () => {
-  test.beforeAll(() => {
-    assertNonProductionHarness();
-  });
-
-  test("mock and API Playwright configs are distinct", () => {
-    const root = (() => {
+const qlt220Root = (() => {
   const cwd = process.cwd();
   // monorepo: frontend package cwd → repo root
-  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
+  if (/[/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
   return cwd;
 })();
 
@@ -43,47 +34,54 @@ function repoPath(rel: string): string {
     rel.startsWith("scripts/") ||
     rel.startsWith(".github/")
   ) {
-    return path.join(root, rel);
+    return path.join(qlt220Root, rel);
   }
-  return path.join(root, "frontend", rel);
+  return path.join(qlt220Root, "frontend", rel);
 }
 
-    const mockCfg = readFileSync(repoPath("playwright.config.ts"), "utf8");
-    const apiCfg = readFileSync(
-      repoPath("playwright.api.config.ts"),
-      "utf8",
-    );
+test.describe("QLT-220 parent — project registration + isolation", () => {
+  test.beforeAll(() => {
+    assertNonProductionHarness();
+  });
 
-    expect(mockCfg.includes('testIgnore: ["**/api/**"]'), "mock ignores api/").toBe(
+  test("mock and API Playwright configs are distinct", () => {
+    const mockCfg = readFileSync(repoPath("playwright.config.ts"), "utf8");
+    const apiCfg = readFileSync(repoPath("playwright.api.config.ts"), "utf8");
+
+    expect(
+      mockCfg.includes('testIgnore: ["**/api/**"]'),
+      "mock ignores api/",
+    ).toBe(true);
+    expect(mockCfg.includes("desktop-chromium"), "mock desktop project").toBe(
       true,
     );
-    expect(mockCfg.includes("desktop-chromium"), "mock desktop project").toBe(true);
-    expect(mockCfg.includes("mobile-chromium"), "mock mobile project").toBe(true);
+    expect(mockCfg.includes("mobile-chromium"), "mock mobile project").toBe(
+      true,
+    );
     expect(mockCfg.includes("3100"), "mock base port 3100").toBe(true);
 
-    expect(apiCfg.includes("tests/e2e/api") || apiCfg.includes("e2e/api"), "api testDir").toBe(
+    expect(
+      apiCfg.includes("tests/e2e/api") || apiCfg.includes("e2e/api"),
+      "api testDir",
+    ).toBe(true);
+    expect(apiCfg.includes("api-desktop-chromium"), "api project name").toBe(
       true,
     );
-    expect(apiCfg.includes("api-desktop-chromium"), "api project name").toBe(true);
-    expect(apiCfg.includes("NEXT_PUBLIC_DATA_SOURCE"), "api DATA_SOURCE env").toBe(
-      true,
-    );
-    expect(apiCfg.includes('"api"') || apiCfg.includes("'api'"), "DATA_SOURCE=api").toBe(
-      true,
-    );
+    expect(
+      apiCfg.includes("NEXT_PUBLIC_DATA_SOURCE"),
+      "api DATA_SOURCE env",
+    ).toBe(true);
+    expect(
+      apiCfg.includes('"api"') || apiCfg.includes("'api'"),
+      "DATA_SOURCE=api",
+    ).toBe(true);
     // API suite must not re-include mock visual/smoke paths.
-    expect(apiCfg.includes("visual.spec") || apiCfg.includes("smoke.spec")).toBe(
-      false,
-    );
+    expect(
+      apiCfg.includes("visual.spec") || apiCfg.includes("smoke.spec"),
+    ).toBe(false);
   });
 
   test("required parent sample specs exist", () => {
-    const root = (() => {
-  const cwd = process.cwd();
-  // monorepo: frontend package cwd → repo root
-  if (/[\/]frontend$/.test(cwd)) return path.resolve(cwd, "..");
-  return cwd;
-})();
     for (const rel of [
       "tests/e2e/api/harness-health.spec.ts",
       "tests/e2e/api/int-190-vertical-slice.spec.ts",
@@ -100,9 +98,10 @@ function repoPath(rel: string): string {
     const ds = (process.env.NEXT_PUBLIC_DATA_SOURCE || "").toLowerCase();
     // When Next webServer is used, config forces api; when skip-webserver, base is Go API.
     if (process.env.E2E_API_HAS_NEXT !== "0") {
-      expect(["", "api"].includes(ds) || ds === "api", `DATA_SOURCE=${ds}`).toBe(
-        true,
-      );
+      expect(
+        ["", "api"].includes(ds) || ds === "api",
+        `DATA_SOURCE=${ds}`,
+      ).toBe(true);
     }
     expect(process.env.APP_ENV?.toLowerCase()).not.toBe("production");
   });
@@ -145,7 +144,9 @@ test.describe("QLT-220 parent — real auth + ephemeral cookies", () => {
     const parsed = JSON.parse(raw) as {
       cookies?: Array<{ name?: string; value?: string }>;
     };
-    expect(parsed.cookies?.some((c) => c.name === "fersaku_session")).toBe(true);
+    expect(parsed.cookies?.some((c) => c.name === "fersaku_session")).toBe(
+      true,
+    );
     // Storage state must not embed password or seed password field.
     expect(raw.includes(QLT110_SEED.password)).toBe(false);
     expect(raw.toLowerCase().includes("password")).toBe(false);
@@ -202,10 +203,7 @@ test.describe("QLT-220 parent — no mock simulator network", () => {
     page,
     baseURL,
   }) => {
-    test.skip(
-      process.env.E2E_API_HAS_NEXT === "0",
-      "Next edge not running",
-    );
+    test.skip(process.env.E2E_API_HAS_NEXT === "0", "Next edge not running");
     expect(baseURL).toBeTruthy();
 
     const blocked: string[] = [];

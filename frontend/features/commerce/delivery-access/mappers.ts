@@ -2,7 +2,10 @@
  * Delivery access DTO → claim view (CHK-140). Pure; no React.
  */
 
-import type { DeliveryAccessDto, DeliveryResendDto } from "@/shared/api/schemas";
+import type {
+  DeliveryAccessDto,
+  DeliveryResendDto,
+} from "@/shared/api/schemas";
 import { invalidApiContract } from "@/shared/api/mappers";
 import type {
   DeliveryAccessClaim,
@@ -44,9 +47,7 @@ export function mapDeliveryAccessDto(
   };
   if (dto.expiresAt) {
     claim.expiresAt =
-      typeof dto.expiresAt === "string"
-        ? dto.expiresAt
-        : String(dto.expiresAt);
+      typeof dto.expiresAt === "string" ? dto.expiresAt : String(dto.expiresAt);
   }
   if (dto.downloadObjectId) {
     claim.downloadObjectId = dto.downloadObjectId;
@@ -115,9 +116,7 @@ export function secretsToCredentialFields(
 }
 
 /** Primary code value from secrets map. */
-export function secretsToCodeValue(
-  secrets: Record<string, string>,
-): string {
+export function secretsToCodeValue(secrets: Record<string, string>): string {
   return (
     secrets.code ||
     secrets.license ||
@@ -162,5 +161,8 @@ export function redactDeliveryClaim(
   claim: DeliveryAccessClaim,
 ): Omit<DeliveryAccessClaim, "secrets"> & { hasSecrets: boolean } {
   const { secrets, ...rest } = claim;
-  return { ...rest, hasSecrets: Boolean(secrets && Object.keys(secrets).length) };
+  return {
+    ...rest,
+    hasSecrets: Boolean(secrets && Object.keys(secrets).length),
+  };
 }

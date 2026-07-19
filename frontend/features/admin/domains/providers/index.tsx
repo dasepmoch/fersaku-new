@@ -96,10 +96,10 @@ export function ProviderInfrastructure() {
   const isMock = getDomainSource("adminRead") === "mock";
   const query = useAdminProviderInfrastructure();
   // Mock fixtures live in hooks/api only (INT-170 presentation boundary).
-  const rows: ProviderHealthRow[] = query.data?.rows?.length
-    ? query.data.rows
-    : [];
-
+  const rows = useMemo<ProviderHealthRow[]>(
+    () => query.data?.rows ?? [],
+    [query.data],
+  );
   const items = useMemo(() => rows.map(toProviderItem), [rows]);
   const [selected, setSelected] = useState<string>("");
   const [testing, setTesting] = useState<string | null>(null);
@@ -108,13 +108,15 @@ export function ProviderInfrastructure() {
   const activeId =
     selected && items.some((i) => i.id === selected)
       ? selected
-      : items[0]?.id ?? "";
+      : (items[0]?.id ?? "");
   const provider = items.find((item) => item.id === activeId) ?? items[0];
 
-  const overallKind = query.data?.overallKind ?? (isMock ? "degraded" : "unknown");
+  const overallKind =
+    query.data?.overallKind ?? (isMock ? "degraded" : "unknown");
   const tone = vaultTone(overallKind);
   const VaultIcon = tone.Icon;
-  const lastChecked = query.data?.checkedLabel ?? (isMock ? "just now" : "unknown");
+  const lastChecked =
+    query.data?.checkedLabel ?? (isMock ? "just now" : "unknown");
   const overallLabel =
     query.data?.overallLabel ??
     (isMock ? "Provider vault degraded" : "Provider health unknown");

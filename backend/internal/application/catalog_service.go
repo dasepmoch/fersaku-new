@@ -72,19 +72,19 @@ func (s *CatalogService) requireStoreAccess(ctx context.Context, userID, storeID
 
 // CreateProductInput is POST /v1/stores/{storeId}/products.
 type CreateProductInput struct {
-	Slug            string
-	Title           string
-	Short           string
-	Description     string
-	Price           int64 // whole IDR
-	Type            string
-	Badge           string
-	Palette         string
-	Glyph           string
-	Includes        []string
-	AllowPWYT       bool
-	MinimumPrice    *int64
-	Version         string
+	Slug         string
+	Title        string
+	Short        string
+	Description  string
+	Price        int64 // whole IDR
+	Type         string
+	Badge        string
+	Palette      string
+	Glyph        string
+	Includes     []string
+	AllowPWYT    bool
+	MinimumPrice *int64
+	Version      string
 }
 
 // PatchProductInput is PATCH product (partial).
@@ -513,9 +513,9 @@ func (s *CatalogService) GetStorefrontDraft(ctx context.Context, userID, storeID
 
 // PutStorefrontDraft replaces draft config; bumps revision and etag.
 type PutStorefrontDraftInput struct {
-	Config            json.RawMessage
-	ExpectedRevision  *int32
-	ExpectedETag      string
+	Config           json.RawMessage
+	ExpectedRevision *int32
+	ExpectedETag     string
 }
 
 // PutStorefrontDraft updates the draft with optional optimistic concurrency.
@@ -590,10 +590,10 @@ func (s *CatalogService) createDraftWithConfig(ctx context.Context, userID strin
 
 // PublishStorefrontInput is POST storefront/publish with optimistic concurrency.
 type PublishStorefrontInput struct {
-	Config            json.RawMessage // optional; if set, becomes published content
-	ExpectedRevision  *int32
-	ExpectedETag      string
-	IfMatch           string // HTTP If-Match header value
+	Config           json.RawMessage // optional; if set, becomes published content
+	ExpectedRevision *int32
+	ExpectedETag     string
+	IfMatch          string // HTTP If-Match header value
 }
 
 // PublishStorefrontResult is the publish response.

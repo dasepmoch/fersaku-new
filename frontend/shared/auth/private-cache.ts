@@ -36,9 +36,7 @@ export function clearPrivateQueryCache(client: QueryClient): void {
 }
 
 /** Optional secret/local session-bound keys that must die with the actor. */
-const SECRET_SESSION_KEYS = [
-  "fersaku-impersonation-session-v1",
-] as const;
+const SECRET_SESSION_KEYS = ["fersaku-impersonation-session-v1"] as const;
 
 export function clearSecretLocalSessionState(): void {
   if (typeof window === "undefined") return;

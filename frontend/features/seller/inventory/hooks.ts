@@ -144,7 +144,10 @@ export function useRevealSellerInventoryItemMutation() {
   });
 }
 
-export function useRevokeSellerInventoryItemMutation(storeId: string, productId: string) {
+export function useRevokeSellerInventoryItemMutation(
+  storeId: string,
+  productId: string,
+) {
   const queryClient = useQueryClient();
   return useAppMutation({
     mutationKey: ["seller", storeId, "inventory", productId, "revoke"],

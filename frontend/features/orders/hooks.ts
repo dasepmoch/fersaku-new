@@ -27,7 +27,10 @@ export function useSellerOrders(
     to: filters.to,
   };
   return useAppQuery({
-    queryKey: queryKeys.seller.orders(storeId, normalized as Record<string, unknown>),
+    queryKey: queryKeys.seller.orders(
+      storeId,
+      normalized as Record<string, unknown>,
+    ),
     queryFn: (signal) => listSellerOrders(storeId, normalized, signal),
     enabled: Boolean(storeId),
     placeholderData: mockPlaceholderData("sellerOperations", {

@@ -134,9 +134,7 @@ export function InvoiceView({
               <SummaryRow
                 label={couponLabel}
                 value={
-                  couponDiscount > 0
-                    ? `- ${rupiah(couponDiscount)}`
-                    : rupiah(0)
+                  couponDiscount > 0 ? `- ${rupiah(couponDiscount)}` : rupiah(0)
                 }
                 accent={couponDiscount > 0}
               />

@@ -28,11 +28,7 @@ function RolesPage() {
         <Metric
           label="Staff accounts"
           value={
-            staffCount !== undefined
-              ? String(staffCount)
-              : isMock
-                ? "18"
-                : "—"
+            staffCount !== undefined ? String(staffCount) : isMock ? "18" : "—"
           }
           note={
             staff

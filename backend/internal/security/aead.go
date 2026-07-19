@@ -16,10 +16,10 @@ import (
 // Key material is derived via SHA-256 from the configured secret string.
 // Ciphertext layout: version(1) || nonce(12) || sealed.
 const (
-	KeyVersionV1     = "v1"
-	aeadVersionByte  = 0x01
-	aeadNonceSize    = 12
-	aeadOverheadMin  = 1 + aeadNonceSize + 16
+	KeyVersionV1    = "v1"
+	aeadVersionByte = 0x01
+	aeadNonceSize   = 12
+	aeadOverheadMin = 1 + aeadNonceSize + 16
 )
 
 // ErrEmptyKey is returned when no encryption key is configured.

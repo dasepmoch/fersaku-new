@@ -13,10 +13,7 @@ import type { AdminProfile, AdminSession } from "./contracts";
 
 /** Initials from display name for static avatar (no photo — INT-175). */
 export function profileInitials(displayName: string): string {
-  const parts = displayName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "—";
   if (parts.length === 1) {
     const w = parts[0];
@@ -81,7 +78,8 @@ export function mapAdminProfileDto(
     fullName,
     email: dto.email.trim(),
     jobTitle: jobTitle.trim(),
-    timezone: tz.includes("GMT") || tz.includes("(") ? stripTimezoneLabel(tz) : tz,
+    timezone:
+      tz.includes("GMT") || tz.includes("(") ? stripTimezoneLabel(tz) : tz,
     revision: version,
     initials: profileInitials(fullName),
     mfaEnabled: Boolean(dto.mfaEnabled),

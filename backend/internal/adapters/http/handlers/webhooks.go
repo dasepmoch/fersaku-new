@@ -266,16 +266,16 @@ func (h *WebhookHandler) AdminRetry(w http.ResponseWriter, r *http.Request) {
 
 func endpointDTO(e webhooks.Endpoint) map[string]any {
 	dto := map[string]any{
-		"id":            e.ID,
-		"merchantId":    e.MerchantID,
-		"paymentMode":   e.PaymentMode,
-		"urlHost":       e.URLHost,
-		"status":        e.Status,
-		"configVersion": e.ConfigVersion,
+		"id":             e.ID,
+		"merchantId":     e.MerchantID,
+		"paymentMode":    e.PaymentMode,
+		"urlHost":        e.URLHost,
+		"status":         e.Status,
+		"configVersion":  e.ConfigVersion,
 		"eventAllowlist": e.EventAllowlist,
-		"failureCount":  e.FailureCount,
-		"createdAt":     e.CreatedAt.UTC().Format(time.RFC3339),
-		"updatedAt":     e.UpdatedAt.UTC().Format(time.RFC3339),
+		"failureCount":   e.FailureCount,
+		"createdAt":      e.CreatedAt.UTC().Format(time.RFC3339),
+		"updatedAt":      e.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 	if e.StoreID != nil {
 		dto["storeId"] = *e.StoreID

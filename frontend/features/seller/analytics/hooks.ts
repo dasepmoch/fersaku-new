@@ -9,10 +9,7 @@ import type {
   TrafficChannelLabel,
   TrafficRangeLabel,
 } from "./contracts";
-import {
-  getSellerAnalyticsOverview,
-  getSellerAnalyticsTraffic,
-} from "./api";
+import { getSellerAnalyticsOverview, getSellerAnalyticsTraffic } from "./api";
 import {
   buildAnalyticsDateRange,
   rangeDaysFromOverviewLabel,
@@ -35,8 +32,7 @@ export function useSellerAnalyticsOverview(
       timezone: range.timezone,
       days: range.days,
     }),
-    queryFn: (signal) =>
-      getSellerAnalyticsOverview({ storeId, range, signal }),
+    queryFn: (signal) => getSellerAnalyticsOverview({ storeId, range, signal }),
     enabled: Boolean(storeId),
     surface: "private",
     keepPrevious: true,

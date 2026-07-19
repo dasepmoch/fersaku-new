@@ -28,10 +28,7 @@ import {
   OBJECT_SCAN_POLL_MAX_ATTEMPTS,
 } from "./contracts";
 import { sha256HexOfFile } from "./checksum";
-import {
-  assertNoSecretsInObjectMeta,
-  mapObjectMetaDto,
-} from "./mappers";
+import { assertNoSecretsInObjectMeta, mapObjectMetaDto } from "./mappers";
 import { mockObjectMeta, mockUploadIntent } from "./mock";
 import { validateClientFile } from "./validate";
 
@@ -255,8 +252,7 @@ export async function runStoreObjectUpload(
     });
   }
 
-  const contentType =
-    input.file.type?.trim() || "application/octet-stream";
+  const contentType = input.file.type?.trim() || "application/octet-stream";
   const checksum = await sha256HexOfFile(input.file, signal);
 
   const intent = await createStoreObjectUpload(
@@ -288,10 +284,7 @@ export async function runStoreObjectUpload(
     );
 
     const wait = input.waitUntilReady !== false;
-    if (
-      wait &&
-      (meta.status === "SCANNING" || meta.status === "UPLOADING")
-    ) {
+    if (wait && (meta.status === "SCANNING" || meta.status === "UPLOADING")) {
       meta = await pollStoreObjectUntilTerminal(
         input.storeId,
         intent.object.id,

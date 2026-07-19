@@ -134,9 +134,8 @@ describe("PUB-220 public status adapter", () => {
       meta,
     } as never);
 
-    const { getPublicPlatformStatus: getStatus } = await import(
-      "@/features/platform-status/api"
-    );
+    const { getPublicPlatformStatus: getStatus } =
+      await import("@/features/platform-status/api");
     const view = await getStatus();
     expect(spy).toHaveBeenCalledWith(
       "/v1/status",
@@ -163,11 +162,12 @@ describe("PUB-220 public status adapter", () => {
     vi.spyOn(domain, "getDomainSource").mockReturnValue("api");
 
     const http = await import("@/shared/api/http-client");
-    const spy = vi.spyOn(http, "apiRequest").mockRejectedValue(new Error("network"));
+    const spy = vi
+      .spyOn(http, "apiRequest")
+      .mockRejectedValue(new Error("network"));
 
-    const { getPublicPlatformStatus: getStatus } = await import(
-      "@/features/platform-status/api"
-    );
+    const { getPublicPlatformStatus: getStatus } =
+      await import("@/features/platform-status/api");
     const view = await getStatus();
     expect(view.source).toBe("unavailable");
     expect(view.overallKind).toBe("unknown");
@@ -192,9 +192,8 @@ describe("PUB-220 public status adapter", () => {
       meta,
     } as never);
 
-    const { getPublicStatusDto: getDto } = await import(
-      "@/features/platform-status/api"
-    );
+    const { getPublicStatusDto: getDto } =
+      await import("@/features/platform-status/api");
     await getDto();
     expect(spy).toHaveBeenCalledTimes(1);
     const path = spy.mock.calls[0][0] as string;

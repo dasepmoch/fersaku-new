@@ -49,9 +49,9 @@ type ArchiveRoleInput struct {
 
 // AssignRoleInput assigns a role to a user.
 type AssignRoleInput struct {
-	ActorUserID string
+	ActorUserID  string
 	TargetUserID string
-	RoleID      string
+	RoleID       string
 }
 
 // RemoveRoleInput removes a role assignment.
@@ -72,13 +72,13 @@ type CreateStaffInviteInput struct {
 
 // CreateMerchantInviteInput creates a merchant invitation.
 type CreateMerchantInviteInput struct {
-	ActorUserID      string
-	Email            string
-	MerchantID       string // optional
-	RoleInMerchant   string
+	ActorUserID       string
+	Email             string
+	MerchantID        string // optional
+	RoleInMerchant    string
 	OnboardingPurpose string
-	IdempotencyKey   string
-	TTL              time.Duration
+	IdempotencyKey    string
+	TTL               time.Duration
 }
 
 // AcceptInviteResult is the outcome of invitation acceptance.
@@ -950,5 +950,3 @@ func (s *AuthzService) audit(ctx context.Context, action string, fields map[stri
 		s.Log.Info("authz audit", args...)
 	}
 }
-
-

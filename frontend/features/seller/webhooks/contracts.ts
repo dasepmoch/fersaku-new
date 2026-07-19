@@ -28,12 +28,7 @@ export type SellerWebhookEndpoint = {
 };
 
 export type WebhookDeliveryStatus =
-  | "QUEUED"
-  | "DELIVERED"
-  | "RETRYING"
-  | "DEAD_LETTER"
-  | "CANCELLED"
-  | string;
+  "QUEUED" | "DELIVERED" | "RETRYING" | "DEAD_LETTER" | "CANCELLED" | string;
 
 export type SellerWebhookDelivery = {
   deliveryId: string;

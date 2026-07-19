@@ -431,8 +431,12 @@ describe("SEL-340 disposition: no secrets / INT-175 / no localStorage truth", ()
     expect(source).not.toMatch(
       /\/v1\/stores\/.+\/objects|\/v1\/me\/objects|Upload new photo|data:image/,
     );
-    expect(source).not.toMatch(/fersaku-seller-profile-settings|writeVersionedStorage|readVersionedStorage|appendClientAuditEvent/);
-    expect(source).toMatch(/useSellerProfile|useSellerBankAccounts|usePasswordChangeMutation/);
+    expect(source).not.toMatch(
+      /fersaku-seller-profile-settings|writeVersionedStorage|readVersionedStorage|appendClientAuditEvent/,
+    );
+    expect(source).toMatch(
+      /useSellerProfile|useSellerBankAccounts|usePasswordChangeMutation/,
+    );
     expect(source).toMatch(/toPasswordChangeRequest|toMfaConfirmRequest/);
   });
 
@@ -456,7 +460,9 @@ describe("SEL-340 disposition: no secrets / INT-175 / no localStorage truth", ()
     for (const k of keys) {
       const flat = JSON.stringify(k);
       // Operation labels may say "change-password"; values must never appear.
-      expect(flat).not.toMatch(/0148924821|FRSK-|otpauth|accountNumber["\s]*:/i);
+      expect(flat).not.toMatch(
+        /0148924821|FRSK-|otpauth|accountNumber["\s]*:/i,
+      );
       expect(k).not.toContain("0148924821");
     }
   });

@@ -14,8 +14,8 @@ var (
 	ErrLiveCredentialReq  = apperr.Forbidden(apperr.CodeLiveCredentialRequired, "Live credential required")
 	ErrQRISCheckoutOff    = apperr.Forbidden(apperr.CodeForbidden, "QRIS checkout is temporarily unavailable")
 
-	ErrNotFound              = apperr.NotFound(apperr.CodeResourceNotFound, "Payment intent not found")
-	ErrEventNotFound         = apperr.NotFound(apperr.CodeResourceNotFound, "Event not found")
+	ErrNotFound               = apperr.NotFound(apperr.CodeResourceNotFound, "Payment intent not found")
+	ErrEventNotFound          = apperr.NotFound(apperr.CodeResourceNotFound, "Event not found")
 	ErrWebhookEndpointInvalid = apperr.Validation(apperr.CodeValidationFailed, "Invalid webhook endpoint")
 	ErrRedirectOriginRejected = apperr.Validation(apperr.CodeValidationFailed, "Redirect URL origin is not registered")
 	ErrWebhookURLRejected     = apperr.Validation(apperr.CodeValidationFailed, "webhookUrl is not accepted; use webhookEndpointId")

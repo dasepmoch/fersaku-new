@@ -7,9 +7,7 @@ import {
   isPrivateQueryKey,
 } from "@/shared/auth/private-cache";
 import { queryKeys } from "@/shared/query/query-keys";
-import {
-  clearDomainSourceSnapshot,
-} from "@/shared/data/domain-source";
+import { clearDomainSourceSnapshot } from "@/shared/data/domain-source";
 
 const meta = {
   requestId: "req_sel420",
@@ -77,9 +75,7 @@ describe("SEL-420 seller shell wiring disposition", () => {
       path.join(root, "features/seller/components/dashboard-shell.tsx"),
       "utf8",
     );
-    expect(source).toMatch(
-      /from ["']@\/shared\/ui\/account-controls["']/,
-    );
+    expect(source).toMatch(/from ["']@\/shared\/ui\/account-controls["']/);
     expect(source).toMatch(/NotificationCenter\s+surface=["']seller["']/);
     expect(source).toMatch(/ProfileMenu\s+surface=["']seller["']/);
     // No second notification adapter in seller feature tree.
@@ -126,28 +122,30 @@ describe("SEL-420 seller notification alias + isolation", () => {
   });
 
   it("seller mark-read and read-all hit seller alias", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/seller/notifications/ntf_seller_1/read")) {
-        expect(init?.method).toBe("POST");
-        return jsonResponse({
-          data: {
-            ...sellerDto,
-            unread: false,
-            readAt: "2026-07-17T10:01:00Z",
-          },
-          meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
-        });
-      }
-      if (url.includes("/v1/seller/notifications/read-all")) {
-        expect(init?.method).toBe("POST");
-        return jsonResponse({
-          data: { updated: 2 },
-          meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
-        });
-      }
-      throw new Error(`unexpected ${url}`);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/seller/notifications/ntf_seller_1/read")) {
+          expect(init?.method).toBe("POST");
+          return jsonResponse({
+            data: {
+              ...sellerDto,
+              unread: false,
+              readAt: "2026-07-17T10:01:00Z",
+            },
+            meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
+          });
+        }
+        if (url.includes("/v1/seller/notifications/read-all")) {
+          expect(init?.method).toBe("POST");
+          return jsonResponse({
+            data: { updated: 2 },
+            meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
+          });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadNotificationApi("api");
     const row = await api.markNotificationRead("seller", "ntf_seller_1");
@@ -163,19 +161,18 @@ describe("SEL-420 seller notification alias + isolation", () => {
     expect(sellerA).not.toEqual(sellerB);
     expect(sellerA).not.toEqual(buyerA);
     expect(isPrivateQueryKey(sellerA)).toBe(true);
-    expect(isPrivateQueryKey(queryKeys.notifications.unreadCount("seller", "u:s"))).toBe(
-      true,
-    );
+    expect(
+      isPrivateQueryKey(queryKeys.notifications.unreadCount("seller", "u:s")),
+    ).toBe(true);
   });
 });
 
 describe("SEL-420 logout clears private cache including notifications", () => {
   it("clearPrivateQueryCache removes seller + notifications roots", () => {
     const client = new QueryClient();
-    client.setQueryData(
-      queryKeys.notifications.list("seller", "usr_s:ses_s"),
-      [{ id: "n1" }],
-    );
+    client.setQueryData(queryKeys.notifications.list("seller", "usr_s:ses_s"), [
+      { id: "n1" },
+    ]);
     client.setQueryData(
       queryKeys.notifications.unreadCount("seller", "usr_s:ses_s"),
       3,
@@ -196,7 +193,9 @@ describe("SEL-420 logout clears private cache including notifications", () => {
         queryKeys.notifications.unreadCount("seller", "usr_s:ses_s"),
       ),
     ).toBeUndefined();
-    expect(client.getQueryData(["seller", "store_1", "products"])).toBeUndefined();
+    expect(
+      client.getQueryData(["seller", "store_1", "products"]),
+    ).toBeUndefined();
     expect(client.getQueryData(["public", "catalog"])).toEqual({ ok: true });
     expect(client.getQueryData(["theme"])).toBe("light");
   });
@@ -220,10 +219,9 @@ describe("SEL-420 logout clears private cache including notifications", () => {
     __resetSessionStoreForTests();
     const client = new QueryClient();
     bindSessionQueryClient(client);
-    client.setQueryData(
-      queryKeys.notifications.list("seller", "usr_s:ses_s"),
-      [{ id: "n1" }],
-    );
+    client.setQueryData(queryKeys.notifications.list("seller", "usr_s:ses_s"), [
+      { id: "n1" },
+    ]);
     client.setQueryData(["seller", "store_1", "orders"], { ok: true });
 
     vi.stubGlobal(
@@ -275,11 +273,13 @@ describe("SEL-420 logout clears private cache including notifications", () => {
         queryKeys.notifications.list("seller", "usr_s:ses_s"),
       ),
     ).toBeUndefined();
-    expect(client.getQueryData(["seller", "store_1", "orders"])).toBeUndefined();
+    expect(
+      client.getQueryData(["seller", "store_1", "orders"]),
+    ).toBeUndefined();
 
     const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls;
-    expect(
-      calls.some((c) => String(c[0]).includes("/v1/auth/logout")),
-    ).toBe(true);
+    expect(calls.some((c) => String(c[0]).includes("/v1/auth/logout"))).toBe(
+      true,
+    );
   });
 });

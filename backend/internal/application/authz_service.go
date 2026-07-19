@@ -7,8 +7,8 @@ import (
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/authz"
-	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
+	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
 // AuthzService enforces RBAC and tenant membership (BE-130/BE-135).
@@ -233,18 +233,18 @@ type SellerStoreDTO struct {
 
 // SellerBootstrap is GET /v1/seller/me/merchant extended payload (INT-150 / SEL-100).
 type SellerBootstrap struct {
-	MerchantID           string
-	DisplayName          string
-	Status               string
-	RoleInMerchant       string
-	OwnerUserID          string
-	Memberships          []SellerMembershipDTO
-	Stores               []SellerStoreDTO
-	CanonicalStoreID     string
-	CurrentStoreID       string
-	Capabilities         []string
-	OnboardingState      string
-	OnboardingCompleted  bool
+	MerchantID          string
+	DisplayName         string
+	Status              string
+	RoleInMerchant      string
+	OwnerUserID         string
+	Memberships         []SellerMembershipDTO
+	Stores              []SellerStoreDTO
+	CanonicalStoreID    string
+	CurrentStoreID      string
+	Capabilities        []string
+	OnboardingState     string
+	OnboardingCompleted bool
 }
 
 // GetSellerBootstrap returns merchant, memberships, stores, and server-selected current store.

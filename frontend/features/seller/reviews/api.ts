@@ -74,7 +74,10 @@ export async function listSellerReviews(
       signal,
     },
   );
-  return mapSellerReviewListDto(response.data).slice(0, SELLER_REVIEW_LIST_LIMIT);
+  return mapSellerReviewListDto(response.data).slice(
+    0,
+    SELLER_REVIEW_LIST_LIMIT,
+  );
 }
 
 /**
@@ -85,7 +88,8 @@ export async function listPublicProductReviews(
   productId: string,
   signal?: AbortSignal,
 ): Promise<SellerReview[]> {
-  if (shouldUseMockFixtures("publicCatalog")) return demoPublicReviews(productId);
+  if (shouldUseMockFixtures("publicCatalog"))
+    return demoPublicReviews(productId);
 
   try {
     const response = await apiRequest<PublicReviewListEnvelope>(

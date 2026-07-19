@@ -44,15 +44,15 @@ const (
 
 // Mismatch / alert codes (quarantine or operational).
 const (
-	MismatchAmount        = "AMOUNT_MISMATCH"
-	MismatchCurrency      = "CURRENCY_MISMATCH"
-	MismatchReference     = "REFERENCE_MISMATCH"
-	MismatchNoPayment     = "PAYMENT_NOT_FOUND"
-	MismatchAmbiguous     = "AMBIGUOUS_PAYMENT"
-	AlertLatePaid         = "LATE_PAID_AFTER_TERMINAL"
-	AlertProviderPending  = "PROVIDER_PAID_LOCAL_PENDING" // reserved for integrity scan
-	AlertUnknownEvent     = "UNKNOWN_EVENT_TYPE"
-	AlertReversalHeld     = "PROVIDER_REVERSAL_HELD"
+	MismatchAmount       = "AMOUNT_MISMATCH"
+	MismatchCurrency     = "CURRENCY_MISMATCH"
+	MismatchReference    = "REFERENCE_MISMATCH"
+	MismatchNoPayment    = "PAYMENT_NOT_FOUND"
+	MismatchAmbiguous    = "AMBIGUOUS_PAYMENT"
+	AlertLatePaid        = "LATE_PAID_AFTER_TERMINAL"
+	AlertProviderPending = "PROVIDER_PAID_LOCAL_PENDING" // reserved for integrity scan
+	AlertUnknownEvent    = "UNKNOWN_EVENT_TYPE"
+	AlertReversalHeld    = "PROVIDER_REVERSAL_HELD"
 )
 
 // Outbox topics for inbound callback pipeline.
@@ -106,19 +106,19 @@ type ProviderEvent struct {
 
 // CallbackRejection is evidence-only (no replay).
 type CallbackRejection struct {
-	ID          string
-	Provider    string
+	ID           string
+	Provider     string
 	AccountScope *string
-	PaymentMode *string
-	Reason      string
-	HTTPStatus  int32
-	ContentType *string
-	BodyBytes   int32
-	BodyDigest  *string
-	ClientIP    *string
-	RequestID   *string
-	ReceivedAt  time.Time
-	CreatedAt   time.Time
+	PaymentMode  *string
+	Reason       string
+	HTTPStatus   int32
+	ContentType  *string
+	BodyBytes    int32
+	BodyDigest   *string
+	ClientIP     *string
+	RequestID    *string
+	ReceivedAt   time.Time
+	CreatedAt    time.Time
 }
 
 // Settlement is the minimal exactly-once paid credit stub (full COA in BE-340).

@@ -99,10 +99,7 @@ export function useAdminSystemSnapshot() {
     surface: "private",
     enabled,
     refetchInterval: poll,
-    placeholderData: mockPlaceholderData(
-      "adminRead",
-      demoSystemSnapshot(),
-    ),
+    placeholderData: mockPlaceholderData("adminRead", demoSystemSnapshot()),
   });
 }
 
@@ -115,10 +112,7 @@ export function useAdminEmergencyControls() {
     surface: "private",
     enabled,
     refetchInterval: poll,
-    placeholderData: mockPlaceholderData(
-      "adminRead",
-      demoEmergencyControls(),
-    ),
+    placeholderData: mockPlaceholderData("adminRead", demoEmergencyControls()),
   });
 }
 

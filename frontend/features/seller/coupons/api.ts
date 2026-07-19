@@ -216,7 +216,11 @@ async function transitionCoupon(
           ? ("PAUSED" as const)
           : ("ARCHIVED" as const);
     const status =
-      state === "ACTIVE" ? "Active" : state === "PAUSED" ? "Paused" : "Archived";
+      state === "ACTIVE"
+        ? "Active"
+        : state === "PAUSED"
+          ? "Paused"
+          : "Archived";
     if (existing) {
       return { ...existing, state, status };
     }

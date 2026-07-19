@@ -10,15 +10,9 @@ import {
   type AuthSessionDataDto,
 } from "@/shared/api/schemas";
 import { ApiError } from "@/shared/api/api-error";
-import {
-  clearCsrfToken,
-  setCsrfToken,
-} from "@/shared/api/csrf";
+import { clearCsrfToken, setCsrfToken } from "@/shared/api/csrf";
 import { PROBLEM_CODES } from "@/shared/api/problem-codes";
-import {
-  mapAuthSessionToClaims,
-  type SessionClaims,
-} from "./session-model";
+import { mapAuthSessionToClaims, type SessionClaims } from "./session-model";
 
 export type BootstrapResult =
   | { ok: true; claims: SessionClaims; csrfToken: string }

@@ -113,9 +113,7 @@ export function resolvePostLoginPath(
   surface: SessionSurface,
   returnTo?: string | null,
 ): string {
-  return (
-    sanitizeReturnToForSurface(returnTo, surface) ?? SURFACE_HOME[surface]
-  );
+  return sanitizeReturnToForSurface(returnTo, surface) ?? SURFACE_HOME[surface];
 }
 
 export function isAuthEntryPath(pathname: string): boolean {

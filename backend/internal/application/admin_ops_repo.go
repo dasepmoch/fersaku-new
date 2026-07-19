@@ -27,15 +27,15 @@ type AdminOpsAuditInsert struct {
 
 // AdminOpsMerchant is a merchant row for status mutations.
 type AdminOpsMerchant struct {
-	ID                string
-	OwnerUserID       string
-	DisplayName       string
-	Status            string
-	SuspensionReason  *string
-	SuspendedAt       *time.Time
-	SuspendedBy       *string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	ID               string
+	OwnerUserID      string
+	DisplayName      string
+	Status           string
+	SuspensionReason *string
+	SuspendedAt      *time.Time
+	SuspendedBy      *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // AdminOpsCapability is LIVE/SANDBOX QRIS API capability.

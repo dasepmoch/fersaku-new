@@ -232,7 +232,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             <span className="mx-auto grid size-14 place-items-center rounded-full bg-[#e7f6ec] text-[#238150]">
               <CheckCircle2 className="size-6" />
             </span>
-            <h2 className="mt-5 text-lg font-extrabold">Password diperbarui.</h2>
+            <h2 className="mt-5 text-lg font-extrabold">
+              Password diperbarui.
+            </h2>
             <p className="mt-2 text-[10px] leading-5 text-[#718078]">
               Silakan masuk dengan password baru.
             </p>
@@ -282,10 +284,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   if (ceremony.kind === "mfa_pending") {
     return (
       <div className="mt-8 grid gap-4">
-        <Field
-          label="Kode autentikator"
-          error={mfaFieldError ?? undefined}
-        >
+        <Field label="Kode autentikator" error={mfaFieldError ?? undefined}>
           <input
             value={mfaCode}
             onChange={(e) =>
@@ -448,7 +447,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
                   />
                 </label>
                 <button
-                  disabled={!resetEmail.includes("@") || forgotMutation.isPending}
+                  disabled={
+                    !resetEmail.includes("@") || forgotMutation.isPending
+                  }
                   onClick={() => {
                     void sendReset();
                   }}

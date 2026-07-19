@@ -33,28 +33,28 @@ const (
 
 // Product is the catalog aggregate (seller + public projections).
 type Product struct {
-	ID               string
-	StoreID          string
-	MerchantID       string
+	ID         string
+	StoreID    string
+	MerchantID string
 	// StoreSlug is the owning store's canonical public slug (public projections).
-	StoreSlug        string
-	Slug             string
-	Title            string
-	Short            string
-	Description      string
-	PriceIDR         int64
-	Type             ProductType
-	Status           ProductStatus
-	Version          string
-	Badge            string
-	Palette          string
-	Glyph            string
-	Includes         []string
-	AllowPWYT        bool
-	MinimumPriceIDR  *int64
-	PublishedAt      *time.Time
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	StoreSlug       string
+	Slug            string
+	Title           string
+	Short           string
+	Description     string
+	PriceIDR        int64
+	Type            ProductType
+	Status          ProductStatus
+	Version         string
+	Badge           string
+	Palette         string
+	Glyph           string
+	Includes        []string
+	AllowPWYT       bool
+	MinimumPriceIDR *int64
+	PublishedAt     *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 	// Sales is a projection stub until orders (always 0 in BE-210).
 	Sales int64
 }

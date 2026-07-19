@@ -203,10 +203,7 @@ describe("QLT-400 emergency audit + kill switch", () => {
 
   it("default propagation SLO is 30s", () => {
     expect(DEFAULT_KILL_SWITCH_PROPAGATION_SLO_MS).toBe(30_000);
-    const evt = buildEmergencyAuditEvent(
-      kill({ domain: "checkout" }),
-      "rel",
-    );
+    const evt = buildEmergencyAuditEvent(kill({ domain: "checkout" }), "rel");
     expect(evt.propagationSloMs).toBe(30_000);
   });
 
@@ -328,10 +325,7 @@ describe("QLT-400 cache cleanup on source change", () => {
     );
     expect(
       pred({
-        queryKey: [
-          "x",
-          domainSourceKeySegment("buyer", "disabled", "v"),
-        ],
+        queryKey: ["x", domainSourceKeySegment("buyer", "disabled", "v")],
       }),
     ).toBe(true);
   });
@@ -351,9 +345,9 @@ describe("QLT-400 cache cleanup on source change", () => {
 
   it("queryKeyTouchesDomain maps roots", () => {
     expect(queryKeyTouchesDomain(["admin", "orders"], "adminRead")).toBe(true);
-    expect(queryKeyTouchesDomain(["seller", "s1", "finance"], "sellerFinance")).toBe(
-      true,
-    );
+    expect(
+      queryKeyTouchesDomain(["seller", "s1", "finance"], "sellerFinance"),
+    ).toBe(true);
     expect(queryKeyTouchesDomain(["public", "x"], "checkout")).toBe(false);
   });
 });

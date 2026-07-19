@@ -80,17 +80,17 @@ export async function resendAdminOrderDelivery(
     };
   }
 
-  const response = await apiRequest<ResendEnvelope, { reason: string; idempotencyKey: string }>(
-    `/v1/admin/orders/${encodeURIComponent(orderId)}/delivery/resend`,
-    {
-      schema: adminDeliveryResendEnvelopeSchema,
-      method: "POST",
-      body: { reason, idempotencyKey: idem },
-      signal,
-      idempotencyKey: idem,
-      auditReason: reason,
-    },
-  );
+  const response = await apiRequest<
+    ResendEnvelope,
+    { reason: string; idempotencyKey: string }
+  >(`/v1/admin/orders/${encodeURIComponent(orderId)}/delivery/resend`, {
+    schema: adminDeliveryResendEnvelopeSchema,
+    method: "POST",
+    body: { reason, idempotencyKey: idem },
+    signal,
+    idempotencyKey: idem,
+    auditReason: reason,
+  });
   return {
     accepted: Boolean(response.data.accepted),
     requestId: response.meta.requestId,

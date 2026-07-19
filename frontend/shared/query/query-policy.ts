@@ -22,12 +22,7 @@ export const STALE_TIME_DEFAULT_MS = STALE_TIME_PRIVATE_MS;
 
 export const GC_TIME_DEFAULT_MS = 5 * 60_000;
 
-export type QuerySurface =
-  | "public"
-  | "private"
-  | "finance"
-  | "secret"
-  | "auth";
+export type QuerySurface = "public" | "private" | "finance" | "secret" | "auth";
 
 export function staleTimeForSurface(surface: QuerySurface): number {
   switch (surface) {
@@ -72,7 +67,9 @@ function statusFromError(error: unknown): number | undefined {
 
 function retryAfterSecondsFromError(error: unknown): number | undefined {
   if (typeof error === "object" && error && "retryAfterSeconds" in error) {
-    const value = Number((error as { retryAfterSeconds?: unknown }).retryAfterSeconds);
+    const value = Number(
+      (error as { retryAfterSeconds?: unknown }).retryAfterSeconds,
+    );
     if (Number.isFinite(value) && value > 0) return value;
   }
   return undefined;

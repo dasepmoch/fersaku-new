@@ -22,9 +22,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -78,9 +78,7 @@ function productDto(
   };
 }
 
-function viewProduct(
-  overrides: Partial<CatalogProduct> = {},
-): CatalogProduct {
+function viewProduct(overrides: Partial<CatalogProduct> = {}): CatalogProduct {
   return {
     id: "p1",
     slug: "alpha",
@@ -171,7 +169,9 @@ describe("SEL-210 seller product list", () => {
       applySellerProductListFilters(items, { q: "canva" }).map((p) => p.id),
     ).toEqual(["a", "c"]);
     expect(
-      applySellerProductListFilters(items, { status: "draft" }).map((p) => p.id),
+      applySellerProductListFilters(items, { status: "draft" }).map(
+        (p) => p.id,
+      ),
     ).toEqual(["b"]);
     expect(
       applySellerProductListFilters(items, { type: "code" }).map((p) => p.id),

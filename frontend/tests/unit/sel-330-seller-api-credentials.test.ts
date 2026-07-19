@@ -300,10 +300,7 @@ describe("SEL-330 api adapters", () => {
       { claimId: offer.claimId },
     );
     const kyc = await getSellerKycStatus();
-    const revoked = await revokeSellerApiCredential(
-      DEMO_STORE_ID,
-      list[0]!.id,
-    );
+    const revoked = await revokeSellerApiCredential(DEMO_STORE_ID, list[0]!.id);
 
     expect(list.length).toBeGreaterThan(0);
     expect(list[0]?.displayValue).toMatch(/sk_|mock/);
@@ -320,9 +317,8 @@ describe("SEL-330 api adapters", () => {
       data: { credentials: [activeCredential, pendingCredential] },
       meta,
     });
-    const { listSellerApiCredentials } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { listSellerApiCredentials } =
+      await import("@/features/seller/api-credentials/api");
     const list = await listSellerApiCredentials("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/api-credentials",
@@ -350,9 +346,8 @@ describe("SEL-330 api adapters", () => {
       },
       meta,
     });
-    const { requestSellerApiCredential } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { requestSellerApiCredential } =
+      await import("@/features/seller/api-credentials/api");
     const offer = await requestSellerApiCredential("store_live", {
       paymentMode: "SANDBOX",
       purpose: "INITIAL_ISSUE",
@@ -381,9 +376,8 @@ describe("SEL-330 api adapters", () => {
       },
       meta,
     });
-    const { claimSellerApiCredential } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { claimSellerApiCredential } =
+      await import("@/features/seller/api-credentials/api");
     const reveal = await claimSellerApiCredential(
       "store_live",
       "claim_tok_once",
@@ -406,9 +400,8 @@ describe("SEL-330 api adapters", () => {
       data: { ...activeCredential, status: "REVOKED" },
       meta,
     });
-    const { revokeSellerApiCredential } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { revokeSellerApiCredential } =
+      await import("@/features/seller/api-credentials/api");
     const result = await revokeSellerApiCredential(
       "store_live",
       "apk_live_01",
@@ -433,9 +426,8 @@ describe("SEL-330 api adapters", () => {
         message: "Resource not found",
       }),
     );
-    const { listSellerApiCredentials } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { listSellerApiCredentials } =
+      await import("@/features/seller/api-credentials/api");
     await expect(
       listSellerApiCredentials("store_foreign"),
     ).rejects.toBeInstanceOf(ApiError);
@@ -447,9 +439,8 @@ describe("SEL-330 api adapters", () => {
       data: kycApproved,
       meta,
     });
-    const { getSellerKycStatus } = await import(
-      "@/features/seller/api-credentials/api"
-    );
+    const { getSellerKycStatus } =
+      await import("@/features/seller/api-credentials/api");
     const kyc = await getSellerKycStatus();
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/me/kyc",

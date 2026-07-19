@@ -132,11 +132,7 @@ function Customers() {
           value="—"
           note="Lihat detail per pelanggan"
         />
-        <MiniStat
-          label="Nilai rata-rata"
-          value="—"
-          note="per pelanggan"
-        />
+        <MiniStat label="Nilai rata-rata" value="—" note="per pelanggan" />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[680px] text-left">

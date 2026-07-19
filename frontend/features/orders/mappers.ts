@@ -91,19 +91,21 @@ export function mapStatusTabToPaymentStatus(
 }
 
 export function initialsFromName(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "•";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function mapSellerOrderSummaryDto(dto: SellerOrderSummaryDto): SellerOrder {
+export function mapSellerOrderSummaryDto(
+  dto: SellerOrderSummaryDto,
+): SellerOrder {
   const amount = requireSafeMoneyIdr(dto.grossIdr, "grossIdr");
   const feeIdr = requireSafeMoneyIdr(dto.feeIdr, "feeIdr");
-  const merchantNetIdr = requireSafeMoneyIdr(dto.merchantNetIdr, "merchantNetIdr");
+  const merchantNetIdr = requireSafeMoneyIdr(
+    dto.merchantNetIdr,
+    "merchantNetIdr",
+  );
   const when = dto.paidAt || dto.createdAt;
   return {
     id: dto.orderNumber || dto.orderId,
@@ -141,17 +143,19 @@ function mapTimeline(
   });
 }
 
-export function mapSellerOrderDetailDto(dto: SellerOrderDetailDto): SellerOrder {
+export function mapSellerOrderDetailDto(
+  dto: SellerOrderDetailDto,
+): SellerOrder {
   const amount = requireSafeMoneyIdr(dto.grossIdr, "grossIdr");
   const feeIdr = requireSafeMoneyIdr(dto.feeIdr, "feeIdr");
-  const merchantNetIdr = requireSafeMoneyIdr(dto.merchantNetIdr, "merchantNetIdr");
+  const merchantNetIdr = requireSafeMoneyIdr(
+    dto.merchantNetIdr,
+    "merchantNetIdr",
+  );
   const when = dto.paidAt || dto.createdAt;
   const primary = dto.items[0];
   const grant = dto.grants[0];
-  const product =
-    dto.productTitle ||
-    primary?.productTitle ||
-    dto.orderNumber;
+  const product = dto.productTitle || primary?.productTitle || dto.orderNumber;
 
   let delivery: SellerOrder["delivery"];
   if (grant) {
@@ -177,7 +181,8 @@ export function mapSellerOrderDetailDto(dto: SellerOrderDetailDto): SellerOrder 
     const provider = dto.payment.provider || "—";
     payment = {
       method: dto.payment.source === "QRIS_API" ? "QRIS API" : "QRIS",
-      paymentIntent: dto.payment.providerReference || dto.payment.paymentIntentId,
+      paymentIntent:
+        dto.payment.providerReference || dto.payment.paymentIntentId,
       provider,
       status: mapSellerOrderPaymentStatus(dto.paymentStatus),
     };

@@ -32,13 +32,13 @@ func TestReal_CreateQRIS_MapsResponse(t *testing.T) {
 			t.Fatalf("idempotency header missing")
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"id":         "qr_abc",
+			"id":          "qr_abc",
 			"external_id": "ext-1",
-			"amount":     10000,
-			"currency":   "IDR",
-			"status":     "ACTIVE",
-			"qr_string":  "000201FAKE",
-			"expires_at": time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
+			"amount":      10000,
+			"currency":    "IDR",
+			"status":      "ACTIVE",
+			"qr_string":   "000201FAKE",
+			"expires_at":  time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
 		})
 	}))
 	defer srv.Close()

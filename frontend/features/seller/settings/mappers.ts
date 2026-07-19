@@ -18,10 +18,7 @@ import type {
 
 /** Initials from display name for static avatar (no photo — INT-175). */
 export function profileInitials(displayName: string): string {
-  const parts = displayName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "—";
   if (parts.length === 1) {
     const w = parts[0];
@@ -120,7 +117,8 @@ export function mapSellerProfileDto(
     email: dto.email.trim(),
     locale: dto.locale.trim() || "id-ID",
     localeLabel: localeToDisplayLabel(dto.locale),
-    timezone: tz.includes("GMT") || tz.includes("(") ? tz : formatTimezoneLabel(tz),
+    timezone:
+      tz.includes("GMT") || tz.includes("(") ? tz : formatTimezoneLabel(tz),
     revision: version,
     initials: profileInitials(displayName),
     ...toggles,
@@ -164,14 +162,16 @@ export function mapBankAccountDto(dto: BankAccountDto): SellerBankAccount {
   // Guard: transport must never carry raw account number fields.
   const raw = dto as BankAccountDto & { accountNumber?: string };
   if (raw.accountNumber && String(raw.accountNumber).length > 0) {
-    return invalidApiContract("Bank account must not expose full accountNumber", {
-      issues: [{ path: "accountNumber", message: "forbidden" }],
-    });
+    return invalidApiContract(
+      "Bank account must not expose full accountNumber",
+      {
+        issues: [{ path: "accountNumber", message: "forbidden" }],
+      },
+    );
   }
   const status = dto.status.trim().toUpperCase();
   const verified = status === "VERIFIED";
-  const bank =
-    (dto.bankName || dto.bankCode || "").trim() || dto.bankCode;
+  const bank = (dto.bankName || dto.bankCode || "").trim() || dto.bankCode;
   const version = Math.trunc(dto.version);
   if (version < 1) {
     return invalidApiContract("Bank account version invalid", {

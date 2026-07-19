@@ -100,15 +100,15 @@ type ProductSummary struct {
 
 // RevealAudit is an immutable reveal event (no secrets).
 type RevealAudit struct {
-	ID           string
-	StockItemID  string
-	StoreID      string
-	ProductID    string
-	ActorUserID  string
-	Reason       string
-	MFAVerified  bool
-	PayloadHash  []byte
-	CreatedAt    time.Time
+	ID          string
+	StockItemID string
+	StoreID     string
+	ProductID   string
+	ActorUserID string
+	Reason      string
+	MFAVerified bool
+	PayloadHash []byte
+	CreatedAt   time.Time
 }
 
 // FieldsJSON marshals field defs for persistence.

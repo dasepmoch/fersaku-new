@@ -69,13 +69,13 @@ type CreatePaidOrderInput struct {
 
 // CreatePaidOrderResult is order + grant + invoice from the paid stub.
 type CreatePaidOrderResult struct {
-	Order         orders.Order
-	Item          orders.OrderItem
-	Grant         delivery.Grant
-	Invoice       invoices.Invoice
-	InvoiceVer    invoices.Version
-	AccessToken   string // raw token returned once
-	PublicCode    string // raw public verify code returned once
+	Order       orders.Order
+	Item        orders.OrderItem
+	Grant       delivery.Grant
+	Invoice     invoices.Invoice
+	InvoiceVer  invoices.Version
+	AccessToken string // raw token returned once
+	PublicCode  string // raw public verify code returned once
 }
 
 // CreatePaidOrderAndGrant inserts a verified-paid order stub, one grant, and immutable invoice v1.
@@ -294,21 +294,21 @@ func (s *DeliveryService) CreatePaidOrderAndGrant(ctx context.Context, in Create
 	}
 
 	snap := invoices.Snapshot{
-		InvoiceNumber:   invoiceNumber,
-		OrderID:         orderID,
-		OrderNumber:     orderNumber,
-		StoreID:         in.StoreID,
-		MerchantID:      merchantID,
-		Currency:        "IDR",
-		SubtotalIDR:     subtotal,
-		DiscountIDR:     discount,
-		TipIDR:          tip,
-		FeeIDR:          fee,
-		GrossIDR:        gross,
-		MerchantNetIDR:  merchantNet,
-		PaidAt:          &now,
-		Buyer:           invoices.BuyerSnapshot{UserID: buyerUID, Email: email, Name: strings.TrimSpace(in.BuyerName)},
-		Issuer:          invoices.IssuerSnapshot{StoreID: st.ID, StoreName: st.Name, MerchantID: merchantID},
+		InvoiceNumber:  invoiceNumber,
+		OrderID:        orderID,
+		OrderNumber:    orderNumber,
+		StoreID:        in.StoreID,
+		MerchantID:     merchantID,
+		Currency:       "IDR",
+		SubtotalIDR:    subtotal,
+		DiscountIDR:    discount,
+		TipIDR:         tip,
+		FeeIDR:         fee,
+		GrossIDR:       gross,
+		MerchantNetIDR: merchantNet,
+		PaidAt:         &now,
+		Buyer:          invoices.BuyerSnapshot{UserID: buyerUID, Email: email, Name: strings.TrimSpace(in.BuyerName)},
+		Issuer:         invoices.IssuerSnapshot{StoreID: st.ID, StoreName: st.Name, MerchantID: merchantID},
 		Lines: []invoices.LineSnapshot{{
 			OrderItemID:  itemID,
 			ProductID:    prod.ID,

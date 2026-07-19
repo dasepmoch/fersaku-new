@@ -217,10 +217,8 @@ export async function listAdminWebhookConsole(
     listAdminSellerWebhookDeliveries({ limit: ADMIN_WEBHOOKS_LIMIT }, signal),
   ]);
 
-  const callbacks =
-    cbSettled.status === "fulfilled" ? cbSettled.value : [];
-  const deliveries =
-    delSettled.status === "fulfilled" ? delSettled.value : [];
+  const callbacks = cbSettled.status === "fulfilled" ? cbSettled.value : [];
+  const deliveries = delSettled.status === "fulfilled" ? delSettled.value : [];
 
   return {
     rows: mergeWebhookRows(callbacks, deliveries),
@@ -284,18 +282,18 @@ export async function replayAdminProviderCallback(
     };
   }
 
-  const response = await apiRequest<
-    CallbackEnvelope,
-    { reason: string }
-  >(`/v1/admin/provider-callbacks/${encodeURIComponent(callbackId)}/replay`, {
-    method: "POST",
-    body,
-    schema: adminProviderCallbackEnvelopeSchema,
-    signal,
-    idempotencyKey,
-    auditReason: reason,
-    requireRecentMfa: true,
-  });
+  const response = await apiRequest<CallbackEnvelope, { reason: string }>(
+    `/v1/admin/provider-callbacks/${encodeURIComponent(callbackId)}/replay`,
+    {
+      method: "POST",
+      body,
+      schema: adminProviderCallbackEnvelopeSchema,
+      signal,
+      idempotencyKey,
+      auditReason: reason,
+      requireRecentMfa: true,
+    },
+  );
 
   return {
     row: mapProviderCallbackDto(response.data as AdminProviderCallbackDto),
@@ -348,10 +346,7 @@ export async function retryAdminSellerWebhookDelivery(
     };
   }
 
-  const response = await apiRequest<
-    DeliveryEnvelope,
-    { reason: string }
-  >(
+  const response = await apiRequest<DeliveryEnvelope, { reason: string }>(
     `/v1/admin/seller-webhook-deliveries/${encodeURIComponent(deliveryId)}/retry`,
     {
       method: "POST",

@@ -68,8 +68,7 @@ function sellerStoreChrome(
     store?.name?.trim() ||
     bootstrap?.displayName?.trim() ||
     (isApi ? "" : MOCK_STORE_CHROME.name);
-  const slug =
-    store?.slug?.trim() || (isApi ? "" : MOCK_STORE_CHROME.slug);
+  const slug = store?.slug?.trim() || (isApi ? "" : MOCK_STORE_CHROME.slug);
   const initial = (name.trim()[0] || "·").toUpperCase();
   const storefrontHref = slug
     ? `/@${slug}`
@@ -190,7 +189,8 @@ export function DashboardShell({
     () =>
       mapClaimsImpersonationToSession(sessionImpersonation, {
         targetId: claims?.subjectId ?? undefined,
-        targetName: claims?.name ?? claims?.email ?? claims?.subjectId ?? undefined,
+        targetName:
+          claims?.name ?? claims?.email ?? claims?.subjectId ?? undefined,
         targetEmail: claims?.email ?? undefined,
         targetType: "user",
         actor: sessionImpersonation?.actorId ?? undefined,

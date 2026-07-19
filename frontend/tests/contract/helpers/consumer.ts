@@ -29,14 +29,12 @@ export function successEnvelope<T>(
 }
 
 /** Build ProblemEnvelope matching OpenAPI ProblemEnvelope. */
-export function problemEnvelope(
-  problem: {
-    code: string;
-    message: string;
-    requestId?: string;
-    details?: Record<string, unknown>;
-  },
-): { problem: typeof problem & { requestId: string } } {
+export function problemEnvelope(problem: {
+  code: string;
+  message: string;
+  requestId?: string;
+  details?: Record<string, unknown>;
+}): { problem: typeof problem & { requestId: string } } {
   return {
     problem: {
       ...problem,
@@ -49,15 +47,16 @@ export function problemEnvelope(
  * Assert schema accepts fixture, then mapper produces expected view (or partial).
  * Fails closed: schema reject or mapper throw is a hard failure unless expectInvalid.
  */
-export function assertConsumerMapsToView<TSchema extends z.ZodType, TView>(
-  options: {
-    name: string;
-    schema: TSchema;
-    fixture: unknown;
-    map: (dto: z.infer<TSchema>) => TView;
-    expected: Partial<TView> | ((view: TView) => void);
-  },
-): TView {
+export function assertConsumerMapsToView<
+  TSchema extends z.ZodType,
+  TView,
+>(options: {
+  name: string;
+  schema: TSchema;
+  fixture: unknown;
+  map: (dto: z.infer<TSchema>) => TView;
+  expected: Partial<TView> | ((view: TView) => void);
+}): TView {
   const parsed = options.schema.safeParse(options.fixture);
   if (!parsed.success) {
     throw new Error(
@@ -74,16 +73,14 @@ export function assertConsumerMapsToView<TSchema extends z.ZodType, TView>(
 }
 
 /** Assert fixture fails schema or mapper with INVALID_API_CONTRACT (fail-closed). */
-export function assertConsumerRejects(
-  options: {
-    name: string;
-    schema: z.ZodType;
-    fixture: unknown;
-    map?: (dto: unknown) => unknown;
-    /** When true, schema may pass but mapper must throw INVALID_API_CONTRACT. */
-    allowSchemaPass?: boolean;
-  },
-): void {
+export function assertConsumerRejects(options: {
+  name: string;
+  schema: z.ZodType;
+  fixture: unknown;
+  map?: (dto: unknown) => unknown;
+  /** When true, schema may pass but mapper must throw INVALID_API_CONTRACT. */
+  allowSchemaPass?: boolean;
+}): void {
   const parsed = options.schema.safeParse(options.fixture);
   if (!parsed.success) {
     expect(parsed.success).toBe(false);

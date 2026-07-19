@@ -8,11 +8,7 @@ import type {
   AdminKycDocumentDto,
   AdminKycTransitionRequest,
 } from "@/shared/api/schemas";
-import {
-  canTransitionKyc,
-  type ApiKycApplicant,
-  type KycStatus,
-} from "./data";
+import { canTransitionKyc, type ApiKycApplicant, type KycStatus } from "./data";
 
 /** BE wire status → existing board column labels. */
 const WIRE_TO_UI: Record<string, KycStatus> = {

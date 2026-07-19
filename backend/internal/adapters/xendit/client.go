@@ -166,10 +166,10 @@ func (r *Real) CreateDisbursement(ctx context.Context, in ports.CreateDisburseme
 	}
 	// Prefer Payouts API shape; map fields conservatively.
 	body := map[string]any{
-		"external_id":         in.ExternalID,
-		"amount":              in.NetAmountIDR,
-		"currency":            firstNonEmpty(in.Currency, "IDR"),
-		"channel_code":        in.BankCode,
+		"external_id":  in.ExternalID,
+		"amount":       in.NetAmountIDR,
+		"currency":     firstNonEmpty(in.Currency, "IDR"),
+		"channel_code": in.BankCode,
 		"channel_properties": map[string]any{
 			"account_holder_name": in.AccountHolderName,
 			"account_number":      in.AccountNumber,
@@ -249,17 +249,17 @@ func (r *Real) GetDisbursement(ctx context.Context, providerRef string) (ports.P
 }
 
 type qrCodeResponse struct {
-	ID         string  `json:"id"`
-	QRID       string  `json:"qr_id"`
-	ExternalID string  `json:"external_id"`
-	Amount     int64   `json:"amount"`
-	Currency   string  `json:"currency"`
-	Status     string  `json:"status"`
-	QRString   string  `json:"qr_string"`
-	QRCode     string  `json:"qr_code"`
-	QRImageURL string  `json:"qr_image_url"`
-	ExpiresAt  string  `json:"expires_at"`
-	PaidAt     string  `json:"paid_at"`
+	ID         string `json:"id"`
+	QRID       string `json:"qr_id"`
+	ExternalID string `json:"external_id"`
+	Amount     int64  `json:"amount"`
+	Currency   string `json:"currency"`
+	Status     string `json:"status"`
+	QRString   string `json:"qr_string"`
+	QRCode     string `json:"qr_code"`
+	QRImageURL string `json:"qr_image_url"`
+	ExpiresAt  string `json:"expires_at"`
+	PaidAt     string `json:"paid_at"`
 }
 
 type disburseResponse struct {

@@ -48,7 +48,9 @@ export async function mailpitHealth(): Promise<boolean> {
   }
 }
 
-export async function listMessages(limit = 50): Promise<MailpitMessageSummary[]> {
+export async function listMessages(
+  limit = 50,
+): Promise<MailpitMessageSummary[]> {
   assertNonProductionHarness();
   const res = await mpFetch(`/api/v1/messages?limit=${limit}`);
   if (!res.ok) {
@@ -127,7 +129,9 @@ export async function waitForToken(
       const toHit =
         !options.toContains ||
         (summary.To || []).some((t) =>
-          (t.Address || "").toLowerCase().includes(options.toContains!.toLowerCase()),
+          (t.Address || "")
+            .toLowerCase()
+            .includes(options.toContains!.toLowerCase()),
         );
       const subHit =
         !options.subjectContains ||

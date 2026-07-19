@@ -292,9 +292,8 @@ describe("SEL-310 api adapters", () => {
       data: [activeDomain, pendingDomain],
       meta,
     });
-    const { listStoreDomains } = await import(
-      "@/features/seller/store-domains/api"
-    );
+    const { listStoreDomains } =
+      await import("@/features/seller/store-domains/api");
     const list = await listStoreDomains("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/domains",
@@ -316,9 +315,8 @@ describe("SEL-310 api adapters", () => {
       },
       meta,
     });
-    const { createStoreDomain } = await import(
-      "@/features/seller/store-domains/api"
-    );
+    const { createStoreDomain } =
+      await import("@/features/seller/store-domains/api");
     const result = await createStoreDomain("store_live", {
       hostname: "pending.merchant.example",
     });
@@ -340,9 +338,8 @@ describe("SEL-310 api adapters", () => {
       data: activeDomain,
       meta,
     });
-    const { verifyStoreDomain } = await import(
-      "@/features/seller/store-domains/api"
-    );
+    const { verifyStoreDomain } =
+      await import("@/features/seller/store-domains/api");
     const domain = await verifyStoreDomain("store_live", {
       domainId: "dom_live_02",
       verificationToken: "tok_abc",
@@ -371,9 +368,8 @@ describe("SEL-310 api adapters", () => {
       },
       meta,
     });
-    const { deleteStoreDomain } = await import(
-      "@/features/seller/store-domains/api"
-    );
+    const { deleteStoreDomain } =
+      await import("@/features/seller/store-domains/api");
     await deleteStoreDomain("store_live", {
       domainId: "dom_live_01",
       expectedVersion: 2,
@@ -397,9 +393,8 @@ describe("SEL-310 api adapters", () => {
 describe("SEL-310 disposition", () => {
   it("API domain gate is sellerOperations", async () => {
     installMockSeller();
-    const { isSellerStoreDomainsApiDomain } = await import(
-      "@/features/seller/store-domains/api"
-    );
+    const { isSellerStoreDomainsApiDomain } =
+      await import("@/features/seller/store-domains/api");
     expect(isSellerStoreDomainsApiDomain()).toBe(false);
     installApiSeller();
     expect(isSellerStoreDomainsApiDomain()).toBe(true);

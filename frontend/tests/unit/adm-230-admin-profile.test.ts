@@ -146,8 +146,8 @@ describe("ADM-230 admin profile schemas", () => {
 
   it("parses prefs and sessions envelopes", () => {
     expect(
-      notificationPreferencesEnvelopeSchema.parse({ data: prefsDto, meta })
-        .data.preferences,
+      notificationPreferencesEnvelopeSchema.parse({ data: prefsDto, meta }).data
+        .preferences,
     ).toHaveLength(4);
     expect(
       buyerSessionListEnvelopeSchema.parse({
@@ -233,24 +233,26 @@ describe("ADM-230 admin profile API transport", () => {
   });
 
   it("PATCH profile sends expectedVersion without email/avatar", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/me/profile") && init?.method === "PATCH") {
-        const body = JSON.parse(String(init.body));
-        expect(body.expectedVersion).toBe(2);
-        expect(body.displayName).toBe("Dinda K");
-        expect(body.email).toBeUndefined();
-        expect(body.avatarRef).toBeUndefined();
-        return jsonResponse({
-          data: { ...profileDto, displayName: "Dinda K", version: 3 },
-          meta,
-        });
-      }
-      if (url.includes("/v1/me/notification-preferences")) {
-        return jsonResponse({ data: prefsDto, meta });
-      }
-      throw new Error(`unexpected ${url}`);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/me/profile") && init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body));
+          expect(body.expectedVersion).toBe(2);
+          expect(body.displayName).toBe("Dinda K");
+          expect(body.email).toBeUndefined();
+          expect(body.avatarRef).toBeUndefined();
+          return jsonResponse({
+            data: { ...profileDto, displayName: "Dinda K", version: 3 },
+            meta,
+          });
+        }
+        if (url.includes("/v1/me/notification-preferences")) {
+          return jsonResponse({ data: prefsDto, meta });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const updated = await api.patchAdminProfile({
@@ -263,37 +265,39 @@ describe("ADM-230 admin profile API transport", () => {
   });
 
   it("PATCH prefs maps closed admin event codes", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (
-        url.includes("/v1/me/notification-preferences") &&
-        init?.method === "PATCH"
-      ) {
-        const body = JSON.parse(String(init.body));
-        const parsed = notificationPreferencesPatchRequestSchema.parse(body);
-        expect(parsed.preferences.map((p) => p.eventCode).sort()).toEqual(
-          ["KYC_UPDATE", "MARKETING_NEWSLETTER"].sort(),
-        );
-        return jsonResponse({
-          data: {
-            preferences: [
-              {
-                eventCode: "KYC_UPDATE",
-                channel: "EMAIL",
-                enabled: false,
-              },
-              {
-                eventCode: "MARKETING_NEWSLETTER",
-                channel: "EMAIL",
-                enabled: true,
-              },
-            ],
-          },
-          meta,
-        });
-      }
-      throw new Error(`unexpected ${url}`);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (
+          url.includes("/v1/me/notification-preferences") &&
+          init?.method === "PATCH"
+        ) {
+          const body = JSON.parse(String(init.body));
+          const parsed = notificationPreferencesPatchRequestSchema.parse(body);
+          expect(parsed.preferences.map((p) => p.eventCode).sort()).toEqual(
+            ["KYC_UPDATE", "MARKETING_NEWSLETTER"].sort(),
+          );
+          return jsonResponse({
+            data: {
+              preferences: [
+                {
+                  eventCode: "KYC_UPDATE",
+                  channel: "EMAIL",
+                  enabled: false,
+                },
+                {
+                  eventCode: "MARKETING_NEWSLETTER",
+                  channel: "EMAIL",
+                  enabled: true,
+                },
+              ],
+            },
+            meta,
+          });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const toggles = await api.patchAdminNotificationPreferences({

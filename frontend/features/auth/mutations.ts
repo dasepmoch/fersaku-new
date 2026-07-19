@@ -265,8 +265,7 @@ export function useMfaConfirmMutation() {
   return useAppMutation({
     mutationKey: [...MFA_CONFIRM_KEY],
     gcTime: 0,
-    mutationFn: (input: MfaConfirmRequest, signal) =>
-      confirmMfa(input, signal),
+    mutationFn: (input: MfaConfirmRequest, signal) => confirmMfa(input, signal),
   });
 }
 
@@ -274,8 +273,7 @@ export function useMfaDisableMutation() {
   return useAppMutation({
     mutationKey: [...MFA_DISABLE_KEY],
     gcTime: 0,
-    mutationFn: (input: MfaDisableRequest, signal) =>
-      disableMfa(input, signal),
+    mutationFn: (input: MfaDisableRequest, signal) => disableMfa(input, signal),
   });
 }
 

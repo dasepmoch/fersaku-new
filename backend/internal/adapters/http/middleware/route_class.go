@@ -10,14 +10,14 @@ import (
 type RouteClass string
 
 const (
-	RouteClassHealth    RouteClass = "health"
-	RouteClassPublic    RouteClass = "public"
-	RouteClassAuth      RouteClass = "auth"
-	RouteClassMutation  RouteClass = "mutation"
-	RouteClassAdmin     RouteClass = "admin"
-	RouteClassCallback  RouteClass = "callback"
-	RouteClassGateway   RouteClass = "gateway"
-	RouteClassDefault   RouteClass = "default"
+	RouteClassHealth   RouteClass = "health"
+	RouteClassPublic   RouteClass = "public"
+	RouteClassAuth     RouteClass = "auth"
+	RouteClassMutation RouteClass = "mutation"
+	RouteClassAdmin    RouteClass = "admin"
+	RouteClassCallback RouteClass = "callback"
+	RouteClassGateway  RouteClass = "gateway"
+	RouteClassDefault  RouteClass = "default"
 )
 
 // ClassifyRoute maps path to a rate-limit route class (no raw headers).

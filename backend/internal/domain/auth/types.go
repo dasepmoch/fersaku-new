@@ -34,10 +34,10 @@ const (
 type ChallengePurpose string
 
 const (
-	PurposeEmailVerify       ChallengePurpose = "EMAIL_VERIFY"
-	PurposePasswordReset     ChallengePurpose = "PASSWORD_RESET"
-	PurposeMagicLink         ChallengePurpose = "MAGIC_LINK"
-	PurposeMFAEnroll         ChallengePurpose = "MFA_ENROLL"
+	PurposeEmailVerify        ChallengePurpose = "EMAIL_VERIFY"
+	PurposePasswordReset      ChallengePurpose = "PASSWORD_RESET"
+	PurposeMagicLink          ChallengePurpose = "MAGIC_LINK"
+	PurposeMFAEnroll          ChallengePurpose = "MFA_ENROLL"
 	PurposeEmailChangeCurrent ChallengePurpose = "EMAIL_CHANGE_CURRENT"
 	PurposeEmailChangeNew     ChallengePurpose = "EMAIL_CHANGE_NEW"
 )
@@ -59,20 +59,20 @@ type User struct {
 
 // Session is a server-side opaque session (token hash only at rest).
 type Session struct {
-	ID                 string
-	UserID             string
-	Surface            Surface
-	TokenHash          string
-	ExpiresAt          time.Time
-	RevokedAt          *time.Time
-	MFAVerifiedAt      *time.Time
-	LastSeenAt         time.Time
-	AbsoluteExpiresAt  time.Time
-	IPHash             string
-	UAHash             string
-	DeviceLabel        string
-	CSRFTokenHash      string
-	CreatedAt          time.Time
+	ID                string
+	UserID            string
+	Surface           Surface
+	TokenHash         string
+	ExpiresAt         time.Time
+	RevokedAt         *time.Time
+	MFAVerifiedAt     *time.Time
+	LastSeenAt        time.Time
+	AbsoluteExpiresAt time.Time
+	IPHash            string
+	UAHash            string
+	DeviceLabel       string
+	CSRFTokenHash     string
+	CreatedAt         time.Time
 }
 
 // Challenge is a purpose-bound one-time bootstrap token row.

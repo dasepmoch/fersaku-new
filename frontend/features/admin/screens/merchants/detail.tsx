@@ -64,8 +64,7 @@ export function MerchantDetail({ id }: { id: string }) {
 
   const merchantStatus = merchant.status;
   const apiAccess = merchant.apiAccess;
-  const accessPending =
-    statusMutation.isPending || apiAccessMutation.isPending;
+  const accessPending = statusMutation.isPending || apiAccessMutation.isPending;
   const merchantOrders = (orders ?? [])
     .filter((o) => o.store === merchant.name || o.store === merchant.id)
     .slice(0, 4);
@@ -88,10 +87,7 @@ export function MerchantDetail({ id }: { id: string }) {
       : "—";
   const platformRevValue = finance
     ? rupiah(
-        Math.max(
-          0,
-          finance.lifetimeGrossAmount - finance.lifetimeNetAmount,
-        ),
+        Math.max(0, finance.lifetimeGrossAmount - finance.lifetimeNetAmount),
       )
     : isMock
       ? rupiah(3_184_000)
@@ -317,8 +313,7 @@ export function MerchantDetail({ id }: { id: string }) {
             accessIdemRef.current = null;
           }}
           onConfirm={(reason) => {
-            const idem =
-              accessIdemRef.current ?? createIdempotencyKey();
+            const idem = accessIdemRef.current ?? createIdempotencyKey();
             accessIdemRef.current = idem;
             if (accessAction === "api") {
               const nextDisplay = nextMerchantApiAccessDisplay(apiAccess);
@@ -377,8 +372,7 @@ export function MerchantDetail({ id }: { id: string }) {
             rotateIdemRef.current = null;
           }}
           onConfirm={async (reason) => {
-            const idem =
-              rotateIdemRef.current ?? createIdempotencyKey();
+            const idem = rotateIdemRef.current ?? createIdempotencyKey();
             rotateIdemRef.current = idem;
             await credentialMutation.mutateAsync({
               merchantId: merchant.id,

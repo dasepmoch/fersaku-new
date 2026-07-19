@@ -243,9 +243,7 @@ export function CheckoutExperience({
       productId: product.id,
       buyer: { name: name.trim(), email: email.trim() },
       idempotencyKey,
-      payWhatYouWant: product.allowPayWhatYouWant
-        ? pwywMerchandise
-        : undefined,
+      payWhatYouWant: product.allowPayWhatYouWant ? pwywMerchandise : undefined,
       tip: displayTip > 0 ? displayTip : undefined,
       upsellProductIds:
         upsell && upsellProduct?.id ? [upsellProduct.id] : undefined,

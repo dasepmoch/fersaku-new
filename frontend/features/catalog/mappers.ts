@@ -101,10 +101,7 @@ const SECTION = {
   reviews: "reviews",
   trust: "trust",
   about: "about",
-} as const satisfies Record<
-  string,
-  PublicStorefront["sections"][number]
->;
+} as const satisfies Record<string, PublicStorefront["sections"][number]>;
 
 function mapProductType(value: string): ProductType {
   return mapExhaustiveEnum(
@@ -159,10 +156,7 @@ export function normalizeProductSlug(raw: string | undefined): string {
   let out = "";
   for (const ch of s) {
     const code = ch.charCodeAt(0);
-    if (
-      (code >= 97 && code <= 122) ||
-      (code >= 48 && code <= 57)
-    ) {
+    if ((code >= 97 && code <= 122) || (code >= 48 && code <= 57)) {
       out += ch;
     } else if (ch === "-" || ch === "_" || ch === " ") {
       out += "-";
@@ -186,7 +180,10 @@ export function parseProductPriceIdr(raw: string): number | null {
 
 /** Glyph default from title (first 2 alphanumerics upper). */
 export function defaultProductGlyph(title: string): string {
-  const letters = title.replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase();
+  const letters = title
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
   return letters || "PR";
 }
 
@@ -246,7 +243,9 @@ export function mapFieldViolationsToProductFields(
  * Map thrown product command errors onto existing form field regions.
  * 409 slug conflict → slug; validation → field violations; preserve draft on conflict.
  */
-export function mapProductCommandThrown(error: unknown):
+export function mapProductCommandThrown(
+  error: unknown,
+):
   | { kind: "field_errors"; fields: ProductFieldError[] }
   | { kind: "conflict"; message: string }
   | { kind: "generic"; message: string; code: string | null } {
@@ -503,7 +502,9 @@ function hostAllowed(hostname: string, allow: Set<string>): boolean {
  * Instagram: full https URL on allowlisted hosts, or bare handle/path.
  * Missing/malicious → undefined (omit icon).
  */
-export function mapSafeInstagramHref(raw: string | undefined): string | undefined {
+export function mapSafeInstagramHref(
+  raw: string | undefined,
+): string | undefined {
   if (raw === undefined) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
@@ -522,7 +523,9 @@ export function mapSafeInstagramHref(raw: string | undefined): string | undefine
 /**
  * YouTube: allowlisted hosts, or bare channel/handle token.
  */
-export function mapSafeYoutubeHref(raw: string | undefined): string | undefined {
+export function mapSafeYoutubeHref(
+  raw: string | undefined,
+): string | undefined {
   if (raw === undefined) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
@@ -542,7 +545,9 @@ export function mapSafeYoutubeHref(raw: string | undefined): string | undefined 
  * Website: https only, any public host (no credentials / dangerous schemes).
  * Bare hostnames get https:// prefix.
  */
-export function mapSafeWebsiteHref(raw: string | undefined): string | undefined {
+export function mapSafeWebsiteHref(
+  raw: string | undefined,
+): string | undefined {
   if (raw === undefined) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
@@ -619,8 +624,10 @@ export function mapCatalogProductDto(dto: CatalogProductDto): CatalogProduct {
   if (dto.minimumPrice !== undefined) {
     view.minimumPrice = requireSafeMoneyIdr(dto.minimumPrice, "minimumPrice");
   }
-  if (dto.updatesEnabled !== undefined) view.updatesEnabled = dto.updatesEnabled;
-  if (dto.currentVersion !== undefined) view.currentVersion = dto.currentVersion;
+  if (dto.updatesEnabled !== undefined)
+    view.updatesEnabled = dto.updatesEnabled;
+  if (dto.currentVersion !== undefined)
+    view.currentVersion = dto.currentVersion;
   return view;
 }
 
@@ -638,7 +645,9 @@ export function mapFeaturedCatalogProductDto(
   const storeSlug = dto.storeSlug?.trim();
   if (!storeSlug) {
     return invalidApiContract("Featured product missing storeSlug", {
-      issues: [{ path: "storeSlug", message: "required for public featured links" }],
+      issues: [
+        { path: "storeSlug", message: "required for public featured links" },
+      ],
     });
   }
   return { ...base, storeSlug };
@@ -651,7 +660,10 @@ export function mapFeaturedCatalogProductListDto(
 }
 
 /** Canonical public product path for a store-bound product. */
-export function publicProductHref(storeSlug: string, productSlug: string): string {
+export function publicProductHref(
+  storeSlug: string,
+  productSlug: string,
+): string {
   return `/@${storeSlug}/${productSlug}`;
 }
 
@@ -673,7 +685,8 @@ export function mapPublicStorefrontDtoWithStoreSlug(
   view.products = view.products.map((p) => {
     let next = p;
     if (!next.storeSlug) next = { ...next, storeSlug: view.slug };
-    if (!next.storeId && view.storeId) next = { ...next, storeId: view.storeId };
+    if (!next.storeId && view.storeId)
+      next = { ...next, storeId: view.storeId };
     return next;
   });
   return view;
@@ -724,7 +737,12 @@ export function mapPublicStorefrontDto(
     font: mapOptionalEnum(dto.font, FONT, "storefront.font", "modern"),
     hero: mapOptionalEnum(dto.hero, HERO, "storefront.hero", "statement"),
     cards: mapOptionalEnum(dto.cards, CARDS, "storefront.cards", "soft"),
-    texture: mapOptionalEnum(dto.texture, TEXTURE, "storefront.texture", "none"),
+    texture: mapOptionalEnum(
+      dto.texture,
+      TEXTURE,
+      "storefront.texture",
+      "none",
+    ),
     radius: mapOptionalEnum(dto.radius, RADIUS, "storefront.radius", "soft"),
     headerAlign: mapOptionalEnum(
       dto.headerAlign,
@@ -733,7 +751,9 @@ export function mapPublicStorefrontDto(
       "left",
     ),
     announcement: dto.announcement,
-    featuredProductIds: dto.featuredProductIds ? [...dto.featuredProductIds] : [],
+    featuredProductIds: dto.featuredProductIds
+      ? [...dto.featuredProductIds]
+      : [],
     sections,
     socials,
     trustBadges: dto.trustBadges ? [...dto.trustBadges] : [],

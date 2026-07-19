@@ -138,10 +138,7 @@ export async function resendSellerOrderDelivery(
   if (shouldUseMockFixtures("sellerOperations")) {
     return { queued: true, status: "ACTIVE" };
   }
-  const response = await apiRequest<
-    ResendEnvelope,
-    { reason?: string }
-  >(
+  const response = await apiRequest<ResendEnvelope, { reason?: string }>(
     `/v1/stores/${encodeURIComponent(storeId)}/orders/${encodeURIComponent(orderId)}/delivery/resend`,
     {
       schema: sellerDeliveryResendEnvelopeSchema,

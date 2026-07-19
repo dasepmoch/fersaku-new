@@ -4,14 +4,8 @@
  */
 
 import type { OrderResultDto } from "@/shared/api/schemas";
-import {
-  invalidApiContract,
-  requireSafeMoneyIdr,
-} from "@/shared/api/mappers";
-import type {
-  OrderResult,
-  OrderResultDisplayState,
-} from "./contracts";
+import { invalidApiContract, requireSafeMoneyIdr } from "@/shared/api/mappers";
+import type { OrderResult, OrderResultDisplayState } from "./contracts";
 
 const DISPLAY_PALETTE = "#eef3e9";
 const DISPLAY_GLYPH = "•";
@@ -72,8 +66,7 @@ export function mapOrderResultDto(dto: OrderResultDto): OrderResult {
 
   const grossRaw = dto.gross ?? dto.amount ?? 0;
   const gross = requireSafeMoneyIdr(grossRaw, "gross");
-  const tip =
-    dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
+  const tip = dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
 
   if (gross < 0 || tip < 0) {
     return invalidApiContract("Order result money out of range", {

@@ -26,9 +26,7 @@ export function invalidApiContract(
     code: "INVALID_API_CONTRACT",
     message,
     requestId: options?.requestId,
-    details: options?.issues
-      ? { issues: options.issues }
-      : undefined,
+    details: options?.issues ? { issues: options.issues } : undefined,
   });
 }
 
@@ -47,10 +45,7 @@ export function mapExhaustiveEnum<TWire extends string, TView>(
 }
 
 /** Assert money is already a safe integer (post-schema). */
-export function requireSafeMoneyIdr(
-  value: number,
-  field: string,
-): number {
+export function requireSafeMoneyIdr(value: number, field: string): number {
   if (!Number.isSafeInteger(value)) {
     return invalidApiContract(`Invalid money field ${field}`, {
       issues: [{ path: field, message: "must be safe integer IDR" }],

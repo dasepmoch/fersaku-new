@@ -150,14 +150,14 @@ func TestAnalytics_SensitiveURLStrippedAndHashesHidden(t *testing.T) {
 	productID := createPublishedProduct(t, h, cookie, storeID, 100_000)
 
 	body := map[string]any{
-		"storeId":     storeID,
-		"productId":   productID,
-		"buyerEmail":  "buyer@example.test",
-		"landingUrl":  "https://shop.example/p/x?utm_source=google&token=secret123&email=a@b.com&utm_medium=cpc",
-		"referrerUrl": "https://user:pass@evil.com/path?key=1",
-		"utmSource":   "google",
-		"utmMedium":   "cpc",
-		"visitorId":   "vis-raw-should-hash",
+		"storeId":        storeID,
+		"productId":      productID,
+		"buyerEmail":     "buyer@example.test",
+		"landingUrl":     "https://shop.example/p/x?utm_source=google&token=secret123&email=a@b.com&utm_medium=cpc",
+		"referrerUrl":    "https://user:pass@evil.com/path?key=1",
+		"utmSource":      "google",
+		"utmMedium":      "cpc",
+		"visitorId":      "vis-raw-should-hash",
 		"buyerSessionId": "sess-raw-should-hash",
 	}
 	idemKey := fmt.Sprintf("idem-an-%d", time.Now().UnixNano())

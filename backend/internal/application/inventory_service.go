@@ -19,11 +19,11 @@ const DefaultStockReservationTTL = 30 * time.Minute
 
 // InventoryService implements schema/import/reserve/reveal (BE-230).
 type InventoryService struct {
-	Store          InventoryStore
-	IDs            ports.IDGenerator
-	Clock          ports.Clock
-	Log            ports.Logger
-	EncryptionKey  string // STOCK or KYC key; never log
+	Store         InventoryStore
+	IDs           ports.IDGenerator
+	Clock         ports.Clock
+	Log           ports.Logger
+	EncryptionKey string // STOCK or KYC key; never log
 }
 
 func (s *InventoryService) now() time.Time {

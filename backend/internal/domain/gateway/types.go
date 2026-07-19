@@ -27,7 +27,7 @@ const (
 	OriginStatusActive  = "ACTIVE"
 	OriginStatusRevoked = "REVOKED"
 
-	WebhookStatusActive             = "ACTIVE"
+	WebhookStatusActive              = "ACTIVE"
 	WebhookStatusPendingVerification = "PENDING_VERIFICATION"
 	WebhookStatusPendingSecretClaim  = "PENDING_SECRET_CLAIM"
 	WebhookStatusSuspended           = "SUSPENDED"
@@ -55,36 +55,36 @@ const (
 
 // APIKey is a stored merchant credential (hash only).
 type APIKey struct {
-	ID                 string
-	MerchantID         string
-	KeyPrefix          string
-	KeyHash            string
-	PaymentMode        string
-	Status             string
-	Name               string
-	LastUsedAt         *time.Time
-	RevokedAt          *time.Time
-	ExpiresAt          *time.Time
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	KeyVersion         int32
-	IssuanceRequestID  *string
-	Fingerprint        string
+	ID                string
+	MerchantID        string
+	KeyPrefix         string
+	KeyHash           string
+	PaymentMode       string
+	Status            string
+	Name              string
+	LastUsedAt        *time.Time
+	RevokedAt         *time.Time
+	ExpiresAt         *time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	KeyVersion        int32
+	IssuanceRequestID *string
+	Fingerprint       string
 }
 
 // Capability is LIVE/SANDBOX QRIS_API gate state.
 type Capability struct {
-	ID           string
-	MerchantID   string
-	PaymentMode  string
-	Capability   string
-	Status       string
-	KYCCaseID    *string
-	KYCVersion   *int32
-	EffectiveAt  *time.Time
-	ExpiresAt    *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID          string
+	MerchantID  string
+	PaymentMode string
+	Capability  string
+	Status      string
+	KYCCaseID   *string
+	KYCVersion  *int32
+	EffectiveAt *time.Time
+	ExpiresAt   *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // RedirectOrigin is an allowlisted HTTPS origin for browser redirects.

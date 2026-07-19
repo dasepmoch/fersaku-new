@@ -50,7 +50,7 @@ export function isAdminProfileApiDomain(): boolean {
   return getDomainSource("auth") === "api";
 }
 
-function useProfileMock(): boolean {
+function isProfileMockMode(): boolean {
   return shouldUseMockFixtures("auth");
 }
 
@@ -61,7 +61,7 @@ function useProfileMock(): boolean {
 export async function getAdminProfile(
   signal?: AbortSignal,
 ): Promise<AdminProfile> {
-  if (useProfileMock()) return demoAdminProfile();
+  if (isProfileMockMode()) return demoAdminProfile();
 
   const [profileRes, prefsRes] = await Promise.all([
     apiRequest<ProfileEnvelope>("/v1/me/profile", {
@@ -73,10 +73,7 @@ export async function getAdminProfile(
       signal,
     }),
   ]);
-  return mapAdminProfileDto(
-    profileRes.data,
-    prefsRes.data.preferences,
-  );
+  return mapAdminProfileDto(profileRes.data, prefsRes.data.preferences);
 }
 
 /**
@@ -92,7 +89,7 @@ export async function patchAdminProfile(
     throw new Error("expectedVersion required");
   }
 
-  if (useProfileMock()) {
+  if (isProfileMockMode()) {
     const base = demoAdminProfile();
     const fullName = input.displayName?.trim() || base.fullName;
     return {
@@ -144,10 +141,8 @@ export async function patchAdminProfile(
 export async function patchAdminNotificationPreferences(
   input: PatchAdminNotificationPreferencesInput,
   signal?: AbortSignal,
-): Promise<
-  Pick<AdminProfile, "kyc" | "withdrawals" | "incidents" | "digest">
-> {
-  if (useProfileMock()) {
+): Promise<Pick<AdminProfile, "kyc" | "withdrawals" | "incidents" | "digest">> {
+  if (isProfileMockMode()) {
     const base = demoAdminProfile();
     return {
       kyc: input.kyc ?? base.kyc,
@@ -213,7 +208,7 @@ export async function patchAdminNotificationPreferences(
 export async function listAdminSessions(
   signal?: AbortSignal,
 ): Promise<AdminSession[]> {
-  if (useProfileMock()) return demoAdminSessions();
+  if (isProfileMockMode()) return demoAdminSessions();
 
   const response = await apiRequest<SessionListEnvelope>("/v1/auth/sessions", {
     schema: buyerSessionListEnvelopeSchema,
@@ -239,7 +234,7 @@ export async function revokeAdminSession(
     input.currentSessionId && input.currentSessionId === sessionId,
   );
 
-  if (useProfileMock()) {
+  if (isProfileMockMode()) {
     const isCurrent =
       revokedCurrent ||
       demoAdminSessions().some((s) => s.id === sessionId && s.current);
@@ -276,7 +271,7 @@ export async function revokeAdminSession(
 export async function revokeOtherAdminSessions(
   signal?: AbortSignal,
 ): Promise<{ accepted: boolean; revokedCount: number }> {
-  if (useProfileMock()) {
+  if (isProfileMockMode()) {
     const others = demoAdminSessions().filter((s) => !s.current).length;
     return { accepted: true, revokedCount: others };
   }
@@ -299,10 +294,12 @@ export async function revokeOtherAdminSessions(
  * Revoke all sessions including current; BE clears cookie.
  * POST /v1/auth/sessions/revoke-all
  */
-export async function revokeAllAdminSessions(
-  signal?: AbortSignal,
-): Promise<{ accepted: boolean; revokedCount: number; clearedCookie: boolean }> {
-  if (useProfileMock()) {
+export async function revokeAllAdminSessions(signal?: AbortSignal): Promise<{
+  accepted: boolean;
+  revokedCount: number;
+  clearedCookie: boolean;
+}> {
+  if (isProfileMockMode()) {
     return {
       accepted: true,
       revokedCount: demoAdminSessions().length,

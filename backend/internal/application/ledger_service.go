@@ -14,10 +14,10 @@ import (
 
 // LedgerService owns unified wallet posting, balance reads, and rebuild (BE-340).
 type LedgerService struct {
-	Store       LedgerStore
-	IDs         ports.IDGenerator
-	Clock       ports.Clock
-	Log         ports.Logger
+	Store LedgerStore
+	IDs   ports.IDGenerator
+	Clock ports.Clock
+	Log   ports.Logger
 	// Authz when set enforces actor/store membership on finance reads (SEL-400 / INT-150).
 	Authz *AuthzService
 	// ForceImmediateRelease when true (local/test) posts capture+release with delay 0.

@@ -57,7 +57,10 @@ function formatReceivedAt(iso: string | undefined): string {
 }
 
 /** Map BE processingState → table HTTP-ish column (snapshot chrome). */
-export function mapCallbackHttpLabel(state: string, failureCode?: string): string {
+export function mapCallbackHttpLabel(
+  state: string,
+  failureCode?: string,
+): string {
   const s = state.toUpperCase();
   if (s === "PROCESSED") return "200";
   if (s === "PROCESSING" || s === "ACCEPTED") return "202";
@@ -111,7 +114,8 @@ export function mapProviderCallbackDto(
     order: dto.paymentIntentId?.trim() || "—",
     http: mapCallbackHttpLabel(dto.processingState, dto.failureCode),
     providerStatus: mapCallbackProviderStatus(dto),
-    providerReference: dto.providerReference?.trim() || dto.providerEventId || "—",
+    providerReference:
+      dto.providerReference?.trim() || dto.providerEventId || "—",
     amount: 0,
     receivedAt: formatReceivedAt(dto.receivedAt),
     signatureValidation: "VERIFIED",

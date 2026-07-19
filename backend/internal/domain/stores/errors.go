@@ -7,7 +7,7 @@ var (
 	ErrSlugReserved = apperr.Validation(apperr.CodeValidationFailed, "Store slug is reserved")
 	ErrSlugTaken    = apperr.Conflict(apperr.CodeConflict, "Store slug is already taken")
 
-	ErrStoreRequired = apperr.Validation("ONBOARDING_STORE_REQUIRED", "Canonical store is required to complete onboarding")
+	ErrStoreRequired    = apperr.Validation("ONBOARDING_STORE_REQUIRED", "Canonical store is required to complete onboarding")
 	ErrIdentityRequired = apperr.Validation(apperr.CodeValidationFailed, "Store name and bio are required to complete onboarding")
 	ErrSlugRequired     = apperr.Validation(apperr.CodeValidationFailed, "Valid store slug is required to complete onboarding")
 	ErrAlreadyComplete  = apperr.Conflict(apperr.CodeConflict, "Onboarding already completed")

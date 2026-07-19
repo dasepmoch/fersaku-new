@@ -15,16 +15,16 @@ type SellerCustomerListFilter struct {
 
 // SellerCustomerListRow is a denormalized list projection.
 type SellerCustomerListRow struct {
-	CustomerID         string
-	DisplayName        string
-	DisplayEmail       string
-	OrderCount         int64
-	SpentIDR           int64
-	LastPurchaseAt     time.Time
-	FirstSeenAt        time.Time
-	LastProductTitle   string
-	LastOrderGrossIDR  int64
-	LastPaymentStatus  string
+	CustomerID        string
+	DisplayName       string
+	DisplayEmail      string
+	OrderCount        int64
+	SpentIDR          int64
+	LastPurchaseAt    time.Time
+	FirstSeenAt       time.Time
+	LastProductTitle  string
+	LastOrderGrossIDR int64
+	LastPaymentStatus string
 }
 
 // SellerCustomerOrderRow is a bounded purchase history line.

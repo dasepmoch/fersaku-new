@@ -116,9 +116,7 @@ describe("ADM-100 admin auth mappers", () => {
     expect(
       resolveAdminPostAuthPath({ returnTo: "https://evil.example/x" }),
     ).toBe("/admin");
-    expect(resolveAdminPostAuthPath({ returnTo: "/dashboard" })).toBe(
-      "/admin",
-    );
+    expect(resolveAdminPostAuthPath({ returnTo: "/dashboard" })).toBe("/admin");
     expect(resolveAdminPostAuthPath({ returnTo: "//evil.example" })).toBe(
       "/admin",
     );
@@ -133,7 +131,9 @@ describe("ADM-100 admin auth mappers", () => {
     expect(mapped.ok).toBe(false);
     if (!mapped.ok && mapped.kind === "field_errors") {
       expect(mapped.fields[0]?.field).toBe("password");
-      expect(mapped.fields[0]?.message).not.toMatch(/tidak terdaftar|not found/i);
+      expect(mapped.fields[0]?.message).not.toMatch(
+        /tidak terdaftar|not found/i,
+      );
     }
   });
 

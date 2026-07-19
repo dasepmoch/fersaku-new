@@ -75,8 +75,14 @@ export function formatCouponUsageLabel(
   usageCount: number,
   maxTotalUses?: number,
 ): string {
-  const used = Number.isFinite(usageCount) ? Math.max(0, Math.trunc(usageCount)) : 0;
-  if (maxTotalUses != null && Number.isFinite(maxTotalUses) && maxTotalUses > 0) {
+  const used = Number.isFinite(usageCount)
+    ? Math.max(0, Math.trunc(usageCount))
+    : 0;
+  if (
+    maxTotalUses != null &&
+    Number.isFinite(maxTotalUses) &&
+    maxTotalUses > 0
+  ) {
     return `${used} / ${Math.trunc(maxTotalUses)}`;
   }
   return String(used);
@@ -141,9 +147,7 @@ export function computeCouponListMetrics(
   };
 }
 
-function normalizeDiscountKind(
-  kind: string,
-): "PERCENT" | "FIXED_IDR" {
+function normalizeDiscountKind(kind: string): "PERCENT" | "FIXED_IDR" {
   const k = kind.trim().toLowerCase();
   if (k === "percent" || k === "percentage") return "PERCENT";
   if (k === "fixed" || k === "fixed_idr") return "FIXED_IDR";
@@ -237,7 +241,8 @@ export function toPatchCouponRequestBody(
   if (input.clearStartsAt) body.clearStartsAt = true;
   if (input.endsAt != null) body.endsAt = input.endsAt;
   if (input.clearEndsAt) body.clearEndsAt = true;
-  if (input.scope != null) body.scope = normalizeScope(input.scope) ?? input.scope;
+  if (input.scope != null)
+    body.scope = normalizeScope(input.scope) ?? input.scope;
   if (input.productIds != null) body.productIds = input.productIds;
   return body;
 }

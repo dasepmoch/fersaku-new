@@ -65,7 +65,7 @@ func (h *KYCHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		"cases":             cases,
 		"requiredDocuments": view.RequiredDocuments,
 		// Explicit: storefront sellers are never forced through this path.
-		"requiredFor":       "LIVE_QRIS_API_ONLY",
+		"requiredFor": "LIVE_QRIS_API_ONLY",
 	})
 }
 

@@ -408,8 +408,7 @@ export function readServerOwnedEmergencyControls(
       version: row.version,
       actor: row.actor,
       reason: row.reason,
-      expiresAt:
-        typeof row.expiresAt === "string" ? row.expiresAt : undefined,
+      expiresAt: typeof row.expiresAt === "string" ? row.expiresAt : undefined,
       propagationSloMs:
         typeof row.propagationSloMs === "number"
           ? row.propagationSloMs

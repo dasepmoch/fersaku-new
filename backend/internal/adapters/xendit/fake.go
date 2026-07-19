@@ -265,7 +265,7 @@ func (f *Fake) QuoteDisbursement(ctx context.Context, in ports.DisbursementQuote
 	if fee < 0 {
 		fee = 2500
 	}
-	ref := "xendit_dq_" + hex.EncodeToString(sha256sum([]byte("dq|"+in.BankCode+"|"+fmt.Sprint(in.AmountIDR)))[:8])
+	ref := "xendit_dq_" + hex.EncodeToString(sha256sum([]byte("dq|" + in.BankCode + "|" + fmt.Sprint(in.AmountIDR)))[:8])
 	return ports.DisbursementQuote{
 		ProviderFeeIDR:    fee,
 		ProviderReference: ref,

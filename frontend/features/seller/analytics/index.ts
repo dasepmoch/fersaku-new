@@ -9,14 +9,8 @@ export type {
   TrafficChannelLabel,
   TrafficRangeLabel,
 } from "./contracts";
-export {
-  getSellerAnalyticsOverview,
-  getSellerAnalyticsTraffic,
-} from "./api";
-export {
-  useSellerAnalyticsOverview,
-  useSellerAnalyticsTraffic,
-} from "./hooks";
+export { getSellerAnalyticsOverview, getSellerAnalyticsTraffic } from "./api";
+export { useSellerAnalyticsOverview, useSellerAnalyticsTraffic } from "./hooks";
 export {
   buildAnalyticsDateRange,
   emptyAnalyticsOverview,

@@ -80,7 +80,9 @@ export function ApiKycDialog({
     if (!canReview || documentId.startsWith("label_")) return;
     const reason = reviewerNote.trim();
     if (reason.length < 12) {
-      setDocError("Enter a reviewer note (≥12 chars) before viewing a document.");
+      setDocError(
+        "Enter a reviewer note (≥12 chars) before viewing a document.",
+      );
       return;
     }
     setDocError(null);
@@ -93,7 +95,9 @@ export function ApiKycDialog({
       });
       hold(result);
     } catch {
-      setDocError("Document view failed. MFA step-up or permission may be required.");
+      setDocError(
+        "Document view failed. MFA step-up or permission may be required.",
+      );
       clearDocView();
     } finally {
       setViewingDocId(null);

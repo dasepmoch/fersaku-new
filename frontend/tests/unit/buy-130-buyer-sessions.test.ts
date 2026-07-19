@@ -112,7 +112,7 @@ describe("BUY-130 buyer session schemas", () => {
 describe("BUY-130 session mappers", () => {
   it("maps SessionView to BuyerSession; current from backend only", () => {
     const now = Date.parse("2026-07-17T10:00:00Z");
-    const view = mapBuyerSessionDto(sessionDto);
+    const view = mapBuyerSessionDto(sessionDto, now);
     expect(view.id).toBe("ses_current");
     expect(view.device).toBe("Chrome di Linux");
     expect(view.current).toBe(true);
@@ -121,6 +121,7 @@ describe("BUY-130 session mappers", () => {
     expect(view.active).toBe(
       formatSessionActiveLabel(sessionDto.lastSeenAt, now),
     );
+    expect(view.active).toBe("Sekarang");
   });
 
   it("sanitizes untrusted device text and masks empty label", () => {
@@ -231,9 +232,9 @@ describe("BUY-130 api adapters", () => {
   });
 
   it("revokes other session via single-id endpoint", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: { revoked: true }, meta }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ data: { revoked: true }, meta }));
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const result = await api.revokeBuyerSession({
@@ -249,9 +250,9 @@ describe("BUY-130 api adapters", () => {
   });
 
   it("flags revoke of current session for cookie clear path", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: { revoked: true }, meta }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ data: { revoked: true }, meta }));
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const result = await api.revokeBuyerSession({
@@ -262,9 +263,9 @@ describe("BUY-130 api adapters", () => {
   });
 
   it("uses dedicated revoke-others endpoint (no per-session loop)", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: { revokedCount: 2 }, meta }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ data: { revokedCount: 2 }, meta }));
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const result = await api.revokeOtherBuyerSessions();
@@ -276,9 +277,9 @@ describe("BUY-130 api adapters", () => {
   });
 
   it("uses dedicated revoke-all endpoint", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ data: { revokedCount: 3 }, meta }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ data: { revokedCount: 3 }, meta }));
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const result = await api.revokeAllBuyerSessions();

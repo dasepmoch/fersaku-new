@@ -15,12 +15,7 @@ export type SuccessStatus =
   (typeof SUCCESS_STATUSES)[keyof typeof SUCCESS_STATUSES];
 
 export function isSuccessStatus(status: number): status is SuccessStatus {
-  return (
-    status === 200 ||
-    status === 201 ||
-    status === 202 ||
-    status === 204
-  );
+  return status === 200 || status === 201 || status === 202 || status === 204;
 }
 
 /** 204 must have no JSON body (backend contract). */
@@ -64,7 +59,9 @@ export function withExpectedRevision<T extends Record<string, unknown>>(
 /** Secret / private reads: Cache-Control no-store. */
 export const CACHE_CONTROL_NO_STORE = "private, no-store";
 
-export function isNoStoreCacheControl(value: string | null | undefined): boolean {
+export function isNoStoreCacheControl(
+  value: string | null | undefined,
+): boolean {
   if (!value) return false;
   return /no-store/i.test(value);
 }
@@ -76,7 +73,10 @@ export function isNoStoreCacheControl(value: string | null | undefined): boolean
 export const API_VERSION_PREFIX = "/v1";
 
 export function isVersionedApiPath(pathname: string): boolean {
-  return pathname === API_VERSION_PREFIX || pathname.startsWith(`${API_VERSION_PREFIX}/`);
+  return (
+    pathname === API_VERSION_PREFIX ||
+    pathname.startsWith(`${API_VERSION_PREFIX}/`)
+  );
 }
 
 export function ensureVersionedApiPath(pathname: string): string {

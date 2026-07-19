@@ -74,7 +74,10 @@ export function CheckoutQrisStep({
                 />
               ) : (
                 <>
-                  <QrCode className="size-40 text-[#17231d]" strokeWidth={1.2} />
+                  <QrCode
+                    className="size-40 text-[#17231d]"
+                    strokeWidth={1.2}
+                  />
                   <span className="absolute top-1/2 left-1/2 grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-xl bg-[#173f2c] text-xs font-black text-[#d7ff64]">
                     F
                   </span>

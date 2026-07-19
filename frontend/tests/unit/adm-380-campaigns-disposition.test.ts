@@ -41,8 +41,12 @@ describe("ADM-380 campaign disposition", () => {
   it("exposes truthful disabled copy for API/live path", () => {
     expect(CAMPAIGN_COMMANDS_DISABLED_TITLE).toMatch(/ADM-380/);
     expect(CAMPAIGN_COMMANDS_DISABLED_TITLE).toMatch(/no backend route/i);
-    expect(CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY).toMatch(/not available for launch/i);
-    expect(CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY).not.toMatch(/published and audited/i);
+    expect(CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY).toMatch(
+      /not available for launch/i,
+    );
+    expect(CAMPAIGN_CAPABILITY_UNAVAILABLE_COPY).not.toMatch(
+      /published and audited/i,
+    );
   });
 
   it("announcements gate commands and never mount campaign transport", () => {

@@ -78,21 +78,21 @@ type CreateCouponInput struct {
 
 // PatchCouponInput is PATCH with optimistic version.
 type PatchCouponInput struct {
-	ExpectedVersion    int32
-	DiscountKind       *string
-	DiscountValue      *int64
-	PercentIsBps       bool
-	MinMerchandiseIDR  *int64
-	MaxTotalUses       *int64
-	ClearMaxTotal      bool
-	MaxPerCustomerUses *int64
+	ExpectedVersion     int32
+	DiscountKind        *string
+	DiscountValue       *int64
+	PercentIsBps        bool
+	MinMerchandiseIDR   *int64
+	MaxTotalUses        *int64
+	ClearMaxTotal       bool
+	MaxPerCustomerUses  *int64
 	ClearMaxPerCustomer bool
-	StartsAt           *time.Time
-	ClearStartsAt      bool
-	EndsAt             *time.Time
-	ClearEndsAt        bool
-	Scope              *string
-	ProductIDs         *[]string
+	StartsAt            *time.Time
+	ClearStartsAt       bool
+	EndsAt              *time.Time
+	ClearEndsAt         bool
+	Scope               *string
+	ProductIDs          *[]string
 	// Code only allowed in DRAFT.
 	Code *string
 }
@@ -558,8 +558,8 @@ func (s *CouponService) validateForActivation(ctx context.Context, c coupons.Cou
 
 // QuoteRequest is POST /v1/checkout/quote (or apply-coupon). Client discount ignored.
 type QuoteRequest struct {
-	StoreID           string
-	ProductID         string
+	StoreID   string
+	ProductID string
 	// MerchandiseIDR optional override after server reloads product; if 0, use product price.
 	MerchandiseIDR    int64
 	TipIDR            int64

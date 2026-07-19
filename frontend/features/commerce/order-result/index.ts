@@ -1,7 +1,4 @@
-export type {
-  OrderResult,
-  OrderResultDisplayState,
-} from "./contracts";
+export type { OrderResult, OrderResultDisplayState } from "./contracts";
 export {
   ORDER_RESULT_CAPABILITY_SEMANTICS,
   ORDER_RESULT_PATH_STATUSES,

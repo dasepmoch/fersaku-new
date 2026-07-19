@@ -23,18 +23,18 @@ type OnboardingStep = OnboardingState
 
 // Merchant is the onboarding-enriched tenant root.
 type Merchant struct {
-	ID                     string
-	OwnerUserID            string
-	DisplayName            string
-	LegalName              string
-	BusinessType           string
-	Status                 string
-	OnboardingState        OnboardingState
-	OnboardingStep         OnboardingState
-	OnboardingCompletedAt  *time.Time
-	OnboardingProgress     json.RawMessage
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
+	ID                    string
+	OwnerUserID           string
+	DisplayName           string
+	LegalName             string
+	BusinessType          string
+	Status                string
+	OnboardingState       OnboardingState
+	OnboardingStep        OnboardingState
+	OnboardingCompletedAt *time.Time
+	OnboardingProgress    json.RawMessage
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 // Store is the mandatory canonical storefront anchor.

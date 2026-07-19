@@ -106,7 +106,9 @@ export async function loginViaApi(
     };
   };
   if (json.data?.mfaRequired) {
-    throw new Error("loginViaApi: seed persona MFA unexpected for parent harness");
+    throw new Error(
+      "loginViaApi: seed persona MFA unexpected for parent harness",
+    );
   }
   const cookie = parseSessionCookie(res.headers()["set-cookie"]);
   if (cookie.length < 8) {
@@ -213,7 +215,11 @@ export async function newAuthenticatedContext(
   browser: Browser,
   request: APIRequestContext,
   surface: SeedSurface = "SELLER",
-): Promise<{ context: BrowserContext; session: AuthSession; statePath: string }> {
+): Promise<{
+  context: BrowserContext;
+  session: AuthSession;
+  statePath: string;
+}> {
   assertNonProductionHarness();
   const session = await loginViaApi(request, surface);
   const persona = surface === "BUYER" ? "buyer" : "seller";
@@ -235,13 +241,19 @@ export async function loginViaUiOrApi(
   const persona = personaFor(surface);
   const loginPath = surface === "BUYER" ? "/account/login" : "/login";
   try {
-    await page.goto(loginPath, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    await page.goto(loginPath, {
+      waitUntil: "domcontentloaded",
+      timeout: 15_000,
+    });
     const email = page.getByLabel(/email|surel/i).first();
     const password = page.getByLabel(/password|kata sandi/i).first();
     if ((await email.count()) > 0 && (await password.count()) > 0) {
       await email.fill(persona.email);
       await password.fill(SEED_PASSWORD);
-      await page.getByRole("button", { name: /masuk|login|sign in/i }).first().click();
+      await page
+        .getByRole("button", { name: /masuk|login|sign in/i })
+        .first()
+        .click();
       await page.waitForTimeout(500);
       const cookies = await page.context().cookies();
       const sess = cookies.find((c) => c.name === "fersaku_session");

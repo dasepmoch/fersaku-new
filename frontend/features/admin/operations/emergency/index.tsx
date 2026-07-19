@@ -1,24 +1,16 @@
 "use client";
 
 import { adminPanel } from "@/features/admin/ui";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Network, Pause, Play, Siren } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/shared/api/api-error";
 import { PROBLEM_CODES } from "@/shared/api/problem-codes";
 import { createIdempotencyKey } from "@/shared/api/idempotency";
-import {
-  getDomainSource,
-} from "@/shared/data/domain-source";
-import {
-  type EmergencyControl,
-  maintenanceBannerId,
-} from "./data";
+import { getDomainSource } from "@/shared/data/domain-source";
+import { type EmergencyControl, maintenanceBannerId } from "./data";
 import { Field, Modal } from "./pieces";
-import {
-  incidentModeHealthy,
-  incidentModeLabel,
-} from "./mappers";
+import { incidentModeHealthy, incidentModeLabel } from "./mappers";
 import {
   useAdminEmergencyControls,
   useAdminEmergencyWriteEnabled,
@@ -34,14 +26,16 @@ export function EmergencySwitchboard() {
   const mutation = useSetAdminEmergencyControlMutation();
 
   // Mock fixtures are owned by hooks/api (INT-170); presentation never imports mock.
-  const serverControls =
-    infra.data?.emergencyControls?.length
-      ? infra.data.emergencyControls
-      : emergencyQuery.data?.length
-        ? emergencyQuery.data
-        : null;
+  const serverControls = infra.data?.emergencyControls?.length
+    ? infra.data.emergencyControls
+    : emergencyQuery.data?.length
+      ? emergencyQuery.data
+      : null;
 
   const [controls, setControls] = useState<EmergencyControl[]>([]);
+  const [controlsSource, setControlsSource] = useState<
+    EmergencyControl[] | null
+  >(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [ticket, setTicket] = useState("");
@@ -51,11 +45,15 @@ export function EmergencySwitchboard() {
   const [busy, setBusy] = useState(false);
   const idemRef = useRef(createIdempotencyKey());
 
-  useEffect(() => {
-    if (serverControls && serverControls.length > 0) {
-      setControls(serverControls);
-    }
-  }, [serverControls]);
+  // Sync local controls from server when bootstrap data arrives (render-time adjust).
+  if (
+    serverControls &&
+    serverControls.length > 0 &&
+    serverControls !== controlsSource
+  ) {
+    setControlsSource(serverControls);
+    setControls(serverControls);
+  }
 
   const pending = controls.find((item) => item.id === pendingId);
   const isBannerPending = pendingId === maintenanceBannerId;
@@ -129,9 +127,7 @@ export function EmergencySwitchboard() {
       });
       setControls((items) =>
         items.map((item) =>
-          item.switchName === result.control.switchName
-            ? result.control
-            : item,
+          item.switchName === result.control.switchName ? result.control : item,
         ),
       );
       closePending();

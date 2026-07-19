@@ -13,13 +13,13 @@ import (
 
 // OutboxInsert is one durable outbox row written in the same TX as a mutation.
 type OutboxInsert struct {
-	ID           string
-	Topic        string
-	Payload      json.RawMessage
-	DedupeKey    *string
-	PaymentMode  *string // SANDBOX|LIVE or nil
-	AvailableAt  time.Time
-	Status       string // default pending
+	ID          string
+	Topic       string
+	Payload     json.RawMessage
+	DedupeKey   *string
+	PaymentMode *string // SANDBOX|LIVE or nil
+	AvailableAt time.Time
+	Status      string // default pending
 }
 
 // IdempotencyInsert records first-writer-wins idempotency state.

@@ -146,9 +146,7 @@ export function useTestSellerWebhook(storeId: string) {
  * Never put reveal into React Query or storage.
  */
 export function useWebhookSecretRevealMemory() {
-  const [reveal, setReveal] = useState<WebhookSigningSecretReveal | null>(
-    null,
-  );
+  const [reveal, setReveal] = useState<WebhookSigningSecretReveal | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clear = () => {
@@ -174,7 +172,6 @@ export function useWebhookSecretRevealMemory() {
       document.removeEventListener("visibilitychange", onVis);
       clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount/unmount only
   }, []);
 
   return { reveal, hold, clear };

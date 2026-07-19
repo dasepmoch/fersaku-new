@@ -21,9 +21,9 @@ type SellerOrderListFilter struct {
 
 // SellerOrderListRow is a denormalized list projection (no secrets).
 type SellerOrderListRow struct {
-	Order           orders.Order
-	ProductTitle    string
-	DeliveryStatus  string
+	Order          orders.Order
+	ProductTitle   string
+	DeliveryStatus string
 }
 
 // SellerOrderPaymentSummary is optional payment intent display snapshot.

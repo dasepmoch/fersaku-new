@@ -7,15 +7,15 @@ import (
 
 // Provider identity (ADR-0002, ADR-0008).
 const (
-	ProviderXendit              = "XENDIT"
-	ProviderDuitku              = "DUITKU"
-	AccountScopePrimary         = "xendit-primary"
-	AccountScopeDuitkuPrimary   = "duitku-primary"
-	CurrencyIDR                 = "IDR"
-	SourceStorefront            = "STOREFRONT"
-	SourceQRISAPI               = "QRIS_API"
-	PaymentModeSandbox          = "SANDBOX"
-	PaymentModeLive             = "LIVE"
+	ProviderXendit            = "XENDIT"
+	ProviderDuitku            = "DUITKU"
+	AccountScopePrimary       = "xendit-primary"
+	AccountScopeDuitkuPrimary = "duitku-primary"
+	CurrencyIDR               = "IDR"
+	SourceStorefront          = "STOREFRONT"
+	SourceQRISAPI             = "QRIS_API"
+	PaymentModeSandbox        = "SANDBOX"
+	PaymentModeLive           = "LIVE"
 )
 
 // Payment intent status machine (§5.3).
@@ -33,22 +33,22 @@ const (
 
 // Provider financial containment (not payment status).
 const (
-	FinancialNormal                 = "NORMAL"
-	FinancialProviderReversalHeld   = "PROVIDER_REVERSAL_HELD"
-	FinancialProviderReversalConf   = "PROVIDER_REVERSAL_CONFIRMED"
+	FinancialNormal               = "NORMAL"
+	FinancialProviderReversalHeld = "PROVIDER_REVERSAL_HELD"
+	FinancialProviderReversalConf = "PROVIDER_REVERSAL_CONFIRMED"
 )
 
 // Order status values for checkout lifecycle.
 const (
-	OrderCreated         = "CREATED"
-	OrderPendingPayment  = "PENDING_PAYMENT"
-	OrderPaid            = "PAID"
-	OrderFulfilling      = "FULFILLING"
-	OrderFulfilled       = "FULFILLED"
-	OrderDeliveryFailed  = "DELIVERY_FAILED"
-	OrderFailed          = "FAILED"
-	OrderExpired         = "EXPIRED"
-	OrderCancelled       = "CANCELLED"
+	OrderCreated        = "CREATED"
+	OrderPendingPayment = "PENDING_PAYMENT"
+	OrderPaid           = "PAID"
+	OrderFulfilling     = "FULFILLING"
+	OrderFulfilled      = "FULFILLED"
+	OrderDeliveryFailed = "DELIVERY_FAILED"
+	OrderFailed         = "FAILED"
+	OrderExpired        = "EXPIRED"
+	OrderCancelled      = "CANCELLED"
 )
 
 // Intent is a hosted checkout or gateway payment intent.

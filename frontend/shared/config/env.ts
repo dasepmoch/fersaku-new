@@ -37,8 +37,7 @@ function normalizeBaseUrl(raw: string, label: string): string {
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error("unsupported protocol");
     }
-    const path =
-      url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
+    const path = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
     return `${url.origin}${path}`;
   } catch {
     throw new Error(`${label} must be an absolute http(s) URL.`);

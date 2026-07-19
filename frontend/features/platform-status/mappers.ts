@@ -84,7 +84,8 @@ export function mapUnavailablePublicStatus(): PublicPlatformStatusView {
     overallKind: "unknown",
     heroEmphasis: "tidak tersedia.",
     headline: "Status signal unavailable",
-    detail: "Could not load sanitized API status. Not showing operational green.",
+    detail:
+      "Could not load sanitized API status. Not showing operational green.",
     description:
       "Sinyal status publik tidak dapat dimuat. Halaman ini tidak menampilkan klaim operasional, uptime, atau insiden palsu.",
     services,

@@ -155,7 +155,9 @@ export async function getSellerInventoryDetail(
       },
     );
     const product = mapInventoryProductSummaryDto(response.data.summary);
-    const items = (response.data.items || []).map(mapInventoryStockItemMaskedDto);
+    const items = (response.data.items || []).map(
+      mapInventoryStockItemMaskedDto,
+    );
     assertNoSecretsInInventoryProduct(product);
     assertNoSecretsInStockItems(items);
     return { product, items };

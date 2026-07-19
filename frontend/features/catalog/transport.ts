@@ -17,9 +17,7 @@ export type {
   PublicReviewSummaryDto,
 } from "@/shared/api/schemas";
 
-export type {
-  OperationSuccessJson,
-} from "@/shared/api/generated";
+export type { OperationSuccessJson } from "@/shared/api/generated";
 
 /** Pilot public catalog operations. */
 export type ListFeaturedProductsResponse =

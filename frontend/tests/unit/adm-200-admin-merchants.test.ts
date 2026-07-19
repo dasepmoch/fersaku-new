@@ -35,9 +35,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -203,9 +203,7 @@ describe("ADM-200 admin merchants list/detail/commands", () => {
       meta: { requestId: "req_d", timestamp: AS_OF },
     });
     const m = await getMerchant("m_live");
-    expect(apiRequestMock.mock.calls[0]![0]).toBe(
-      "/v1/admin/merchants/m_live",
-    );
+    expect(apiRequestMock.mock.calls[0]![0]).toBe("/v1/admin/merchants/m_live");
     expect(m?.name).toBe("Live Store");
   });
 

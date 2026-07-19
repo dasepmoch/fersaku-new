@@ -49,8 +49,7 @@ export async function getSellerAnalyticsOverview(
   params: GetAnalyticsOverviewParams,
 ): Promise<SellerAnalyticsOverview> {
   const { storeId, signal } = params;
-  const range =
-    params.range ?? buildAnalyticsDateRange(30, "Asia/Jakarta");
+  const range = params.range ?? buildAnalyticsDateRange(30, "Asia/Jakarta");
 
   if (isSellerOpsMock()) {
     return demoAnalyticsOverview(storeId, range);
@@ -76,8 +75,7 @@ export async function getSellerAnalyticsTraffic(
   params: GetAnalyticsTrafficParams,
 ): Promise<SellerTrafficAnalytics> {
   const { storeId, signal } = params;
-  const range =
-    params.range ?? buildAnalyticsDateRange(30, "Asia/Jakarta");
+  const range = params.range ?? buildAnalyticsDateRange(30, "Asia/Jakarta");
   const channel = params.channel ?? "all";
 
   if (isSellerOpsMock()) {
@@ -107,4 +105,3 @@ export async function getSellerAnalyticsTraffic(
     response.meta.timestamp,
   );
 }
-

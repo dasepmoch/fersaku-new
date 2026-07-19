@@ -183,7 +183,9 @@ function GlobalInventory() {
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        disabled={!canReveal && revealedSecret?.itemId !== item.id}
+                        disabled={
+                          !canReveal && revealedSecret?.itemId !== item.id
+                        }
                         title={
                           canReveal
                             ? undefined

@@ -5,7 +5,7 @@ import {
   evaluateDomainSources,
   installDomainSourceSnapshot,
 } from "@/shared/data/domain-source";
-import { __resetCsrfModuleForTests, getCsrfToken } from "@/shared/api/csrf";
+import { __resetCsrfModuleForTests } from "@/shared/api/csrf";
 import {
   __resetRecentMfaProofForTests,
   getRecentMfaProof,
@@ -14,7 +14,6 @@ import {
 import {
   __resetSessionStoreForTests,
   bindSessionQueryClient,
-  getSessionSnapshot,
 } from "@/shared/auth/session-store";
 import { ApiError } from "@/shared/api/api-error";
 import { PROBLEM_CODES } from "@/shared/api/problem-codes";
@@ -162,18 +161,20 @@ describe("AUT-120 password reset ceremony", () => {
 
   it("API reset posts exact body and never returns token", async () => {
     installApiAuth();
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/auth/password/reset")) {
-        const body = JSON.parse(String(init?.body));
-        expect(body).toEqual({
-          token: "reset_token_xyz",
-          newPassword: "newpass99",
-        });
-        return jsonResponse(envelope({ message: "ok" }));
-      }
-      return problemResponse(500, "INTERNAL");
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/auth/password/reset")) {
+          const body = JSON.parse(String(init?.body));
+          expect(body).toEqual({
+            token: "reset_token_xyz",
+            newPassword: "newpass99",
+          });
+          return jsonResponse(envelope({ message: "ok" }));
+        }
+        return problemResponse(500, "INTERNAL");
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await resetPassword({
@@ -223,7 +224,9 @@ describe("AUT-120 MFA verify + recent proof", () => {
   });
 
   it("builds MFA verify DTO and secret-free keys", () => {
-    expect(toMfaVerifyRequest({ code: " 123456 ", purpose: " inventory.reveal " })).toEqual({
+    expect(
+      toMfaVerifyRequest({ code: " 123456 ", purpose: " inventory.reveal " }),
+    ).toEqual({
       code: "123456",
       purpose: "inventory.reveal",
     });
@@ -328,7 +331,9 @@ describe("AUT-120 MFA verify + recent proof", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.purpose).toBe("withdrawal.create");
-      expect(getRecentMfaProof("withdrawal.create")).toBe(result.recentMfaProof);
+      expect(getRecentMfaProof("withdrawal.create")).toBe(
+        result.recentMfaProof,
+      );
     }
   });
 

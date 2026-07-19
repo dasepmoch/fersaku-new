@@ -50,7 +50,10 @@ export function OrderResultDeliveryDownloadButton({
     const onVis = () => {
       if (document.visibilityState === "hidden") {
         const c = claimRef.current;
-        if (c && isDeliveryClaimExpired(c, Date.now(), DELIVERY_SECRET_MEMORY_TTL_MS)) {
+        if (
+          c &&
+          isDeliveryClaimExpired(c, Date.now(), DELIVERY_SECRET_MEMORY_TTL_MS)
+        ) {
           clearClaim();
         }
       }
@@ -111,9 +114,7 @@ export function OrderResultDeliveryDownloadButton({
         ) : (
           <Download className="size-4" />
         )}
-        {claimed
-          ? "Akses delivery diklaim"
-          : `Unduh ${productTitle}`}
+        {claimed ? "Akses delivery diklaim" : `Unduh ${productTitle}`}
         {!claimed && !busy && <ArrowRight className="size-4" />}
       </button>
       {error && (

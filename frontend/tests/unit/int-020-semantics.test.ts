@@ -323,9 +323,7 @@ describe("INT-020 pagination CursorList vs NumberedPageList", () => {
       start: 20,
       end: 40,
     });
-    expect(tablePaginationShowingLabel(view)).toBe(
-      "Showing 21-40 of 74 rows",
-    );
+    expect(tablePaginationShowingLabel(view)).toBe("Showing 21-40 of 74 rows");
   });
 
   it("numbered envelope keeps authoritative total independent of row length", () => {
@@ -368,9 +366,14 @@ describe("INT-020 pagination CursorList vs NumberedPageList", () => {
     expect(cursorHasMore(meta)).toBe(true);
     expect(cursorNext(meta)).toBe("opaque_abc");
     expect(detectPaginationProfile(meta)).toBe("cursor");
-    expect(detectPaginationProfile({ page: 1, pageSize: 10, totalCount: 0, pageCount: 1 })).toBe(
-      "numbered",
-    );
+    expect(
+      detectPaginationProfile({
+        page: 1,
+        pageSize: 10,
+        totalCount: 0,
+        pageCount: 1,
+      }),
+    ).toBe("numbered");
   });
 
   it("buildNumberedPageQuery / buildCursorPageQuery normalize params", () => {

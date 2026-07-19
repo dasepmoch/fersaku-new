@@ -86,9 +86,9 @@ func (h *InventoryHandler) GetSchema(w http.ResponseWriter, r *http.Request) {
 }
 
 type putSchemaBody struct {
-	ExpectedVersion *int32                 `json:"expectedVersion"`
-	Fields          []inventory.FieldDef   `json:"fields"`
-	Delimiter       string                 `json:"delimiter"`
+	ExpectedVersion *int32               `json:"expectedVersion"`
+	Fields          []inventory.FieldDef `json:"fields"`
+	Delimiter       string               `json:"delimiter"`
 }
 
 func (h *InventoryHandler) PutSchema(w http.ResponseWriter, r *http.Request) {
@@ -315,14 +315,14 @@ func schemaDTO(s inventory.Schema) map[string]any {
 		})
 	}
 	return map[string]any{
-		"id":         s.ID,
-		"productId":  s.ProductID,
-		"storeId":    s.StoreID,
-		"version":    s.Version,
-		"fields":     fields,
-		"delimiter":  s.Delimiter,
-		"checksum":   s.Checksum,
-		"createdAt":  s.CreatedAt.UTC().Format(time.RFC3339),
+		"id":        s.ID,
+		"productId": s.ProductID,
+		"storeId":   s.StoreID,
+		"version":   s.Version,
+		"fields":    fields,
+		"delimiter": s.Delimiter,
+		"checksum":  s.Checksum,
+		"createdAt": s.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }
 

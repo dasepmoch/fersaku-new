@@ -129,7 +129,6 @@ func (s *AdminReadService) GetMerchant(ctx context.Context, id string) (admin.Me
 	return row.Merchant, nil
 }
 
-
 // ListBuyers returns FE AdminBuyer list.
 func (s *AdminReadService) ListBuyers(ctx context.Context, f admin.ListFilter) ([]admin.Buyer, *cursor.Key, bool, error) {
 	if s.Store == nil {

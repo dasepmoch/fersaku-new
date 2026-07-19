@@ -1,11 +1,7 @@
 /** View models for existing coupon list/form (SEL-280). */
 
 export type CouponState =
-  | "DRAFT"
-  | "ACTIVE"
-  | "PAUSED"
-  | "EXPIRED"
-  | "ARCHIVED";
+  "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED" | "ARCHIVED";
 
 export type CouponDiscountKind = "PERCENT" | "FIXED_IDR";
 

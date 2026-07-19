@@ -39,7 +39,12 @@ export type {
   AdminWithdrawal,
 } from "./contracts";
 
-export { demoMerchants, getMerchant, listMerchants, listMerchantsPage } from "./merchants";
+export {
+  demoMerchants,
+  getMerchant,
+  listMerchants,
+  listMerchantsPage,
+} from "./merchants";
 export {
   authorizeMerchantCredential,
   getMerchantFinanceSummary,

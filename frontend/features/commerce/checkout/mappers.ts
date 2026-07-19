@@ -2,14 +2,8 @@
  * Checkout price/intent DTO → view model (CHK-100/110). Pure; no React.
  */
 
-import type {
-  CheckoutIntentDto,
-  CheckoutPriceDto,
-} from "@/shared/api/schemas";
-import {
-  invalidApiContract,
-  requireSafeMoneyIdr,
-} from "@/shared/api/mappers";
+import type { CheckoutIntentDto, CheckoutPriceDto } from "@/shared/api/schemas";
+import { invalidApiContract, requireSafeMoneyIdr } from "@/shared/api/mappers";
 import type {
   CheckoutIntent,
   CheckoutIntentStatus,
@@ -54,7 +48,10 @@ export function toCheckoutQuoteRequestBody(
   if (selection.upsell !== undefined && selection.upsell > 0) {
     body.upsell = requireSafeMoneyIdr(selection.upsell, "upsell");
   }
-  if (selection.couponCode !== undefined && selection.couponCode.trim() !== "") {
+  if (
+    selection.couponCode !== undefined &&
+    selection.couponCode.trim() !== ""
+  ) {
     body.couponCode = selection.couponCode.trim();
   }
   if (options?.clientDiscount !== undefined) {
@@ -71,8 +68,7 @@ export function mapCheckoutPriceDto(dto: CheckoutPriceDto): CheckoutQuote {
   const merchandise = requireSafeMoneyIdr(dto.merchandise, "merchandise");
   const discount = requireSafeMoneyIdr(dto.discount, "discount");
   const gross = requireSafeMoneyIdr(dto.gross, "gross");
-  const tip =
-    dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
+  const tip = dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
   const upsell =
     dto.upsell !== undefined ? requireSafeMoneyIdr(dto.upsell, "upsell") : 0;
   const eligibleSubtotal =
@@ -192,21 +188,19 @@ function mapIntentStatus(raw: string): CheckoutIntentStatus {
 export function mapCheckoutIntentDto(dto: CheckoutIntentDto): CheckoutIntent {
   const amount = requireSafeMoneyIdr(dto.amount, "amount");
   const gross =
-    dto.gross !== undefined
-      ? requireSafeMoneyIdr(dto.gross, "gross")
-      : amount;
-  const tip =
-    dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
+    dto.gross !== undefined ? requireSafeMoneyIdr(dto.gross, "gross") : amount;
+  const tip = dto.tip !== undefined ? requireSafeMoneyIdr(dto.tip, "tip") : 0;
   const discount =
     dto.discount !== undefined
       ? requireSafeMoneyIdr(dto.discount, "discount")
       : 0;
-  const fee =
-    dto.fee !== undefined ? requireSafeMoneyIdr(dto.fee, "fee") : 0;
+  const fee = dto.fee !== undefined ? requireSafeMoneyIdr(dto.fee, "fee") : 0;
 
   if (amount < 0 || gross < 0) {
     return invalidApiContract("Checkout intent money out of range", {
-      issues: [{ path: "amount", message: "must be non-negative safe integer" }],
+      issues: [
+        { path: "amount", message: "must be non-negative safe integer" },
+      ],
     });
   }
 

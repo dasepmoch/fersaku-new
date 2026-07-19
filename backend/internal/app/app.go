@@ -99,17 +99,17 @@ type Runtime struct {
 	XenditFake *xendit.Fake
 	// Adapter kinds for truthful readiness/admin health (never secrets).
 	// XenditKind remains for compat; prefer PaymentKind + DisbursementKind.
-	XenditKind         string
-	PaymentKind        string
-	DisbursementKind   string
-	MailKind           string
-	RedisKind          string
+	XenditKind       string
+	PaymentKind      string
+	DisbursementKind string
+	MailKind         string
+	RedisKind        string
 	// RateLimiter is process-local on local/test; Redis multi-class on staging/production.
 	RateLimiter middleware.Limiter
 	// RateLimitErrors counts Redis/backend limiter failures for readiness/status.
 	RateLimitErrors *middleware.ClassLimiterErrors
 	R2              r2.Noop
-	Health      *application.HealthService
+	Health          *application.HealthService
 	// Auth is wired when DATABASE_URL is set (BE-120).
 	Auth *application.AuthService
 	// Authz is wired when DATABASE_URL is set (BE-130).
@@ -732,15 +732,15 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	}
 
 	rt := &Runtime{
-		Config:        cfg,
-		Log:           log,
-		Clock:         clock,
-		IDs:           ids,
-		Queue:         q,
-		Mail:          mailer,
-		DB:            pool,
-		DBPing:        dbPing,
-		Redis:         rd,
+		Config:           cfg,
+		Log:              log,
+		Clock:            clock,
+		IDs:              ids,
+		Queue:            q,
+		Mail:             mailer,
+		DB:               pool,
+		DBPing:           dbPing,
+		Redis:            rd,
 		Payment:          pay,
 		QRIS:             qris,
 		Disburse:         disburse,
@@ -750,39 +750,39 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		DisbursementKind: disbursementKind,
 		MailKind:         mailKind,
 		RedisKind:        redisKind,
-		RateLimiter:     rateLimiter,
-		RateLimitErrors: rateLimitErrors,
-		R2:              r2.Noop{},
-		ObjectStore:   objStore,
-		Health:        health,
-		Auth:          authSvc,
-		Authz:         authzSvc,
-		Notifications: notifSvc,
-		Onboarding:    onboardSvc,
-		Catalog:       catalogSvc,
-		Coupons:       couponSvc,
-		Objects:       objectSvc,
-		Inventory:     inventorySvc,
-		Delivery:      deliverySvc,
-		Domains:       domainSvc,
-		Fees:          feeSvc,
-		Checkout:      checkoutSvc,
-		Gateway:       gatewaySvc,
-		Callbacks:     callbackSvc,
-		Ledger:        ledgerSvc,
-		Withdrawals:   withdrawalSvc,
-		Analytics:     analyticsSvc,
-		KYC:           kycSvc,
-		Credentials:   credentialSvc,
-		Webhooks:      webhookSvc,
-		Buyer:         buyerSvc,
+		RateLimiter:      rateLimiter,
+		RateLimitErrors:  rateLimitErrors,
+		R2:               r2.Noop{},
+		ObjectStore:      objStore,
+		Health:           health,
+		Auth:             authSvc,
+		Authz:            authzSvc,
+		Notifications:    notifSvc,
+		Onboarding:       onboardSvc,
+		Catalog:          catalogSvc,
+		Coupons:          couponSvc,
+		Objects:          objectSvc,
+		Inventory:        inventorySvc,
+		Delivery:         deliverySvc,
+		Domains:          domainSvc,
+		Fees:             feeSvc,
+		Checkout:         checkoutSvc,
+		Gateway:          gatewaySvc,
+		Callbacks:        callbackSvc,
+		Ledger:           ledgerSvc,
+		Withdrawals:      withdrawalSvc,
+		Analytics:        analyticsSvc,
+		KYC:              kycSvc,
+		Credentials:      credentialSvc,
+		Webhooks:         webhookSvc,
+		Buyer:            buyerSvc,
 		SellerOrders:     sellerOrderSvc,
 		SellerCustomers:  sellerCustomerSvc,
 		Reviews:          reviewSvc,
-		AdminReads:    adminReadSvc,
-		AdminOps:      adminOpsSvc,
-		Impersonation: impersonationSvc,
-		Audit:         auditSvc,
+		AdminReads:       adminReadSvc,
+		AdminOps:         adminOpsSvc,
+		Impersonation:    impersonationSvc,
+		Audit:            auditSvc,
 	}
 	// BE-600: scrape-time gauges for outbox lag + audit head (cheap SELECT).
 	wireMetricsScrape(rt)
@@ -890,9 +890,11 @@ func paymentIntentIdentity(cfg config.Config, xenditAccountScope string) (provid
 
 // wireMoneyProviders selects QRIS payment and disbursement adapters from config
 // (PROD-A20 / PROD-B10 / PROD-B40). Composition (option A):
-//   payment=duitku  → Duitku QRIS only (Xendit CreateQRIS not selected)
-//   payment=xendit  → legacy Xendit QRIS (local/transition)
-//   payment=fake    → xendit.Fake QRIS (local)
+//
+//	payment=duitku  → Duitku QRIS only (Xendit CreateQRIS not selected)
+//	payment=xendit  → legacy Xendit QRIS (local/transition)
+//	payment=fake    → xendit.Fake QRIS (local)
+//
 // Disbursement is independent (fake | xendit). Xendit payment webhook may stay mounted for late events.
 func wireMoneyProviders(cfg config.Config, accountScope string, log ports.Logger) (
 	qris ports.QRISProvider,
@@ -1045,51 +1047,51 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		}
 	}
 	handler := httpadapter.NewRouterWith(httpadapter.RouterDeps{
-		Log:               rt.Log,
-		IDs:               rt.IDs,
-		Service:           rt.Config.ServiceName,
-		Version:           version.Version,
-		AppEnv:            rt.Config.AppEnv,
-		Ready:             rt.Health.Ready,
-		StartedAt:         time.Now().UTC(),
-		SessionCookieName: rt.Config.SessionCookieName,
-		CSRFSoftDisable:   csrfSoft,
-		TokenHasher:       tokenHasher,
-		AuthService:         rt.Auth,
-		AuthzService:        rt.Authz,
-		NotificationService: rt.Notifications,
-		OnboardingService:   rt.Onboarding,
-		CatalogService:      rt.Catalog,
-		CouponService:       rt.Coupons,
-		ObjectService:       rt.Objects,
-		InventoryService:    rt.Inventory,
-		DeliveryService:     rt.Delivery,
-		DomainService:       rt.Domains,
-		FeeService:          rt.Fees,
-		CheckoutService:     rt.Checkout,
-		GatewayService:      rt.Gateway,
-		CallbackService:     rt.Callbacks,
-		LedgerService:       rt.Ledger,
-		WithdrawalService:   rt.Withdrawals,
-		AnalyticsService:    rt.Analytics,
-		KYCService:          rt.KYC,
-		CredentialService:   rt.Credentials,
-		WebhookService:      rt.Webhooks,
-		BuyerService:        rt.Buyer,
+		Log:                   rt.Log,
+		IDs:                   rt.IDs,
+		Service:               rt.Config.ServiceName,
+		Version:               version.Version,
+		AppEnv:                rt.Config.AppEnv,
+		Ready:                 rt.Health.Ready,
+		StartedAt:             time.Now().UTC(),
+		SessionCookieName:     rt.Config.SessionCookieName,
+		CSRFSoftDisable:       csrfSoft,
+		TokenHasher:           tokenHasher,
+		AuthService:           rt.Auth,
+		AuthzService:          rt.Authz,
+		NotificationService:   rt.Notifications,
+		OnboardingService:     rt.Onboarding,
+		CatalogService:        rt.Catalog,
+		CouponService:         rt.Coupons,
+		ObjectService:         rt.Objects,
+		InventoryService:      rt.Inventory,
+		DeliveryService:       rt.Delivery,
+		DomainService:         rt.Domains,
+		FeeService:            rt.Fees,
+		CheckoutService:       rt.Checkout,
+		GatewayService:        rt.Gateway,
+		CallbackService:       rt.Callbacks,
+		LedgerService:         rt.Ledger,
+		WithdrawalService:     rt.Withdrawals,
+		AnalyticsService:      rt.Analytics,
+		KYCService:            rt.KYC,
+		CredentialService:     rt.Credentials,
+		WebhookService:        rt.Webhooks,
+		BuyerService:          rt.Buyer,
 		SellerOrderService:    rt.SellerOrders,
 		SellerCustomerService: rt.SellerCustomers,
 		ReviewService:         rt.Reviews,
-		AdminReadService:     rt.AdminReads,
-		AdminOpsService:      rt.AdminOps,
-		ImpersonationService: rt.Impersonation,
-		SecureCookies:        rt.Config.AppEnv == config.EnvProduction || rt.Config.AppEnv == config.EnvStaging,
-		SameSiteStrict:    false, // Lax: documented default for buyer/seller storefronts
-		RateLimiter:        rt.RateLimiter,
-		RateLimitErrors:    rt.RateLimitErrors,
-		XenditWebhookToken: effectiveWebhookToken(rt.Config),
-		RequestTimeout:     30 * time.Second,
-		TrustedProxies:     append([]string(nil), rt.Config.TrustedProxyCIDRs...),
-		TrustedProxyMode:   rt.Config.TrustedProxyMode,
+		AdminReadService:      rt.AdminReads,
+		AdminOpsService:       rt.AdminOps,
+		ImpersonationService:  rt.Impersonation,
+		SecureCookies:         rt.Config.AppEnv == config.EnvProduction || rt.Config.AppEnv == config.EnvStaging,
+		SameSiteStrict:        false, // Lax: documented default for buyer/seller storefronts
+		RateLimiter:           rt.RateLimiter,
+		RateLimitErrors:       rt.RateLimitErrors,
+		XenditWebhookToken:    effectiveWebhookToken(rt.Config),
+		RequestTimeout:        30 * time.Second,
+		TrustedProxies:        append([]string(nil), rt.Config.TrustedProxyCIDRs...),
+		TrustedProxyMode:      rt.Config.TrustedProxyMode,
 	})
 	srv := &http.Server{
 		Addr:              rt.Config.HTTPAddr,

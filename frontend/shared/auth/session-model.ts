@@ -146,7 +146,9 @@ export function claimsCacheIdentity(claims: SessionClaims | null): string {
 }
 
 /** True when server has MFA enrolled but this session is not yet verified. */
-export function isMfaPendingClaims(claims: SessionClaims | null | undefined): boolean {
+export function isMfaPendingClaims(
+  claims: SessionClaims | null | undefined,
+): boolean {
   if (!claims) return false;
   return claims.mfaEnabled && !claims.mfaVerified;
 }

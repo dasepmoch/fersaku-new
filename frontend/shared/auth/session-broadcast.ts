@@ -5,13 +5,15 @@
 export const SESSION_BROADCAST_CHANNEL = "fersaku-session";
 
 export type SessionBroadcastMessage =
-  | { type: "logout" }
-  | { type: "session-changed"; identity: string };
+  { type: "logout" } | { type: "session-changed"; identity: string };
 
 export function publishSessionBroadcast(
   message: SessionBroadcastMessage,
 ): void {
-  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") {
+  if (
+    typeof window === "undefined" ||
+    typeof BroadcastChannel === "undefined"
+  ) {
     return;
   }
   try {
@@ -26,7 +28,10 @@ export function publishSessionBroadcast(
 export function subscribeSessionBroadcast(
   handler: (message: SessionBroadcastMessage) => void,
 ): () => void {
-  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") {
+  if (
+    typeof window === "undefined" ||
+    typeof BroadcastChannel === "undefined"
+  ) {
     return () => {};
   }
   let channel: BroadcastChannel;

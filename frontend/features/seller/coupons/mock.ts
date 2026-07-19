@@ -130,10 +130,7 @@ function formatEnds(iso: string): string {
   }).format(d);
 }
 
-function discountLabel(
-  kind: "PERCENT" | "FIXED_IDR",
-  value: number,
-): string {
+function discountLabel(kind: "PERCENT" | "FIXED_IDR", value: number): string {
   if (kind === "PERCENT") return `${value / 100}%`;
   return `Rp${Math.round(value).toLocaleString("id-ID")}`;
 }

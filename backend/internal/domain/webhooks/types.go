@@ -167,24 +167,24 @@ type DeadLetter struct {
 
 // AdminDeliveryView is the outbound-only admin projection (never provider IDs).
 type AdminDeliveryView struct {
-	DeliveryID     string
-	Kind           string // always SELLER_DELIVERY
-	EndpointID     string
-	EndpointHost   string
-	MerchantID     string
-	StoreID        *string
-	PaymentMode    string
-	EventID        string
-	EventType      string
-	Status         string
-	AttemptCount   int32
-	NextRetryAt    *time.Time
-	LastHTTPClass  *string
-	LastLatencyMs  *int32
+	DeliveryID       string
+	Kind             string // always SELLER_DELIVERY
+	EndpointID       string
+	EndpointHost     string
+	MerchantID       string
+	StoreID          *string
+	PaymentMode      string
+	EventID          string
+	EventType        string
+	Status           string
+	AttemptCount     int32
+	NextRetryAt      *time.Time
+	LastHTTPClass    *string
+	LastLatencyMs    *int32
 	DeadLetterReason *string
-	IsTest         bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	IsTest           bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // OutboxDeliverPayload is the seller_webhook.deliver job body.

@@ -115,24 +115,24 @@ func RejectFeeMutation(w http.ResponseWriter, r *http.Request) {
 
 func feePolicyDTO(p platform.FeePolicy) map[string]any {
 	out := map[string]any{
-		"policyVersion":          p.VersionID,
-		"scope":                  p.Scope,
-		"transactionPercentBps":  p.TransactionPercentBps,
-		"transactionFixedIdr":    p.TransactionFixedIDR,
-		"withdrawalPercentBps":   p.WithdrawalPercentBps,
-		"minimumWithdrawalIdr":   p.MinimumWithdrawalIDR,
-		"minimumPaymentIdr":      p.MinimumPaymentIDR,
-		"maximumPaymentIdr":      p.MaximumPaymentIDR,
-		"checksum":               p.Checksum,
-		"immutable":              p.Immutable,
-		"sourceAdr":              p.SourceADR,
-		"currency":               platform.CurrencyIDR,
-		"effectiveFrom":          p.EffectiveFrom.UTC().Format("2006-01-02T15:04:05Z07:00"),
+		"policyVersion":         p.VersionID,
+		"scope":                 p.Scope,
+		"transactionPercentBps": p.TransactionPercentBps,
+		"transactionFixedIdr":   p.TransactionFixedIDR,
+		"withdrawalPercentBps":  p.WithdrawalPercentBps,
+		"minimumWithdrawalIdr":  p.MinimumWithdrawalIDR,
+		"minimumPaymentIdr":     p.MinimumPaymentIDR,
+		"maximumPaymentIdr":     p.MaximumPaymentIDR,
+		"checksum":              p.Checksum,
+		"immutable":             p.Immutable,
+		"sourceAdr":             p.SourceADR,
+		"currency":              platform.CurrencyIDR,
+		"effectiveFrom":         p.EffectiveFrom.UTC().Format("2006-01-02T15:04:05Z07:00"),
 		// Explicit: STOREFRONT and QRIS_API share this global rule; no merchant override.
-		"appliesTo":              []string{string(platform.SourceStorefront), string(platform.SourceQRISAPI)},
+		"appliesTo":               []string{string(platform.SourceStorefront), string(platform.SourceQRISAPI)},
 		"merchantOverrideAllowed": false,
-		"buyerSurchargeAllowed":  false,
-		"adminMutationAllowed":   false,
+		"buyerSurchargeAllowed":   false,
+		"adminMutationAllowed":    false,
 	}
 	if p.EffectiveTo != nil {
 		out["effectiveTo"] = p.EffectiveTo.UTC().Format("2006-01-02T15:04:05Z07:00")

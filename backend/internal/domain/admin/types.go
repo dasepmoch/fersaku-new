@@ -5,16 +5,16 @@ import "time"
 
 // Overview is GET /v1/admin/overview (safe KPIs only).
 type Overview struct {
-	MerchantCount           int64   `json:"merchantCount"`
-	BuyerCount              int64   `json:"buyerCount"`
-	OrderCount              int64   `json:"orderCount"`
-	PaymentCount            int64   `json:"paymentCount"`
-	PendingWithdrawalCount  int64   `json:"pendingWithdrawalCount"`
-	OpenKYCCount            int64   `json:"openKycCount"`
-	GrossVolumePaidIDR      int64   `json:"grossVolumePaidIdr"`
-	PlatformFeePaidIDR      int64   `json:"platformFeePaidIdr"`
-	PaymentSuccessRateBps   int64   `json:"paymentSuccessRateBps"`
-	PlatformVolume          []int64 `json:"platformVolume,omitempty"`
+	MerchantCount          int64   `json:"merchantCount"`
+	BuyerCount             int64   `json:"buyerCount"`
+	OrderCount             int64   `json:"orderCount"`
+	PaymentCount           int64   `json:"paymentCount"`
+	PendingWithdrawalCount int64   `json:"pendingWithdrawalCount"`
+	OpenKYCCount           int64   `json:"openKycCount"`
+	GrossVolumePaidIDR     int64   `json:"grossVolumePaidIdr"`
+	PlatformFeePaidIDR     int64   `json:"platformFeePaidIdr"`
+	PaymentSuccessRateBps  int64   `json:"paymentSuccessRateBps"`
+	PlatformVolume         []int64 `json:"platformVolume,omitempty"`
 }
 
 // Merchant maps features/admin AdminMerchant.
@@ -107,9 +107,9 @@ type Withdrawal struct {
 
 // InventorySnapshot maps AdminInventorySnapshot (redacted; no secrets).
 type InventorySnapshot struct {
-	Products []StockProduct     `json:"products"`
-	Items    []StockItem        `json:"items"`
-	Schema   []InventoryField   `json:"schema"`
+	Products []StockProduct   `json:"products"`
+	Items    []StockItem      `json:"items"`
+	Schema   []InventoryField `json:"schema"`
 }
 
 // StockProduct maps AdminStockProduct.
@@ -174,25 +174,25 @@ type Review struct {
 
 // UserLookup is the impersonation-target read model (no secrets).
 type UserLookup struct {
-	ID               string  `json:"id"`
-	Name             string  `json:"name"`
-	Email            string  `json:"email"`
-	Status           string  `json:"status"`
-	IsAdmin          bool    `json:"isAdmin"`
-	OwnerMerchantID  *string `json:"ownerMerchantId,omitempty"`
-	Impersonatable   bool    `json:"impersonatable"`
-	CreatedAt        string  `json:"createdAt"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	Email           string  `json:"email"`
+	Status          string  `json:"status"`
+	IsAdmin         bool    `json:"isAdmin"`
+	OwnerMerchantID *string `json:"ownerMerchantId,omitempty"`
+	Impersonatable  bool    `json:"impersonatable"`
+	CreatedAt       string  `json:"createdAt"`
 }
 
 // ListFilter is shared cursor/status/date filtering.
 type ListFilter struct {
-	Status   string
-	Source   string
-	Query    string
-	From     *time.Time
-	To       *time.Time
-	Cursor   string
-	Limit    int32
+	Status string
+	Source string
+	Query  string
+	From   *time.Time
+	To     *time.Time
+	Cursor string
+	Limit  int32
 }
 
 // DefaultListLimit and MaxListLimit bound admin list/export reads.

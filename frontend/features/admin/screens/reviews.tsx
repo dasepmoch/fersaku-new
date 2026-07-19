@@ -211,9 +211,7 @@ function ReviewModeration() {
           target={action.reviewId}
           danger={action.danger}
           auditHandledExternally
-          onConfirm={(reason) =>
-            update(action.reviewId, action.status, reason)
-          }
+          onConfirm={(reason) => update(action.reviewId, action.status, reason)}
           onClose={() => {
             setAction(null);
             idemRef.current = null;

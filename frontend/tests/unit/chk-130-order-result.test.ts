@@ -238,9 +238,8 @@ describe("CHK-130 mock path", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { getOrderResult } = await import(
-      "@/features/commerce/order-result/api"
-    );
+    const { getOrderResult } =
+      await import("@/features/commerce/order-result/api");
     const result = await getOrderResult("FRS-240712-1848");
     expect(result?.displayState).toBe("success");
     expect(result?.productTitle).toBe("AI Prompt Pack");

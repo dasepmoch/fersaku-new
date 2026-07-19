@@ -79,7 +79,11 @@ export function redactObjectSecretsForLog(
       out[k] = "[redacted]";
       continue;
     }
-    if (typeof v === "string" && /https?:\/\/.+/i.test(v) && /X-Amz|Signature|presign/i.test(v)) {
+    if (
+      typeof v === "string" &&
+      /https?:\/\/.+/i.test(v) &&
+      /X-Amz|Signature|presign/i.test(v)
+    ) {
       out[k] = "[redacted-url]";
       continue;
     }
@@ -114,7 +118,10 @@ export function formatObjectUpdatedLabel(iso: string | undefined): string {
 }
 
 /** Display filename from File or fallback from content type. */
-export function displayFileName(file: File | null | undefined, fallback = "file"): string {
+export function displayFileName(
+  file: File | null | undefined,
+  fallback = "file",
+): string {
   if (file?.name?.trim()) return file.name.trim();
   return fallback;
 }

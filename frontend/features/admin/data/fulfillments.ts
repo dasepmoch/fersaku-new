@@ -130,11 +130,7 @@ export async function listAdminFulfillmentsPage(
     },
     signal,
   });
-  return mapAdminListPage(
-    response.data,
-    response.meta,
-    mapAdminFulfillmentDto,
-  );
+  return mapAdminListPage(response.data, response.meta, mapAdminFulfillmentDto);
 }
 
 export async function getAdminFulfillment(
@@ -142,9 +138,7 @@ export async function getAdminFulfillment(
   signal?: AbortSignal,
 ): Promise<AdminFulfillment | null> {
   if (shouldUseMockFixtures("adminRead")) {
-    return (
-      demoAdminFulfillments().find((r) => r.id === deliveryId) || null
-    );
+    return demoAdminFulfillments().find((r) => r.id === deliveryId) || null;
   }
 
   const response = await apiRequest<DetailEnvelope>(

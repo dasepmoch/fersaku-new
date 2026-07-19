@@ -103,7 +103,10 @@ describe("AUT-110 fragment token helpers", () => {
 
   it("detects forbidden query/path token placement", () => {
     expect(
-      hasForbiddenTokenInLocation({ search: "?token=leak", pathname: "/account/verify" }),
+      hasForbiddenTokenInLocation({
+        search: "?token=leak",
+        pathname: "/account/verify",
+      }),
     ).toBe(true);
     expect(
       hasForbiddenTokenInLocation({
@@ -131,11 +134,7 @@ describe("AUT-110 fragment token helpers", () => {
       location,
       history: {
         state: null,
-        replaceState: (
-          state: unknown,
-          _title: string,
-          url?: string | null,
-        ) => {
+        replaceState: (state: unknown, _title: string, url?: string | null) => {
           replaceState(state, _title, url);
           if (typeof url === "string") {
             location.hash = "";
@@ -145,11 +144,7 @@ describe("AUT-110 fragment token helpers", () => {
       },
     });
     scrubUrlFragment();
-    expect(replaceState).toHaveBeenCalledWith(
-      null,
-      "",
-      "/account/verify",
-    );
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/account/verify");
     expect(location.hash).toBe("");
     expect(location.href).not.toMatch(/secret_scrub_me/);
     vi.unstubAllGlobals();
@@ -269,21 +264,23 @@ describe("AUT-110 buyer magic-link API", () => {
 
   it("API request posts email only and returns generic success", async () => {
     installApiAuth();
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      expect(url).toContain("/v1/auth/magic-link/request");
-      expect(init?.method).toBe("POST");
-      const body = JSON.parse(String(init?.body));
-      expect(body).toEqual({ email: "buyer@example.com" });
-      expect(body).not.toHaveProperty("token");
-      expect(body).not.toHaveProperty("password");
-      return jsonResponse(
-        envelope({
-          message:
-            "If an account exists for that email, a sign-in link has been sent",
-        }),
-      );
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        expect(url).toContain("/v1/auth/magic-link/request");
+        expect(init?.method).toBe("POST");
+        const body = JSON.parse(String(init?.body));
+        expect(body).toEqual({ email: "buyer@example.com" });
+        expect(body).not.toHaveProperty("token");
+        expect(body).not.toHaveProperty("password");
+        return jsonResponse(
+          envelope({
+            message:
+              "If an account exists for that email, a sign-in link has been sent",
+          }),
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await requestBuyerMagicLink(
@@ -321,41 +318,46 @@ describe("AUT-110 buyer magic-link API", () => {
     bindSessionQueryClient(qc);
     const secret = "opaque_magic_one_time";
 
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/auth/magic-link/consume") && init?.method === "POST") {
-        expect(url).not.toMatch(/token=/);
-        const body = JSON.parse(String(init.body));
-        expect(body).toEqual({ token: secret });
-        return jsonResponse(
-          envelope({
-            sessionId: "sess_buyer",
-            csrfToken: "csrf_magic_raw",
-            mfaRequired: false,
-            user: { id: "buyer_1" },
-          }),
-        );
-      }
-      if (url.includes("/v1/auth/session")) {
-        return jsonResponse(
-          envelope({
-            userId: "buyer_1",
-            sessionId: "sess_buyer",
-            surface: "BUYER",
-            email: "buyer@example.com",
-            name: "Buyer",
-            mfaEnabled: false,
-            mfaVerified: true,
-            emailVerified: true,
-            status: "ACTIVE",
-            csrfToken: "csrf_session_buyer",
-            permissions: ["buyer.*"],
-            roles: ["buyer"],
-          }),
-        );
-      }
-      return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (
+          url.includes("/v1/auth/magic-link/consume") &&
+          init?.method === "POST"
+        ) {
+          expect(url).not.toMatch(/token=/);
+          const body = JSON.parse(String(init.body));
+          expect(body).toEqual({ token: secret });
+          return jsonResponse(
+            envelope({
+              sessionId: "sess_buyer",
+              csrfToken: "csrf_magic_raw",
+              mfaRequired: false,
+              user: { id: "buyer_1" },
+            }),
+          );
+        }
+        if (url.includes("/v1/auth/session")) {
+          return jsonResponse(
+            envelope({
+              userId: "buyer_1",
+              sessionId: "sess_buyer",
+              surface: "BUYER",
+              email: "buyer@example.com",
+              name: "Buyer",
+              mfaEnabled: false,
+              mfaVerified: true,
+              emailVerified: true,
+              status: "ACTIVE",
+              csrfToken: "csrf_session_buyer",
+              permissions: ["buyer.*"],
+              roles: ["buyer"],
+            }),
+          );
+        }
+        return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await consumeBuyerMagicLink(
@@ -375,7 +377,9 @@ describe("AUT-110 buyer magic-link API", () => {
     expect(snap.claims?.surface).toBe("buyer");
 
     for (const mut of qc.getMutationCache().getAll()) {
-      expect(JSON.stringify(mut.options.mutationKey ?? [])).not.toContain(secret);
+      expect(JSON.stringify(mut.options.mutationKey ?? [])).not.toContain(
+        secret,
+      );
     }
   });
 
@@ -438,7 +442,9 @@ describe("AUT-110 source architecture (no query token)", () => {
     );
     expect(src).toMatch(/scrubUrlFragment/);
     expect(src).toMatch(/parseMagicLinkFragmentToken/);
-    expect(src).toMatch(/useBuyerMagicLinkConsumeMutation|consumeBuyerMagicLink/);
+    expect(src).toMatch(
+      /useBuyerMagicLinkConsumeMutation|consumeBuyerMagicLink/,
+    );
     expect(src).not.toMatch(/searchParams\.get\(["']token["']\)/);
   });
 });

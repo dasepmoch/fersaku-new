@@ -172,7 +172,6 @@ export function useApiKeyRevealMemory() {
       document.removeEventListener("visibilitychange", onVis);
       clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount/unmount only
   }, []);
 
   return { reveal, hold, clear };

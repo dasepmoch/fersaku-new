@@ -62,8 +62,12 @@ const JITTER_MS = 400;
  * Faster initially; slower when hidden; honors Retry-After.
  */
 export function nextCheckoutPollDelayMs(options: PollBackoffOptions): number {
-  const { attempt, hidden = false, retryAfterSeconds, random = Math.random } =
-    options;
+  const {
+    attempt,
+    hidden = false,
+    retryAfterSeconds,
+    random = Math.random,
+  } = options;
 
   if (
     retryAfterSeconds !== undefined &&
@@ -145,15 +149,16 @@ export function createCheckoutIntentPollController<T>(
   handlers: IntentPollHandlers<T>,
 ) {
   const schedule =
-    handlers.schedule ??
-    ((fn: () => void, ms: number) => setTimeout(fn, ms));
+    handlers.schedule ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
   const clearSchedule =
     handlers.clearSchedule ??
     ((id: ReturnType<typeof setTimeout>) => clearTimeout(id));
   const isHidden =
     handlers.isDocumentHidden ??
     (() =>
-      typeof document !== "undefined" ? document.visibilityState === "hidden" : false);
+      typeof document !== "undefined"
+        ? document.visibilityState === "hidden"
+        : false);
 
   let timer: ReturnType<typeof setTimeout> | null = null;
   let ac: AbortController | null = null;

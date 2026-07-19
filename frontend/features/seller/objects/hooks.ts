@@ -30,10 +30,7 @@ export function useStoreObjectMeta(
   return useAppQuery({
     queryKey: queryKeys.seller.objectMeta(storeId, objectId || "_"),
     queryFn: (signal) =>
-      getStoreObjectMeta(
-        { storeId, objectId: objectId as string },
-        signal,
-      ),
+      getStoreObjectMeta({ storeId, objectId: objectId as string }, signal),
     enabled: Boolean(storeId && objectId),
     surface: "private",
   });

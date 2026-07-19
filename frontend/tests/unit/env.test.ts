@@ -118,7 +118,9 @@ describe("server-only API_INTERNAL_URL (INT-030)", () => {
     delete process.env.API_INTERNAL_URL;
 
     expect(() => getApiInternalUrl()).toThrow(/API_INTERNAL_URL is required/);
-    expect(() => requireApiInternalUrl()).toThrow(/API_INTERNAL_URL is required/);
+    expect(() => requireApiInternalUrl()).toThrow(
+      /API_INTERNAL_URL is required/,
+    );
     expect(() => assertSafePublicEnvironment()).toThrow(
       /API_INTERNAL_URL is required/,
     );

@@ -38,8 +38,7 @@ export function ImpersonationDialog({
     }
   })();
   const canStartPermission =
-    !isApi ||
-    claimsHavePermission(claims?.permissions, "impersonation.start");
+    !isApi || claimsHavePermission(claims?.permissions, "impersonation.start");
   const canSupportWrite =
     !isApi ||
     claimsHavePermission(claims?.permissions, "impersonation.support_write");
@@ -116,7 +115,9 @@ export function ImpersonationDialog({
           );
           return;
         }
-        setStartError(error.message || "Could not start impersonation session.");
+        setStartError(
+          error.message || "Could not start impersonation session.",
+        );
         return;
       }
       setStartError(

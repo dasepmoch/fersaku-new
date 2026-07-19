@@ -22,7 +22,9 @@ const SECRET_KEY_RE =
   /secret|password|passwd|pwd|token|credential|api[_-]?key|payload|encrypted/i;
 
 /** Catalog wire type → existing inventory type label. */
-export function mapInventoryProductTypeLabel(wireType: string | undefined): string {
+export function mapInventoryProductTypeLabel(
+  wireType: string | undefined,
+): string {
   const t = (wireType || "").trim().toLowerCase();
   if (t === "code") return "Single code";
   if (t === "download") return "Download";
@@ -67,7 +69,9 @@ function formatStockCreatedAt(iso: string | undefined): string {
   }
 }
 
-export function mapInventoryFieldDef(dto: InventoryFieldDefDto): InventoryField {
+export function mapInventoryFieldDef(
+  dto: InventoryFieldDefDto,
+): InventoryField {
   return {
     key: dto.key,
     label: dto.label,
@@ -77,7 +81,9 @@ export function mapInventoryFieldDef(dto: InventoryFieldDefDto): InventoryField 
   };
 }
 
-export function mapInventorySchemaDto(dto: InventorySchemaDto): InventorySchemaView {
+export function mapInventorySchemaDto(
+  dto: InventorySchemaDto,
+): InventorySchemaView {
   return {
     id: dto.id,
     productId: dto.productId,
@@ -139,10 +145,15 @@ export function mapInventoryStockItemMaskedDto(
 }
 
 export function deliveryStringFromFields(fields: InventoryField[]): string {
-  return fields.map((f) => f.key).filter(Boolean).join("|");
+  return fields
+    .map((f) => f.key)
+    .filter(Boolean)
+    .join("|");
 }
 
-export function fieldsToPutBody(fields: InventoryField[]): InventoryFieldDefDto[] {
+export function fieldsToPutBody(
+  fields: InventoryField[],
+): InventoryFieldDefDto[] {
   return fields.map((f) => ({
     key: f.key.trim(),
     label: f.label.trim(),
@@ -158,7 +169,10 @@ export function parseImportLines(
   fields: InventoryField[],
   delimiter = "|",
 ): Record<string, string>[] {
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   return lines.map((line) => {
     const parts = line.split(delimiter);
     const row: Record<string, string> = {};
@@ -180,7 +194,9 @@ const FORBIDDEN_CACHE_KEYS = [
 ] as const;
 
 /** Guard: list/detail product never carries secret bags. */
-export function assertNoSecretsInInventoryProduct(product: InventoryProduct): void {
+export function assertNoSecretsInInventoryProduct(
+  product: InventoryProduct,
+): void {
   const json = JSON.stringify(product);
   for (const key of FORBIDDEN_CACHE_KEYS) {
     if (json.includes(`"${key}"`)) {

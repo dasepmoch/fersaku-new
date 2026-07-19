@@ -258,21 +258,21 @@ func (s *GatewayService) RegisterWebhookEndpoint(ctx context.Context, merchantID
 
 // CreatePaymentRequest is POST /v1/gateway/payment-intents.
 type CreatePaymentRequest struct {
-	Auth               gateway.AuthContext
-	MerchantReference  string
-	AmountIDR          int64
-	Currency           string
-	Description        string
-	CustomerReference  string
-	CustomerEmail      string
-	ExpiresInMinutes   int
-	SuccessURL         string
-	FailureURL         string
-	WebhookEndpointID  string
+	Auth              gateway.AuthContext
+	MerchantReference string
+	AmountIDR         int64
+	Currency          string
+	Description       string
+	CustomerReference string
+	CustomerEmail     string
+	ExpiresInMinutes  int
+	SuccessURL        string
+	FailureURL        string
+	WebhookEndpointID string
 	// WebhookURL if non-empty must be rejected (legacy).
-	WebhookURL      string
-	Metadata        json.RawMessage
-	IdempotencyKey  string
+	WebhookURL     string
+	Metadata       json.RawMessage
+	IdempotencyKey string
 }
 
 // CreatePaymentResult is create response payload.

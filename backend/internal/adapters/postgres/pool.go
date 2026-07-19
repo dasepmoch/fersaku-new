@@ -30,7 +30,7 @@ func DefaultPoolConfig() PoolConfig {
 	return PoolConfig{
 		MaxConns:          20,
 		MinConns:          0,
-		MaxConnLifetime:       30 * time.Minute,
+		MaxConnLifetime:   30 * time.Minute,
 		MaxConnIdleTime:   5 * time.Minute,
 		HealthCheckPeriod: 30 * time.Second,
 		ConnectTimeout:    5 * time.Second,

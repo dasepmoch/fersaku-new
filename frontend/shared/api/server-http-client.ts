@@ -13,10 +13,7 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireApiInternalUrl } from "@/shared/config/env";
 import { ApiError } from "./api-error";
-import {
-  classifyApiError,
-  parseRetryAfterHeader,
-} from "./error-policy";
+import { classifyApiError, parseRetryAfterHeader } from "./error-policy";
 import { HTTP_HEADERS, parseProblemPayload } from "./http-client";
 import { PROBLEM_CODES } from "./problem-codes";
 import { reportTransportError } from "@/shared/observability/reporter";
@@ -41,7 +38,7 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 
 export type ServerRequestPrivacy = "private" | "public";
 
-export type ServerRequestOptions<TBody, TResponse> = Omit<
+export type ServerRequestOptions<TBody = unknown> = Omit<
   RequestInit,
   "body" | "signal" | "credentials"
 > & {
@@ -190,7 +187,7 @@ function sanitizeServerRouteTemplate(pathname: string): string {
  */
 export function buildServerApiUrl(
   pathname: string,
-  query?: ServerRequestOptions<never, never>["query"],
+  query?: ServerRequestOptions<never>["query"],
   baseUrl?: string,
 ): URL {
   const base = (baseUrl ?? requireApiInternalUrl()).replace(/\/+$/, "");
@@ -236,7 +233,7 @@ export async function getServerRequestForwarding(): Promise<{
  */
 export async function serverApiRequest<TResponse, TBody = never>(
   pathname: string,
-  options: ServerRequestOptions<TBody, TResponse> = {},
+  options: ServerRequestOptions<TBody> = {},
 ): Promise<TResponse> {
   const {
     query,
@@ -337,10 +334,7 @@ export async function serverApiRequest<TResponse, TBody = never>(
   // Private SSR: never share cache across users / CDN
   const fetchCache: RequestCache =
     privacy === "private" ? "no-store" : (cache ?? "default");
-  const fetchNext =
-    privacy === "private"
-      ? undefined
-      : next;
+  const fetchNext = privacy === "private" ? undefined : next;
 
   try {
     const url = buildServerApiUrl(pathname, query, baseUrl);
@@ -380,12 +374,11 @@ export async function serverApiRequest<TResponse, TBody = never>(
         responseRequestId,
       );
 
-      const problemBody =
-        problem ?? {
-          code: PROBLEM_CODES.HTTP_ERROR,
-          message: `Request failed with status ${response.status}`,
-          requestId: responseRequestId,
-        };
+      const problemBody = problem ?? {
+        code: PROBLEM_CODES.HTTP_ERROR,
+        message: `Request failed with status ${response.status}`,
+        requestId: responseRequestId,
+      };
       const apiError = new ApiError(
         response.status,
         problemBody,
@@ -519,7 +512,7 @@ export function rethrowForServerComponent(error: unknown): never {
  */
 export async function serverApiRequestOrNotFound<TResponse, TBody = never>(
   pathname: string,
-  options?: ServerRequestOptions<TBody, TResponse>,
+  options?: ServerRequestOptions<TBody>,
 ): Promise<TResponse> {
   try {
     return await serverApiRequest<TResponse, TBody>(pathname, options);

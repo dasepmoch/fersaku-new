@@ -44,9 +44,9 @@ import {
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -298,9 +298,7 @@ describe("SEL-240 API adapters", () => {
     const detail = await getSellerInventoryDetail("store_live", "prod_live_1");
     expect(detail?.items).toHaveLength(1);
     expect(detail?.items[0]).not.toHaveProperty("secrets");
-    expect(() =>
-      assertNoSecretsInStockItems(detail!.items),
-    ).not.toThrow();
+    expect(() => assertNoSecretsInStockItems(detail!.items)).not.toThrow();
   });
 
   it("reveal posts with requireRecentMfa and keeps secrets out of list path", async () => {
@@ -401,7 +399,12 @@ describe("SEL-240 query keys", () => {
     expect(productKey[1]).toBe("store_a");
     expect(detailKey).toContain("detail");
     expect(schemaKey).toContain("schema");
-    const serialized = JSON.stringify([listKey, productKey, detailKey, schemaKey]);
+    const serialized = JSON.stringify([
+      listKey,
+      productKey,
+      detailKey,
+      schemaKey,
+    ]);
     expect(serialized).not.toMatch(/secret|password|mfa|proof/i);
   });
 

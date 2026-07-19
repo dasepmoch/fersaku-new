@@ -71,18 +71,18 @@ func (h *AuthzHandler) SellerMeMerchant(w http.ResponseWriter, r *http.Request) 
 		})
 	}
 	presenters.WriteData(w, r, http.StatusOK, map[string]any{
-		"merchantId":           boot.MerchantID,
-		"displayName":          boot.DisplayName,
-		"status":               boot.Status,
-		"roleInMerchant":       boot.RoleInMerchant,
-		"ownerUserId":          boot.OwnerUserID,
-		"memberships":          memberships,
-		"stores":               stores,
-		"canonicalStoreId":     boot.CanonicalStoreID,
-		"currentStoreId":       boot.CurrentStoreID,
-		"capabilities":         boot.Capabilities,
-		"onboardingState":      boot.OnboardingState,
-		"onboardingCompleted":  boot.OnboardingCompleted,
+		"merchantId":          boot.MerchantID,
+		"displayName":         boot.DisplayName,
+		"status":              boot.Status,
+		"roleInMerchant":      boot.RoleInMerchant,
+		"ownerUserId":         boot.OwnerUserID,
+		"memberships":         memberships,
+		"stores":              stores,
+		"canonicalStoreId":    boot.CanonicalStoreID,
+		"currentStoreId":      boot.CurrentStoreID,
+		"capabilities":        boot.Capabilities,
+		"onboardingState":     boot.OnboardingState,
+		"onboardingCompleted": boot.OnboardingCompleted,
 	})
 }
 

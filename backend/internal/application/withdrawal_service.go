@@ -19,15 +19,15 @@ import (
 
 // WithdrawalService owns bank accounts, quotes, reserve, disburse, and outcome resolution (BE-350).
 type WithdrawalService struct {
-	Store          WithdrawalStore
-	Ledger         *LedgerService
-	Fees           *FeeService
-	Disburse       ports.DisbursementProvider
-	IDs            ports.IDGenerator
-	Clock          ports.Clock
-	Log            ports.Logger
-	EncryptionKey  string
-	AccountScope   string
+	Store         WithdrawalStore
+	Ledger        *LedgerService
+	Fees          *FeeService
+	Disburse      ports.DisbursementProvider
+	IDs           ports.IDGenerator
+	Clock         ports.Clock
+	Log           ports.Logger
+	EncryptionKey string
+	AccountScope  string
 	// DefaultPaymentMode for seller ops (SANDBOX local / LIVE prod).
 	DefaultPaymentMode string
 	// AutoApprove when true (local/test): REQUESTED → APPROVED → disburse without admin.

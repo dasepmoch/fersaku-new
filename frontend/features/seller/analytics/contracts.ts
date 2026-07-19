@@ -3,10 +3,7 @@
  */
 
 export type AnalyticsTimezone =
-  | "Asia/Jakarta"
-  | "Asia/Makassar"
-  | "Asia/Jayapura"
-  | "UTC";
+  "Asia/Jakarta" | "Asia/Makassar" | "Asia/Jayapura" | "UTC";
 
 /** Wire channel enum used by traffic query. */
 export type AnalyticsChannel =
@@ -22,12 +19,7 @@ export type AnalyticsChannel =
 
 /** UI channel filter labels (exact existing select options). */
 export type TrafficChannelLabel =
-  | "Semua channel"
-  | "Social"
-  | "Video"
-  | "Organic"
-  | "Direct"
-  | "Email";
+  "Semua channel" | "Social" | "Video" | "Organic" | "Direct" | "Email";
 
 export type OverviewRangeLabel = "7 hari" | "30 hari";
 export type TrafficRangeLabel = "7 hari" | "30 hari" | "90 hari";

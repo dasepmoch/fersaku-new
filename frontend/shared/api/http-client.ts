@@ -1,14 +1,8 @@
 import type { ZodTypeAny } from "zod";
-import {
-  getApiInternalUrl,
-  getBrowserApiBaseUrl,
-} from "@/shared/config/env";
+import { getApiInternalUrl, getBrowserApiBaseUrl } from "@/shared/config/env";
 import type { ApiProblem } from "./contracts";
 import { ApiError } from "./api-error";
-import {
-  classifyApiError,
-  parseRetryAfterHeader,
-} from "./error-policy";
+import { classifyApiError, parseRetryAfterHeader } from "./error-policy";
 import { PROBLEM_CODES } from "./problem-codes";
 import {
   METRIC_NAMES,
@@ -33,7 +27,7 @@ export const HTTP_HEADERS = {
   CONTENT_TYPE: "Content-Type",
 } as const;
 
-export type RequestOptions<TBody, TResponse> = Omit<
+export type RequestOptions<TBody = unknown> = Omit<
   RequestInit,
   "body" | "signal"
 > & {
@@ -110,7 +104,7 @@ function isUnsafeMethod(method: string | undefined): boolean {
  */
 export function buildApiUrl(
   pathname: string,
-  query?: RequestOptions<never, never>["query"],
+  query?: RequestOptions<never>["query"],
 ): string | URL {
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
   let base = getBrowserApiBaseUrl();
@@ -123,8 +117,7 @@ export function buildApiUrl(
   if (!base) {
     const params = new URLSearchParams();
     Object.entries(query || {}).forEach(([key, value]) => {
-      if (value !== null && value !== undefined)
-        params.set(key, String(value));
+      if (value !== null && value !== undefined) params.set(key, String(value));
     });
     const qs = params.toString();
     return qs ? `${path}?${qs}` : path;
@@ -216,7 +209,12 @@ export function parseProblemPayload(
   const source = nested ?? root;
   const code = source.code;
   const message = source.message;
-  if (typeof code !== "string" || !code || typeof message !== "string" || !message) {
+  if (
+    typeof code !== "string" ||
+    !code ||
+    typeof message !== "string" ||
+    !message
+  ) {
     return null;
   }
 
@@ -340,7 +338,7 @@ function sanitizeRouteTemplate(pathname: string): string {
 export async function apiBinaryRequest(
   pathname: string,
   options: Omit<
-    RequestOptions<Record<string, unknown> | undefined, never>,
+    RequestOptions<Record<string, unknown> | undefined>,
     "schema" | "requireSchema" | "body"
   > & {
     body?: Record<string, unknown>;
@@ -398,11 +396,7 @@ export async function apiBinaryRequest(
   if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
   if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
   let recentMfaProof = explicitRecentMfa;
-  if (
-    !recentMfaProof &&
-    requireRecentMfa &&
-    sessionHooks.getRecentMfaProof
-  ) {
+  if (!recentMfaProof && requireRecentMfa && sessionHooks.getRecentMfaProof) {
     try {
       recentMfaProof = await sessionHooks.getRecentMfaProof();
     } catch {
@@ -431,8 +425,7 @@ export async function apiBinaryRequest(
     headers.set(HTTP_HEADERS.CSRF, csrfToken);
   }
 
-  const effectiveRequestId =
-    headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
+  const effectiveRequestId = headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
 
   try {
     const response = await fetch(buildApiUrl(pathname, query), {
@@ -467,12 +460,11 @@ export async function apiBinaryRequest(
         effectiveRequestId,
         responseRequestId,
       );
-      const problemBody =
-        problem ?? {
-          code: PROBLEM_CODES.HTTP_ERROR,
-          message: `Request failed with status ${response.status}`,
-          requestId: responseRequestId,
-        };
+      const problemBody = problem ?? {
+        code: PROBLEM_CODES.HTTP_ERROR,
+        message: `Request failed with status ${response.status}`,
+        requestId: responseRequestId,
+      };
       const apiError = new ApiError(
         response.status,
         problemBody,
@@ -505,7 +497,10 @@ export async function apiBinaryRequest(
     };
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    if (timedOut || (error instanceof DOMException && error.name === "TimeoutError")) {
+    if (
+      timedOut ||
+      (error instanceof DOMException && error.name === "TimeoutError")
+    ) {
       const apiError = new ApiError(504, {
         code: PROBLEM_CODES.REQUEST_TIMEOUT,
         message: "The request timed out.",
@@ -538,7 +533,7 @@ export async function apiBinaryRequest(
 
 export async function apiRequest<TResponse, TBody = unknown>(
   pathname: string,
-  options: RequestOptions<TBody, TResponse> = {},
+  options: RequestOptions<TBody> = {},
 ): Promise<TResponse> {
   const {
     query,
@@ -589,11 +584,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
   if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
   if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
   let recentMfaProof = explicitRecentMfa;
-  if (
-    !recentMfaProof &&
-    requireRecentMfa &&
-    sessionHooks.getRecentMfaProof
-  ) {
+  if (!recentMfaProof && requireRecentMfa && sessionHooks.getRecentMfaProof) {
     try {
       recentMfaProof = await sessionHooks.getRecentMfaProof();
     } catch {
@@ -623,8 +614,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
     headers.set(HTTP_HEADERS.CSRF, csrfToken);
   }
 
-  const effectiveRequestId =
-    headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
+  const effectiveRequestId = headers.get(HTTP_HEADERS.REQUEST_ID) || requestId;
 
   try {
     const response = await fetch(buildApiUrl(pathname, query), {
@@ -660,12 +650,11 @@ export async function apiRequest<TResponse, TBody = unknown>(
         responseRequestId,
       );
 
-      const problemBody =
-        problem ?? {
-          code: PROBLEM_CODES.HTTP_ERROR,
-          message: `Request failed with status ${response.status}`,
-          requestId: responseRequestId,
-        };
+      const problemBody = problem ?? {
+        code: PROBLEM_CODES.HTTP_ERROR,
+        message: `Request failed with status ${response.status}`,
+        requestId: responseRequestId,
+      };
       const apiError = new ApiError(
         response.status,
         problemBody,

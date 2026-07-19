@@ -70,10 +70,15 @@ export function claimsHavePermission(
  * Authenticated-admin surface gate (profile / subject-owned me routes).
  * No dedicated page permission code in BE registry.
  */
-export function claimsAreAuthenticatedAdmin(claims: {
-  subjectId?: string | null;
-  surface?: string | null;
-} | null | undefined): boolean {
+export function claimsAreAuthenticatedAdmin(
+  claims:
+    | {
+        subjectId?: string | null;
+        surface?: string | null;
+      }
+    | null
+    | undefined,
+): boolean {
   return Boolean(claims?.subjectId && claims.surface === "admin");
 }
 

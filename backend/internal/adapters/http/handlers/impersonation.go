@@ -16,9 +16,9 @@ import (
 
 // ImpersonationHandler serves BE-520 admin impersonation endpoints.
 type ImpersonationHandler struct {
-	Svc        *application.ImpersonationService
-	CookieName string
-	Secure     bool
+	Svc            *application.ImpersonationService
+	CookieName     string
+	Secure         bool
 	SameSiteStrict bool
 }
 

@@ -139,7 +139,10 @@ describe("module architecture boundaries", () => {
       if (allowed.has(relative)) continue;
       if (relative.startsWith("tests/")) continue;
       const content = readFileSync(file, "utf8");
-      if (/\bisLiveApi\s*\(/.test(content) || /from\s*["']@\/shared\/data\/mode["']/.test(content)) {
+      if (
+        /\bisLiveApi\s*\(/.test(content) ||
+        /from\s*["']@\/shared\/data\/mode["']/.test(content)
+      ) {
         violations.push(relative);
       }
     }
@@ -506,7 +509,9 @@ describe("module architecture boundaries", () => {
     );
     expect(announcementsSource).toMatch(/campaignCommandsEnabled/);
     expect(announcementsSource).toMatch(/disabled=\{!commandsEnabled\}/);
-    expect(announcementsSource).toMatch(/if\s*\(\s*!commandsEnabled\s*\)\s*return/);
+    expect(announcementsSource).toMatch(
+      /if\s*\(\s*!commandsEnabled\s*\)\s*return/,
+    );
     expect(announcementsSource).toMatch(
       /fixturesAllowed\s*\?\s*campaignSeed\s*:\s*\[\]/,
     );
@@ -559,13 +564,13 @@ describe("module architecture boundaries", () => {
     expect(helpSource).toMatch(/useState/);
     expect(helpSource).toMatch(/setQuery|query/);
     expect(helpSource).toMatch(/HELP_CATEGORIES|onClick/);
-    expect(helpSource).not.toMatch(
-      /apiRequest|\/v1\/help|fetch\(|searchHelp/i,
-    );
+    expect(helpSource).not.toMatch(/apiRequest|\/v1\/help|fetch\(|searchHelp/i);
 
     const careersPage = path.join(root, "app/(company)/careers/page.tsx");
     const careersSource = readFileSync(careersPage, "utf8");
-    expect(careersSource).toMatch(/CAREERS_APPLY_MAIL\s*=\s*["']careers@fersaku\.id["']/);
+    expect(careersSource).toMatch(
+      /CAREERS_APPLY_MAIL\s*=\s*["']careers@fersaku\.id["']/,
+    );
     expect(careersSource).toMatch(/mailto:\$\{CAREERS_APPLY_MAIL\}/);
     expect(careersSource).toMatch(/Application:/);
     expect(careersSource).not.toMatch(/roles\.map\(\(r\)\s*=>\s*\(\s*<button/);
@@ -577,7 +582,10 @@ describe("module architecture boundaries", () => {
 
     const docsPage = path.join(root, "app/docs/api/page.tsx");
     const docsSource = readFileSync(docsPage, "utf8");
-    expect(docsSource).toMatch(/href=\{`#\$\{sectionId\(x\)\}`\}|#autentikasi|#api-playground|#errors/);
+    // Scoped: in-page nav uses hash hrefs; section anchors exist (not href="#").
+    expect(docsSource).toMatch(/href=\{`#\$\{s\.id\}`\}/);
+    expect(docsSource).toMatch(/id:\s*["']autentikasi["']/);
+    expect(docsSource).toMatch(/id:\s*["']api-playground["']/);
     expect(docsSource).not.toMatch(/href="#"/);
     expect(docsSource).toMatch(/navigator\.clipboard|writeText/);
     expect(docsSource).toMatch(/id="errors"/);
@@ -585,10 +593,10 @@ describe("module architecture boundaries", () => {
 
     const playground = path.join(root, "components/api-playground.tsx");
     const playgroundSource = readFileSync(playground, "utf8");
+    expect(playgroundSource).toMatch(/Frontend mock • no network request/);
     expect(playgroundSource).toMatch(
-      /Frontend mock • no network request/,
+      /getDomainSource\(["']publicCatalog["']\)/,
     );
-    expect(playgroundSource).toMatch(/getDomainSource\(["']publicCatalog["']\)/);
     expect(playgroundSource).toMatch(/playgroundSendEnabled/);
     expect(playgroundSource).toMatch(
       /disabled=\{!playgroundSendEnabled \|\| sending\}/,

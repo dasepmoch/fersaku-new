@@ -67,28 +67,28 @@ func ValidAPIAccessStatus(s string) bool {
 
 // AdminAction names matching FE AdminActionInput.
 const (
-	ActionBuyerSessionsRevoke         = "buyer.sessions.revoke"
-	ActionBuyerMagicLinkSend          = "buyer.magic_link.send"
-	ActionBuyerEmailChangeStart       = "buyer.email_change.start"
-	ActionReviewModerate              = "review.moderate"
-	ActionMerchantStatusUpdate        = "merchant.status.update"
-	ActionMerchantAPIAccessUpdate     = "merchant.api_access.update"
+	ActionBuyerSessionsRevoke          = "buyer.sessions.revoke"
+	ActionBuyerMagicLinkSend           = "buyer.magic_link.send"
+	ActionBuyerEmailChangeStart        = "buyer.email_change.start"
+	ActionReviewModerate               = "review.moderate"
+	ActionMerchantStatusUpdate         = "merchant.status.update"
+	ActionMerchantAPIAccessUpdate      = "merchant.api_access.update"
 	ActionMerchantAPICredentialsRotate = "merchant.api_credentials.rotate"
-	ActionOrderDeliveryResend         = "order.delivery.resend"
-	ActionPaymentProviderVerify       = "payment.provider.verify"
-	ActionWithdrawalReview            = "withdrawal.review"
+	ActionOrderDeliveryResend          = "order.delivery.resend"
+	ActionPaymentProviderVerify        = "payment.provider.verify"
+	ActionWithdrawalReview             = "withdrawal.review"
 )
 
 // EmergencyControl is a platform emergency switch row.
 type EmergencyControl struct {
-	SwitchName     string     `json:"switchName"`
-	Enabled        bool       `json:"enabled"`
-	Version        int64      `json:"version"`
-	Reason         string     `json:"reason"`
-	IncidentTicket string     `json:"incidentTicket,omitempty"`
-	UpdatedBy      *string    `json:"updatedBy,omitempty"`
-	EffectiveAt    time.Time  `json:"effectiveAt"`
-	UpdatedAt      time.Time  `json:"updatedAt"`
+	SwitchName     string    `json:"switchName"`
+	Enabled        bool      `json:"enabled"`
+	Version        int64     `json:"version"`
+	Reason         string    `json:"reason"`
+	IncidentTicket string    `json:"incidentTicket,omitempty"`
+	UpdatedBy      *string   `json:"updatedBy,omitempty"`
+	EffectiveAt    time.Time `json:"effectiveAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
 // AuditEvent is a search/detail read model (chain integrity full write is BE-530).
@@ -120,16 +120,16 @@ type AuditIntegrityMeta struct {
 
 // AuditExport is an async export job handle.
 type AuditExport struct {
-	ID               string     `json:"id"`
-	Status           string     `json:"status"`
-	RedactionPolicy  string     `json:"redactionPolicy"`
-	RequesterID      string     `json:"requesterId"`
-	Reason           string     `json:"reason"`
-	RowCount         *int64     `json:"rowCount,omitempty"`
-	ErrorMessage     *string    `json:"errorMessage,omitempty"`
-	ExpiresAt        *time.Time `json:"expiresAt,omitempty"`
-	CompletedAt      *time.Time `json:"completedAt,omitempty"`
-	CreatedAt        time.Time  `json:"createdAt"`
+	ID              string     `json:"id"`
+	Status          string     `json:"status"`
+	RedactionPolicy string     `json:"redactionPolicy"`
+	RequesterID     string     `json:"requesterId"`
+	Reason          string     `json:"reason"`
+	RowCount        *int64     `json:"rowCount,omitempty"`
+	ErrorMessage    *string    `json:"errorMessage,omitempty"`
+	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
+	CompletedAt     *time.Time `json:"completedAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }
 
 // PaymentMismatch is provider-paid / local-pending alert row.

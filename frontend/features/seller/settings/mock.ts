@@ -23,8 +23,9 @@ export function demoSellerProfile(): SellerProfile {
 }
 
 export function demoSellerBankAccounts(
-  _storeId = "demo",
+  _storeId: string = "demo",
 ): SellerBankAccount[] {
+  void _storeId;
   return [
     {
       id: "bank_bca_demo",

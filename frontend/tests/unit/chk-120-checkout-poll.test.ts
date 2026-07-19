@@ -332,9 +332,8 @@ describe("CHK-120 getCheckoutIntent API", () => {
       meta,
     } as never);
 
-    const { getCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { getCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     const intent = await getCheckoutIntent("pi_chk120_01");
     expect(intent.status).toBe("PENDING");
     expect(intent.qrString).toBe("000201010212CHK120");
@@ -350,9 +349,8 @@ describe("CHK-120 getCheckoutIntent API", () => {
     const domain = await import("@/shared/data/domain-source");
     vi.spyOn(domain, "shouldUseMockFixtures").mockReturnValue(true);
 
-    const { getCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { getCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     await expect(getCheckoutIntent("pi_x")).rejects.toThrow(/api-only|mock/i);
   });
 
@@ -364,9 +362,8 @@ describe("CHK-120 getCheckoutIntent API", () => {
     const http = await import("@/shared/api/http-client");
     const spy = vi.spyOn(http, "apiRequest");
 
-    const { simulateCheckoutPayment } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { simulateCheckoutPayment } =
+      await import("@/features/commerce/checkout/api");
     const result = await simulateCheckoutPayment({
       productId: "prod_01",
       storeSlug: "asep",
@@ -395,9 +392,8 @@ describe("CHK-120 getCheckoutIntent API", () => {
       }),
     );
 
-    const { getCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { getCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     await expect(getCheckoutIntent("pi_x")).rejects.toBeInstanceOf(ApiError);
   });
 });
@@ -406,7 +402,9 @@ describe("CHK-120 disposition freeze", () => {
   it("poll + QR live after create; expiry server-authoritative; no auto-create", () => {
     expect(CHECKOUT_QR_WALLET_SEMANTICS.poll).toMatch(/GET.*intents/i);
     expect(CHECKOUT_QR_WALLET_SEMANTICS.poll).toMatch(/PAID/i);
-    expect(CHECKOUT_QR_WALLET_SEMANTICS.qrDisplay).toMatch(/LIVE_AFTER_CREATE|qrString/i);
+    expect(CHECKOUT_QR_WALLET_SEMANTICS.qrDisplay).toMatch(
+      /LIVE_AFTER_CREATE|qrString/i,
+    );
     expect(CHECKOUT_QR_WALLET_SEMANTICS.expiryCountdown).toMatch(/expiresAt/i);
     expect(CHECKOUT_QR_WALLET_SEMANTICS.unknownNetworkOutcome).toMatch(
       /LOOKUP_RECOVERY|same idempotency/i,

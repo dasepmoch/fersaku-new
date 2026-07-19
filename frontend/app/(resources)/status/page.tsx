@@ -12,7 +12,11 @@ import {
 // Keep in sync with PUBLIC_STATUS_REVALIDATE_SECONDS in features/platform-status.
 export const revalidate = 60;
 
-function BannerIcon({ kind }: { kind: PublicPlatformStatusView["overallKind"] }) {
+function BannerIcon({
+  kind,
+}: {
+  kind: PublicPlatformStatusView["overallKind"];
+}) {
   if (kind === "ok") {
     return <CheckCircle2 className="size-5" />;
   }
@@ -28,7 +32,8 @@ export default async function StatusPage() {
       eyebrow="System status"
       title={
         <>
-          Status platform <em className="text-[#315d47]">{status.heroEmphasis}</em>
+          Status platform{" "}
+          <em className="text-[#315d47]">{status.heroEmphasis}</em>
         </>
       }
       description={status.description}

@@ -29,25 +29,25 @@ func (s *BuyerService) now() time.Time {
 
 // PurchaseSummary is a buyer-facing order list row (no secrets).
 type PurchaseSummary struct {
-	OrderID          string     `json:"orderId"`
-	OrderNumber      string     `json:"orderNumber"`
-	StoreID          string     `json:"storeId"`
-	StoreName        string     `json:"storeName,omitempty"`
-	StoreSlug        string     `json:"storeSlug,omitempty"`
-	PaymentStatus    string     `json:"paymentStatus"`
-	Source           string     `json:"source"`
-	Currency         string     `json:"currency"`
-	GrossIDR         int64      `json:"grossIdr"`
-	PaidAt           *time.Time `json:"paidAt,omitempty"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	ItemCount        int        `json:"itemCount"`
-	DeliveryStatus   string     `json:"deliveryStatus,omitempty"`
+	OrderID        string     `json:"orderId"`
+	OrderNumber    string     `json:"orderNumber"`
+	StoreID        string     `json:"storeId"`
+	StoreName      string     `json:"storeName,omitempty"`
+	StoreSlug      string     `json:"storeSlug,omitempty"`
+	PaymentStatus  string     `json:"paymentStatus"`
+	Source         string     `json:"source"`
+	Currency       string     `json:"currency"`
+	GrossIDR       int64      `json:"grossIdr"`
+	PaidAt         *time.Time `json:"paidAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	ItemCount      int        `json:"itemCount"`
+	DeliveryStatus string     `json:"deliveryStatus,omitempty"`
 	// Primary line snapshot for list cards (no delivery secrets).
-	ProductID        string `json:"productId,omitempty"`
-	ProductTitle     string `json:"productTitle,omitempty"`
-	ProductType      string `json:"productType,omitempty"`
-	ProductVersion   string `json:"productVersion,omitempty"`
-	DeliveryKind     string `json:"deliveryKind,omitempty"`
+	ProductID      string `json:"productId,omitempty"`
+	ProductTitle   string `json:"productTitle,omitempty"`
+	ProductType    string `json:"productType,omitempty"`
+	ProductVersion string `json:"productVersion,omitempty"`
+	DeliveryKind   string `json:"deliveryKind,omitempty"`
 }
 
 // PurchaseItemView is a safe line snapshot for buyer detail.

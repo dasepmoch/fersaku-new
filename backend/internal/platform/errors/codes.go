@@ -36,12 +36,12 @@ const (
 	CodeDeliveryExpired      = "DELIVERY_EXPIRED"
 	CodeDeliveryAccessDenied = "DELIVERY_ACCESS_DENIED"
 	// BE-240 custom domains.
-	CodeDomainHostnameInvalid  = "DOMAIN_HOSTNAME_INVALID"
-	CodeDomainHostnameTaken    = "DOMAIN_HOSTNAME_TAKEN"
-	CodeDomainVersionConflict  = "DOMAIN_VERSION_CONFLICT"
-	CodeDomainVerifyFailed     = "DOMAIN_VERIFY_FAILED"
-	CodeDomainStaleToken       = "DOMAIN_STALE_TOKEN"
-	CodeDomainHostUnresolved   = "DOMAIN_HOST_UNRESOLVED"
+	CodeDomainHostnameInvalid = "DOMAIN_HOSTNAME_INVALID"
+	CodeDomainHostnameTaken   = "DOMAIN_HOSTNAME_TAKEN"
+	CodeDomainVersionConflict = "DOMAIN_VERSION_CONFLICT"
+	CodeDomainVerifyFailed    = "DOMAIN_VERIFY_FAILED"
+	CodeDomainStaleToken      = "DOMAIN_STALE_TOKEN"
+	CodeDomainHostUnresolved  = "DOMAIN_HOST_UNRESOLVED"
 	// BE-320 QRIS gateway.
 	CodeKYCRequiredForLiveAPI  = "KYC_REQUIRED_FOR_LIVE_API"
 	CodeAPIAccessSuspended     = "API_ACCESS_SUSPENDED"

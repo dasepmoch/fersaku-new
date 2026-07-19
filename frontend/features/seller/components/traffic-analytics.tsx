@@ -161,9 +161,7 @@ export function TrafficAnalytics() {
         <TrafficMetric
           icon={Target}
           label="Best campaign"
-          value={
-            failed ? "—" : metrics ? metrics.bestCampaign : "—"
-          }
+          value={failed ? "—" : metrics ? metrics.bestCampaign : "—"}
           note={campaignNote}
         />
       </div>

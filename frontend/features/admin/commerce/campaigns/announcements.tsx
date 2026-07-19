@@ -40,8 +40,7 @@ import { type Campaign, campaignSeed } from "./data";
 import { writeVersionedStorage } from "@/shared/storage/versioned-storage";
 
 type CampaignControl =
-  | { kind: "publish" }
-  | { kind: "toggle"; campaign: Campaign };
+  { kind: "publish" } | { kind: "toggle"; campaign: Campaign };
 
 export function CampaignsAnnouncements() {
   const campaignSource = getCampaignDomainSource();
@@ -73,7 +72,8 @@ export function CampaignsAnnouncements() {
   const [control, setControl] = useState<CampaignControl | null>(null);
   const requiresRecentMfa = kind === "critical" || kind === "compliance";
 
-  const metricValue = (mockValue: string) => (fixturesAllowed ? mockValue : "—");
+  const metricValue = (mockValue: string) =>
+    fixturesAllowed ? mockValue : "—";
   const metricNote = (mockNote: string) =>
     fixturesAllowed ? mockNote : "Unavailable without campaign backend";
 
@@ -149,7 +149,9 @@ export function CampaignsAnnouncements() {
   return (
     <>
       {!commandsEnabled && (
-        <section className={`${adminPanel} mb-4 border border-[#efd39a] bg-[#fff8e9] p-5 text-[#806f4f]`}>
+        <section
+          className={`${adminPanel} mb-4 border border-[#efd39a] bg-[#fff8e9] p-5 text-[#806f4f]`}
+        >
           <p className="text-[8px] font-extrabold tracking-[.14em] uppercase">
             Capability unavailable
           </p>

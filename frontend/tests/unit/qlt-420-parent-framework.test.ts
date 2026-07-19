@@ -96,7 +96,10 @@ describe("QLT-420 parent — co-evolution + cutover registration", () => {
   });
 
   it("parent does not claim G0..G8 green, live canary, or invent cutover results", () => {
-    const src = readFileSync(abs("docs/QLT-420-CUTOVER-COEVOLUTION.md"), "utf8");
+    const src = readFileSync(
+      abs("docs/QLT-420-CUTOVER-COEVOLUTION.md"),
+      "utf8",
+    );
     expect(src.includes("G0..G8") || src.includes("G0")).toBe(true);
     expect(
       src.toLowerCase().includes("do not invent") ||
@@ -104,8 +107,7 @@ describe("QLT-420 parent — co-evolution + cutover registration", () => {
     ).toBe(true);
     expect(src.includes("Not") || src.includes("does **not**")).toBe(true);
     expect(
-      src.toLowerCase().includes("live canary") ||
-        src.includes("full-cutover"),
+      src.toLowerCase().includes("live canary") || src.includes("full-cutover"),
     ).toBe(true);
   });
 });
@@ -186,9 +188,10 @@ describe("QLT-420 parent — required non-empty samples", () => {
       "utf8",
     );
     for (const needle of ["mock", "architecture", "describe", "expect"]) {
-      expect(src.toLowerCase().includes(needle), `architecture: ${needle}`).toBe(
-        true,
-      );
+      expect(
+        src.toLowerCase().includes(needle),
+        `architecture: ${needle}`,
+      ).toBe(true);
     }
     expect(src.length).toBeGreaterThan(500);
   });

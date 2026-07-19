@@ -36,20 +36,16 @@ export const queryKeys = {
      * SEL-210: store + filters + bounded profile (no page cursor until UI-080).
      * Prefix ["seller", storeId, "products"] still matches invalidate/clear.
      */
-    products: (
-      storeId: string,
-      filters: Record<string, unknown> = {},
-    ) => ["seller", storeId, "products", "bounded", filters] as const,
+    products: (storeId: string, filters: Record<string, unknown> = {}) =>
+      ["seller", storeId, "products", "bounded", filters] as const,
     product: (storeId: string, productId: string) =>
       ["seller", storeId, "products", productId] as const,
     /**
      * SEL-260: store + filters + NumberedPageList profile.
      * Prefix ["seller", storeId, "customers"] still matches invalidate/clear.
      */
-    customers: (
-      storeId: string,
-      filters: Record<string, unknown> = {},
-    ) => ["seller", storeId, "customers", filters] as const,
+    customers: (storeId: string, filters: Record<string, unknown> = {}) =>
+      ["seller", storeId, "customers", filters] as const,
     customer: (storeId: string, customerId: string) =>
       ["seller", storeId, "customers", customerId] as const,
     /**
@@ -147,8 +143,7 @@ export const queryKeys = {
     kyc: (filters: Record<string, unknown> = {}) =>
       ["admin", "kyc", "bounded", filters] as const,
     /** ADM-340 — case detail + document metadata only (never content). */
-    kycCase: (caseId: string) =>
-      ["admin", "kyc", "case", caseId] as const,
+    kycCase: (caseId: string) => ["admin", "kyc", "case", caseId] as const,
     webhooks: (filters: Record<string, unknown> = {}) =>
       ["admin", "webhooks", "bounded", filters] as const,
     /** ADM-350 inbound provider callbacks only. */
@@ -168,8 +163,7 @@ export const queryKeys = {
       ["admin", "users", "bounded", filters] as const,
     /** ADM-220 user detail + role assignments. */
     user: (userId: string) => ["admin", "users", userId] as const,
-    userRoles: (userId: string) =>
-      ["admin", "users", userId, "roles"] as const,
+    userRoles: (userId: string) => ["admin", "users", userId, "roles"] as const,
     staffInvitations: () => ["admin", "invitations", "staff"] as const,
     campaigns: (filters: Record<string, unknown> = {}) =>
       ["admin", "campaigns", "bounded", filters] as const,
@@ -199,8 +193,7 @@ export const queryKeys = {
      * ADM-230: own admin profile/prefs/sessions — subject/session-bound.
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses staff.
      */
-    profile: (subjectKey = "anon") =>
-      ["admin", subjectKey, "profile"] as const,
+    profile: (subjectKey = "anon") => ["admin", subjectKey, "profile"] as const,
     notificationPreferences: (subjectKey = "anon") =>
       ["admin", subjectKey, "notification-preferences"] as const,
     sessions: (subjectKey = "anon") =>
@@ -211,10 +204,8 @@ export const queryKeys = {
      * BUY-100: subject/session boundary + filters + bounded list profile.
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.
      */
-    purchases: (
-      subjectKey = "anon",
-      filters: Record<string, unknown> = {},
-    ) => ["buyer", subjectKey, "purchases", "bounded", filters] as const,
+    purchases: (subjectKey = "anon", filters: Record<string, unknown> = {}) =>
+      ["buyer", subjectKey, "purchases", "bounded", filters] as const,
     purchase: (subjectKey: string, orderId: string) =>
       ["buyer", subjectKey, "purchases", orderId] as const,
     /**
@@ -226,8 +217,7 @@ export const queryKeys = {
      * BUY-120: profile + prefs are subject/session-bound (own account only).
      * subjectKey = `${subjectId}:${sessionId}` so cache never crosses buyers.
      */
-    profile: (subjectKey = "anon") =>
-      ["buyer", subjectKey, "profile"] as const,
+    profile: (subjectKey = "anon") => ["buyer", subjectKey, "profile"] as const,
     notificationPreferences: (subjectKey = "anon") =>
       ["buyer", subjectKey, "notification-preferences"] as const,
     /**

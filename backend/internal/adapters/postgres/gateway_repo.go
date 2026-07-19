@@ -215,15 +215,15 @@ func (r *GatewayRepo) GetWebhookEndpoint(ctx context.Context, id string) (gatewa
 
 func (r *GatewayRepo) InsertWebhookEndpoint(ctx context.Context, e gateway.WebhookEndpoint) error {
 	return r.queries(ctx).GatewayInsertWebhookEndpoint(ctx, gen.GatewayInsertWebhookEndpointParams{
-		ID:            e.ID,
-		MerchantID:    e.MerchantID,
-		PaymentMode:   e.PaymentMode,
-		Url:           e.URL,
-		Status:        e.Status,
-		ConfigVersion: e.ConfigVersion,
+		ID:             e.ID,
+		MerchantID:     e.MerchantID,
+		PaymentMode:    e.PaymentMode,
+		Url:            e.URL,
+		Status:         e.Status,
+		ConfigVersion:  e.ConfigVersion,
 		EventAllowlist: json.RawMessage(`[]`),
-		CreatedAt:     e.CreatedAt,
-		UpdatedAt:     e.UpdatedAt,
+		CreatedAt:      e.CreatedAt,
+		UpdatedAt:      e.UpdatedAt,
 	})
 }
 

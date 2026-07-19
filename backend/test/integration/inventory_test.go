@@ -433,5 +433,3 @@ func TestInventory_SchemaVersionBump(t *testing.T) {
 		t.Fatalf("stale expected want 409 got %d", rr.Code)
 	}
 }
-
-

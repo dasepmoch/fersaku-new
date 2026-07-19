@@ -67,7 +67,7 @@ export function isSellerWebhooksApiDomain(): boolean {
   return getDomainSource("sellerOperations") === "api";
 }
 
-function useMock(): boolean {
+function isMockMode(): boolean {
   return shouldUseMockFixtures("sellerOperations");
 }
 
@@ -87,7 +87,7 @@ export async function listSellerWebhooks(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWebhookEndpoint[]> {
-  if (useMock()) {
+  if (isMockMode()) {
     return demoWebhookEndpoints(storeId);
   }
 
@@ -108,7 +108,7 @@ export async function listSellerWebhookDeliveries(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerWebhookDelivery[]> {
-  if (useMock()) {
+  if (isMockMode()) {
     return demoWebhookDeliveries(storeId);
   }
 
@@ -131,7 +131,7 @@ export async function createSellerWebhook(
   input: CreateSellerWebhookInput,
   signal?: AbortSignal,
 ): Promise<WebhookSecretClaimOffer> {
-  if (useMock()) {
+  if (isMockMode()) {
     return mockWebhookClaimOffer(storeId, input.url, input.paymentMode);
   }
 
@@ -158,7 +158,7 @@ export async function updateSellerWebhook(
   input: UpdateSellerWebhookInput,
   signal?: AbortSignal,
 ): Promise<SellerWebhookEndpoint> {
-  if (useMock()) {
+  if (isMockMode()) {
     const existing =
       demoWebhookEndpoints(storeId).find((e) => e.id === endpointId) ??
       demoWebhookEndpoints(storeId)[0]!;
@@ -199,7 +199,7 @@ export async function rotateSellerWebhookSecret(
   endpointId: string,
   signal?: AbortSignal,
 ): Promise<WebhookSecretClaimOffer> {
-  if (useMock()) {
+  if (isMockMode()) {
     const ep =
       demoWebhookEndpoints(storeId).find((e) => e.id === endpointId) ??
       demoWebhookEndpoints(storeId)[0]!;
@@ -239,7 +239,7 @@ export async function claimSellerWebhookSecret(
   claimId = "x",
   signal?: AbortSignal,
 ): Promise<WebhookSigningSecretReveal> {
-  if (useMock()) {
+  if (isMockMode()) {
     return mockWebhookSecretReveal(endpointId);
   }
 
@@ -270,7 +270,7 @@ export async function testSellerWebhook(
   endpointId: string,
   signal?: AbortSignal,
 ): Promise<TestWebhookResult> {
-  if (useMock()) {
+  if (isMockMode()) {
     const deliveries = demoWebhookDeliveries(storeId);
     const failed = deliveries.find((d) => d.lastHttpStatus === 500);
     return {
@@ -305,7 +305,4 @@ export function isWebhookNotFound(error: unknown): boolean {
   return isResourceNotFound(error);
 }
 
-export {
-  demoWebhookDeliveries,
-  demoWebhookEndpoints,
-} from "./mock";
+export { demoWebhookDeliveries, demoWebhookEndpoints } from "./mock";

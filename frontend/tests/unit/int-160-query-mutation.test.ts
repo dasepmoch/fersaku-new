@@ -115,9 +115,9 @@ describe("INT-160 query policy", () => {
   });
 
   it("flags sensitive material in cache keys", () => {
-    expect(
-      queryKeyLooksSensitive(["seller", "s1", "mfa_proof", "x"]),
-    ).toBe(true);
+    expect(queryKeyLooksSensitive(["seller", "s1", "mfa_proof", "x"])).toBe(
+      true,
+    );
     expect(queryKeyLooksSensitive(["admin", "inventory_secret"])).toBe(true);
     expect(queryKeyLooksSensitive(["buyer", "purchases"])).toBe(false);
   });
@@ -147,12 +147,12 @@ describe("INT-160 mutation policy", () => {
   });
 
   it("rejects non-opaque / PII-bearing idempotency keys", () => {
-    expect(
-      isOpaqueIdempotencyKey("checkout_prod_1_user@example.com"),
-    ).toBe(false);
-    expect(
-      isOpaqueIdempotencyKey("seller-withdrawal:store_1:quote:123"),
-    ).toBe(false);
+    expect(isOpaqueIdempotencyKey("checkout_prod_1_user@example.com")).toBe(
+      false,
+    );
+    expect(isOpaqueIdempotencyKey("seller-withdrawal:store_1:quote:123")).toBe(
+      false,
+    );
     expect(isOpaqueIdempotencyKey("checkout_prod_email")).toBe(false);
   });
 

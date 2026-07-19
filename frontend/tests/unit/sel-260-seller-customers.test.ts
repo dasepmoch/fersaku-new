@@ -24,9 +24,9 @@ import { DEMO_STORE_ID } from "@/shared/config/demo";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -43,7 +43,8 @@ const meta = {
 };
 
 const listRow = {
-  customerId: "a1b2c3d4e5f6789012345678abcdef01abcdef0123456789abcdef0123456789",
+  customerId:
+    "a1b2c3d4e5f6789012345678abcdef01abcdef0123456789abcdef0123456789",
   storeId: "store_live",
   displayName: "Nadia Putri",
   displayEmail: "nadia@studio.id",
@@ -126,7 +127,9 @@ function viewCustomer(overrides: Partial<SellerCustomer> = {}): SellerCustomer {
 
 describe("SEL-260 schemas", () => {
   it("accepts summary + numbered list envelope", () => {
-    expect(sellerCustomerSummaryDtoSchema.safeParse(listRow).success).toBe(true);
+    expect(sellerCustomerSummaryDtoSchema.safeParse(listRow).success).toBe(
+      true,
+    );
     const env = sellerCustomerListEnvelopeSchema.safeParse({
       data: [listRow],
       meta,
@@ -135,7 +138,9 @@ describe("SEL-260 schemas", () => {
   });
 
   it("accepts detail with history and note", () => {
-    expect(sellerCustomerDetailDtoSchema.safeParse(detailDto).success).toBe(true);
+    expect(sellerCustomerDetailDtoSchema.safeParse(detailDto).success).toBe(
+      true,
+    );
   });
 
   it("rejects fractional money", () => {
@@ -215,9 +220,8 @@ describe("SEL-260 api adapters", () => {
 
   it("mock path returns fixtures without network", async () => {
     installMockSeller();
-    const { listSellerCustomers, getSellerCustomer } = await import(
-      "@/features/seller/customers/api"
-    );
+    const { listSellerCustomers, getSellerCustomer } =
+      await import("@/features/seller/customers/api");
     const page = await listSellerCustomers(DEMO_STORE_ID, {
       page: 1,
       pageSize: 5,
@@ -236,9 +240,8 @@ describe("SEL-260 api adapters", () => {
       data: [listRow],
       meta,
     });
-    const { listSellerCustomers } = await import(
-      "@/features/seller/customers/api"
-    );
+    const { listSellerCustomers } =
+      await import("@/features/seller/customers/api");
     const page = await listSellerCustomers("store_live", {
       q: "Nadia",
       page: 2,
@@ -266,9 +269,8 @@ describe("SEL-260 api adapters", () => {
         requestId: "req_404",
       }),
     );
-    const { getSellerCustomer } = await import(
-      "@/features/seller/customers/api"
-    );
+    const { getSellerCustomer } =
+      await import("@/features/seller/customers/api");
     const customer = await getSellerCustomer("store_live", "foreign_customer");
     expect(customer).toBeNull();
     const [path] = apiRequestMock.mock.calls[0];

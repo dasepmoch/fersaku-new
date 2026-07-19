@@ -68,7 +68,8 @@ const GENERIC_FORGOT_OK =
   "If an account exists for that email, a reset message has been sent";
 const GENERIC_MAGIC_LINK_OK =
   "If an account exists for that email, a sign-in link has been sent";
-const GENERIC_RESET_OK = "Password has been updated. Sign in with your new password.";
+const GENERIC_RESET_OK =
+  "Password has been updated. Sign in with your new password.";
 const GENERIC_PASSWORD_CHANGED = "Password updated";
 const GENERIC_EMAIL_CHANGE_OK =
   "If the request is valid, confirmation messages have been sent";
@@ -696,11 +697,15 @@ export function toMfaStepUpRequest(input: {
   };
 }
 
-export function toMfaConfirmRequest(input: { code: string }): MfaConfirmRequest {
+export function toMfaConfirmRequest(input: {
+  code: string;
+}): MfaConfirmRequest {
   return { code: input.code.trim() };
 }
 
-export function toMfaDisableRequest(input: { code: string }): MfaDisableRequest {
+export function toMfaDisableRequest(input: {
+  code: string;
+}): MfaDisableRequest {
   return { code: input.code.trim() };
 }
 
@@ -926,7 +931,9 @@ export function mapMfaStepUpThrown(error: unknown): MfaStepUpResult {
 
 export function mapMfaStepUpData(
   data: AuthMfaVerifyDataDto,
-): Extract<MfaStepUpResult, { ok: true }> | Extract<MfaStepUpResult, { ok: false }> {
+):
+  | Extract<MfaStepUpResult, { ok: true }>
+  | Extract<MfaStepUpResult, { ok: false }> {
   const proof = data.recentMfaProof?.trim();
   if (!proof) {
     return { ok: false, kind: "blocked", code: "AUTH_MFA_PROOF_INVALID" };
@@ -972,9 +979,9 @@ export function mapMfaConfirmThrown(error: unknown): MfaConfirmResult {
   return { ok: false, kind: "blocked", code: "NETWORK_ERROR" };
 }
 
-export function mapMfaRecoveryData(
-  data: AuthMfaRecoveryDataDto,
-): { recoveryCodes: string[] } {
+export function mapMfaRecoveryData(data: AuthMfaRecoveryDataDto): {
+  recoveryCodes: string[];
+} {
   return { recoveryCodes: [...data.recoveryCodes] };
 }
 

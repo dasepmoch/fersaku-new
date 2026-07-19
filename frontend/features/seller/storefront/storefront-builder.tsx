@@ -101,7 +101,7 @@ export function StorefrontBuilder() {
   const [etag, setEtag] = useState('W/"mock_storefront_draft_14"');
   const [dirty, setDirty] = useState(false);
   const [conflict, setConflict] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(() =>
     apiMode ? null : Date.now(),
   );
   const [hydrated, setHydrated] = useState(!apiMode);
@@ -115,10 +115,12 @@ export function StorefrontBuilder() {
   const logoStyleRef = useRef(logoStyle);
   const hydratedFromServer = useRef(false);
 
-  revisionRef.current = revision;
-  etagRef.current = etag;
-  configRef.current = config;
-  logoStyleRef.current = logoStyle;
+  useEffect(() => {
+    revisionRef.current = revision;
+    etagRef.current = etag;
+    configRef.current = config;
+    logoStyleRef.current = logoStyle;
+  }, [revision, etag, config, logoStyle]);
 
   const saveMutation = useSaveStorefrontDraftMutation(storeId);
   const publishMutation = usePublishStorefrontMutation(storeId);
@@ -156,7 +158,9 @@ export function StorefrontBuilder() {
   // Reset hydrate flag when store changes.
   useEffect(() => {
     hydratedFromServer.current = false;
-    setHydrated(!apiMode);
+    queueMicrotask(() => {
+      setHydrated(!apiMode);
+    });
   }, [storeId, apiMode]);
 
   const commit = useCallback((next: BuilderConfig) => {

@@ -67,11 +67,11 @@ export function isSellerBankApiDomain(): boolean {
   return getDomainSource("sellerFinance") === "api";
 }
 
-function useProfileMock(): boolean {
+function isProfileMockMode(): boolean {
   return shouldUseMockFixtures("auth");
 }
 
-function useBankMock(): boolean {
+function isBankMockMode(): boolean {
   return shouldUseMockFixtures("sellerFinance");
 }
 
@@ -82,7 +82,7 @@ function useBankMock(): boolean {
 export async function getSellerProfile(
   signal?: AbortSignal,
 ): Promise<SellerProfile> {
-  if (useProfileMock()) return demoSellerProfile();
+  if (isProfileMockMode()) return demoSellerProfile();
 
   const [profileRes, prefsRes] = await Promise.all([
     apiRequest<ProfileEnvelope>("/v1/me/profile", {
@@ -94,10 +94,7 @@ export async function getSellerProfile(
       signal,
     }),
   ]);
-  return mapSellerProfileDto(
-    profileRes.data,
-    prefsRes.data.preferences,
-  );
+  return mapSellerProfileDto(profileRes.data, prefsRes.data.preferences);
 }
 
 /**
@@ -112,7 +109,7 @@ export async function patchSellerProfile(
     throw new Error("expectedVersion required");
   }
 
-  if (useProfileMock()) {
+  if (isProfileMockMode()) {
     const base = demoSellerProfile();
     const displayName = input.displayName?.trim() || base.displayName;
     return {
@@ -184,7 +181,7 @@ export async function patchSellerNotificationPreferences(
     | "weeklySummary"
   >
 > {
-  if (useProfileMock()) {
+  if (isProfileMockMode()) {
     const base = demoSellerProfile();
     return {
       saleSuccess: input.saleSuccess ?? base.saleSuccess,
@@ -254,7 +251,7 @@ export async function listSellerBankAccounts(
   signal?: AbortSignal,
 ): Promise<SellerBankAccount[]> {
   if (!storeId) return [];
-  if (useBankMock()) return demoSellerBankAccounts(storeId);
+  if (isBankMockMode()) return demoSellerBankAccounts(storeId);
 
   const response = await apiRequest<BankListEnvelope>(
     `/v1/stores/${encodeURIComponent(storeId)}/bank-accounts`,
@@ -275,7 +272,7 @@ export async function createSellerBankAccount(
   input: CreateSellerBankAccountInput,
   signal?: AbortSignal,
 ): Promise<SellerBankAccount> {
-  if (useBankMock()) {
+  if (isBankMockMode()) {
     const list = demoSellerBankAccounts(storeId);
     const last4 = input.accountNumber.replace(/\D/g, "").slice(-4) || "0000";
     return {
@@ -342,7 +339,7 @@ export async function updateSellerBankAccount(
   input: UpdateSellerBankAccountInput,
   signal?: AbortSignal,
 ): Promise<SellerBankAccount> {
-  if (useBankMock()) {
+  if (isBankMockMode()) {
     const base = demoSellerBankAccounts(storeId)[0];
     const last4 = input.accountNumber
       ? input.accountNumber.replace(/\D/g, "").slice(-4)
@@ -387,7 +384,7 @@ export async function archiveSellerBankAccount(
   bankId: string,
   signal?: AbortSignal,
 ): Promise<SellerBankAccount> {
-  if (useBankMock()) {
+  if (isBankMockMode()) {
     const base = demoSellerBankAccounts(storeId)[0];
     return { ...base, id: bankId, status: "ARCHIVED", verified: false };
   }
@@ -409,7 +406,7 @@ export async function makePrimarySellerBankAccount(
   bankId: string,
   signal?: AbortSignal,
 ): Promise<SellerBankAccount> {
-  if (useBankMock()) {
+  if (isBankMockMode()) {
     const base = demoSellerBankAccounts(storeId)[0];
     return { ...base, id: bankId, primary: true };
   }
@@ -434,7 +431,7 @@ export async function makePrimarySellerBankAccount(
 export async function listSellerSessions(
   signal?: AbortSignal,
 ): Promise<SellerSession[]> {
-  if (useProfileMock()) return demoSellerSessions();
+  if (isProfileMockMode()) return demoSellerSessions();
 
   const response = await apiRequest<SessionListEnvelope>("/v1/auth/sessions", {
     schema: buyerSessionListEnvelopeSchema,
@@ -446,7 +443,7 @@ export async function listSellerSessions(
 export async function revokeOtherSellerSessions(
   signal?: AbortSignal,
 ): Promise<{ revokedCount: number }> {
-  if (useProfileMock()) return { revokedCount: 0 };
+  if (isProfileMockMode()) return { revokedCount: 0 };
 
   const response = await apiRequest<
     z.infer<typeof buyerSessionRevokeEnvelopeSchema>

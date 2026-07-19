@@ -20,16 +20,51 @@ const navSections = [
 
 /** CreateGatewayPaymentRequest — aligned with backend/api/openapi.yaml */
 const fields: [string, string, string, string][] = [
-  ["merchantReference", "string", "required", "Your unique invoice reference (max 128)."],
+  [
+    "merchantReference",
+    "string",
+    "required",
+    "Your unique invoice reference (max 128).",
+  ],
   ["amount", "integer", "required", "Whole IDR gross (int64, no decimals)."],
   ["currency", "string", "optional", "IDR only."],
-  ["description", "string", "optional", "Shown in dashboard and webhooks (max 500)."],
-  ["customer", "object", "optional", "Opaque customer metadata (reference, email)."],
+  [
+    "description",
+    "string",
+    "optional",
+    "Shown in dashboard and webhooks (max 500).",
+  ],
+  [
+    "customer",
+    "object",
+    "optional",
+    "Opaque customer metadata (reference, email).",
+  ],
   ["expiresInMinutes", "integer", "optional", "Between 5 and 60 minutes."],
-  ["successUrl", "string", "optional", "Browser HTTPS redirect; origin must be allowlisted."],
-  ["failureUrl", "string", "optional", "Browser HTTPS redirect; origin must be allowlisted."],
-  ["webhookEndpointId", "string", "optional", "ACTIVE same-merchant endpoint id — never a URL."],
-  ["metadata", "object", "optional", "Bounded opaque JSON (8KiB, depth 4, 50 keys)."],
+  [
+    "successUrl",
+    "string",
+    "optional",
+    "Browser HTTPS redirect; origin must be allowlisted.",
+  ],
+  [
+    "failureUrl",
+    "string",
+    "optional",
+    "Browser HTTPS redirect; origin must be allowlisted.",
+  ],
+  [
+    "webhookEndpointId",
+    "string",
+    "optional",
+    "ACTIVE same-merchant endpoint id — never a URL.",
+  ],
+  [
+    "metadata",
+    "object",
+    "optional",
+    "Bounded opaque JSON (8KiB, depth 4, 50 keys).",
+  ],
 ];
 
 /** GatewayPaymentIntent sample (envelope: { data, meta }) */
@@ -220,12 +255,14 @@ export default function DocsPage() {
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
               Body for{" "}
-              <code className="text-[11px]">POST /v1/gateway/payment-intents</code>
+              <code className="text-[11px]">
+                POST /v1/gateway/payment-intents
+              </code>
               . Field names match the OpenAPI{" "}
               <code className="text-[11px]">CreateGatewayPaymentRequest</code>{" "}
               contract. Sending <code className="text-[11px]">webhookUrl</code>{" "}
-              is always rejected — use <code className="text-[11px]">webhookEndpointId</code>{" "}
-              only.
+              is always rejected — use{" "}
+              <code className="text-[11px]">webhookEndpointId</code> only.
             </p>
             <div className="hairline mt-4 overflow-hidden rounded-2xl border bg-white">
               {fields.map((row, i) => (
@@ -284,8 +321,8 @@ export default function DocsPage() {
               Webhooks
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Register HTTPS endpoints under your store webhooks API (SSRF-safe).
-              Pass the endpoint id as{" "}
+              Register HTTPS endpoints under your store webhooks API
+              (SSRF-safe). Pass the endpoint id as{" "}
               <code className="text-[11px]">webhookEndpointId</code> on create —
               never a raw URL. Delivery is signed and retryable; verify
               signatures before updating merchant state. Inbound provider
@@ -293,19 +330,24 @@ export default function DocsPage() {
             </p>
             <h2 className="mt-10 text-xl font-extrabold">Example response</h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
-              Success envelope: <code className="text-[11px]">{"{ data, meta }"}</code>.
-              Create returns <code className="text-[11px]">201</code> (or{" "}
+              Success envelope:{" "}
+              <code className="text-[11px]">{"{ data, meta }"}</code>. Create
+              returns <code className="text-[11px]">201</code> (or{" "}
               <code className="text-[11px]">200</code> on idempotent replay).
             </p>
             <CodeBlock code={exampleResponse} />
-            <h2 id="errors" className="mt-10 scroll-mt-24 text-xl font-extrabold">
+            <h2
+              id="errors"
+              className="mt-10 scroll-mt-24 text-xl font-extrabold"
+            >
               Errors
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#66736c]">
               Errors use a consistent problem payload with a machine-readable
               code. Invalid JSON and validation failures return 400; missing or
               invalid API keys return 401; LIVE without KYC capability returns
-              403 (<code className="text-[11px]">KYC_REQUIRED_FOR_LIVE_API</code>
+              403 (
+              <code className="text-[11px]">KYC_REQUIRED_FOR_LIVE_API</code>
               ).
             </p>
             <CodeBlock

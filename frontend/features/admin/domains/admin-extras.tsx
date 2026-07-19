@@ -247,9 +247,7 @@ export function AdminAuditExplorer() {
       ip: selected.ip,
       result: selected.result,
       ...(selected.context ? { context: selected.context } : {}),
-      ...(selected.previousHash
-        ? { previousHash: selected.previousHash }
-        : {}),
+      ...(selected.previousHash ? { previousHash: selected.previousHash } : {}),
       ...(selected.integrityHash
         ? { integrityHash: selected.integrityHash }
         : {}),
@@ -316,7 +314,9 @@ export function AdminAuditExplorer() {
             {auditEvents.length} {isMock ? "mock events" : "events"} • Date
             range: last 24 hours
             {exportError ? (
-              <span className="ml-2 font-bold text-[#b55039]">{exportError}</span>
+              <span className="ml-2 font-bold text-[#b55039]">
+                {exportError}
+              </span>
             ) : null}
           </div>
         </div>

@@ -175,9 +175,8 @@ describe("CHK-100 requestCheckoutQuote — mock + API", () => {
     const domain = await import("@/shared/data/domain-source");
     vi.spyOn(domain, "shouldUseMockFixtures").mockReturnValue(true);
 
-    const { requestCheckoutQuote } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { requestCheckoutQuote } =
+      await import("@/features/commerce/checkout/api");
     const quote = await requestCheckoutQuote(
       {
         storeId: "store_demo_asep_ai_tools",
@@ -216,9 +215,8 @@ describe("CHK-100 requestCheckoutQuote — mock + API", () => {
       meta,
     } as never);
 
-    const { requestCheckoutQuote } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { requestCheckoutQuote } =
+      await import("@/features/commerce/checkout/api");
     const quote = await requestCheckoutQuote(
       {
         storeId: "store_live",

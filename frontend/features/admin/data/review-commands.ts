@@ -140,10 +140,7 @@ function invalidateReviewCaches(
     queryKey: ["seller"],
     predicate: (q) => {
       const key = q.queryKey;
-      return (
-        Array.isArray(key) &&
-        key.includes("reviews")
-      );
+      return Array.isArray(key) && key.includes("reviews");
     },
   });
 }

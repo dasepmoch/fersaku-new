@@ -70,19 +70,19 @@ type SellerCustomerNoteDTO struct {
 
 // SellerCustomerDetail is the seller customer aggregate.
 type SellerCustomerDetail struct {
-	CustomerID     string                            `json:"customerId"`
-	StoreID        string                            `json:"storeId"`
-	DisplayName    string                            `json:"displayName"`
-	DisplayEmail   string                            `json:"displayEmail"`
-	OrderCount     int64                             `json:"orderCount"`
-	SpentIDR       int64                             `json:"spentIdr"`
-	AvgOrderIDR    int64                             `json:"avgOrderIdr"`
-	ProductCount   int64                             `json:"productCount"`
-	LastPurchaseAt time.Time                         `json:"lastPurchaseAt"`
-	FirstSeenAt    time.Time                         `json:"firstSeenAt"`
-	MarketingConsent *SellerCustomerConsentDTO       `json:"marketingConsent,omitempty"`
-	Note           *SellerCustomerNoteDTO            `json:"note,omitempty"`
-	Orders         []SellerCustomerOrderHistoryItem  `json:"orders"`
+	CustomerID       string                           `json:"customerId"`
+	StoreID          string                           `json:"storeId"`
+	DisplayName      string                           `json:"displayName"`
+	DisplayEmail     string                           `json:"displayEmail"`
+	OrderCount       int64                            `json:"orderCount"`
+	SpentIDR         int64                            `json:"spentIdr"`
+	AvgOrderIDR      int64                            `json:"avgOrderIdr"`
+	ProductCount     int64                            `json:"productCount"`
+	LastPurchaseAt   time.Time                        `json:"lastPurchaseAt"`
+	FirstSeenAt      time.Time                        `json:"firstSeenAt"`
+	MarketingConsent *SellerCustomerConsentDTO        `json:"marketingConsent,omitempty"`
+	Note             *SellerCustomerNoteDTO           `json:"note,omitempty"`
+	Orders           []SellerCustomerOrderHistoryItem `json:"orders"`
 }
 
 // SellerCustomerConsentDTO is a best-effort consent display (no invented channel).

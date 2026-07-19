@@ -253,8 +253,7 @@ export function BuyerIdentityDetail({ id }: { id: string }) {
               action: command,
               resourceId: id,
               reason,
-              idempotencyKey:
-                actionIdemRef.current ?? createIdempotencyKey(),
+              idempotencyKey: actionIdemRef.current ?? createIdempotencyKey(),
             });
             // Admin never receives login token from magic-link workflow.
             if (

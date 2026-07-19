@@ -11,7 +11,11 @@ import {
   adminMerchantListEnvelopeSchema,
 } from "@/shared/api/schemas";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
-import type { AdminBoundedList, AdminListFilters, AdminMerchant } from "./contracts";
+import type {
+  AdminBoundedList,
+  AdminListFilters,
+  AdminMerchant,
+} from "./contracts";
 import {
   adminListQueryParams,
   mapAdminListPage,
@@ -79,7 +83,8 @@ export async function listMerchantsPage(
     schema: adminMerchantListEnvelopeSchema,
     query: {
       ...adminListQueryParams(filters),
-      limit: (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
+      limit:
+        (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
     },
     signal,
   });

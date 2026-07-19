@@ -519,7 +519,10 @@ export const permissionGroups = [
     group: "Merchants",
     permissions: [
       ["merchants.read", "View merchant profiles and balances"],
-      ["merchants.write", "Edit merchant status, API access, and support actions"],
+      [
+        "merchants.write",
+        "Edit merchant status, API access, and support actions",
+      ],
       ["impersonation.start", "Open seller or buyer surface as support actor"],
     ],
   },

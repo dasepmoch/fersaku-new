@@ -84,19 +84,14 @@ export function WebhookOperations() {
     rows[0] ||
     baseRows[0];
   const selectedIdKey = selected ? webhookRowKey(selected) : null;
-  const retryTarget = rows.find(
-    (row) => webhookRowKey(row) === retryTargetKey,
-  );
+  const retryTarget = rows.find((row) => webhookRowKey(row) === retryTargetKey);
   const failedCallbacks = baseRows.filter(isFailedXenditCallback);
   const { pageRows, pagination } = useClientPagination(rows);
 
   const partialError =
     isApi &&
     (consoleQuery.data?.callbackError || consoleQuery.data?.deliveryError)
-      ? [
-          consoleQuery.data?.callbackError,
-          consoleQuery.data?.deliveryError,
-        ]
+      ? [consoleQuery.data?.callbackError, consoleQuery.data?.deliveryError]
           .filter(Boolean)
           .join(" · ")
       : null;
@@ -191,9 +186,8 @@ export function WebhookOperations() {
     isApi && baseRows.length > 0
       ? `${(
           (100 *
-            baseRows.filter((r) =>
-              ["200", "202", "204"].includes(r.http),
-            ).length) /
+            baseRows.filter((r) => ["200", "202", "204"].includes(r.http))
+              .length) /
           baseRows.length
         )
           .toFixed(2)
@@ -291,9 +285,7 @@ export function WebhookOperations() {
                     <button
                       aria-label={"Retry callback " + row.id}
                       onClick={() => requestRetry(row)}
-                      disabled={
-                        retryingKey !== null || (isApi && !canReplay)
-                      }
+                      disabled={retryingKey !== null || (isApi && !canReplay)}
                       className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#dce1e9] px-3 text-[8px] font-extrabold disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {retryingKey === key ? (
@@ -448,9 +440,7 @@ export function WebhookOperations() {
                         ["Delivery signature", "Signed outbound payload"],
                         [
                           "Last attempted",
-                          selected.age === "now"
-                            ? "just now"
-                            : selected.age,
+                          selected.age === "now" ? "just now" : selected.age,
                         ],
                         ["Delivery ID", selected.id],
                         [
@@ -535,29 +525,27 @@ export function WebhookOperations() {
         </aside>
       </div>
 
-      {forceOpen &&
-        selected &&
-        hasVerifiedForceFulfillEvidence(selected) && (
-          <ForceFulfillDialog
-            row={selected}
-            onClose={() => setForceOpen(false)}
-            onComplete={() => {
-              if (!isApi) {
-                setLocalRows((items) => {
-                  const current = items ?? consoleQuery.data?.rows ?? [];
-                  return current.map((item) =>
-                    item.id === selected.id
-                      ? { ...item, orderStatus: "Fulfilled" }
-                      : item,
-                  );
-                });
-              } else {
-                setLocalRows(null);
-              }
-              setForceOpen(false);
-            }}
-          />
-        )}
+      {forceOpen && selected && hasVerifiedForceFulfillEvidence(selected) && (
+        <ForceFulfillDialog
+          row={selected}
+          onClose={() => setForceOpen(false)}
+          onComplete={() => {
+            if (!isApi) {
+              setLocalRows((items) => {
+                const current = items ?? consoleQuery.data?.rows ?? [];
+                return current.map((item) =>
+                  item.id === selected.id
+                    ? { ...item, orderStatus: "Fulfilled" }
+                    : item,
+                );
+              });
+            } else {
+              setLocalRows(null);
+            }
+            setForceOpen(false);
+          }}
+        />
+      )}
       {retryTarget && (
         <ControlDialog
           title={

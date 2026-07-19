@@ -16,10 +16,7 @@ import {
 } from "@/shared/data/domain-source";
 import { createIdempotencyKey } from "@/shared/query/mutation-policy";
 import type { DeliveryAccessClaim, DeliveryResendResult } from "./contracts";
-import {
-  mapDeliveryAccessDto,
-  mapDeliveryResendDto,
-} from "./mappers";
+import { mapDeliveryAccessDto, mapDeliveryResendDto } from "./mappers";
 
 export type AccessBuyerDeliveryOptions = {
   signal?: AbortSignal;
@@ -193,7 +190,14 @@ export async function resendBuyerDelivery(
   }
 
   const response = await apiRequest<
-    { data: { grantId?: string; orderId?: string; status?: string; queued?: boolean } },
+    {
+      data: {
+        grantId?: string;
+        orderId?: string;
+        status?: string;
+        queued?: boolean;
+      };
+    },
     { idempotencyKey?: string; reason?: string }
   >(`/v1/buyer/purchases/${encodeURIComponent(id)}/delivery/resend`, {
     schema: deliveryResendEnvelopeSchema,

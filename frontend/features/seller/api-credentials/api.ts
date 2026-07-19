@@ -67,7 +67,7 @@ export function isSellerApiCredentialsApiDomain(): boolean {
   return getDomainSource("sellerOperations") === "api";
 }
 
-function useMock(): boolean {
+function isMockMode(): boolean {
   return shouldUseMockFixtures("sellerOperations");
 }
 
@@ -87,7 +87,7 @@ export async function listSellerApiCredentials(
   storeId: string,
   signal?: AbortSignal,
 ): Promise<SellerApiCredential[]> {
-  if (useMock()) {
+  if (isMockMode()) {
     return demoApiCredentials(storeId);
   }
 
@@ -110,11 +110,8 @@ export async function requestSellerApiCredential(
   input: RequestApiCredentialInput = {},
   signal?: AbortSignal,
 ): Promise<ApiCredentialClaimOffer> {
-  if (useMock()) {
-    return mockApiCredentialClaimOffer(
-      storeId,
-      input.paymentMode ?? "SANDBOX",
-    );
+  if (isMockMode()) {
+    return mockApiCredentialClaimOffer(storeId, input.paymentMode ?? "SANDBOX");
   }
 
   const body = sellerApiCredentialRequestSchema.parse(
@@ -144,7 +141,7 @@ export async function claimSellerApiCredential(
   options: { claimId?: string; mfaCode?: string } = {},
   signal?: AbortSignal,
 ): Promise<ApiKeyReveal> {
-  if (useMock()) {
+  if (isMockMode()) {
     return mockApiKeyReveal(`apk_claimed_${Date.now()}`);
   }
 
@@ -178,7 +175,7 @@ export async function revokeSellerApiCredential(
   options: { reason?: string; mfaCode?: string } = {},
   signal?: AbortSignal,
 ): Promise<SellerApiCredential> {
-  if (useMock()) {
+  if (isMockMode()) {
     const existing =
       demoApiCredentials(storeId).find((c) => c.id === keyId) ??
       demoApiCredentials(storeId)[0]!;
@@ -219,7 +216,7 @@ export async function revokeSellerApiCredential(
 export async function getSellerKycStatus(
   signal?: AbortSignal,
 ): Promise<SellerKycStatus> {
-  if (useMock()) {
+  if (isMockMode()) {
     return demoKycStatus();
   }
 
@@ -234,7 +231,7 @@ export async function createSellerKycCase(
   input: CreateKycCaseInput,
   signal?: AbortSignal,
 ): Promise<SellerKycCase> {
-  if (useMock()) {
+  if (isMockMode()) {
     return mockKycCase(input.legalName);
   }
 
@@ -242,16 +239,16 @@ export async function createSellerKycCase(
     toCreateKycCaseBody(input),
   ) as SellerKycCreateCaseRequest;
 
-  const response = await apiRequest<KycCaseEnvelope, SellerKycCreateCaseRequest>(
-    `/v1/me/kyc/cases`,
-    {
-      method: "POST",
-      body,
-      schema: sellerKycCaseEnvelopeSchema,
-      signal,
-      idempotencyKey: input.idempotencyKey ?? createIdempotencyKey(),
-    },
-  );
+  const response = await apiRequest<
+    KycCaseEnvelope,
+    SellerKycCreateCaseRequest
+  >(`/v1/me/kyc/cases`, {
+    method: "POST",
+    body,
+    schema: sellerKycCaseEnvelopeSchema,
+    signal,
+    idempotencyKey: input.idempotencyKey ?? createIdempotencyKey(),
+  });
   return mapKycCaseDto(response.data);
 }
 
@@ -259,8 +256,13 @@ export async function getSellerKycCase(
   caseId: string,
   signal?: AbortSignal,
 ): Promise<SellerKycCase> {
-  if (useMock()) {
-    return { ...mockKycCase("Demo"), id: caseId, status: "SUBMITTED", statusLabel: "menunggu review" };
+  if (isMockMode()) {
+    return {
+      ...mockKycCase("Demo"),
+      id: caseId,
+      status: "SUBMITTED",
+      statusLabel: "menunggu review",
+    };
   }
 
   const response = await apiRequest<KycCaseEnvelope>(
@@ -277,7 +279,7 @@ export async function submitSellerKycCase(
   caseId: string,
   signal?: AbortSignal,
 ): Promise<SellerKycCase> {
-  if (useMock()) {
+  if (isMockMode()) {
     return {
       ...mockKycCase("Demo"),
       id: caseId,

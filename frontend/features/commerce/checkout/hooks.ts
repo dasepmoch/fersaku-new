@@ -86,10 +86,7 @@ export function useCheckoutQuote(
         } catch (err) {
           if (ac.signal.aborted) return;
           if (seq !== seqRef.current) return;
-          if (
-            err instanceof DOMException &&
-            err.name === "AbortError"
-          ) {
+          if (err instanceof DOMException && err.name === "AbortError") {
             return;
           }
           setQuoteError(err instanceof Error ? err : new Error("quote failed"));

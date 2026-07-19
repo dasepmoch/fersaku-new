@@ -9,7 +9,11 @@ import {
   loginPathForSurface,
   surfaceFromPathname,
 } from "./return-to";
-import type { SessionClaims, SessionSnapshot, SessionSurface } from "./session-model";
+import type {
+  SessionClaims,
+  SessionSnapshot,
+  SessionSurface,
+} from "./session-model";
 
 export type GuardDecision =
   | { action: "allow" }
@@ -34,7 +38,9 @@ export type GuardInput = {
 
 function pathWithSearch(pathname: string, search?: string): string {
   if (!search) return pathname;
-  return search.startsWith("?") ? `${pathname}${search}` : `${pathname}?${search}`;
+  return search.startsWith("?")
+    ? `${pathname}${search}`
+    : `${pathname}?${search}`;
 }
 
 export function decideRouteGuard(input: GuardInput): GuardDecision {
@@ -85,7 +91,8 @@ export function decideRouteGuard(input: GuardInput): GuardDecision {
   }
 
   if (
-    (snapshot.status !== "authenticated" && snapshot.status !== "mfa_pending") ||
+    (snapshot.status !== "authenticated" &&
+      snapshot.status !== "mfa_pending") ||
     !snapshot.claims ||
     !snapshot.claims.subjectId
   ) {

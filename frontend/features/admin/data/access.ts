@@ -214,7 +214,10 @@ export function saveMockAdminRole(input: {
   description: string;
   permissions: string[];
 }): { role: AdminRole; roles: AdminRole[] } {
-  if (!shouldUseMockFixtures("adminWrite") && !shouldUseMockFixtures("adminRead")) {
+  if (
+    !shouldUseMockFixtures("adminWrite") &&
+    !shouldUseMockFixtures("adminRead")
+  ) {
     throw new Error("Live role mutation adapter is not connected");
   }
   return saveAdminRoleSync(input);
@@ -360,7 +363,9 @@ type UserEnvelope = z.infer<typeof adminUserLookupEnvelopeSchema>;
 type UserRolesEnvelope = z.infer<
   typeof adminUserRoleAssignmentListEnvelopeSchema
 >;
-type InviteListEnvelope = z.infer<typeof adminStaffInvitationListEnvelopeSchema>;
+type InviteListEnvelope = z.infer<
+  typeof adminStaffInvitationListEnvelopeSchema
+>;
 type InviteCreateEnvelope = z.infer<
   typeof adminStaffInvitationCreateEnvelopeSchema
 >;
@@ -482,7 +487,9 @@ export async function listUserRoles(
     const role = readMockAdminRoles().find(
       (r) =>
         r.name.toLowerCase() === staff.roleLabel.toLowerCase() ||
-        staff.roleLabel.toLowerCase().includes(r.name.toLowerCase().split(" ")[0]!),
+        staff.roleLabel
+          .toLowerCase()
+          .includes(r.name.toLowerCase().split(" ")[0]!),
     );
     if (!role) return [];
     return [

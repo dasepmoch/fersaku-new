@@ -109,12 +109,7 @@ describe("queryKeys", () => {
     ]);
     expect(queryKeys.admin.roles()).toEqual(["admin", "roles"]);
     expect(queryKeys.admin.role("r1")).toEqual(["admin", "roles", "r1"]);
-    expect(queryKeys.admin.users()).toEqual([
-      "admin",
-      "users",
-      "bounded",
-      {},
-    ]);
+    expect(queryKeys.admin.users()).toEqual(["admin", "users", "bounded", {}]);
     expect(queryKeys.admin.user("u1")).toEqual(["admin", "users", "u1"]);
     expect(queryKeys.admin.userRoles("u1")).toEqual([
       "admin",
@@ -162,7 +157,9 @@ describe("queryKeys", () => {
   });
 
   it("builds buyer domain keys with subject boundary + filters", () => {
-    expect(queryKeys.buyer.purchases("usr_a:ses_1", { q: "", filter: "Semua" })).toEqual([
+    expect(
+      queryKeys.buyer.purchases("usr_a:ses_1", { q: "", filter: "Semua" }),
+    ).toEqual([
       "buyer",
       "usr_a:ses_1",
       "purchases",
@@ -228,9 +225,9 @@ describe("queryKeys", () => {
       "usr_a:ses_1",
       "list",
     ]);
-    expect(queryKeys.notifications.unreadCount("seller", "usr_a:ses_1")).toEqual(
-      ["notifications", "seller", "usr_a:ses_1", "unread-count"],
-    );
+    expect(
+      queryKeys.notifications.unreadCount("seller", "usr_a:ses_1"),
+    ).toEqual(["notifications", "seller", "usr_a:ses_1", "unread-count"]);
     expect(queryKeys.notifications.list("buyer", "usr_a:ses_1")).not.toEqual(
       queryKeys.notifications.list("seller", "usr_a:ses_1"),
     );

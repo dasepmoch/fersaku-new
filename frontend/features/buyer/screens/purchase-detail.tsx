@@ -60,7 +60,11 @@ export function PurchaseDetail({ purchase }: { purchase: BuyerPurchase }) {
   /** Session UI + secrets keyed by order so switch drops without effect setState. */
   const [session, setSession] = useState<{
     key: string;
-    credentials: Array<{ label: string; value: string; secret?: boolean }> | null;
+    credentials: Array<{
+      label: string;
+      value: string;
+      secret?: boolean;
+    }> | null;
     code: string | null;
     downloaded: boolean;
     resendDone: boolean;
@@ -542,10 +546,7 @@ export function PurchaseDetail({ purchase }: { purchase: BuyerPurchase }) {
                   <code className="flex-1 text-sm font-black tracking-[.08em]">
                     {codeValue}
                   </code>
-                  <button
-                    type="button"
-                    onClick={() => copy(codeValue, "code")}
-                  >
+                  <button type="button" onClick={() => copy(codeValue, "code")}>
                     <Copy className="size-4" />
                   </button>
                 </div>

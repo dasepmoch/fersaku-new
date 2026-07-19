@@ -123,7 +123,8 @@ export async function listPaymentsPage(
     schema: adminPaymentListEnvelopeSchema,
     query: {
       ...adminListQueryParams(filters),
-      limit: (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
+      limit:
+        (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
     },
     signal,
   });

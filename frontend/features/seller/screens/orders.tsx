@@ -220,7 +220,11 @@ function SellerOrderDetail({ id }: { id: string }) {
             value={rupiah(o.amount)}
             note="Gross amount"
           />
-          <MiniStat label="Biaya" value={rupiah(fee)} note="Platform + payment" />
+          <MiniStat
+            label="Biaya"
+            value={rupiah(fee)}
+            note="Platform + payment"
+          />
           <MiniStat
             label="Pendapatan bersih"
             value={rupiah(net)}
@@ -285,7 +289,10 @@ function SellerOrderDetail({ id }: { id: string }) {
         />
         <div className="p-5">
           {timeline.map((x, i) => (
-            <div key={`${x.label}-${i}`} className="relative flex gap-3 pb-6 last:pb-0">
+            <div
+              key={`${x.label}-${i}`}
+              className="relative flex gap-3 pb-6 last:pb-0"
+            >
               <span className="relative z-10 grid size-6 place-items-center rounded-full bg-[#dff2e2] text-[#2e714f]">
                 <Check className="size-3" />
               </span>

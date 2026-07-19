@@ -451,23 +451,23 @@ func parseOptionalTime(s *string) (*time.Time, error) {
 
 func couponDTO(c coupons.Coupon) map[string]any {
 	out := map[string]any{
-		"id":                c.ID,
-		"storeId":           c.StoreID,
-		"merchantId":        c.MerchantID,
-		"code":              c.CodeDisplay,
-		"discountKind":      string(c.DiscountKind),
-		"discountValue":     c.DiscountValue,
-		"minMerchandise":    c.MinMerchandiseIDR,
-		"state":             string(c.State),
-		"scope":             string(c.Scope),
-		"version":           c.Version,
-		"policyVersion":     c.PolicyVersion,
-		"reservedCount":     c.ReservedCount,
-		"redeemedCount":     c.RedeemedCount,
-		"usageCount":        c.ReservedCount + c.RedeemedCount,
-		"productIds":        c.ProductIDs,
-		"createdAt":         c.CreatedAt.UTC().Format(time.RFC3339),
-		"updatedAt":         c.UpdatedAt.UTC().Format(time.RFC3339),
+		"id":             c.ID,
+		"storeId":        c.StoreID,
+		"merchantId":     c.MerchantID,
+		"code":           c.CodeDisplay,
+		"discountKind":   string(c.DiscountKind),
+		"discountValue":  c.DiscountValue,
+		"minMerchandise": c.MinMerchandiseIDR,
+		"state":          string(c.State),
+		"scope":          string(c.Scope),
+		"version":        c.Version,
+		"policyVersion":  c.PolicyVersion,
+		"reservedCount":  c.ReservedCount,
+		"redeemedCount":  c.RedeemedCount,
+		"usageCount":     c.ReservedCount + c.RedeemedCount,
+		"productIds":     c.ProductIDs,
+		"createdAt":      c.CreatedAt.UTC().Format(time.RFC3339),
+		"updatedAt":      c.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 	if c.ProductIDs == nil {
 		out["productIds"] = []string{}
@@ -493,16 +493,16 @@ func couponDTO(c coupons.Coupon) map[string]any {
 
 func priceDTO(p coupons.PriceSnapshot) map[string]any {
 	out := map[string]any{
-		"storeId":             p.StoreID,
-		"productId":           p.ProductID,
-		"merchandise":         p.MerchandiseIDR,
-		"tip":                 p.TipIDR,
-		"upsell":              p.UpsellIDR,
-		"eligibleSubtotal":    p.EligibleSubtotalIDR,
-		"discount":            p.DiscountIDR,
-		"gross":               p.GrossIDR,
-		"couponApplied":       p.CouponApplied,
-		"couponUnavailable":   p.CouponUnavailable,
+		"storeId":           p.StoreID,
+		"productId":         p.ProductID,
+		"merchandise":       p.MerchandiseIDR,
+		"tip":               p.TipIDR,
+		"upsell":            p.UpsellIDR,
+		"eligibleSubtotal":  p.EligibleSubtotalIDR,
+		"discount":          p.DiscountIDR,
+		"gross":             p.GrossIDR,
+		"couponApplied":     p.CouponApplied,
+		"couponUnavailable": p.CouponUnavailable,
 		// Explicit: client discount never applied
 		"clientDiscountIgnored": true,
 	}
@@ -535,4 +535,3 @@ func reservationDTO(r coupons.Reservation) map[string]any {
 	}
 	return out
 }
-

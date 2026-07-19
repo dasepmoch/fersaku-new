@@ -247,14 +247,14 @@ func (s *sequentialIDs) New() string {
 
 // duitkuMemStore records accepts for unit tests (no real payment finalize).
 type duitkuMemStore struct {
-	mu            sync.Mutex
-	events        map[string]payments.ProviderEvent // canonical key
-	byID          map[string]payments.ProviderEvent
-	inserts       int
-	processCalls  int
-	lastProvider  string
-	lastScope     string
-	rejections    int
+	mu           sync.Mutex
+	events       map[string]payments.ProviderEvent // canonical key
+	byID         map[string]payments.ProviderEvent
+	inserts      int
+	processCalls int
+	lastProvider string
+	lastScope    string
+	rejections   int
 }
 
 func newDuitkuMemStore() *duitkuMemStore {

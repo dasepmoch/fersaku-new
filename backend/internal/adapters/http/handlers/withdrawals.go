@@ -498,15 +498,15 @@ func disbursementCallbackToken(r *http.Request) string {
 
 func bankDTO(b withdrawals.BankAccount) map[string]any {
 	m := map[string]any{
-		"id":                b.ID,
-		"bankCode":          b.BankCode,
-		"bankName":          b.BankName,
-		"accountHolderName": b.AccountHolderName,
+		"id":                  b.ID,
+		"bankCode":            b.BankCode,
+		"bankName":            b.BankName,
+		"accountHolderName":   b.AccountHolderName,
 		"accountNumberMasked": b.AccountNumberMasked,
-		"status":            b.Status,
-		"isPrimary":         b.IsPrimary,
-		"version":           b.Version,
-		"createdAt":         b.CreatedAt.UTC().Format(time.RFC3339),
+		"status":              b.Status,
+		"isPrimary":           b.IsPrimary,
+		"version":             b.Version,
+		"createdAt":           b.CreatedAt.UTC().Format(time.RFC3339),
 	}
 	// Never include full account number
 	return m

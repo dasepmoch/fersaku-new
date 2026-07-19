@@ -11,10 +11,8 @@ import {
   clearHttpClientSessionHooks,
   getHttpClientSessionHooks,
   HTTP_HEADERS,
-  setHttpClientSessionHooks,
   apiRequest,
 } from "@/shared/api/http-client";
-import { __resetCsrfModuleForTests } from "@/shared/api/csrf";
 import { decideRouteGuard } from "@/shared/auth/guards";
 import {
   createMockClaims,

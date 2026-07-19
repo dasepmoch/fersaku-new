@@ -47,7 +47,7 @@ func (r *NotificationRepo) WithTx(ctx context.Context, fn func(ctx context.Conte
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	nested := &NotificationRepo{pool: r.pool, q: r.q, tx: tx}
-	// Store the nested repo on context so service uses same TX... 
+	// Store the nested repo on context so service uses same TX...
 	// Actually service holds Store interface pointing to r. We need to swap.
 	// Pattern: mutate r.tx for duration (not concurrent-safe; ok for request scope).
 	prev := r.tx

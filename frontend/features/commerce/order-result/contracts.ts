@@ -49,7 +49,8 @@ export const ORDER_RESULT_CAPABILITY_SEMANTICS = {
   fragmentBootstrap:
     "If fragment token present: client scrub then exchange before fetch; never leave raw token in URL after first tick.",
   foreignOrInvalid: "Generic safe not-found — no existence enumeration.",
-  deliverySecrets: "OUT_OF_SCOPE on base result — CHK-140 access exchange only.",
+  deliverySecrets:
+    "OUT_OF_SCOPE on base result — CHK-140 access exchange only.",
   invoice:
     "CHK-150: owner session invoice; guest CTA login-gated (no guest invoice capability exchange advertised).",
   canonicalize:

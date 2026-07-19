@@ -111,7 +111,11 @@ describe("AUT-100 seller auth mappers", () => {
   it("maps field violations to existing AuthForm fields only", () => {
     const fields = mapFieldViolationsToAuthFields([
       { field: "email", code: "INVALID", message: "Masukkan email yang valid" },
-      { field: "body.password", code: "TOO_SHORT", message: "Minimal 8 karakter" },
+      {
+        field: "body.password",
+        code: "TOO_SHORT",
+        message: "Minimal 8 karakter",
+      },
       { field: "unknown", code: "X" },
     ]);
     expect(fields).toEqual([
@@ -129,7 +133,9 @@ describe("AUT-100 seller auth mappers", () => {
     expect(mapped.ok).toBe(false);
     if (!mapped.ok && mapped.kind === "field_errors") {
       expect(mapped.fields[0]?.field).toBe("password");
-      expect(mapped.fields[0]?.message).not.toMatch(/tidak terdaftar|not found/i);
+      expect(mapped.fields[0]?.message).not.toMatch(
+        /tidak terdaftar|not found/i,
+      );
     }
   });
 
@@ -154,7 +160,10 @@ describe("AUT-100 seller auth mappers", () => {
       resolveSellerPostAuthPath({ returnTo: "https://evil.example/x" }),
     ).toBe("/dashboard");
     expect(
-      resolveSellerPostAuthPath({ returnTo: "//evil.example", preferOnboarding: true }),
+      resolveSellerPostAuthPath({
+        returnTo: "//evil.example",
+        preferOnboarding: true,
+      }),
     ).toBe("/dashboard/onboarding");
   });
 
@@ -176,7 +185,9 @@ describe("AUT-100 seller auth mappers", () => {
       code: PROBLEM_CODES.VALIDATION_FAILED,
       message: "v",
       details: {
-        fields: [{ field: "password", code: "WEAK", message: "Minimal 8 karakter" }],
+        fields: [
+          { field: "password", code: "WEAK", message: "Minimal 8 karakter" },
+        ],
         submitted: { password: "super-secret-should-not-map" },
       },
     });
@@ -233,43 +244,45 @@ describe("AUT-100 seller auth API", () => {
     const qc = new QueryClient();
     bindSessionQueryClient(qc);
 
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/auth/login") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body));
-        expect(body.surface).toBe("SELLER");
-        expect(body.password).toBe("password1");
-        expect(body.email).toBe("seller@example.com");
-        // body is transport-only; must not be cached as query key
-        return jsonResponse(
-          envelope({
-            sessionId: "sess_api",
-            csrfToken: "csrf_login_raw",
-            mfaRequired: false,
-            user: { id: "u1" },
-          }),
-        );
-      }
-      if (url.includes("/v1/auth/session")) {
-        return jsonResponse(
-          envelope({
-            userId: "u1",
-            sessionId: "sess_api",
-            surface: "SELLER",
-            email: "seller@example.com",
-            name: "Seller",
-            mfaEnabled: false,
-            mfaVerified: true,
-            emailVerified: true,
-            status: "ACTIVE",
-            csrfToken: "csrf_session_raw",
-            permissions: ["seller.*"],
-            roles: ["seller"],
-          }),
-        );
-      }
-      return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/auth/login") && init?.method === "POST") {
+          const body = JSON.parse(String(init.body));
+          expect(body.surface).toBe("SELLER");
+          expect(body.password).toBe("password1");
+          expect(body.email).toBe("seller@example.com");
+          // body is transport-only; must not be cached as query key
+          return jsonResponse(
+            envelope({
+              sessionId: "sess_api",
+              csrfToken: "csrf_login_raw",
+              mfaRequired: false,
+              user: { id: "u1" },
+            }),
+          );
+        }
+        if (url.includes("/v1/auth/session")) {
+          return jsonResponse(
+            envelope({
+              userId: "u1",
+              sessionId: "sess_api",
+              surface: "SELLER",
+              email: "seller@example.com",
+              name: "Seller",
+              mfaEnabled: false,
+              mfaVerified: true,
+              emailVerified: true,
+              status: "ACTIVE",
+              csrfToken: "csrf_session_raw",
+              permissions: ["seller.*"],
+              roles: ["seller"],
+            }),
+          );
+        }
+        return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await loginSeller(
@@ -300,38 +313,40 @@ describe("AUT-100 seller auth API", () => {
 
   it("API MFA_PENDING does not mark full authenticated redirect", async () => {
     installApiAuth();
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/auth/login") && init?.method === "POST") {
-        return jsonResponse(
-          envelope({
-            sessionId: "sess_mfa",
-            csrfToken: "csrf_mfa",
-            mfaRequired: true,
-          }),
-        );
-      }
-      if (url.includes("/v1/auth/session")) {
-        return jsonResponse(
-          envelope({
-            userId: "u_mfa",
-            sessionId: "sess_mfa",
-            surface: "SELLER",
-            email: "mfa@example.com",
-            name: "MFA User",
-            mfaEnabled: true,
-            mfaVerified: false,
-            emailVerified: true,
-            status: "ACTIVE",
-            sessionStatus: "MFA_PENDING",
-            csrfToken: "csrf_mfa_sess",
-            permissions: ["seller.*"],
-            roles: ["seller"],
-          }),
-        );
-      }
-      return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/auth/login") && init?.method === "POST") {
+          return jsonResponse(
+            envelope({
+              sessionId: "sess_mfa",
+              csrfToken: "csrf_mfa",
+              mfaRequired: true,
+            }),
+          );
+        }
+        if (url.includes("/v1/auth/session")) {
+          return jsonResponse(
+            envelope({
+              userId: "u_mfa",
+              sessionId: "sess_mfa",
+              surface: "SELLER",
+              email: "mfa@example.com",
+              name: "MFA User",
+              mfaEnabled: true,
+              mfaVerified: false,
+              emailVerified: true,
+              status: "ACTIVE",
+              sessionStatus: "MFA_PENDING",
+              csrfToken: "csrf_mfa_sess",
+              permissions: ["seller.*"],
+              roles: ["seller"],
+            }),
+          );
+        }
+        return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await loginSeller(
@@ -363,24 +378,26 @@ describe("AUT-100 seller auth API", () => {
 
   it("API register posts exact DTO and returns generic success", async () => {
     installApiAuth();
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      expect(url).toContain("/v1/auth/register");
-      expect(init?.method).toBe("POST");
-      const body = JSON.parse(String(init?.body));
-      expect(body).toEqual({
-        email: "new@example.com",
-        password: "password1",
-        name: "New Seller",
-        surface: "SELLER",
-      });
-      return jsonResponse(
-        envelope({
-          message:
-            "If the email is eligible, a verification message has been sent",
-        }),
-      );
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        expect(url).toContain("/v1/auth/register");
+        expect(init?.method).toBe("POST");
+        const body = JSON.parse(String(init?.body));
+        expect(body).toEqual({
+          email: "new@example.com",
+          password: "password1",
+          name: "New Seller",
+          surface: "SELLER",
+        });
+        return jsonResponse(
+          envelope({
+            message:
+              "If the email is eligible, a verification message has been sent",
+          }),
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await registerSeller(

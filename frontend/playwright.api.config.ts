@@ -28,9 +28,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI
-    ? [["github"], ["list"]]
-    : [["list"]],
+  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
   outputDir: path.join(process.cwd(), "test-results/api"),
   timeout: 60_000,
   expect: { timeout: 15_000 },

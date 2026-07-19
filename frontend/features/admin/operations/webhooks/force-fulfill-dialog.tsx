@@ -117,9 +117,7 @@ export function ForceFulfillDialog({
           </span>
         </label>
       </div>
-      {error ? (
-        <p className="mt-3 text-[8px] text-[#c9544d]">{error}</p>
-      ) : null}
+      {error ? <p className="mt-3 text-[8px] text-[#c9544d]">{error}</p> : null}
       <div className="mt-6 flex gap-2">
         <button
           onClick={onClose}

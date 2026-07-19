@@ -28,9 +28,9 @@ import { DEMO_STORE_ID } from "@/shared/config/demo";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -120,14 +120,15 @@ describe("SEL-270 schemas", () => {
   });
 
   it("accepts store summary aggregate", () => {
-    expect(sellerStoreReviewSummaryDtoSchema.safeParse(summaryDto).success).toBe(
-      true,
-    );
+    expect(
+      sellerStoreReviewSummaryDtoSchema.safeParse(summaryDto).success,
+    ).toBe(true);
   });
 
   it("reply request requires body; expectedVersion optional", () => {
     expect(
-      upsertSellerReviewReplyRequestSchema.safeParse({ body: "Thanks" }).success,
+      upsertSellerReviewReplyRequestSchema.safeParse({ body: "Thanks" })
+        .success,
     ).toBe(true);
     expect(
       upsertSellerReviewReplyRequestSchema.safeParse({
@@ -142,7 +143,8 @@ describe("SEL-270 schemas", () => {
 
   it("report request requires reasonCode enum", () => {
     expect(
-      reportSellerReviewRequestSchema.safeParse({ reasonCode: "OTHER" }).success,
+      reportSellerReviewRequestSchema.safeParse({ reasonCode: "OTHER" })
+        .success,
     ).toBe(true);
     expect(
       reportSellerReviewRequestSchema.safeParse({ reasonCode: "SPAM" }).success,
@@ -237,8 +239,11 @@ describe("SEL-270 api adapters", () => {
 
   it("mock path returns fixtures without network", async () => {
     installMockSeller();
-    const { listSellerReviews, getSellerRatingSummary, upsertSellerReviewReply } =
-      await import("@/features/seller/reviews/api");
+    const {
+      listSellerReviews,
+      getSellerRatingSummary,
+      upsertSellerReviewReply,
+    } = await import("@/features/seller/reviews/api");
     const list = await listSellerReviews(DEMO_STORE_ID);
     const summary = await getSellerRatingSummary(DEMO_STORE_ID);
     const reply = await upsertSellerReviewReply(DEMO_STORE_ID, "rev_01", {
@@ -275,9 +280,8 @@ describe("SEL-270 api adapters", () => {
       data: summaryDto,
       meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
     });
-    const { getSellerRatingSummary } = await import(
-      "@/features/seller/reviews/api"
-    );
+    const { getSellerRatingSummary } =
+      await import("@/features/seller/reviews/api");
     const summary = await getSellerRatingSummary("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/reviews/summary",
@@ -314,9 +318,8 @@ describe("SEL-270 api adapters", () => {
       },
       meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
     });
-    const { upsertSellerReviewReply } = await import(
-      "@/features/seller/reviews/api"
-    );
+    const { upsertSellerReviewReply } =
+      await import("@/features/seller/reviews/api");
     const result = await upsertSellerReviewReply("store_live", "rev_live_01", {
       body: "Terima kasih!",
     });
@@ -338,9 +341,8 @@ describe("SEL-270 api adapters", () => {
         message: "Reply version conflict",
       }),
     );
-    const { upsertSellerReviewReply } = await import(
-      "@/features/seller/reviews/api"
-    );
+    const { upsertSellerReviewReply } =
+      await import("@/features/seller/reviews/api");
     await expect(
       upsertSellerReviewReply("store_live", "rev_live_01", {
         body: "x",
@@ -361,7 +363,8 @@ describe("SEL-270 api adapters", () => {
       },
       meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
     });
-    const { reportSellerReview } = await import("@/features/seller/reviews/api");
+    const { reportSellerReview } =
+      await import("@/features/seller/reviews/api");
     const result = await reportSellerReview("store_live", "rev_live_01");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/reviews/rev_live_01/report",
@@ -381,7 +384,8 @@ describe("SEL-270 api adapters", () => {
         message: "Resource not found",
       }),
     );
-    const { reportSellerReview } = await import("@/features/seller/reviews/api");
+    const { reportSellerReview } =
+      await import("@/features/seller/reviews/api");
     await expect(
       reportSellerReview("store_live", "rev_other"),
     ).rejects.toBeInstanceOf(ApiError);

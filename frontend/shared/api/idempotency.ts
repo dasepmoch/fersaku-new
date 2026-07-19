@@ -64,8 +64,7 @@ function canonicalize(value: unknown): unknown {
 export function beginIdempotencyIntent(body?: unknown): IdempotencyIntentState {
   return {
     key: createIdempotencyKey(),
-    bodyFingerprint:
-      body === undefined ? undefined : fingerprintBody(body),
+    bodyFingerprint: body === undefined ? undefined : fingerprintBody(body),
     createdAt: Date.now(),
   };
 }

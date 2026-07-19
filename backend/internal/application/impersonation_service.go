@@ -41,19 +41,19 @@ func (s *ImpersonationService) newID(prefix string) string {
 
 // StartImpersonationInput is the user-target start contract.
 type StartImpersonationInput struct {
-	ActorAdminID      string
-	ActorSessionID    string
-	TargetUserID      string
-	TargetMerchantID  string // optional context from merchant resolver
-	Scope             string
-	Reason            string
-	Ticket            string
-	TTLMinutes        int
-	MFACode           string
-	IdempotencyKey    string
-	RequestID         string
-	IP                string
-	UserAgent         string
+	ActorAdminID     string
+	ActorSessionID   string
+	TargetUserID     string
+	TargetMerchantID string // optional context from merchant resolver
+	Scope            string
+	Reason           string
+	Ticket           string
+	TTLMinutes       int
+	MFACode          string
+	IdempotencyKey   string
+	RequestID        string
+	IP               string
+	UserAgent        string
 	// ActorPermissions used to check impersonation.start / support_write.
 	ActorPermissions []string
 }
@@ -260,11 +260,11 @@ func (s *ImpersonationService) StartForMerchant(ctx context.Context, in StartImp
 
 // TerminateInput ends an active impersonation session.
 type TerminateInput struct {
-	ActorAdminID     string
-	ActorSessionID   string
-	ImpersonationID  string
-	Reason           string
-	RequestID        string
+	ActorAdminID    string
+	ActorSessionID  string
+	ImpersonationID string
+	Reason          string
+	RequestID       string
 	// If true, only the actor who started may terminate (or the derived session holder).
 	RequireActor bool
 }

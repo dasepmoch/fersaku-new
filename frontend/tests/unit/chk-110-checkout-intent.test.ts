@@ -140,9 +140,8 @@ describe("CHK-110 createCheckoutIntent API", () => {
       meta,
     } as never);
 
-    const { createCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { createCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     const key = "22222222-2222-4222-8222-222222222222";
     const intent = await createCheckoutIntent({
       storeId: "store_live",
@@ -180,9 +179,8 @@ describe("CHK-110 createCheckoutIntent API", () => {
     const domain = await import("@/shared/data/domain-source");
     vi.spyOn(domain, "shouldUseMockFixtures").mockReturnValue(true);
 
-    const { createCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { createCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     await expect(
       createCheckoutIntent({
         storeId: "s",
@@ -201,9 +199,8 @@ describe("CHK-110 createCheckoutIntent API", () => {
     const http = await import("@/shared/api/http-client");
     const spy = vi.spyOn(http, "apiRequest");
 
-    const { simulateCheckoutPayment } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { simulateCheckoutPayment } =
+      await import("@/features/commerce/checkout/api");
     const result = await simulateCheckoutPayment({
       productId: "prod_01",
       storeSlug: "asep-ai-tools",
@@ -227,9 +224,8 @@ describe("CHK-110 createCheckoutIntent API", () => {
     const http = await import("@/shared/api/http-client");
     const spy = vi.spyOn(http, "apiRequest");
 
-    const { simulateCheckoutPayment } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { simulateCheckoutPayment } =
+      await import("@/features/commerce/checkout/api");
     await expect(
       simulateCheckoutPayment({
         productId: "prod_01",
@@ -259,9 +255,8 @@ describe("CHK-110 createCheckoutIntent API", () => {
       }),
     );
 
-    const { createCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { createCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     let intent: unknown = null;
     let failed = false;
     try {
@@ -332,9 +327,8 @@ describe("CHK-110 double-click + idempotency key reuse", () => {
       meta,
     } as never);
 
-    const { createCheckoutIntent } = await import(
-      "@/features/commerce/checkout/api"
-    );
+    const { createCheckoutIntent } =
+      await import("@/features/commerce/checkout/api");
     const holder = createIdempotencyIntentHolder();
     const key = holder.getKey();
     const input = {

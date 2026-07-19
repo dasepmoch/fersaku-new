@@ -577,8 +577,6 @@ func (s *ObjectService) ProcessPendingScans(ctx context.Context, limit int32) (i
 	return n, nil
 }
 
-
-
 func (s *ObjectService) reject(ctx context.Context, id, reason string, now time.Time) error {
 	return s.Store.UpdateObjectComplete(ctx, id, objects.StatusRejected, 0, "", "", nil, nil, nil, nil, nil, &reason, now)
 }
@@ -600,12 +598,12 @@ func (s *ObjectService) GetObjectMetadata(ctx context.Context, userID, storeID, 
 
 // DownloadURLResult is a short-lived GET capability.
 type DownloadURLResult struct {
-	ObjectID      string
-	DownloadURL   string
-	ExpiresAt     time.Time
-	ContentType   string
-	SizeBytes     *int64
-	CacheControl  string
+	ObjectID     string
+	DownloadURL  string
+	ExpiresAt    time.Time
+	ContentType  string
+	SizeBytes    *int64
+	CacheControl string
 }
 
 // GetDownloadURL returns short-lived GET for owner or active delivery grant holder.

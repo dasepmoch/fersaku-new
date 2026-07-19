@@ -15,7 +15,10 @@ import { MoreHorizontal } from "lucide-react";
 
 import { rupiah } from "@/lib/utils";
 
-import { useAdminPaymentMismatches, useAdminPayments } from "@/features/admin/data";
+import {
+  useAdminPaymentMismatches,
+  useAdminPayments,
+} from "@/features/admin/data";
 import { getDomainSource } from "@/shared/data/domain-source";
 
 import { TablePagination } from "@/shared/ui/table-pagination";
@@ -92,7 +95,9 @@ function Payments() {
           note={isMock ? "0.14% today" : "Failed / unknown on page"}
         />
       </div>
-      <PaymentMismatchAlert mismatches={mismatches ?? (isMock ? undefined : [])} />
+      <PaymentMismatchAlert
+        mismatches={mismatches ?? (isMock ? undefined : [])}
+      />
       <section className={`${adminPanel} mt-4 overflow-hidden`}>
         <div className="flex flex-col gap-3 border-b border-[#e6e9ef] p-4 sm:flex-row">
           <TableToolbar
@@ -178,8 +183,8 @@ function Payments() {
           <div className="mt-6 flex h-28 items-end gap-1">
             {(isMock
               ? [
-                  32, 58, 40, 75, 62, 80, 54, 89, 68, 92, 73, 100, 86, 94, 72, 88,
-                  66, 81, 59, 77,
+                  32, 58, 40, 75, 62, 80, 54, 89, 68, 92, 73, 100, 86, 94, 72,
+                  88, 66, 81, 59, 77,
                 ]
               : Array.from({ length: 20 }, () => 12)
             ).map((h, i) => (
@@ -195,9 +200,7 @@ function Payments() {
           </div>
           <div className="mt-4 flex justify-between text-[8px] text-[#8c96a8]">
             <span>
-              {isMock
-                ? "2,089 verified"
-                : `${successCount} paid on page`}
+              {isMock ? "2,089 verified" : `${successCount} paid on page`}
             </span>
             <span className="text-[#d85b53]">
               {isMock
@@ -221,16 +224,12 @@ function Payments() {
                   [
                     "Pending payments",
                     String(
-                      paymentIntents.filter((p) =>
-                        /pending/i.test(p.status),
-                      ).length,
+                      paymentIntents.filter((p) => /pending/i.test(p.status))
+                        .length,
                     ),
                   ],
                   ["Failed payments", String(failedCount)],
-                  [
-                    "Mismatches open",
-                    String((mismatches ?? []).length),
-                  ],
+                  ["Mismatches open", String((mismatches ?? []).length)],
                 ]
             ).map((x, i) => (
               <div

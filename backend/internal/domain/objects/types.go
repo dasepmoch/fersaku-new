@@ -37,9 +37,9 @@ const (
 type RetentionClass string
 
 const (
-	RetentionStandard     RetentionClass = "STANDARD"
-	RetentionProduct      RetentionClass = "PRODUCT"
-	RetentionAuditLocked  RetentionClass = "AUDIT_LOCKED"
+	RetentionStandard      RetentionClass = "STANDARD"
+	RetentionProduct       RetentionClass = "PRODUCT"
+	RetentionAuditLocked   RetentionClass = "AUDIT_LOCKED"
 	RetentionKYCCiphertext RetentionClass = "KYC_CIPHERTEXT"
 )
 
@@ -109,14 +109,14 @@ type DeliveryGrant struct {
 
 // Limits for non-KYC uploads (launch defaults).
 const (
-	MaxUploadBytesProduct  int64 = 100 * 1024 * 1024 // 100 MiB
-	MaxUploadBytesPublic   int64 = 10 * 1024 * 1024  // 10 MiB
-	MaxUploadBytesProfile  int64 = 5 * 1024 * 1024   // 5 MiB
-	MaxUploadBytesInvoice  int64 = 20 * 1024 * 1024  // 20 MiB
-	DefaultPresignPutTTL         = 15 * time.Minute
-	DefaultPresignGetTTL         = 5 * time.Minute
-	DefaultUploadIntentTTL       = 24 * time.Hour
-	DefaultDeliveryGrantTTL      = 1 * time.Hour
+	MaxUploadBytesProduct   int64 = 100 * 1024 * 1024 // 100 MiB
+	MaxUploadBytesPublic    int64 = 10 * 1024 * 1024  // 10 MiB
+	MaxUploadBytesProfile   int64 = 5 * 1024 * 1024   // 5 MiB
+	MaxUploadBytesInvoice   int64 = 20 * 1024 * 1024  // 20 MiB
+	DefaultPresignPutTTL          = 15 * time.Minute
+	DefaultPresignGetTTL          = 5 * time.Minute
+	DefaultUploadIntentTTL        = 24 * time.Hour
+	DefaultDeliveryGrantTTL       = 1 * time.Hour
 	// Soft merchant quota (optional); 0 means unlimited.
 	DefaultMerchantSoftQuotaBytes int64 = 5 * 1024 * 1024 * 1024 // 5 GiB
 )

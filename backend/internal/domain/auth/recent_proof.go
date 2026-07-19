@@ -44,15 +44,15 @@ func ValidProofPurpose(purpose string) bool {
 
 // RecentMFAProof is a server-side row; only ProofHash is stored at rest.
 type RecentMFAProof struct {
-	ID        string
-	UserID    string
-	SessionID string
-	Purpose   string
-	ProofHash string
-	Factor    RecentProofFactor
-	ExpiresAt time.Time
+	ID         string
+	UserID     string
+	SessionID  string
+	Purpose    string
+	ProofHash  string
+	Factor     RecentProofFactor
+	ExpiresAt  time.Time
 	ConsumedAt *time.Time
-	CreatedAt time.Time
+	CreatedAt  time.Time
 }
 
 // IsUsable reports whether the proof can still be consumed at now.

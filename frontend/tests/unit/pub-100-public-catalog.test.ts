@@ -22,11 +22,6 @@ import {
   listPublicProductReviews,
 } from "@/features/seller/reviews/api";
 
-const meta = {
-  requestId: "req_pub100",
-  timestamp: "2026-07-17T10:00:00Z",
-};
-
 function productDto(
   overrides: Partial<{
     id: string;
@@ -208,9 +203,8 @@ describe("PUB-100 404 vs network", () => {
       }),
     );
 
-    const { getPublicStorefront: getStore } = await import(
-      "@/features/catalog/api"
-    );
+    const { getPublicStorefront: getStore } =
+      await import("@/features/catalog/api");
     await expect(getStore("missing")).resolves.toBeNull();
 
     spy.mockRejectedValueOnce(

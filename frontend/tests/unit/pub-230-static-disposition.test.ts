@@ -32,7 +32,9 @@ describe("PUB-230 — static help/careers/blog/API playground disposition", () =
     expect(help).toMatch(/href="\/contact"/);
 
     // Careers role CTAs are real mailto apply links
-    expect(careers).toMatch(/CAREERS_APPLY_MAIL\s*=\s*["']careers@fersaku\.id["']/);
+    expect(careers).toMatch(
+      /CAREERS_APPLY_MAIL\s*=\s*["']careers@fersaku\.id["']/,
+    );
     expect(careers).toMatch(/mailto:\$\{CAREERS_APPLY_MAIL\}/);
     for (const role of [
       "Senior Product Designer",
@@ -95,7 +97,9 @@ describe("PUB-230 — static help/careers/blog/API playground disposition", () =
     );
     expect(source).toMatch(/Frontend mock • no network request/);
     expect(source).toMatch(/getDomainSource\(["']publicCatalog["']\)/);
-    expect(source).toMatch(/playgroundSendEnabled\s*=\s*publicSource\s*===\s*["']mock["']/);
+    expect(source).toMatch(
+      /playgroundSendEnabled\s*=\s*publicSource\s*===\s*["']mock["']/,
+    );
     expect(source).toMatch(
       /API playground sandbox is out of scope for launch \(PUB-230 deferred\)/,
     );

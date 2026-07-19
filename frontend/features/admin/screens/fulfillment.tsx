@@ -45,10 +45,7 @@ function FulfillmentControl() {
   const { data } = useAdminFulfillments();
   const forceMutation = useForceFulfillAdminOrderMutation();
   const revokeMutation = useRevokeAdminDeliveryMutation();
-  const rows = useMemo(
-    () => (data ?? []) as AdminFulfillment[],
-    [data],
-  );
+  const rows = useMemo(() => (data ?? []) as AdminFulfillment[], [data]);
   const [action, setAction] = useState<FulfillmentAction | null>(null);
   const { pageRows, pagination } = useClientPagination(rows);
   const actionRow = rows.find((row) => row.id === action?.rowId);

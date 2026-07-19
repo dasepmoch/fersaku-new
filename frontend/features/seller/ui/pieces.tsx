@@ -28,9 +28,7 @@ export function SearchBox({
       <input
         placeholder={placeholder}
         value={value}
-        onChange={
-          onChange ? (e) => onChange(e.target.value) : undefined
-        }
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className="min-w-0 flex-1 bg-transparent outline-none"
       />
     </div>

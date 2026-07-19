@@ -97,7 +97,10 @@ describe("QLT-300 parent — co-evolution + category registration", () => {
   });
 
   it("parent does not claim full §3.7 cells or invent pentest", () => {
-    const src = readFileSync(abs("docs/QLT-300-SECURITY-COEVOLUTION.md"), "utf8");
+    const src = readFileSync(
+      abs("docs/QLT-300-SECURITY-COEVOLUTION.md"),
+      "utf8",
+    );
     expect(src.includes("§3.7") || src.includes("3.7")).toBe(true);
     expect(src.toLowerCase().includes("pentest")).toBe(true);
     expect(src.includes("Not") || src.includes("does **not**")).toBe(true);
@@ -131,7 +134,10 @@ describe("QLT-300 parent — required FE unit samples", () => {
       expect(mfa.includes(needle), `int-140-mfa.test.ts: ${needle}`).toBe(true);
     }
 
-    const session = readFileSync(abs("tests/unit/session-int-120.test.ts"), "utf8");
+    const session = readFileSync(
+      abs("tests/unit/session-int-120.test.ts"),
+      "utf8",
+    );
     for (const needle of ["returnTo", "logout", "csrf"]) {
       expect(
         session.toLowerCase().includes(needle.toLowerCase()),
@@ -174,8 +180,8 @@ describe("QLT-300 parent — CI suite registration", () => {
     expect(pkg.includes("qlt-300-security")).toBe(true);
 
     const ci = readFileSync(abs(".github/workflows/ci.yml"), "utf8");
-    expect(ci.includes("qlt-300-security") || ci.includes("security-negative")).toBe(
-      true,
-    );
+    expect(
+      ci.includes("qlt-300-security") || ci.includes("security-negative"),
+    ).toBe(true);
   });
 });

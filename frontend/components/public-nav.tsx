@@ -20,7 +20,10 @@ export function PublicNav() {
   const links = useMemo(() => {
     try {
       if (getDomainSource("publicCatalog") === "mock") {
-        return [...baseLinks, ["Demo toko", "/@asep-ai-tools"] as [string, string]];
+        return [
+          ...baseLinks,
+          ["Demo toko", "/@asep-ai-tools"] as [string, string],
+        ];
       }
     } catch {
       /* fail closed: hide demo on config error */

@@ -77,7 +77,10 @@ function UsersPage() {
             />
             <tbody>
               {pageRows.map((a) => (
-                <tr key={a.email} className="border-t border-[#e8eaf0] text-[9px]">
+                <tr
+                  key={a.email}
+                  className="border-t border-[#e8eaf0] text-[9px]"
+                >
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <span className="grid size-9 place-items-center rounded-full bg-[#e8ecf8] font-black text-[#52617e]">

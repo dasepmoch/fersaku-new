@@ -6,11 +6,7 @@
 export type StoreObjectPurpose = "PRODUCT_FILE" | "PUBLIC_ASSET";
 
 export type StoreObjectStatus =
-  | "UPLOADING"
-  | "SCANNING"
-  | "READY"
-  | "REJECTED"
-  | "EXPIRED";
+  "UPLOADING" | "SCANNING" | "READY" | "REJECTED" | "EXPIRED";
 
 export type StoreObjectVisibility = "PRIVATE" | "PUBLIC";
 

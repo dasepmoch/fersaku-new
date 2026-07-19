@@ -30,9 +30,7 @@ describe("server cookie allowlist (INT-110)", () => {
       buildForwardedCookieHeader([{ name: "_ga", value: "x" }]),
     ).toBeUndefined();
     expect(
-      buildForwardedCookieHeader([
-        { name: "fersaku_session", value: "" },
-      ]),
+      buildForwardedCookieHeader([{ name: "fersaku_session", value: "" }]),
     ).toBeUndefined();
   });
 

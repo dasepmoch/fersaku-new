@@ -32,7 +32,10 @@ export function useSellerRatingSummary(storeId: string) {
     queryKey: queryKeys.seller.reviewsSummary(storeId),
     queryFn: (signal) => getSellerRatingSummary(storeId, signal),
     enabled: Boolean(storeId),
-    placeholderData: mockPlaceholderData("sellerOperations", demoRatingSummary()),
+    placeholderData: mockPlaceholderData(
+      "sellerOperations",
+      demoRatingSummary(),
+    ),
   });
 }
 
@@ -69,10 +72,15 @@ export function useUpsertSellerReviewReply(storeId: string) {
       },
       signal,
     ) =>
-      upsertSellerReviewReply(storeId, variables.reviewId, {
-        body: variables.body,
-        expectedVersion: variables.expectedVersion,
-      }, signal),
+      upsertSellerReviewReply(
+        storeId,
+        variables.reviewId,
+        {
+          body: variables.body,
+          expectedVersion: variables.expectedVersion,
+        },
+        signal,
+      ),
     onSuccess: async (_data, variables) => {
       invalidateSellerReviews(queryClient, storeId, variables.productId);
     },

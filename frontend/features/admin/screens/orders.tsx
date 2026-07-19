@@ -55,12 +55,16 @@ function Orders() {
       <div className="grid gap-3 sm:grid-cols-4">
         <Metric
           label="Orders today"
-          value={isMock ? "1,842" : adminOrders.length.toLocaleString("id-ID") || "—"}
+          value={
+            isMock ? "1,842" : adminOrders.length.toLocaleString("id-ID") || "—"
+          }
           note={isMock ? "+14.2% vs yesterday" : "Current page"}
         />
         <Metric
           label="Paid volume"
-          value={isMock ? "Rp84,2jt" : adminOrders.length ? rupiah(grossSum) : "—"}
+          value={
+            isMock ? "Rp84,2jt" : adminOrders.length ? rupiah(grossSum) : "—"
+          }
           note={isMock ? "96.84% success" : "Listed orders"}
         />
         <Metric
@@ -145,11 +149,7 @@ function OrderDetail({ id }: { id: string }) {
   const fees = mapAdminOrderFeeDisplay(order);
   // Snapshot chrome shows platform fee + processing fee labels; money from server total only.
   const platformFeeLabel =
-    fees.totalFee > 0
-      ? rupiah(fees.platformFee)
-      : isMock
-        ? rupiah(0)
-        : "—";
+    fees.totalFee > 0 ? rupiah(fees.platformFee) : isMock ? rupiah(0) : "—";
   const processingFeeLabel =
     fees.processingFee > 0
       ? rupiah(fees.processingFee)
@@ -159,11 +159,7 @@ function OrderDetail({ id }: { id: string }) {
           ? rupiah(0)
           : "—";
   const sellerNetLabel =
-    fees.totalFee > 0
-      ? rupiah(fees.sellerNet)
-      : isMock
-        ? rupiah(0)
-        : "—";
+    fees.totalFee > 0 ? rupiah(fees.sellerNet) : isMock ? rupiah(0) : "—";
 
   const paymentIntentId =
     order.payment && order.payment !== "—"
@@ -219,10 +215,7 @@ function OrderDetail({ id }: { id: string }) {
             <Metric label="Gross" value={rupiah(order.gross)} />
             <Metric label="Platform fee (3%)" value={platformFeeLabel} />
             <Metric label="Seller net" value={sellerNetLabel} />
-            <Metric
-              label="Payment processing fee"
-              value={processingFeeLabel}
-            />
+            <Metric label="Payment processing fee" value={processingFeeLabel} />
           </div>
           <div className="mt-7 grid gap-6 border-t border-[#e6e9ef] pt-6 sm:grid-cols-2">
             <Info
@@ -240,10 +233,7 @@ function OrderDetail({ id }: { id: string }) {
                 ["Method", isMock ? "QRIS" : order.payment || "—"],
                 ["Intent", isMock ? "qris_2Yc91p" : order.payment || "—"],
                 ["Provider", isMock ? "Xendit" : "—"],
-                [
-                  "Provider reference",
-                  isMock ? "XND-9821041" : "—",
-                ],
+                ["Provider reference", isMock ? "XND-9821041" : "—"],
               ]}
             />
           </div>
@@ -257,10 +247,22 @@ function OrderDetail({ id }: { id: string }) {
             {(isMock
               ? [
                   ["Order created", "14:32:08", "Customer submitted checkout"],
-                  ["QRIS generated", "14:32:09", "Xendit returned payment image"],
-                  ["Payment callback verified", "14:33:21", "Signature matched"],
+                  [
+                    "QRIS generated",
+                    "14:32:09",
+                    "Xendit returned payment image",
+                  ],
+                  [
+                    "Payment callback verified",
+                    "14:33:21",
+                    "Signature matched",
+                  ],
                   ["Order marked paid", "14:33:22", "Idempotency key accepted"],
-                  ["Delivery fulfilled", "14:33:23", "Download token generated"],
+                  [
+                    "Delivery fulfilled",
+                    "14:33:23",
+                    "Download token generated",
+                  ],
                   [
                     "Seller balance credited",
                     "14:33:23",

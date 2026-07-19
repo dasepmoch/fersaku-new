@@ -69,7 +69,8 @@ export default function HelpPage() {
     return HELP_CATEGORIES.filter((cat) => {
       if (activeCategoryId && cat.id !== activeCategoryId) return false;
       if (!normalized) return true;
-      const haystack = `${cat.title} ${cat.keywords} ${cat.count}`.toLowerCase();
+      const haystack =
+        `${cat.title} ${cat.keywords} ${cat.count}`.toLowerCase();
       return haystack.includes(normalized);
     });
   }, [normalized, activeCategoryId]);

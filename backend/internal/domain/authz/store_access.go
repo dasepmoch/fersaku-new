@@ -62,8 +62,8 @@ func MemberRoleAllowsRead(role MerchantMemberRole) bool {
 
 // StoreAccess is the resolved guard result for a store-scoped use case.
 type StoreAccess struct {
-	Store      Store
-	Scope      TenantScope
+	Store        Store
+	Scope        TenantScope
 	Capabilities []StoreCapability
 }
 

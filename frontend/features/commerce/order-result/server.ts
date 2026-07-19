@@ -14,10 +14,7 @@ import { ApiError } from "@/shared/api/api-error";
 import { classifyApiError } from "@/shared/api/error-policy";
 import { orderResultEnvelopeSchema } from "@/shared/api/schemas";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
-import {
-  ORDER_CAPABILITY_HEADER,
-  type OrderResult,
-} from "./contracts";
+import { ORDER_CAPABILITY_HEADER, type OrderResult } from "./contracts";
 import { buildMockOrderResult, mapOrderResultDto } from "./mappers";
 
 export type GetOrderResultServerOptions = {

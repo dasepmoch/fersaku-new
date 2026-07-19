@@ -37,14 +37,14 @@ type CheckoutStoreRow struct {
 // CheckoutOrder extends orders.Order with checkout columns.
 type CheckoutOrder struct {
 	orders.Order
-	OrderStatus          string
-	PaymentMode          string
-	FeeSnapshotID        *string
-	CouponReservationID  *string
-	PublicTokenHash      *string
-	BuyerSessionID       *string
-	ExpiresAt            *time.Time
-	IdempotencyKeyHash   *string
+	OrderStatus         string
+	PaymentMode         string
+	FeeSnapshotID       *string
+	CouponReservationID *string
+	PublicTokenHash     *string
+	BuyerSessionID      *string
+	ExpiresAt           *time.Time
+	IdempotencyKeyHash  *string
 }
 
 // IdempotencyRecord is a durable idempotency row.

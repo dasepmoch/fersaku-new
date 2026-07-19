@@ -19,10 +19,10 @@ import (
 
 // fakeDisburseApply records callbacks for happy-path / replay unit tests (PROD-C10).
 type fakeDisburseApply struct {
-	mu      sync.Mutex
-	calls   []disburseCall
-	err     error
-	callN   int
+	mu    sync.Mutex
+	calls []disburseCall
+	err   error
+	callN int
 }
 
 type disburseCall struct {

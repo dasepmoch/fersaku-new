@@ -48,9 +48,7 @@ export function AuthShell({ mode }: { mode: "login" | "register" }) {
           <button
             type="button"
             disabled={!googleOAuthEnabled}
-            title={
-              googleOAuthEnabled ? undefined : GOOGLE_OAUTH_DISABLED_TITLE
-            }
+            title={googleOAuthEnabled ? undefined : GOOGLE_OAUTH_DISABLED_TITLE}
             className="hairline flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-white text-sm font-bold transition hover:bg-[#f3f4ef] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-white"
           >
             <span className="text-lg font-black">G</span> Lanjutkan dengan

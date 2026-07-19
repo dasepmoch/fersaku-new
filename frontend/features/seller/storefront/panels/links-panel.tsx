@@ -14,7 +14,10 @@ import {
 import { useSellerStoreId } from "@/shared/seller";
 import { getDomainSource } from "@/shared/data/domain-source";
 
-function domainCardCopy(domain: StoreDomain | undefined, apiMode: boolean): {
+function domainCardCopy(
+  domain: StoreDomain | undefined,
+  apiMode: boolean,
+): {
   hostnameLine: string;
   badge: string;
   connected: boolean;
@@ -54,10 +57,7 @@ function CustomDomainCard() {
   }
   const domainsQuery = useStoreDomains(apiMode ? storeId : "");
   const primary = pickPrimaryDomain(domainsQuery.data ?? []);
-  const copy = domainCardCopy(
-    apiMode ? primary : undefined,
-    apiMode,
-  );
+  const copy = domainCardCopy(apiMode ? primary : undefined, apiMode);
 
   return (
     <div className="hairline rounded-2xl border bg-white p-4">

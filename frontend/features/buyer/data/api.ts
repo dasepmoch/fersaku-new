@@ -307,10 +307,7 @@ export async function getBuyerProfile(
       },
     ),
   ]);
-  return mapBuyerProfileDto(
-    profileRes.data,
-    prefsRes.data.preferences,
-  );
+  return mapBuyerProfileDto(profileRes.data, prefsRes.data.preferences);
 }
 
 /**
@@ -385,10 +382,7 @@ export async function patchBuyerNotificationPreferences(
   input: PatchBuyerNotificationPreferencesInput,
   signal?: AbortSignal,
 ): Promise<
-  Pick<
-    BuyerProfile,
-    "receiptEmail" | "marketingEmail" | "productUpdatesEmail"
-  >
+  Pick<BuyerProfile, "receiptEmail" | "marketingEmail" | "productUpdatesEmail">
 > {
   if (shouldUseMockFixtures("buyer")) {
     return {
@@ -457,7 +451,8 @@ export function isBuyerReviewApiDomain(): boolean {
 }
 
 function mockBuyerReview(
-  input: CreateBuyerReviewInput | (PatchBuyerReviewInput & { orderItemId?: string }),
+  input:
+    CreateBuyerReviewInput | (PatchBuyerReviewInput & { orderItemId?: string }),
   existing?: BuyerReview,
 ): BuyerReview {
   if ("reviewId" in input) {
@@ -517,15 +512,15 @@ export async function createBuyerReview(
     storeId: input.storeId,
   });
 
-  const response = await apiRequest<BuyerReviewEnvelope, BuyerCreateReviewRequest>(
-    "/v1/buyer/reviews",
-    {
-      schema: buyerReviewEnvelopeSchema,
-      method: "POST",
-      body,
-      signal,
-    },
-  );
+  const response = await apiRequest<
+    BuyerReviewEnvelope,
+    BuyerCreateReviewRequest
+  >("/v1/buyer/reviews", {
+    schema: buyerReviewEnvelopeSchema,
+    method: "POST",
+    body,
+    signal,
+  });
   return mapBuyerReviewDto(response.data);
 }
 
@@ -558,14 +553,14 @@ export async function patchBuyerReview(
     body: input.body,
   });
 
-  const response = await apiRequest<BuyerReviewEnvelope, BuyerPatchReviewRequest>(
-    `/v1/buyer/reviews/${encodeURIComponent(reviewId)}`,
-    {
-      schema: buyerReviewEnvelopeSchema,
-      method: "PATCH",
-      body,
-      signal,
-    },
-  );
+  const response = await apiRequest<
+    BuyerReviewEnvelope,
+    BuyerPatchReviewRequest
+  >(`/v1/buyer/reviews/${encodeURIComponent(reviewId)}`, {
+    schema: buyerReviewEnvelopeSchema,
+    method: "PATCH",
+    body,
+    signal,
+  });
   return mapBuyerReviewDto(response.data);
 }

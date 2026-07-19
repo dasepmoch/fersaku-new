@@ -144,15 +144,15 @@ describe("money + timestamp", () => {
   });
 
   it("rejects unsafe integer range", () => {
-    expect(
-      moneyIdrSchema.safeParse(Number.MAX_SAFE_INTEGER + 1).success,
-    ).toBe(false);
+    expect(moneyIdrSchema.safeParse(Number.MAX_SAFE_INTEGER + 1).success).toBe(
+      false,
+    );
   });
 
   it("validates RFC3339 timestamps", () => {
-    expect(rfc3339TimestampSchema.safeParse("2026-07-17T10:00:00Z").success).toBe(
-      true,
-    );
+    expect(
+      rfc3339TimestampSchema.safeParse("2026-07-17T10:00:00Z").success,
+    ).toBe(true);
     expect(rfc3339TimestampSchema.safeParse("not-a-date").success).toBe(false);
   });
 });
@@ -175,7 +175,8 @@ describe("pilot public + auth samples", () => {
   });
 
   it("rejects missing required product field", () => {
-    const { id: _id, ...rest } = sampleProduct;
+    const { id: _productId, ...rest } = sampleProduct;
+    void _productId;
     expect(catalogProductDtoSchema.safeParse(rest).success).toBe(false);
   });
 

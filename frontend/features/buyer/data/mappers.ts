@@ -12,10 +12,7 @@ import type {
   BuyerSessionDto,
   NotificationPrefDto,
 } from "@/shared/api/schemas";
-import {
-  invalidApiContract,
-  requireSafeMoneyIdr,
-} from "@/shared/api/mappers";
+import { invalidApiContract, requireSafeMoneyIdr } from "@/shared/api/mappers";
 import type {
   BuyerProfile,
   BuyerPurchase,
@@ -219,9 +216,12 @@ export function assertNoDeliverySecretsInListItem(
   purchase: BuyerPurchase,
 ): void {
   if (purchase.credentialFields?.some((f) => f.value && f.secret)) {
-    return invalidApiContract("List purchase must not carry credential secrets", {
-      issues: [{ path: "credentialFields", message: "secret present" }],
-    });
+    return invalidApiContract(
+      "List purchase must not carry credential secrets",
+      {
+        issues: [{ path: "credentialFields", message: "secret present" }],
+      },
+    );
   }
   if (purchase.code?.value && purchase.code.value.length > 0) {
     // List must not include codes; empty redacted shell only allowed on detail.
@@ -261,8 +261,12 @@ export function formatSessionActiveLabel(
  * BE SessionView → existing BuyerSession view.
  * current is backend session-id equality only (never device guess).
  * location/ip: privacy mask — BE buyer list has no raw IP; show "—".
+ * nowMs is injectable so labels stay deterministic in tests.
  */
-export function mapBuyerSessionDto(dto: BuyerSessionDto): BuyerSession {
+export function mapBuyerSessionDto(
+  dto: BuyerSessionDto,
+  nowMs: number = Date.now(),
+): BuyerSession {
   const id = dto.id.trim();
   if (!id) {
     return invalidApiContract("Buyer session missing id", {
@@ -280,6 +284,7 @@ export function mapBuyerSessionDto(dto: BuyerSessionDto): BuyerSession {
       typeof dto.lastSeenAt === "string"
         ? dto.lastSeenAt
         : String(dto.lastSeenAt),
+      nowMs,
     ),
     current: Boolean(dto.current),
   };
@@ -287,16 +292,14 @@ export function mapBuyerSessionDto(dto: BuyerSessionDto): BuyerSession {
 
 export function mapBuyerSessionListDto(
   sessions: BuyerSessionDto[],
+  nowMs: number = Date.now(),
 ): BuyerSession[] {
-  return sessions.map(mapBuyerSessionDto);
+  return sessions.map((s) => mapBuyerSessionDto(s, nowMs));
 }
 
 /** Initials from display name for static avatar circle (no photo — INT-175). */
 export function profileInitials(displayName: string): string {
-  const parts = displayName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "—";
   if (parts.length === 1) {
     const w = parts[0];

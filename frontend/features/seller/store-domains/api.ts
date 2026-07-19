@@ -40,7 +40,7 @@ export function isSellerStoreDomainsApiDomain(): boolean {
   return getDomainSource("sellerOperations") === "api";
 }
 
-function useMock(): boolean {
+function isMockMode(): boolean {
   return shouldUseMockFixtures("sellerOperations");
 }
 
@@ -53,7 +53,7 @@ export async function listStoreDomains(
   signal?: AbortSignal,
 ): Promise<StoreDomain[]> {
   if (!storeId) return [];
-  if (useMock()) return demoStoreDomains(storeId);
+  if (isMockMode()) return demoStoreDomains(storeId);
 
   const response = await apiRequest<ListEnvelope>(
     `/v1/stores/${encodeURIComponent(storeId)}/domains`,
@@ -79,7 +79,7 @@ export async function createStoreDomain(
     throw new Error("hostname required");
   }
 
-  if (useMock()) {
+  if (isMockMode()) {
     return mockCreateStoreDomain(storeId, hostname);
   }
 
@@ -117,7 +117,7 @@ export async function verifyStoreDomain(
   input: VerifyStoreDomainInput,
   signal?: AbortSignal,
 ): Promise<StoreDomain> {
-  if (useMock()) {
+  if (isMockMode()) {
     const base =
       demoStoreDomains(storeId).find((d) => d.id === input.domainId) ??
       demoStoreDomains(storeId)[0]!;
@@ -162,7 +162,7 @@ export async function deleteStoreDomain(
   input: DeleteStoreDomainInput,
   signal?: AbortSignal,
 ): Promise<StoreDomain> {
-  if (useMock()) {
+  if (isMockMode()) {
     const base =
       demoStoreDomains(storeId).find((d) => d.id === input.domainId) ??
       demoStoreDomains(storeId)[0]!;
@@ -211,7 +211,7 @@ export async function getStoreDomain(
   domainId: string,
   signal?: AbortSignal,
 ): Promise<StoreDomain> {
-  if (useMock()) {
+  if (isMockMode()) {
     const hit = demoStoreDomains(storeId).find((d) => d.id === domainId);
     return hit ?? demoStoreDomains(storeId)[0]!;
   }

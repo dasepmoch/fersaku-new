@@ -173,8 +173,8 @@ func TestWebhooks_RetryPreservesEventAndSignatureSemantics(t *testing.T) {
 
 	// Create endpoint (public hostname, SkipDNS)
 	rr := whJSON(t, h, http.MethodPost, "/v1/stores/"+storeID+"/webhooks", sellerCookie, map[string]any{
-		"url":         "https://hooks.merchant.example/fsk",
-		"paymentMode": "SANDBOX",
+		"url":            "https://hooks.merchant.example/fsk",
+		"paymentMode":    "SANDBOX",
 		"eventAllowlist": []string{"payment.paid", "webhook.test"},
 	})
 	if rr.Code != http.StatusCreated {

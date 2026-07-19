@@ -18,12 +18,12 @@ Shape (as needed):
 
 ## Stale / revalidate
 
-| Surface | Helper | Default staleTime |
-| --- | --- | --- |
-| Public catalog | `surface: "public"` | 60s |
-| Private workspace | `surface: "private"` (default) | 30s |
-| Finance / money | `surface: "finance"` | 15s |
-| Secret / auth bootstrap | `surface: "secret"` / `"auth"` | 0 |
+| Surface                 | Helper                         | Default staleTime |
+| ----------------------- | ------------------------------ | ----------------- |
+| Public catalog          | `surface: "public"`            | 60s               |
+| Private workspace       | `surface: "private"` (default) | 30s               |
+| Finance / money         | `surface: "finance"`           | 15s               |
+| Secret / auth bootstrap | `surface: "secret"` / `"auth"` | 0                 |
 
 SSR private/auth/finance/secret reads remain `Cache-Control: no-store` at the HTTP layer (INT-020 / INT-110). Browser React Query cache is memory-only and is not a substitute for no-store.
 
@@ -46,15 +46,15 @@ Transport HTTP client remains single-shot (INT-100); query layer owns safe GET r
 
 ## Mutations
 
-| Rule | Implementation |
-| --- | --- |
-| No automatic retry | `useAppMutation` forces `retry: false`; provider default matches |
-| Opaque idempotency key | `createIdempotencyKey()` — UUID; no email/store/amount/PII/timestamp-only |
-| One key per logical intent | `createIdempotencyIntentHolder()` — reuse on manual retry; `reset()` only for new user intent |
-| Body change with same key | Local `conflict_local` / server `IDEMPOTENCY_CONFLICT` → require new user intent; never auto-rotate |
-| Double-click | `createPendingDedupe()` + disable exact CTA while `isPending` |
-| Money / payment / withdrawal / admin / permission / credential / secret | **Not optimistic** |
-| Reversible low-risk only | Optional optimistic with snapshot rollback + server reconciliation |
+| Rule                                                                    | Implementation                                                                                      |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| No automatic retry                                                      | `useAppMutation` forces `retry: false`; provider default matches                                    |
+| Opaque idempotency key                                                  | `createIdempotencyKey()` — UUID; no email/store/amount/PII/timestamp-only                           |
+| One key per logical intent                                              | `createIdempotencyIntentHolder()` — reuse on manual retry; `reset()` only for new user intent       |
+| Body change with same key                                               | Local `conflict_local` / server `IDEMPOTENCY_CONFLICT` → require new user intent; never auto-rotate |
+| Double-click                                                            | `createPendingDedupe()` + disable exact CTA while `isPending`                                       |
+| Money / payment / withdrawal / admin / permission / credential / secret | **Not optimistic**                                                                                  |
+| Reversible low-risk only                                                | Optional optimistic with snapshot rollback + server reconciliation                                  |
 
 Unknown outcome → status lookup / reconciliation, not “assume failed then new command”.
 
@@ -62,10 +62,10 @@ Unknown outcome → status lookup / reconciliation, not “assume failed then ne
 
 ```ts
 // ❌ embeds product + email (PII) and invents a new semantic key shape
-idempotencyKey: `checkout_${product.id}_${email}`
+idempotencyKey: `checkout_${product.id}_${email}`;
 
 // ❌ timestamp-only uniqueness
-idempotencyKey: `seller-withdrawal:${storeId}:${quote.id}:${Date.now()}`
+idempotencyKey: `seller-withdrawal:${storeId}:${quote.id}:${Date.now()}`;
 ```
 
 ### Good pattern
@@ -86,12 +86,12 @@ function onPay() {
 
 ## Modules
 
-| File | Role |
-| --- | --- |
-| `shared/query/query-policy.ts` | stale times, keepPrevious, safe GET retry |
+| File                              | Role                                                      |
+| --------------------------------- | --------------------------------------------------------- |
+| `shared/query/query-policy.ts`    | stale times, keepPrevious, safe GET retry                 |
 | `shared/query/mutation-policy.ts` | no-retry, intent holder, pending dedupe, opaque key check |
-| `shared/query/create-query.ts` | `useAppQuery` defaults + abort |
-| `shared/query/create-mutation.ts` | `useAppMutation` + re-exports |
-| `shared/query/query-provider.tsx` | QueryClient defaults |
-| `shared/api/idempotency.ts` | UUID mint + intent fingerprint (INT-020) |
-| `shared/auth/private-cache.ts` | logout/actor private cache clear |
+| `shared/query/create-query.ts`    | `useAppQuery` defaults + abort                            |
+| `shared/query/create-mutation.ts` | `useAppMutation` + re-exports                             |
+| `shared/query/query-provider.tsx` | QueryClient defaults                                      |
+| `shared/api/idempotency.ts`       | UUID mint + intent fingerprint (INT-020)                  |
+| `shared/auth/private-cache.ts`    | logout/actor private cache clear                          |

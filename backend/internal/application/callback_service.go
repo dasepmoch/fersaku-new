@@ -36,9 +36,9 @@ type CallbackService struct {
 	Analytics *AnalyticsService
 	// Webhooks enqueues outbound seller deliveries on paid (BE-420); optional.
 	Webhooks *WebhookService
-	IDs       ports.IDGenerator
-	Clock     ports.Clock
-	Log       ports.Logger
+	IDs      ports.IDGenerator
+	Clock    ports.Clock
+	Log      ports.Logger
 	// WebhookToken from XENDIT_WEBHOOK_TOKEN (constant-time compare).
 	WebhookToken string
 	// AccountScope from config (never from body) — Xendit primary.
@@ -85,11 +85,11 @@ func (s *CallbackService) mode() string {
 
 // IngressRequest is the raw HTTP ingress (token already extracted as header).
 type IngressRequest struct {
-	Body           []byte
-	TokenHeader    string
-	ContentType    string
-	ClientIP       string
-	RequestID      string
+	Body        []byte
+	TokenHeader string
+	ContentType string
+	ClientIP    string
+	RequestID   string
 	// PaymentModeOverride when using mode-specific paths; empty → DefaultPaymentMode.
 	PaymentModeOverride string
 }

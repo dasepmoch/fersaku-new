@@ -200,10 +200,10 @@ type Overview struct {
 
 // ChannelBreakdown is aggregate by channel.
 type ChannelBreakdown struct {
-	Channel   string
-	Sessions  int64
-	Orders    int64
-	GrossIDR  int64
+	Channel  string
+	Sessions int64
+	Orders   int64
+	GrossIDR int64
 }
 
 // TrafficRow is one traffic series point (day or dimension).
@@ -220,25 +220,25 @@ type TrafficRow struct {
 
 // CaptureInput is normalized attribution captured at checkout/session create.
 type CaptureInput struct {
-	StoreID        string
-	MerchantID     string
-	ProductID      string
-	OrderID        string
+	StoreID         string
+	MerchantID      string
+	ProductID       string
+	OrderID         string
 	PaymentIntentID string
-	Source         string // STOREFRONT only for real traffic
-	VisitorRaw     string // opaque client id; hashed before store
-	SessionRaw     string
-	LandingURL     string // may contain query; stripped
-	ReferrerURL    string
-	UTMSource      string
-	UTMMedium      string
-	UTMCampaign    string
-	UTMContent     string
-	UTMTerm        string
-	UserAgent      string
-	IsBot          bool
-	GrossIDR       int64
-	OccurredAt     time.Time
+	Source          string // STOREFRONT only for real traffic
+	VisitorRaw      string // opaque client id; hashed before store
+	SessionRaw      string
+	LandingURL      string // may contain query; stripped
+	ReferrerURL     string
+	UTMSource       string
+	UTMMedium       string
+	UTMCampaign     string
+	UTMContent      string
+	UTMTerm         string
+	UserAgent       string
+	IsBot           bool
+	GrossIDR        int64
+	OccurredAt      time.Time
 }
 
 // Dimensions is the sanitized attribution dimension set.

@@ -110,7 +110,8 @@ export async function listWithdrawalsPage(
     schema: adminWithdrawalListEnvelopeSchema,
     query: {
       ...adminListQueryParams(filters),
-      limit: (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
+      limit:
+        (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
     },
     signal,
   });

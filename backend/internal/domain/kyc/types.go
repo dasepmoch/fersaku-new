@@ -19,12 +19,12 @@ const CapabilityQRISAPILive = "QRIS_API_LIVE"
 
 // Document types (closed set for launch).
 const (
-	DocIDFront          = "ID_FRONT"
-	DocIDBack           = "ID_BACK"
-	DocSelfie           = "SELFIE"
-	DocBusinessLicense  = "BUSINESS_LICENSE"
-	DocTaxID            = "TAX_ID"
-	DocOther            = "OTHER"
+	DocIDFront         = "ID_FRONT"
+	DocIDBack          = "ID_BACK"
+	DocSelfie          = "SELFIE"
+	DocBusinessLicense = "BUSINESS_LICENSE"
+	DocTaxID           = "TAX_ID"
+	DocOther           = "OTHER"
 )
 
 // Document processing statuses.
@@ -48,21 +48,21 @@ const (
 
 // Issuance request statuses (authorize on approve; claim is BE-410).
 const (
-	IssuancePendingKYC  = "PENDING_KYC"
-	IssuanceAuthorized  = "AUTHORIZED"
-	IssuanceClaimed     = "CLAIMED"
-	IssuanceExpired     = "EXPIRED"
-	IssuanceRevoked     = "REVOKED"
+	IssuancePendingKYC = "PENDING_KYC"
+	IssuanceAuthorized = "AUTHORIZED"
+	IssuanceClaimed    = "CLAIMED"
+	IssuanceExpired    = "EXPIRED"
+	IssuanceRevoked    = "REVOKED"
 )
 
 // Admin transition actions.
 const (
-	ActionStartReview     = "START_REVIEW"
-	ActionVendorCheck     = "VENDOR_CHECK"
-	ActionNeedsClarify    = "NEEDS_CLARIFICATION"
-	ActionApprove         = "APPROVE"
-	ActionReject          = "REJECT"
-	ActionExpire          = "EXPIRE"
+	ActionStartReview  = "START_REVIEW"
+	ActionVendorCheck  = "VENDOR_CHECK"
+	ActionNeedsClarify = "NEEDS_CLARIFICATION"
+	ActionApprove      = "APPROVE"
+	ActionReject       = "REJECT"
+	ActionExpire       = "EXPIRE"
 )
 
 // Upload bounds.
@@ -148,23 +148,23 @@ type Transition struct {
 
 // IssuanceRequest authorizes pending live key claim (BE-410 consumes claim).
 type IssuanceRequest struct {
-	ID                     string
-	MerchantID             string
-	PaymentMode            string
-	Purpose                string
-	Capability             string
-	Status                 string
-	KYCCaseID              *string
-	KYCVersion             *int32
-	RequesterUserID        *string
-	AuthorizerUserID       *string
-	Reason                 string
-	AuthorizedAt           *time.Time
-	ClaimedAt              *time.Time
-	ExpiresAt              *time.Time
-	RevokedAt              *time.Time
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
+	ID               string
+	MerchantID       string
+	PaymentMode      string
+	Purpose          string
+	Capability       string
+	Status           string
+	KYCCaseID        *string
+	KYCVersion       *int32
+	RequesterUserID  *string
+	AuthorizerUserID *string
+	Reason           string
+	AuthorizedAt     *time.Time
+	ClaimedAt        *time.Time
+	ExpiresAt        *time.Time
+	RevokedAt        *time.Time
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	// BE-410 claim fields (hash only; raw claim token never stored).
 	ClaimTokenHash         *string
 	ClaimExpiresAt         *time.Time
@@ -181,7 +181,7 @@ type IssuanceRequest struct {
 
 // Outbox topics.
 const (
-	TopicKYCApproved          = "kyc.approved"
-	TopicIssuanceAuthorized   = "credential.issuance.authorized"
-	TopicDocumentProcess      = "kyc_document.process"
+	TopicKYCApproved        = "kyc.approved"
+	TopicIssuanceAuthorized = "credential.issuance.authorized"
+	TopicDocumentProcess    = "kyc_document.process"
 )

@@ -100,7 +100,9 @@ describe("INT-025 domain source registry", () => {
         overrides: { checkout: "disabled" },
       }),
     );
-    expect(() => shouldUseMockFixtures("checkout")).toThrow(DomainDisabledError);
+    expect(() => shouldUseMockFixtures("checkout")).toThrow(
+      DomainDisabledError,
+    );
     expect(getDomainSource("checkout")).toBe("disabled");
   });
 
@@ -173,9 +175,7 @@ describe("INT-025 domain source registry", () => {
       evaluateDomainSources({
         stage: "prototype",
         bootstrapSource: "mock",
-        overrides: { notADomain: "api" } as Partial<
-          Record<DataDomain, "api">
-        >,
+        overrides: { notADomain: "api" } as Partial<Record<DataDomain, "api">>,
       }),
     ).not.toThrow();
     // evaluate only walks DATA_DOMAINS; unknown keys ignored in typed Partial.

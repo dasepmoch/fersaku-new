@@ -34,8 +34,7 @@ function ApiKeys() {
   const primary = pickPrimaryCredential(credentials);
   const kyc = kycQuery.data;
 
-  const kycLabel =
-    kyc?.statusLabel ?? (mockMode ? "disetujui" : "—");
+  const kycLabel = kyc?.statusLabel ?? (mockMode ? "disetujui" : "—");
 
   const apiKeyDisplay =
     reveal?.apiKey ??

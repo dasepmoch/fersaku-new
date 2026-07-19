@@ -25,16 +25,19 @@ import {
   mapFinanceSourceToView,
   mapFinanceSummaryDto,
 } from "@/features/finance/mappers";
-import { demoFinanceSummary, demoSellerLedger } from "@/features/finance/demo-data";
+import {
+  demoFinanceSummary,
+  demoSellerLedger,
+} from "@/features/finance/demo-data";
 import { queryKeys } from "@/shared/query/query-keys";
 import { DEMO_STORE_ID } from "@/shared/config/demo";
 
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -160,7 +163,9 @@ describe("SEL-400 seller finance summary / revenue / ledger", () => {
     expect(view.type).toBe("SETTLEMENT_RELEASE");
     expect(view.amount).toBe(96_300);
     expect(view.direction).toBe("CREDIT");
-    expect(mapFinanceLedgerType("SETTLEMENT_RELEASE")).toBe("SETTLEMENT_RELEASE");
+    expect(mapFinanceLedgerType("SETTLEMENT_RELEASE")).toBe(
+      "SETTLEMENT_RELEASE",
+    );
     expect(mapFinanceSourceToView("SYSTEM")).toBe("MIXED");
     expect(mapFinanceSourceToView("QRIS_API")).toBe("QRIS_API");
   });
@@ -290,9 +295,9 @@ describe("SEL-400 seller finance summary / revenue / ledger", () => {
       "/v1/stores/store_foreign/finance/summary",
     );
     expect(queryKeys.seller.finance("store_foreign")[1]).toBe("store_foreign");
-    expect(queryKeys.seller.ledger("store_foreign", { profile: "cursor-first" })[1]).toBe(
-      "store_foreign",
-    );
+    expect(
+      queryKeys.seller.ledger("store_foreign", { profile: "cursor-first" })[1],
+    ).toBe("store_foreign");
     expect(queryKeys.seller.revenue("store_a", { days: 7 })).not.toEqual(
       queryKeys.seller.revenue("store_b", { days: 7 }),
     );
@@ -304,9 +309,15 @@ describe("SEL-400 seller finance summary / revenue / ledger", () => {
     const ledger = await listSellerLedger(DEMO_STORE_ID);
     const revenue = await getSellerRevenue(DEMO_STORE_ID);
     expect(apiRequestMock).not.toHaveBeenCalled();
-    expect(summary.availableAmount).toBe(demoFinanceSummary(DEMO_STORE_ID).availableAmount);
-    expect(ledger.items.length).toBe(demoSellerLedger(DEMO_STORE_ID).items.length);
-    expect(ledger.items.some((i) => i.type === "SETTLEMENT_RELEASE")).toBe(true);
+    expect(summary.availableAmount).toBe(
+      demoFinanceSummary(DEMO_STORE_ID).availableAmount,
+    );
+    expect(ledger.items.length).toBe(
+      demoSellerLedger(DEMO_STORE_ID).items.length,
+    );
+    expect(ledger.items.some((i) => i.type === "SETTLEMENT_RELEASE")).toBe(
+      true,
+    );
     expect(revenue.length).toBeGreaterThan(0);
     // Demo month net is server fixture, not recomputed in adapter.
     expect(summary.monthNetAmount).toBe(23_895_800);

@@ -212,11 +212,14 @@ export function listAdminPageMeta(): ReadonlyArray<{
 
 export function canAccessAdminPage(
   meta: AdminPageMeta,
-  claims: {
-    subjectId?: string | null;
-    surface?: string | null;
-    permissions?: readonly string[] | null;
-  } | null | undefined,
+  claims:
+    | {
+        subjectId?: string | null;
+        surface?: string | null;
+        permissions?: readonly string[] | null;
+      }
+    | null
+    | undefined,
 ): boolean {
   if (meta.disposition === "decision_pending") return false;
   if (meta.permission === null) {
@@ -228,11 +231,14 @@ export function canAccessAdminPage(
 
 export function canAccessAdminNavHref(
   href: string,
-  claims: {
-    subjectId?: string | null;
-    surface?: string | null;
-    permissions?: readonly string[] | null;
-  } | null | undefined,
+  claims:
+    | {
+        subjectId?: string | null;
+        surface?: string | null;
+        permissions?: readonly string[] | null;
+      }
+    | null
+    | undefined,
 ): boolean {
   const entry = ADMIN_NAV_ROUTE_KEYS.find((item) => item.href === href);
   if (!entry) return false;

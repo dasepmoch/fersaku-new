@@ -47,11 +47,11 @@ func BuildPriceSnapshot(
 		merchandiseIDR = 0
 	}
 	snap := PriceSnapshot{
-		StoreID:        storeID,
-		ProductID:      productID,
-		MerchandiseIDR: merchandiseIDR,
-		TipIDR:         tipIDR,
-		UpsellIDR:      upsellIDR,
+		StoreID:             storeID,
+		ProductID:           productID,
+		MerchandiseIDR:      merchandiseIDR,
+		TipIDR:              tipIDR,
+		UpsellIDR:           upsellIDR,
 		EligibleSubtotalIDR: merchandiseIDR,
 	}
 	if applied && c != nil {

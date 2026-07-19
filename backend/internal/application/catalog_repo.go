@@ -46,20 +46,20 @@ type CatalogStore interface {
 
 // CatalogStoreRow is the store slice needed by catalog (avoids circular domain deps).
 type CatalogStoreRow struct {
-	ID                   string
-	MerchantID           string
-	Slug                 string
-	Name                 string
-	Bio                  string
-	Address              string
-	AccentColor          string
-	Status               string
-	IsCanonical          bool
-	StorefrontRevision   int64
-	PublishedRevision    int64
-	PublishedRevisionID  *string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	ID                  string
+	MerchantID          string
+	Slug                string
+	Name                string
+	Bio                 string
+	Address             string
+	AccentColor         string
+	Status              string
+	IsCanonical         bool
+	StorefrontRevision  int64
+	PublishedRevision   int64
+	PublishedRevisionID *string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // CatalogConfigJSON is a helper for empty config.

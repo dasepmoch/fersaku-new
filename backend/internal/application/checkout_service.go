@@ -93,8 +93,8 @@ func (s *CheckoutService) hashToken(raw string) string {
 
 // CreateIntentRequest is POST /v1/checkout/intents body (server prices only).
 type CreateIntentRequest struct {
-	StoreID           string
-	ProductID         string
+	StoreID   string
+	ProductID string
 	// ClientUnitPriceIDR / ClientTotalIDR are intentionally ignored (never trusted).
 	ClientUnitPriceIDR int64
 	ClientTotalIDR     int64
@@ -112,15 +112,15 @@ type CreateIntentRequest struct {
 	// ClientDiscountIDR ignored.
 	ClientDiscountIDR int64
 	// Attribution (BE-360): stripped/normalized before persistence; never trusted for money.
-	LandingURL    string
-	ReferrerURL   string
-	UTMSource     string
-	UTMMedium     string
-	UTMCampaign   string
-	UTMContent    string
-	UTMTerm       string
-	VisitorID     string // opaque client visitor id; hashed before store
-	UserAgent     string
+	LandingURL  string
+	ReferrerURL string
+	UTMSource   string
+	UTMMedium   string
+	UTMCampaign string
+	UTMContent  string
+	UTMTerm     string
+	VisitorID   string // opaque client visitor id; hashed before store
+	UserAgent   string
 }
 
 // CreateIntentResult is the immutable checkout snapshot + QRIS payload.
@@ -368,13 +368,13 @@ func (s *CheckoutService) CreateIntent(ctx context.Context, req CreateIntentRequ
 	}
 
 	productSnap, _ := json.Marshal(map[string]any{
-		"productId":   prod.ID,
-		"version":     prod.Version,
-		"title":       prod.Title,
-		"type":        prod.Type,
+		"productId":    prod.ID,
+		"version":      prod.Version,
+		"title":        prod.Title,
+		"type":         prod.Type,
 		"catalogPrice": prod.PriceIDR,
-		"allowPwyt":   prod.AllowPWYT,
-		"unitPrice":   merch,
+		"allowPwyt":    prod.AllowPWYT,
+		"unitPrice":    merch,
 	})
 	priceSnap, _ := json.Marshal(map[string]any{
 		"merchandiseIdr": merch,

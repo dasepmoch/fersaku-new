@@ -35,10 +35,11 @@ export function InventoryDetail({ id }: { id: string }) {
   const revealMutation = useRevealSellerInventoryItemMutation();
 
   const product = detail?.product;
-  const remoteItems = detail?.items ?? [];
+  const remoteItems = useMemo(() => detail?.items ?? [], [detail?.items]);
 
   const [tab, setTab] = useState("Stock items");
   const [fields, setFields] = useState<InventoryField[]>([]);
+  const [schemaSeedKey, setSchemaSeedKey] = useState<string | null>(null);
   const [raw, setRaw] = useState(
     "new.user01@inboxkit.id|Secure#001|https://canva.com/brand/join/NEW01\nnew.user02@inboxkit.id|Secure#002|https://canva.com/brand/join/NEW02",
   );
@@ -50,12 +51,14 @@ export function InventoryDetail({ id }: { id: string }) {
   >({});
   const [updates, setUpdates] = useState(false);
 
-  // Seed fields from schema (API) or mock schema placeholder.
-  useEffect(() => {
-    if (schema?.fields?.length) {
-      setFields(schema.fields);
-    }
-  }, [schema?.id, schema?.version, schema?.fields]);
+  // Seed fields from schema (API) or mock schema placeholder (render-time adjust).
+  const nextSchemaKey = schema?.fields?.length
+    ? `${schema.id ?? ""}:${schema.version ?? ""}:${schema.fields.length}`
+    : null;
+  if (nextSchemaKey && nextSchemaKey !== schemaSeedKey && schema?.fields) {
+    setSchemaSeedKey(nextSchemaKey);
+    setFields(schema.fields);
+  }
 
   // TTL cleanup for component-local secrets.
   useEffect(() => {

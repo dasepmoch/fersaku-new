@@ -28,11 +28,7 @@ import {
 import { clearSellerStoreCache } from "./store-cache";
 
 export type CurrentStoreStatus =
-  | "loading"
-  | "ready"
-  | "no_membership"
-  | "needs_onboarding"
-  | "error";
+  "loading" | "ready" | "no_membership" | "needs_onboarding" | "error";
 
 type CurrentStoreContextValue = {
   status: CurrentStoreStatus;
@@ -127,7 +123,9 @@ export function CurrentStoreProvider({ children }: { children: ReactNode }) {
   }, [applyBootstrap]);
 
   useEffect(() => {
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   const switchStore = useCallback(
@@ -166,19 +164,14 @@ export function CurrentStoreProvider({ children }: { children: ReactNode }) {
       canonicalStoreId: bootstrap?.canonicalStoreId ?? null,
       merchantId: bootstrap?.merchantId ?? null,
       onboardingCompleted:
-        status === "ready" && Boolean(storeId) && !needsSellerOnboarding(bootstrap),
+        status === "ready" &&
+        Boolean(storeId) &&
+        !needsSellerOnboarding(bootstrap),
       errorCode,
       refresh,
       switchStore,
     }),
-    [
-      status,
-      bootstrap,
-      storeId,
-      errorCode,
-      refresh,
-      switchStore,
-    ],
+    [status, bootstrap, storeId, errorCode, refresh, switchStore],
   );
 
   return (

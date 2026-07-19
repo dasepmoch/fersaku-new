@@ -27,9 +27,9 @@ import { DEMO_STORE_ID } from "@/shared/config/demo";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -147,9 +147,9 @@ describe("SEL-280 schemas", () => {
     });
     expect(parsed.success).toBe(true);
     if (parsed.success) {
-      expect(
-        Object.prototype.hasOwnProperty.call(parsed.data, "state"),
-      ).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(parsed.data, "state")).toBe(
+        false,
+      );
     }
   });
 });
@@ -200,7 +200,12 @@ describe("SEL-280 mappers", () => {
     const items: SellerCoupon[] = [
       mapCouponDto(activeCoupon),
       mapCouponDto({ ...fixedCoupon, state: "EXPIRED" }),
-      mapCouponDto({ ...activeCoupon, id: "x", state: "PAUSED", usageCount: 0 }),
+      mapCouponDto({
+        ...activeCoupon,
+        id: "x",
+        state: "PAUSED",
+        usageCount: 0,
+      }),
     ];
     const m = computeCouponListMetrics(items);
     expect(m.activeCount).toBe(1);
@@ -264,11 +269,8 @@ describe("SEL-280 api adapters", () => {
 
   it("mock path returns fixtures without network", async () => {
     installMockSeller();
-    const {
-      listSellerCoupons,
-      createSellerCoupon,
-      activateSellerCoupon,
-    } = await import("@/features/seller/coupons/api");
+    const { listSellerCoupons, createSellerCoupon, activateSellerCoupon } =
+      await import("@/features/seller/coupons/api");
     const list = await listSellerCoupons(DEMO_STORE_ID);
     const created = await createSellerCoupon(DEMO_STORE_ID, {
       code: "NEW10",
@@ -288,9 +290,7 @@ describe("SEL-280 api adapters", () => {
       data: [activeCoupon, fixedCoupon],
       meta,
     });
-    const { listSellerCoupons } = await import(
-      "@/features/seller/coupons/api"
-    );
+    const { listSellerCoupons } = await import("@/features/seller/coupons/api");
     const list = await listSellerCoupons("store_live");
     expect(apiRequestMock).toHaveBeenCalledWith(
       "/v1/stores/store_live/coupons",
@@ -311,9 +311,7 @@ describe("SEL-280 api adapters", () => {
         message: "Resource not found",
       }),
     );
-    const { listSellerCoupons } = await import(
-      "@/features/seller/coupons/api"
-    );
+    const { listSellerCoupons } = await import("@/features/seller/coupons/api");
     await expect(listSellerCoupons("store_foreign")).rejects.toBeInstanceOf(
       ApiError,
     );
@@ -339,9 +337,8 @@ describe("SEL-280 api adapters", () => {
       data: { ...activeCoupon, state: "DRAFT", version: 1, usageCount: 0 },
       meta,
     });
-    const { createSellerCoupon } = await import(
-      "@/features/seller/coupons/api"
-    );
+    const { createSellerCoupon } =
+      await import("@/features/seller/coupons/api");
     await createSellerCoupon("store_live", {
       code: "launch20",
       discountKind: "percentage",
@@ -380,14 +377,11 @@ describe("SEL-280 api adapters", () => {
         data: { ...activeCoupon, state: "ARCHIVED" },
         meta,
       });
-    const {
-      activateSellerCoupon,
-      pauseSellerCoupon,
-      archiveSellerCoupon,
-    } = await import("@/features/seller/coupons/api");
-    expect((await activateSellerCoupon("store_live", "cpn_live_01")).state).toBe(
-      "ACTIVE",
-    );
+    const { activateSellerCoupon, pauseSellerCoupon, archiveSellerCoupon } =
+      await import("@/features/seller/coupons/api");
+    expect(
+      (await activateSellerCoupon("store_live", "cpn_live_01")).state,
+    ).toBe("ACTIVE");
     expect((await pauseSellerCoupon("store_live", "cpn_live_01")).state).toBe(
       "PAUSED",
     );
@@ -418,9 +412,7 @@ describe("SEL-280 api adapters", () => {
       data: { ...activeCoupon, version: 3 },
       meta,
     });
-    const { patchSellerCoupon } = await import(
-      "@/features/seller/coupons/api"
-    );
+    const { patchSellerCoupon } = await import("@/features/seller/coupons/api");
     const result = await patchSellerCoupon("store_live", "cpn_live_01", {
       expectedVersion: 2,
       maxTotalUses: 300,
@@ -446,9 +438,7 @@ describe("SEL-280 api adapters", () => {
         message: "Version conflict",
       }),
     );
-    const { patchSellerCoupon } = await import(
-      "@/features/seller/coupons/api"
-    );
+    const { patchSellerCoupon } = await import("@/features/seller/coupons/api");
     await expect(
       patchSellerCoupon("store_live", "cpn_live_01", {
         expectedVersion: 1,

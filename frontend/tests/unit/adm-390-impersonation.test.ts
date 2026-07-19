@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  clearDomainSourceSnapshot,
-} from "@/shared/data/domain-source";
+import { clearDomainSourceSnapshot } from "@/shared/data/domain-source";
 import {
   canRunImpersonationCommand,
   IMPERSONATION_COMMANDS,
@@ -137,17 +135,18 @@ describe("ADM-390 impersonation lifecycle", () => {
       ),
     ).toBe(false);
     expect(
-      canRunImpersonationCommand(
-        { scope: "support-write" },
-        "seller.export",
-        ["all"],
-      ),
+      canRunImpersonationCommand({ scope: "support-write" }, "seller.export", [
+        "all",
+      ]),
     ).toBe(false);
   });
 
   it("permission deny without impersonation.start", () => {
     expect(
-      claimsHavePermission(["users.read", "merchants.read"], "impersonation.start"),
+      claimsHavePermission(
+        ["users.read", "merchants.read"],
+        "impersonation.start",
+      ),
     ).toBe(false);
     expect(
       claimsHavePermission(
@@ -229,77 +228,83 @@ describe("ADM-390 impersonation lifecycle", () => {
   it("api start posts wire body, applies csrf, does not persist mock storage, lands without session query", async () => {
     stubBrowserStorage();
 
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/impersonation") && !url.includes("terminate")) {
-        const body = JSON.parse(String(init?.body ?? "{}")) as Record<
-          string,
-          unknown
-        >;
-        expect(body.scope).toBe("READ_ONLY");
-        expect(body.reason).toBe("Ticket SUP-1234 reproduction");
-        expect(typeof body.ticket).toBe("string");
-        expect(body.ttlMinutes).toBe(15);
-        expect(body.idempotencyKey).toBeTruthy();
-        expect(JSON.stringify(body)).not.toMatch(/rawToken|sessionToken/i);
-        return jsonResponse({
-          data: {
-            sessionId: "imp_server_01HABCDEFG",
-            scope: "READ_ONLY",
-            expiresAt: "2026-07-17T10:15:00.000Z",
-            csrfToken: "csrf_after_start",
-            targetUserId: "usr_01H8A2",
-            targetSurface: "SELLER",
-            actorAdminId: "adm_actor",
-            banner: {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/impersonation") && !url.includes("terminate")) {
+          const body = JSON.parse(String(init?.body ?? "{}")) as Record<
+            string,
+            unknown
+          >;
+          expect(body.scope).toBe("READ_ONLY");
+          expect(body.reason).toBe("Ticket SUP-1234 reproduction");
+          expect(typeof body.ticket).toBe("string");
+          expect(body.ttlMinutes).toBe(15);
+          expect(body.idempotencyKey).toBeTruthy();
+          expect(JSON.stringify(body)).not.toMatch(/rawToken|sessionToken/i);
+          return jsonResponse({
+            data: {
               sessionId: "imp_server_01HABCDEFG",
-              actorAdminId: "adm_actor",
+              scope: "READ_ONLY",
+              expiresAt: "2026-07-17T10:15:00.000Z",
+              csrfToken: "csrf_after_start",
               targetUserId: "usr_01H8A2",
-              targetName: "Asep Kurnia",
-              scope: "READ_ONLY",
-              reason: "Ticket SUP-1234 reproduction",
-              expiresAt: "2026-07-17T10:15:00.000Z",
-              ttlMinutes: 15,
+              targetSurface: "SELLER",
+              actorAdminId: "adm_actor",
+              banner: {
+                sessionId: "imp_server_01HABCDEFG",
+                actorAdminId: "adm_actor",
+                targetUserId: "usr_01H8A2",
+                targetName: "Asep Kurnia",
+                scope: "READ_ONLY",
+                reason: "Ticket SUP-1234 reproduction",
+                expiresAt: "2026-07-17T10:15:00.000Z",
+                ttlMinutes: 15,
+              },
             },
-          },
-          meta,
-        });
-      }
-      if (url.includes("/v1/auth/session")) {
-        return jsonResponse({
-          data: {
-            userId: "usr_01H8A2",
-            sessionId: "sess_derived",
-            surface: "seller",
-            email: "asep@example.com",
-            name: "Asep Kurnia",
-            emailVerified: true,
-            mfaEnabled: false,
-            mfaVerified: true,
-            status: "ACTIVE",
-            csrfToken: "csrf_bootstrap",
-            permissions: ["seller.store.read"],
-            roles: ["seller"],
-            impersonation: {
-              active: true,
-              id: "imp_server_01HABCDEFG",
-              scope: "READ_ONLY",
-              actorId: "adm_actor",
-              expiresAt: "2026-07-17T10:15:00.000Z",
+            meta,
+          });
+        }
+        if (url.includes("/v1/auth/session")) {
+          return jsonResponse({
+            data: {
+              userId: "usr_01H8A2",
+              sessionId: "sess_derived",
+              surface: "seller",
+              email: "asep@example.com",
+              name: "Asep Kurnia",
+              emailVerified: true,
+              mfaEnabled: false,
+              mfaVerified: true,
+              status: "ACTIVE",
+              csrfToken: "csrf_bootstrap",
+              permissions: ["seller.store.read"],
+              roles: ["seller"],
+              impersonation: {
+                active: true,
+                id: "imp_server_01HABCDEFG",
+                scope: "READ_ONLY",
+                actorId: "adm_actor",
+                expiresAt: "2026-07-17T10:15:00.000Z",
+              },
             },
-          },
-          meta,
-        });
-      }
-      return jsonResponse({ problem: { code: "NOT_FOUND", message: "no" } }, 404);
-    });
+            meta,
+          });
+        }
+        return jsonResponse(
+          { problem: { code: "NOT_FOUND", message: "no" } },
+          404,
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     // Spy before loading api so the module binds the spy.
     vi.doMock("@/shared/api/csrf", async () => {
-      const actual = await vi.importActual<typeof import("@/shared/api/csrf")>(
-        "@/shared/api/csrf",
-      );
+      const actual =
+        await vi.importActual<typeof import("@/shared/api/csrf")>(
+          "@/shared/api/csrf",
+        );
       return {
         ...actual,
         setCsrfToken: vi.fn(actual.setCsrfToken),
@@ -365,7 +370,10 @@ describe("ADM-390 impersonation lifecycle", () => {
           401,
         );
       }
-      return jsonResponse({ problem: { code: "NOT_FOUND", message: "no" } }, 404);
+      return jsonResponse(
+        { problem: { code: "NOT_FOUND", message: "no" } },
+        404,
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -388,7 +396,10 @@ describe("ADM-390 impersonation lifecycle", () => {
     stubBrowserStorage();
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("/v1/admin/merchants/") && url.includes("/impersonation")) {
+      if (
+        url.includes("/v1/admin/merchants/") &&
+        url.includes("/impersonation")
+      ) {
         return jsonResponse({
           data: {
             sessionId: "imp_m_01HABCDEFG",
@@ -420,7 +431,10 @@ describe("ADM-390 impersonation lifecycle", () => {
           meta,
         });
       }
-      return jsonResponse({ problem: { code: "NOT_FOUND", message: "no" } }, 404);
+      return jsonResponse(
+        { problem: { code: "NOT_FOUND", message: "no" } },
+        404,
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     const { startImpersonation } = await loadApi("api");

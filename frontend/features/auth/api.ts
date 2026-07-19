@@ -558,7 +558,11 @@ export async function confirmEmailChangeCurrent(
   input: EmailChangeConfirmRequest,
   signal?: AbortSignal,
 ): Promise<EmailChangeConfirmResult> {
-  return confirmEmailChange("/v1/auth/email-change/confirm-current", input, signal);
+  return confirmEmailChange(
+    "/v1/auth/email-change/confirm-current",
+    input,
+    signal,
+  );
 }
 
 /**

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/dasepmoch/fersaku-new/backend/internal/domain/audit"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/admin"
+	"github.com/dasepmoch/fersaku-new/backend/internal/domain/audit"
 )
 
 // AuditAppendParams is the input to the SECURITY DEFINER append function.

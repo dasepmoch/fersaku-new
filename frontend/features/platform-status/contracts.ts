@@ -7,11 +7,7 @@
 
 /** Public row/overall kinds. Never paint green unless kind is `ok`. */
 export type PublicStatusKind =
-  | "ok"
-  | "degraded"
-  | "down"
-  | "unknown"
-  | "not_reported";
+  "ok" | "degraded" | "down" | "unknown" | "not_reported";
 
 /**
  * Page mode. Launch is always informational (no marketed live multi-service

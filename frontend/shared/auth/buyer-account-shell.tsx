@@ -33,7 +33,5 @@ export function BuyerAccountShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  return (
-    <SessionRouteGuard surface="buyer">{children}</SessionRouteGuard>
-  );
+  return <SessionRouteGuard surface="buyer">{children}</SessionRouteGuard>;
 }

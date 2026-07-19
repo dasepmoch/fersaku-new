@@ -121,12 +121,12 @@ func TestCheckout_ClientPriceIgnoredFee100kAndIdempotent(t *testing.T) {
 	productID := createPublishedProduct(t, h, cookie, storeID, 100_000)
 
 	body := map[string]any{
-		"storeId":   storeID,
-		"productId": productID,
-		"unitPrice": 1,       // client invents — ignored
-		"total":     999,     // ignored
-		"discount":  50_000,  // ignored
-		"tip":       0,
+		"storeId":    storeID,
+		"productId":  productID,
+		"unitPrice":  1,      // client invents — ignored
+		"total":      999,    // ignored
+		"discount":   50_000, // ignored
+		"tip":        0,
 		"buyerEmail": "buyer@example.test",
 	}
 	idemKey := fmt.Sprintf("idem-checkout-%d", time.Now().UnixNano())

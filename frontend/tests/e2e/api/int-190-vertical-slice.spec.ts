@@ -48,9 +48,7 @@ async function sellerLogin(
   }>;
   expect(json.data?.mfaRequired, "seed seller MFA off").toBeFalsy();
   expect(json.data?.user?.id).toBe(QLT110_SEED.personas.sellerOwnerA.userId);
-  expect(json.data?.user?.email).toBe(
-    QLT110_SEED.personas.sellerOwnerA.email,
-  );
+  expect(json.data?.user?.email).toBe(QLT110_SEED.personas.sellerOwnerA.email);
   expect(json.data?.user?.surface).toBe("SELLER");
   const cookie = sessionCookie(res.headers()["set-cookie"]);
   expect(cookie.length, "session cookie").toBeGreaterThan(8);
@@ -119,9 +117,7 @@ test.describe("INT-190 public catalog vertical slice (live API)", () => {
       seedFeatured,
       "QLT-110 published product present in featured",
     ).toBeTruthy();
-    expect(seedFeatured!.slug).toBe(
-      QLT110_SEED.resources.productPublishedSlug,
-    );
+    expect(seedFeatured!.slug).toBe(QLT110_SEED.resources.productPublishedSlug);
     expect(seedFeatured!.storeSlug).toBe(QLT110_SEED.resources.storeASlug);
 
     const storeRes = await request.get(
@@ -155,9 +151,7 @@ test.describe("INT-190 public catalog vertical slice (live API)", () => {
       price?: number;
     }>;
     expect(product.data?.id).toBe(QLT110_SEED.resources.productPublished);
-    expect(product.data?.slug).toBe(
-      QLT110_SEED.resources.productPublishedSlug,
-    );
+    expect(product.data?.slug).toBe(QLT110_SEED.resources.productPublishedSlug);
     expect(product.data?.storeSlug).toBe(QLT110_SEED.resources.storeASlug);
     expect(product.data?.price).toBe(50000);
     expect(product.meta?.requestId).toBeTruthy();
@@ -172,10 +166,7 @@ test.describe("INT-190 public catalog vertical slice (live API)", () => {
     request,
     baseURL,
   }) => {
-    test.skip(
-      process.env.E2E_API_HAS_NEXT === "0",
-      "Next edge not running",
-    );
+    test.skip(process.env.E2E_API_HAS_NEXT === "0", "Next edge not running");
     expect(baseURL).toBeTruthy();
     const res = await request.get("/v1/public/products/featured?limit=50");
     expect(res.status(), "Next→API featured").toBe(200);

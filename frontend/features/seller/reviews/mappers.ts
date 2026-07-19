@@ -70,7 +70,9 @@ export function mapPublicReviewDto(dto: PublicReviewDto): SellerReview {
   return view;
 }
 
-export function mapPublicReviewListDto(items: PublicReviewDto[]): SellerReview[] {
+export function mapPublicReviewListDto(
+  items: PublicReviewDto[],
+): SellerReview[] {
   return items.map(mapPublicReviewDto);
 }
 
@@ -81,7 +83,9 @@ export function mapPublicReviewListDto(items: PublicReviewDto[]): SellerReview[]
 export function mapPublicReviewSummaryDto(
   dto: PublicReviewSummaryDto,
 ): SellerRatingSummary {
-  const total = Number.isFinite(dto.count) ? Math.max(0, Math.trunc(dto.count)) : 0;
+  const total = Number.isFinite(dto.count)
+    ? Math.max(0, Math.trunc(dto.count))
+    : 0;
   const average =
     total === 0
       ? 0
@@ -126,7 +130,9 @@ export function mapSellerReviewDto(dto: SellerReviewDto): SellerReview {
   return view;
 }
 
-export function mapSellerReviewListDto(items: SellerReviewDto[]): SellerReview[] {
+export function mapSellerReviewListDto(
+  items: SellerReviewDto[],
+): SellerReview[] {
   return items.map(mapSellerReviewDto);
 }
 

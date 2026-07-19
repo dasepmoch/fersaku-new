@@ -4,10 +4,7 @@
  */
 
 import { apiRequest } from "@/shared/api/http-client";
-import {
-  statusEnvelopeSchema,
-  type StatusDataDto,
-} from "@/shared/api/schemas";
+import { statusEnvelopeSchema, type StatusDataDto } from "@/shared/api/schemas";
 import { shouldUseMockFixtures } from "@/shared/data/domain-source";
 import type { PublicPlatformStatusView } from "./contracts";
 import {
@@ -39,13 +36,10 @@ export async function getPublicStatusDto(
   }
 
   try {
-    const response = await apiRequest<{ data: StatusDataDto }>(
-      "/v1/status",
-      {
-        schema: statusEnvelopeSchema,
-        signal,
-      },
-    );
+    const response = await apiRequest<{ data: StatusDataDto }>("/v1/status", {
+      schema: statusEnvelopeSchema,
+      signal,
+    });
     return { dto: response.data, source: "api" };
   } catch {
     return null;

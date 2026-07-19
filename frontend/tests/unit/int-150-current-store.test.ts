@@ -46,10 +46,12 @@ describe("INT-150 current-store / cache", () => {
 
     clearSellerStoreCache(client, "store_old");
 
-    expect(client.getQueryData(queryKeys.seller.products("store_old"))).toBeUndefined();
-    expect(client.getQueryData(queryKeys.seller.products("store_new"))).toEqual([
-      { id: 2 },
-    ]);
+    expect(
+      client.getQueryData(queryKeys.seller.products("store_old")),
+    ).toBeUndefined();
+    expect(client.getQueryData(queryKeys.seller.products("store_new"))).toEqual(
+      [{ id: 2 }],
+    );
     expect(client.getQueryData(["public", "catalog"])).toEqual({ ok: true });
   });
 

@@ -30,21 +30,21 @@ const (
 
 // FeePolicy is an immutable versioned schedule (GLOBAL scope at launch).
 type FeePolicy struct {
-	VersionID              string
-	Scope                  string
-	TransactionPercentBps  int64
-	TransactionFixedIDR    int64
-	WithdrawalPercentBps   int64
-	MinimumWithdrawalIDR   int64
-	MinimumPaymentIDR      int64
-	MaximumPaymentIDR      int64
-	Checksum               string
-	SourceADR              string
-	ReleaseReason          string
-	Immutable              bool
-	EffectiveFrom          time.Time
-	EffectiveTo            *time.Time // nil = open-ended
-	CreatedAt              time.Time
+	VersionID             string
+	Scope                 string
+	TransactionPercentBps int64
+	TransactionFixedIDR   int64
+	WithdrawalPercentBps  int64
+	MinimumWithdrawalIDR  int64
+	MinimumPaymentIDR     int64
+	MaximumPaymentIDR     int64
+	Checksum              string
+	SourceADR             string
+	ReleaseReason         string
+	Immutable             bool
+	EffectiveFrom         time.Time
+	EffectiveTo           *time.Time // nil = open-ended
+	CreatedAt             time.Time
 }
 
 // LaunchFeePolicy returns the canonical in-memory LAUNCH_FEE_POLICY_V1 values.
@@ -114,21 +114,21 @@ func (p FeePolicy) IsEffectiveAt(at time.Time) bool {
 // FeeSnapshot is an immutable creation-time fee capture for payments/withdrawals.
 // Selected at intent/order creation; travels unchanged through callback/ledger.
 type FeeSnapshot struct {
-	ID                    string
-	PolicyVersionID       string
-	Scope                 string
-	Kind                  SnapshotKind
-	Source                PaymentSource // empty for withdrawal
-	GrossOrAmountIDR      int64
-	PercentBps            int64
-	PercentComponentIDR   int64
-	FixedComponentIDR     int64 // transaction fixed; 0 for withdrawal platform part
-	ProviderFeeIDR        int64 // withdrawal provider processing; 0 for payment
-	TotalFeeIDR           int64
-	NetIDR                int64
-	Currency              string
-	Checksum              string
-	CreatedAt             time.Time
+	ID                  string
+	PolicyVersionID     string
+	Scope               string
+	Kind                SnapshotKind
+	Source              PaymentSource // empty for withdrawal
+	GrossOrAmountIDR    int64
+	PercentBps          int64
+	PercentComponentIDR int64
+	FixedComponentIDR   int64 // transaction fixed; 0 for withdrawal platform part
+	ProviderFeeIDR      int64 // withdrawal provider processing; 0 for payment
+	TotalFeeIDR         int64
+	NetIDR              int64
+	Currency            string
+	Checksum            string
+	CreatedAt           time.Time
 }
 
 // SnapshotKind distinguishes payment vs withdrawal snapshots.

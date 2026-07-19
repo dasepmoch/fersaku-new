@@ -54,8 +54,7 @@ export function useAppQuery<TData>({
     (surface ? staleTimeForSurface(surface) : STALE_TIME_DEFAULT_MS);
 
   const resolvedPlaceholder =
-    placeholderData ??
-    (keepPrevious ? keepPreviousQueryData : undefined);
+    placeholderData ?? (keepPrevious ? keepPreviousQueryData : undefined);
 
   return useQuery({
     queryKey,

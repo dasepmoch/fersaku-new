@@ -66,16 +66,13 @@ const PROVIDER_DISPLAY: Record<
   },
 };
 
-export function classifyHealthStatus(raw: string | undefined | null): HealthStatusKind {
+export function classifyHealthStatus(
+  raw: string | undefined | null,
+): HealthStatusKind {
   const s = (raw ?? "").trim().toUpperCase();
   if (!s) return "unknown";
   if (s === "OK" || s === "LIVE" || s === "HEALTHY" || s === "UP") return "ok";
-  if (
-    s === "DEGRADED" ||
-    s === "WARN" ||
-    s === "WARNING" ||
-    s === "PARTIAL"
-  ) {
+  if (s === "DEGRADED" || s === "WARN" || s === "WARNING" || s === "PARTIAL") {
     return "degraded";
   }
   if (
@@ -91,10 +88,7 @@ export function classifyHealthStatus(raw: string | undefined | null): HealthStat
 }
 
 /** Display label for chrome; never show Live/OK unless kind is ok. */
-export function healthStatusLabel(
-  kind: HealthStatusKind,
-  raw: string,
-): string {
+export function healthStatusLabel(kind: HealthStatusKind, raw: string): string {
   switch (kind) {
     case "ok":
       return "Live";
@@ -171,9 +165,7 @@ export function mapProviderHealthDto(
   const statusKind = classifyHealthStatus(statusRaw);
   const display = resolveDisplay(dto.provider);
   const latencyMs =
-    dto.latencyMs == null || Number.isNaN(dto.latencyMs)
-      ? null
-      : dto.latencyMs;
+    dto.latencyMs == null || Number.isNaN(dto.latencyMs) ? null : dto.latencyMs;
   return {
     id: display.id,
     provider: dto.provider,
@@ -200,9 +192,7 @@ export function mapComponentHealthDto(
   const statusKind = classifyHealthStatus(statusRaw);
   const display = resolveDisplay(dto.component);
   const latencyMs =
-    dto.latencyMs == null || Number.isNaN(dto.latencyMs)
-      ? null
-      : dto.latencyMs;
+    dto.latencyMs == null || Number.isNaN(dto.latencyMs) ? null : dto.latencyMs;
   return {
     id: display.id,
     provider: dto.component,
@@ -335,8 +325,7 @@ export function mapFeePreviewDto(dto: AdminFeePreviewDto): FeePreviewView {
   const totalFee =
     dto.totalFee ??
     (processingFee == null ? null : platformFee + processingFee);
-  const netAmount =
-    dto.netAmount ?? dto.netDisbursement ?? null;
+  const netAmount = dto.netAmount ?? dto.netDisbursement ?? null;
   const minimumAmount = dto.minimumAmount;
   return {
     policyVersion: dto.policyVersion,

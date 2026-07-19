@@ -14,10 +14,7 @@ export type InventoryField = {
 
 /** UI status labels used by existing Status chrome. */
 export type StockItemStatusLabel =
-  | "Available"
-  | "Reserved"
-  | "Sold"
-  | "Invalid";
+  "Available" | "Reserved" | "Sold" | "Invalid";
 
 export type StockItem = {
   id: string;

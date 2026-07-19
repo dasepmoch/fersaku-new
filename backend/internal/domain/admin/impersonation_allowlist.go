@@ -18,13 +18,13 @@ const (
 
 // SupportWriteCommand describes one allowlisted mutation route/command/fields.
 type SupportWriteCommand struct {
-	Command        string
-	Method         string
+	Command string
+	Method  string
 	// PathPattern is a chi-style path with {param} placeholders.
-	PathPattern    string
-	AllowedFields  []string
+	PathPattern   string
+	AllowedFields []string
 	// PathParam when set is extracted for ownership checks (e.g. storeId).
-	PathParam      string
+	PathParam string
 }
 
 // SupportWriteAllowlist is the complete launch allowlist (exactly two entries).

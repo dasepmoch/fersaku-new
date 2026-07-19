@@ -72,7 +72,10 @@ function sourceBucket(
   const raw = sources[key];
   if (!raw) return { ...EMPTY_SOURCE };
   return {
-    availableAmount: money(raw.availableAmount, `sources.${key}.availableAmount`),
+    availableAmount: money(
+      raw.availableAmount,
+      `sources.${key}.availableAmount`,
+    ),
     pendingAmount: money(raw.pendingAmount, `sources.${key}.pendingAmount`),
   };
 }
@@ -292,17 +295,19 @@ export function mapWithdrawalQuoteDto(
       issues: [{ path: "quoteId", message: "empty" }],
     });
   }
-  const wireStatus = String(dto.status ?? "ACTIVE").trim().toUpperCase();
-  if (
-    wireStatus !== "ACTIVE" &&
-    wireStatus !== "VERIFIED"
-  ) {
+  const wireStatus = String(dto.status ?? "ACTIVE")
+    .trim()
+    .toUpperCase();
+  if (wireStatus !== "ACTIVE" && wireStatus !== "VERIFIED") {
     return invalidApiContract("Withdrawal quote is not active", {
       issues: [{ path: "status", message: wireStatus }],
     });
   }
-  const bankAccountId =
-    (dto.bankAccountId || bankAccountIdFallback || "").trim();
+  const bankAccountId = (
+    dto.bankAccountId ||
+    bankAccountIdFallback ||
+    ""
+  ).trim();
   if (!bankAccountId) {
     return invalidApiContract("Withdrawal quote missing bankAccountId", {
       issues: [{ path: "bankAccountId", message: "empty" }],
@@ -323,9 +328,7 @@ export function mapWithdrawalQuoteDto(
     provider: "Xendit",
     status: "VERIFIED",
     expiresAt:
-      typeof dto.expiresAt === "string"
-        ? dto.expiresAt
-        : String(dto.expiresAt),
+      typeof dto.expiresAt === "string" ? dto.expiresAt : String(dto.expiresAt),
     ...(dto.minimumAmount != null
       ? { minimumAmount: money(dto.minimumAmount, "minimumAmount") }
       : {}),
@@ -348,10 +351,7 @@ export function mapWithdrawalDto(
     id,
     storeId,
     amount: money(dto.amountDebited, "amountDebited"),
-    bankLabel: formatWithdrawalBankLabel(
-      dto.bankCode,
-      dto.bankAccountMasked,
-    ),
+    bankLabel: formatWithdrawalBankLabel(dto.bankCode, dto.bankAccountMasked),
     status: mapWithdrawalStatusToView(dto.status),
     requestedAt: formatWithdrawalRequestedAt(
       typeof dto.createdAt === "string" ? dto.createdAt : String(dto.createdAt),
@@ -399,9 +399,7 @@ export function mapWithdrawalLockDto(
       ? String(dto.lockedUntil)
       : null;
   const active =
-    locked &&
-    lockedUntil != null &&
-    new Date(lockedUntil).getTime() > nowMs;
+    locked && lockedUntil != null && new Date(lockedUntil).getTime() > nowMs;
   const reasonRaw = dto.reason != null ? String(dto.reason).trim() : "";
   const reasonUpper = reasonRaw.toUpperCase();
   const reasonCode =

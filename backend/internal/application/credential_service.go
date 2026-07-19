@@ -22,10 +22,10 @@ import (
 type CredentialService struct {
 	Store CredentialStore
 	// Auth optional: recent MFA when user has MFA enabled.
-	Auth *AuthService
-	IDs  ports.IDGenerator
+	Auth  *AuthService
+	IDs   ports.IDGenerator
 	Clock ports.Clock
-	Log  ports.Logger
+	Log   ports.Logger
 	// KeyHashSecret for HMAC of API keys (same class as session secret).
 	KeyHashSecret string
 	// ClaimHashSecret for claim tokens; defaults to KeyHashSecret.
@@ -197,15 +197,15 @@ func (s *CredentialService) RequestIssuance(ctx context.Context, in RequestIssua
 		pm := mode
 		reqHash := auth.HashToken(mode + ":" + purpose + ":" + in.Reason)
 		rec := IdempotencyRecord{
-			ID:           s.newID("idem_"),
-			SubjectType:  "merchant",
-			SubjectID:    mid,
-			Operation:    "credential.issuance.request",
-			PaymentMode:  &pm,
-			KeyHash:      kh,
-			RequestHash:  reqHash,
-			Status:       "STARTED",
-			ExpiresAt:    now.Add(24 * time.Hour),
+			ID:          s.newID("idem_"),
+			SubjectType: "merchant",
+			SubjectID:   mid,
+			Operation:   "credential.issuance.request",
+			PaymentMode: &pm,
+			KeyHash:     kh,
+			RequestHash: reqHash,
+			Status:      "STARTED",
+			ExpiresAt:   now.Add(24 * time.Hour),
 		}
 		got, inserted, err := s.Store.TryInsertIdempotency(ctx, rec)
 		if err != nil {
@@ -283,21 +283,21 @@ func (s *CredentialService) RequestIssuance(ctx context.Context, in RequestIssua
 			// Revoke prior secret_claims for this issuance.
 			_ = s.Store.RevokeSecretClaimsForIssuance(ctx, existing.ID, now)
 			sc := credentials.SecretClaim{
-				ID:                s.newID("scl_"),
-				Kind:              credentials.ClaimKindAPIKey,
-				ResourceType:      "issuance_request",
-				ResourceID:        existing.ID,
-				ResourceVersion:   existing.RequestVersion + 1,
-				MerchantID:        mid,
-				RecipientUserID:   in.UserID,
-				ClaimTokenHash:    claimHash,
-				Status:            credentials.ClaimStatusActive,
-				MaxAttempts:       credentials.MaxClaimAttempts,
-				ExpiresAt:         claimExp,
+				ID:                  s.newID("scl_"),
+				Kind:                credentials.ClaimKindAPIKey,
+				ResourceType:        "issuance_request",
+				ResourceID:          existing.ID,
+				ResourceVersion:     existing.RequestVersion + 1,
+				MerchantID:          mid,
+				RecipientUserID:     in.UserID,
+				ClaimTokenHash:      claimHash,
+				Status:              credentials.ClaimStatusActive,
+				MaxAttempts:         credentials.MaxClaimAttempts,
+				ExpiresAt:           claimExp,
 				MFABindingSessionID: sessBind,
-				IssuanceRequestID: &existing.ID,
-				CreatedAt:         now,
-				UpdatedAt:         now,
+				IssuanceRequestID:   &existing.ID,
+				CreatedAt:           now,
+				UpdatedAt:           now,
 			}
 			if err := s.Store.InsertSecretClaim(ctx, sc); err != nil {
 				return err
@@ -881,7 +881,7 @@ func (s *CredentialService) AdminListCredentials(ctx context.Context, merchantID
 			ID: ir.ID, MerchantID: ir.MerchantID, PaymentMode: ir.PaymentMode, Purpose: ir.Purpose,
 			Status: ir.Status, ClaimExpiresAt: ir.ClaimExpiresAt,
 			HasPendingClaim: ir.Status == kyc.IssuanceAuthorized && ir.ClaimTokenHash != nil && ir.ClaimConsumedAt == nil,
-			AuthorizedAt: ir.AuthorizedAt, ClaimedAt: ir.ClaimedAt, ExpiresAt: ir.ExpiresAt, CreatedAt: ir.CreatedAt,
+			AuthorizedAt:    ir.AuthorizedAt, ClaimedAt: ir.ClaimedAt, ExpiresAt: ir.ExpiresAt, CreatedAt: ir.CreatedAt,
 		})
 	}
 	return masked, views, nil

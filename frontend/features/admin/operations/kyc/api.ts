@@ -160,8 +160,7 @@ export async function transitionAdminKyc(
         id: caseId,
         status: input.status,
         rejectionReason:
-          input.status === "Rejected" ||
-          input.status === "Needs clarification"
+          input.status === "Rejected" || input.status === "Needs clarification"
             ? reason
             : undefined,
       },
@@ -206,7 +205,10 @@ export async function viewAdminKycDocument(
     throw new Error("A reason of at least 12 characters is required");
   }
 
-  if (shouldUseMockFixtures("adminWrite") || shouldUseMockFixtures("adminRead")) {
+  if (
+    shouldUseMockFixtures("adminWrite") ||
+    shouldUseMockFixtures("adminRead")
+  ) {
     // 1x1 transparent PNG — metadata only path for mock chrome.
     const png = Uint8Array.from([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,

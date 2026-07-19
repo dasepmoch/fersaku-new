@@ -8,10 +8,7 @@ import type {
   InvoiceSnapshotDto,
   PublicInvoiceVerifyDto,
 } from "@/shared/api/schemas";
-import {
-  invalidApiContract,
-  requireSafeMoneyIdr,
-} from "@/shared/api/mappers";
+import { invalidApiContract, requireSafeMoneyIdr } from "@/shared/api/mappers";
 import type {
   InvoiceLineView,
   InvoiceProjection,
@@ -103,9 +100,7 @@ export function formatSignatureLabel(payloadHash: string): string {
   return `SHA256:${upper.slice(0, 8)}...${upper.slice(-4)}`;
 }
 
-function mapLines(
-  snap: InvoiceSnapshotDto | null,
-): InvoiceLineView[] {
+function mapLines(snap: InvoiceSnapshotDto | null): InvoiceLineView[] {
   const lines = snap?.lines;
   if (!lines?.length) return [];
   return lines.map((line) => {
@@ -253,8 +248,7 @@ export function mapPublicInvoiceVerifyDto(
       ? requireSafeMoneyIdr(dto.grossIdr, "grossIdr")
       : 0;
   const orderNumber = dto.orderNumber?.trim() || undefined;
-  const paidAt =
-    typeof dto.paidAt === "string" ? dto.paidAt : undefined;
+  const paidAt = typeof dto.paidAt === "string" ? dto.paidAt : undefined;
 
   const result: Extract<InvoiceVerifyResult, { valid: true }> = {
     valid: true,

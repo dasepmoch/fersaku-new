@@ -137,9 +137,9 @@ afterEach(() => {
 
 describe("ADM-370 schemas", () => {
   it("parses provider health and rejects empty status", () => {
-    expect(
-      adminProviderHealthDtoSchema.parse(sampleProvider).status,
-    ).toBe("DEGRADED");
+    expect(adminProviderHealthDtoSchema.parse(sampleProvider).status).toBe(
+      "DEGRADED",
+    );
     expect(() =>
       adminProviderHealthDtoSchema.parse({ ...sampleProvider, status: "" }),
     ).toThrow();
@@ -209,10 +209,7 @@ describe("ADM-370 health classification (truthful)", () => {
 
   it("overall kind fails closed on down/unknown", () => {
     expect(
-      overallHealthKind([
-        { statusKind: "ok" },
-        { statusKind: "degraded" },
-      ]),
+      overallHealthKind([{ statusKind: "ok" }, { statusKind: "degraded" }]),
     ).toBe("degraded");
     expect(
       overallHealthKind([{ statusKind: "ok" }, { statusKind: "down" }]),
@@ -590,12 +587,10 @@ describe("ADM-370 permissions + query keys", () => {
     expect(ADMIN_ACTION_PERMISSIONS.platformFeesPreview).toBe(
       "platform.fees.preview",
     );
-    expect(claimsHavePermission(["payments.read"], "payments.read")).toBe(
-      true,
+    expect(claimsHavePermission(["payments.read"], "payments.read")).toBe(true);
+    expect(claimsHavePermission(["webhooks.read"], "platform.emergency")).toBe(
+      false,
     );
-    expect(
-      claimsHavePermission(["webhooks.read"], "platform.emergency"),
-    ).toBe(false);
   });
 
   it("query keys are stable and separated", () => {

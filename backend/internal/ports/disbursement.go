@@ -7,11 +7,11 @@ import (
 
 // DisbursementQuoteInput is adapter-facing quote request (no Xendit DTO leakage).
 type DisbursementQuoteInput struct {
-	AmountIDR     int64 // wallet debit (gross withdrawal amount)
-	Currency      string
-	BankCode      string
-	AccountScope  string
-	PaymentMode   string
+	AmountIDR      int64 // wallet debit (gross withdrawal amount)
+	Currency       string
+	BankCode       string
+	AccountScope   string
+	PaymentMode    string
 	IdempotencyKey string
 }
 
@@ -26,18 +26,18 @@ type DisbursementQuote struct {
 // CreateDisbursementInput is the irrevocable create request.
 // NetAmountIDR is the amount sent to the beneficiary (N = W - P - Q).
 type CreateDisbursementInput struct {
-	ExternalID         string // stable idempotency reference
-	NetAmountIDR       int64
-	Currency           string
-	BankCode           string
-	AccountHolderName  string
-	AccountNumber      string // plaintext only inside adapter call path
-	AccountNumberMask  string
-	Description        string
-	AccountScope       string
-	PaymentMode        string
-	IdempotencyKey     string
-	Metadata           map[string]string
+	ExternalID        string // stable idempotency reference
+	NetAmountIDR      int64
+	Currency          string
+	BankCode          string
+	AccountHolderName string
+	AccountNumber     string // plaintext only inside adapter call path
+	AccountNumberMask string
+	Description       string
+	AccountScope      string
+	PaymentMode       string
+	IdempotencyKey    string
+	Metadata          map[string]string
 }
 
 // CreateDisbursementResult is returned after a successful create.

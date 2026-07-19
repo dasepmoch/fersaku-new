@@ -394,15 +394,15 @@ func (r *AdminOpsRepo) ListPaymentMismatches(ctx context.Context, limit int32) (
 	out := make([]admin.PaymentMismatch, 0, len(rows))
 	for _, row := range rows {
 		m := admin.PaymentMismatch{
-			ID:              row.EventID,
-			LocalStatus:     row.LocalStatus,
-			MerchantID:      row.MerchantID,
-			OrderID:         row.OrderID,
-			Amount:          row.IntentAmountIdr,
-			Provider:        "Xendit",
-			ProviderStatus:  "PAID",
-			ObservedAt:      row.ReceivedAt,
-			ReplayCount:     row.ReplayCount,
+			ID:             row.EventID,
+			LocalStatus:    row.LocalStatus,
+			MerchantID:     row.MerchantID,
+			OrderID:        row.OrderID,
+			Amount:         row.IntentAmountIdr,
+			Provider:       "Xendit",
+			ProviderStatus: "PAID",
+			ObservedAt:     row.ReceivedAt,
+			ReplayCount:    row.ReplayCount,
 		}
 		if row.PaymentIntentID != nil {
 			m.PaymentIntentID = *row.PaymentIntentID

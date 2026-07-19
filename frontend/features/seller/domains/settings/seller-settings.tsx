@@ -69,15 +69,17 @@ type NotifKey =
   | "newDeviceLogin"
   | "weeklySummary";
 
-const NOTIF_KEY_BY_LABEL: Record<(typeof NOTIFICATION_LABELS)[number], NotifKey> =
-  {
-    "Penjualan berhasil": "saleSuccess",
-    "Pembayaran pending": "paymentPending",
-    "Stok hampir habis": "lowStock",
-    "Payout berubah": "payoutChange",
-    "Login dari perangkat baru": "newDeviceLogin",
-    "Ringkasan mingguan": "weeklySummary",
-  };
+const NOTIF_KEY_BY_LABEL: Record<
+  (typeof NOTIFICATION_LABELS)[number],
+  NotifKey
+> = {
+  "Penjualan berhasil": "saleSuccess",
+  "Pembayaran pending": "paymentPending",
+  "Stok hampir habis": "lowStock",
+  "Payout berubah": "payoutChange",
+  "Login dari perangkat baru": "newDeviceLogin",
+  "Ringkasan mingguan": "weeklySummary",
+};
 
 function SellerProfileForm({
   profile,
@@ -159,8 +161,7 @@ export function SellerSettingsPro() {
 
   /** Local override after enroll/disable; null = follow session claims (API) or mock default. */
   const [mfaOverride, setMfaOverride] = useState<boolean | null>(null);
-  const mfa =
-    mfaOverride ?? (authIsApi ? Boolean(claims?.mfaEnabled) : true);
+  const mfa = mfaOverride ?? (authIsApi ? Boolean(claims?.mfaEnabled) : true);
   const [token, setToken] = useState("");
   const [disableCode, setDisableCode] = useState("");
   const [enrollSecret, setEnrollSecret] = useState<string | null>(null);
@@ -221,8 +222,7 @@ export function SellerSettingsPro() {
   > = useMemo(() => {
     if (serverProfile) {
       return {
-        displayName:
-          profileDraft?.displayName ?? serverProfile.displayName,
+        displayName: profileDraft?.displayName ?? serverProfile.displayName,
         email: serverProfile.email,
         localeLabel: profileDraft?.localeLabel ?? serverProfile.localeLabel,
         timezone: profileDraft?.timezone ?? serverProfile.timezone,
@@ -256,17 +256,12 @@ export function SellerSettingsPro() {
     : mockBanks;
 
   const notifValues: Record<NotifKey, boolean> = {
-    saleSuccess:
-      localNotifDraft.saleSuccess ?? profile.saleSuccess,
-    paymentPending:
-      localNotifDraft.paymentPending ?? profile.paymentPending,
+    saleSuccess: localNotifDraft.saleSuccess ?? profile.saleSuccess,
+    paymentPending: localNotifDraft.paymentPending ?? profile.paymentPending,
     lowStock: localNotifDraft.lowStock ?? profile.lowStock,
-    payoutChange:
-      localNotifDraft.payoutChange ?? profile.payoutChange,
-    newDeviceLogin:
-      localNotifDraft.newDeviceLogin ?? profile.newDeviceLogin,
-    weeklySummary:
-      localNotifDraft.weeklySummary ?? profile.weeklySummary,
+    payoutChange: localNotifDraft.payoutChange ?? profile.payoutChange,
+    newDeviceLogin: localNotifDraft.newDeviceLogin ?? profile.newDeviceLogin,
+    weeklySummary: localNotifDraft.weeklySummary ?? profile.weeklySummary,
   };
 
   useEffect(() => {
@@ -362,9 +357,7 @@ export function SellerSettingsPro() {
   ] as const;
 
   const editingBank =
-    editingId === null
-      ? null
-      : banks.find((b) => b.id === editingId) ?? null;
+    editingId === null ? null : (banks.find((b) => b.id === editingId) ?? null);
 
   const saveBank = async (form: FormData) => {
     const bankCode = String(form.get("bank"));
@@ -491,7 +484,10 @@ export function SellerSettingsPro() {
 
   const savePassword = async (): Promise<boolean> => {
     if (!authIsApi) return true;
-    if (!passwordDraft.current.trim() || passwordDraft.next.trim().length < 12) {
+    if (
+      !passwordDraft.current.trim() ||
+      passwordDraft.next.trim().length < 12
+    ) {
       return false;
     }
     try {
@@ -786,7 +782,9 @@ export function SellerSettingsPro() {
       {bankModal && (
         <Modal
           title={
-            editingId === null ? "Tambah rekening payout" : "Edit rekening payout"
+            editingId === null
+              ? "Tambah rekening payout"
+              : "Edit rekening payout"
           }
           description={
             bankIsApi
@@ -905,7 +903,8 @@ export function SellerSettingsPro() {
           ) : mfaModal === "recovery" ? (
             <div>
               <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#111a16] p-4 font-mono text-[10px] text-[#d7ff64]">
-                {(recoveryCodes ??
+                {(
+                  recoveryCodes ??
                   (authIsApi
                     ? []
                     : [
@@ -957,9 +956,7 @@ export function SellerSettingsPro() {
                 )}
               </div>
               <div className="rounded-xl bg-[#eef3e9] p-3 text-center font-mono text-[10px]">
-                {authIsApi
-                  ? (enrollSecret ?? "—")
-                  : "FRSK A4M8 Q2JP 7ZLE"}
+                {authIsApi ? (enrollSecret ?? "—") : "FRSK A4M8 Q2JP 7ZLE"}
               </div>
               <label className="grid gap-2 text-center text-[9px] font-bold">
                 Masukkan token 6 digit
@@ -975,8 +972,7 @@ export function SellerSettingsPro() {
               <button
                 type="button"
                 disabled={
-                  token.length !== 6 ||
-                  (authIsApi && confirmMutation.isPending)
+                  token.length !== 6 || (authIsApi && confirmMutation.isPending)
                 }
                 onClick={() => {
                   void confirmMfaSetup();

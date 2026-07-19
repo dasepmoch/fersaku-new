@@ -36,17 +36,17 @@ type Profile struct {
 
 // EmailChangeRequest binds dual proofs to one pending address change.
 type EmailChangeRequest struct {
-	ID                     string
-	UserID                 string
-	NewEmailNormalized     string
-	NewEmailDisplay        string
+	ID                      string
+	UserID                  string
+	NewEmailNormalized      string
+	NewEmailDisplay         string
 	CurrentProofChallengeID string
-	NewProofChallengeID    string
-	CurrentConfirmedAt     *time.Time
-	NewConfirmedAt         *time.Time
-	Status                 EmailChangeStatus
-	CreatedAt              time.Time
-	CompletedAt            *time.Time
+	NewProofChallengeID     string
+	CurrentConfirmedAt      *time.Time
+	NewConfirmedAt          *time.Time
+	Status                  EmailChangeStatus
+	CreatedAt               time.Time
+	CompletedAt             *time.Time
 }
 
 // NotificationChannel is a delivery channel in the closed matrix.

@@ -270,9 +270,7 @@ describe("INT-120 session bootstrap / guards / logout", () => {
       installApiAuth();
       vi.stubGlobal(
         "fetch",
-        vi.fn(async () =>
-          problemResponse(401, PROBLEM_CODES.AUTH_REQUIRED),
-        ),
+        vi.fn(async () => problemResponse(401, PROBLEM_CODES.AUTH_REQUIRED)),
       );
       const snap = await bootstrapSession();
       expect(snap.status).toBe("anonymous");
@@ -323,7 +321,10 @@ describe("INT-120 session bootstrap / guards / logout", () => {
         "fetch",
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input);
-          if (url.includes("/v1/auth/session") && (!init?.method || init.method === "GET")) {
+          if (
+            url.includes("/v1/auth/session") &&
+            (!init?.method || init.method === "GET")
+          ) {
             return jsonResponse(
               envelope({
                 userId: "usr_s",
@@ -336,9 +337,7 @@ describe("INT-120 session bootstrap / guards / logout", () => {
             );
           }
           if (url.includes("/v1/auth/logout")) {
-            return jsonResponse(
-              envelope({ message: "Logged out" }),
-            );
+            return jsonResponse(envelope({ message: "Logged out" }));
           }
           return problemResponse(404, "NOT_FOUND");
         }),
@@ -355,7 +354,9 @@ describe("INT-120 session bootstrap / guards / logout", () => {
       expect(loginHref).toBe("/login");
       expect(getCsrfToken()).toBeUndefined();
       expect(getSessionSnapshot().status).toBe("anonymous");
-      expect(client.getQueryData(["seller", "store1", "products"])).toBeUndefined();
+      expect(
+        client.getQueryData(["seller", "store1", "products"]),
+      ).toBeUndefined();
 
       const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls;
       const logoutCall = calls.find((c) =>

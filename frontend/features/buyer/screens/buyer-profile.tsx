@@ -40,8 +40,7 @@ export function BuyerProfile() {
   const email = profile?.email ?? "";
   const initials = profile?.initials ?? "—";
   const memberSince =
-    profile?.memberSinceLabel ||
-    (profile ? "" : "Buyer sejak 18 Maret 2026");
+    profile?.memberSinceLabel || (profile ? "" : "Buyer sejak 18 Maret 2026");
 
   const touch = (patch: Partial<ProfileDraft>) => {
     setSaved(false);

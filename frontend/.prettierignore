@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+
+# Next.js build / dev artifacts
+.next
+.next-dev
+.next-e2e-api
+out
+build
+
+# Test / coverage / reports
+coverage
+test-results
+playwright-report
+blob-report
+.auth
+
+# Generated / caches
+*.tsbuildinfo
+next-env.d.ts
+shared/api/generated
+
+# Lock / vendor noise
+package-lock.json

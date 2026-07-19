@@ -5,10 +5,7 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import { getDomainSource } from "@/shared/data/domain-source";
-import {
-  clearCsrfToken,
-  wireHttpClientCsrfHooks,
-} from "@/shared/api/csrf";
+import { clearCsrfToken, wireHttpClientCsrfHooks } from "@/shared/api/csrf";
 import {
   clearRecentMfaProof,
   wireHttpClientRecentMfaHooks,
@@ -33,7 +30,6 @@ import {
   type SessionClaims,
   type SessionSnapshot,
   type SessionSurface,
-  type SessionStatus,
 } from "./session-model";
 import { loginPathForSurface } from "./return-to";
 
@@ -113,9 +109,7 @@ export function getSessionSnapshot(): SessionSnapshot {
   return snapshot;
 }
 
-export function subscribeSession(
-  listener: SessionStoreListener,
-): () => void {
+export function subscribeSession(listener: SessionStoreListener): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -146,7 +140,8 @@ export async function bootstrapSession(options?: {
 
   if (
     !options?.force &&
-    (snapshot.status === "authenticated" || snapshot.status === "mfa_pending") &&
+    (snapshot.status === "authenticated" ||
+      snapshot.status === "mfa_pending") &&
     snapshot.claims
   ) {
     return snapshot;
@@ -155,14 +150,12 @@ export async function bootstrapSession(options?: {
   const previousSnapshot = snapshot;
   const previousIdentity = claimsCacheIdentity(previousSnapshot.claims);
   // Keep existing claims visible during force refresh to avoid guard flash / login bounce.
-  if (
-    !(
-      options?.force &&
-      (previousSnapshot.status === "authenticated" ||
-        previousSnapshot.status === "mfa_pending") &&
-      previousSnapshot.claims
-    )
-  ) {
+  if (!(
+    options?.force &&
+    (previousSnapshot.status === "authenticated" ||
+      previousSnapshot.status === "mfa_pending") &&
+    previousSnapshot.claims
+  )) {
     setSnapshot({ ...LOADING_SNAPSHOT });
   }
 
@@ -286,9 +279,7 @@ export async function logoutSession(options?: {
   redirect?: boolean;
 }): Promise<{ loginHref: string }> {
   const surface =
-    options?.surface ??
-    snapshot.claims?.surface ??
-    mockSurfaceHint;
+    options?.surface ?? snapshot.claims?.surface ?? mockSurfaceHint;
   const loginHref = loginPathForSurface(surface);
 
   try {

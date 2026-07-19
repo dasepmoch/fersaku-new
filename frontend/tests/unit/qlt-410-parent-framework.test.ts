@@ -141,7 +141,7 @@ describe("QLT-410 parent — required non-empty samples", () => {
       "golang-migrate",
       "MIGRATIONS_PATH",
       "DATABASE_URL",
-      'up)',
+      "up)",
       "down)",
       "version)",
     ]) {

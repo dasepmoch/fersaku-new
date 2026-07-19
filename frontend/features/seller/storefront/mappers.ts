@@ -141,9 +141,7 @@ export function mapConfigDtoToBuilder(
   const dto = asRecord(raw);
   const socials = asRecord(dto.socials);
   const template =
-    asString(dto.template) ||
-    asString(dto.preset) ||
-    base.template;
+    asString(dto.template) || asString(dto.preset) || base.template;
   const templateLabel =
     template.length > 0
       ? template.charAt(0).toUpperCase() + template.slice(1)
@@ -173,11 +171,7 @@ export function mapConfigDtoToBuilder(
     ),
     radius: pickEnum(dto.radius, RADII, base.radius),
     font: pickEnum(dto.font, FONTS, base.font),
-    align: pickEnum(
-      dto.align ?? dto.headerAlign,
-      ALIGNS,
-      base.align,
-    ),
+    align: pickEnum(dto.align ?? dto.headerAlign, ALIGNS, base.align),
     density: pickEnum(dto.density, DENSITIES, base.density),
     showSearch: asBoolean(dto.showSearch, base.showSearch),
     showSales: asBoolean(dto.showSales, base.showSales),
@@ -189,10 +183,7 @@ export function mapConfigDtoToBuilder(
     trustBadges: mapTrustBadges(dto.trustBadges).length
       ? mapTrustBadges(dto.trustBadges)
       : base.trustBadges,
-    instagram: asString(
-      dto.instagram ?? socials.instagram,
-      base.instagram,
-    ),
+    instagram: asString(dto.instagram ?? socials.instagram, base.instagram),
     website: asString(dto.website ?? socials.website, base.website),
     customLinks: mapCustomLinks(dto.customLinks).length
       ? mapCustomLinks(dto.customLinks)
@@ -299,7 +290,9 @@ export function mapRevisionDto(
   };
 }
 
-export function mapPublishDto(dto: StorefrontPublishDto): PublishStorefrontResult {
+export function mapPublishDto(
+  dto: StorefrontPublishDto,
+): PublishStorefrontResult {
   if (typeof dto.accepted !== "boolean" || typeof dto.revision !== "number") {
     throw invalidApiContract("storefront.publish missing accepted/revision");
   }

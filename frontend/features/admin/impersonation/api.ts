@@ -195,9 +195,7 @@ export async function startImpersonation(
     idempotencyKey,
     auditReason: reason,
     requireRecentMfa: true,
-    ...(input.mfaCode?.trim()
-      ? { recentMfaProof: input.mfaCode.trim() }
-      : {}),
+    ...(input.mfaCode?.trim() ? { recentMfaProof: input.mfaCode.trim() } : {}),
   });
 
   // Derived session cookie is HttpOnly; apply rotated CSRF only (never raw cookie).

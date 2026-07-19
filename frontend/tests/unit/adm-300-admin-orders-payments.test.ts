@@ -32,9 +32,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -184,9 +184,9 @@ describe("ADM-300 admin orders/payments evidence", () => {
     expect(claimsHavePermission(["payments.read"], "fulfillment.force")).toBe(
       false,
     );
-    expect(claimsHavePermission(["fulfillment.force"], "fulfillment.force")).toBe(
-      true,
-    );
+    expect(
+      claimsHavePermission(["fulfillment.force"], "fulfillment.force"),
+    ).toBe(true);
     expect(claimsHavePermission(["*"], "payments.read")).toBe(true);
     expect(claimsHavePermission(null, "orders.read")).toBe(false);
   });
@@ -331,9 +331,7 @@ describe("ADM-300 admin orders/payments evidence", () => {
     expect(lookup.lookup).toBe("ACCEPTED");
     expect(lookup.requestId).toBe("lookup_1");
     const call = apiRequestMock.mock.calls.at(-1);
-    expect(call?.[0]).toBe(
-      "/v1/admin/payments/qris_2Yc91p/provider-lookup",
-    );
+    expect(call?.[0]).toBe("/v1/admin/payments/qris_2Yc91p/provider-lookup");
     expect(call?.[1]?.body).toEqual({ reason: "Verify provider state" });
     expect(call?.[1]?.body).not.toHaveProperty("status");
   });

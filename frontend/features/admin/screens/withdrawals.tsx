@@ -73,9 +73,7 @@ function Withdrawals() {
   const processing = filteredWithdrawals.filter(
     (w) => w.status === "Processing",
   );
-  const completed = filteredWithdrawals.filter(
-    (w) => w.status === "Completed",
-  );
+  const completed = filteredWithdrawals.filter((w) => w.status === "Completed");
   const failed = filteredWithdrawals.filter(
     (w) => w.status === "Failed" || w.status === "Rejected",
   );
@@ -99,9 +97,7 @@ function Withdrawals() {
             />
             <Metric
               label="Processing"
-              value={
-                processing.length ? rupiah(sumAmount(processing)) : "Rp0"
-              }
+              value={processing.length ? rupiah(sumAmount(processing)) : "Rp0"}
               note={
                 processing.length
                   ? `${processing.length} payouts`
@@ -460,9 +456,7 @@ function WithdrawalDetail({ id }: { id: string }) {
               idempotencyKey: idemRef.current,
             });
             // Display status only from server mapping — never invent money.
-            setReviewStatus(
-              result.displayStatus as AdminWithdrawal["status"],
-            );
+            setReviewStatus(result.displayStatus as AdminWithdrawal["status"]);
           }}
         />
       )}

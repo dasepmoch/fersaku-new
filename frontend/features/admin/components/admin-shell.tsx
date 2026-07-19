@@ -378,8 +378,8 @@ export function AdminLogin() {
                   />
                 </label>
                 <label className="flex items-center gap-2 text-[10px] text-[#68728a]">
-                  <input type="checkbox" defaultChecked /> Keep this trusted device
-                  active for 8 hours
+                  <input type="checkbox" defaultChecked /> Keep this trusted
+                  device active for 8 hours
                 </label>
               </>
             ) : (
@@ -400,9 +400,7 @@ export function AdminLogin() {
             )}
             <button
               type="submit"
-              disabled={
-                loginMutation.isPending || mfaVerifyMutation.isPending
-              }
+              disabled={loginMutation.isPending || mfaVerifyMutation.isPending}
               className="mt-2 flex h-12 items-center justify-center rounded-xl bg-[#11182a] text-xs font-extrabold text-white transition hover:bg-[#202b48]"
             >
               {mfaPending ? "Verify MFA" : "Continue securely"}

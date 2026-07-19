@@ -17,10 +17,10 @@ import (
 // WebhookWorker processes seller_webhook.deliver outbox rows (BE-420).
 // Outbound-only; never replays inbound provider callbacks.
 type WebhookWorker struct {
-	Pool *pgxpool.Pool
-	Svc  *application.WebhookService
-	Log  ports.Logger
-	Owner string
+	Pool        *pgxpool.Pool
+	Svc         *application.WebhookService
+	Log         ports.Logger
+	Owner       string
 	MaxAttempts int
 }
 

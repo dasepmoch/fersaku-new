@@ -28,9 +28,9 @@ type SessionResolver interface {
 
 // AuthConfig configures cookie session loading (BE-120).
 type AuthConfig struct {
-	Mode              AuthMode
-	CookieName        string
-	Resolver          SessionResolver
+	Mode       AuthMode
+	CookieName string
+	Resolver   SessionResolver
 	// RequireAdminMFA when true and surface=ADMIN without mfa_verified → AUTH_MFA_REQUIRED
 	// for non-MFA endpoints. Applied only when Mode=Required or when EnforceAdminMFAPaths match.
 	RequireAdminMFA bool

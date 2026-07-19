@@ -200,8 +200,11 @@ describe("BUY-120 mock path", () => {
         bootstrapSource: "mock",
       }),
     );
-    const { getBuyerProfile, patchBuyerProfile, patchBuyerNotificationPreferences } =
-      await import("@/features/buyer/data/api");
+    const {
+      getBuyerProfile,
+      patchBuyerProfile,
+      patchBuyerNotificationPreferences,
+    } = await import("@/features/buyer/data/api");
     const profile = await getBuyerProfile();
     expect(profile.email).toContain("@");
     expect(profile.revision).toBeGreaterThanOrEqual(1);
@@ -248,24 +251,26 @@ describe("BUY-120 API adapters", () => {
   });
 
   it("PATCH profile sends expectedVersion + displayName only (no email)", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/buyer/profile") && init?.method === "PATCH") {
-        const body = JSON.parse(String(init.body));
-        expect(body.expectedVersion).toBe(3);
-        expect(body.displayName).toBe("Ada");
-        expect(body.email).toBeUndefined();
-        expect(body.avatarRef).toBeUndefined();
-        return jsonResponse({
-          data: { ...profileDto, displayName: "Ada", version: 4 },
-          meta,
-        });
-      }
-      if (url.includes("/v1/me/notification-preferences")) {
-        return jsonResponse({ data: prefsDto, meta });
-      }
-      return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/buyer/profile") && init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body));
+          expect(body.expectedVersion).toBe(3);
+          expect(body.displayName).toBe("Ada");
+          expect(body.email).toBeUndefined();
+          expect(body.avatarRef).toBeUndefined();
+          return jsonResponse({
+            data: { ...profileDto, displayName: "Ada", version: 4 },
+            meta,
+          });
+        }
+        if (url.includes("/v1/me/notification-preferences")) {
+          return jsonResponse({ data: prefsDto, meta });
+        }
+        return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const next = await api.patchBuyerProfile({
@@ -288,35 +293,40 @@ describe("BUY-120 API adapters", () => {
   });
 
   it("PATCH marketing preference only", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (String(input).includes("/v1/me/notification-preferences") && init?.method === "PATCH") {
-        const body = JSON.parse(String(init.body));
-        expect(body.preferences).toEqual([
-          {
-            eventCode: "MARKETING_NEWSLETTER",
-            channel: "EMAIL",
-            enabled: true,
-          },
-        ]);
-        return jsonResponse({
-          data: {
-            preferences: [
-              ...prefsDto.preferences.filter(
-                (p) => p.eventCode !== "MARKETING_NEWSLETTER",
-              ),
-              {
-                eventCode: "MARKETING_NEWSLETTER",
-                channel: "EMAIL",
-                enabled: true,
-                mandatory: false,
-              },
-            ],
-          },
-          meta,
-        });
-      }
-      return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (
+          String(input).includes("/v1/me/notification-preferences") &&
+          init?.method === "PATCH"
+        ) {
+          const body = JSON.parse(String(init.body));
+          expect(body.preferences).toEqual([
+            {
+              eventCode: "MARKETING_NEWSLETTER",
+              channel: "EMAIL",
+              enabled: true,
+            },
+          ]);
+          return jsonResponse({
+            data: {
+              preferences: [
+                ...prefsDto.preferences.filter(
+                  (p) => p.eventCode !== "MARKETING_NEWSLETTER",
+                ),
+                {
+                  eventCode: "MARKETING_NEWSLETTER",
+                  channel: "EMAIL",
+                  enabled: true,
+                  mandatory: false,
+                },
+              ],
+            },
+            meta,
+          });
+        }
+        return problemResponse(404, PROBLEM_CODES.RESOURCE_NOT_FOUND);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode();
     const toggles = await api.patchBuyerNotificationPreferences({
@@ -341,7 +351,9 @@ describe("BUY-120 avatar / email-change disposition", () => {
     );
     expect(source).toMatch(/INT-175/);
     expect(source).toMatch(/initials/);
-    expect(source).not.toMatch(/\/v1\/stores\/.+\/objects|\/v1\/me\/objects|Upload new photo|localStorage|data:image/);
+    expect(source).not.toMatch(
+      /\/v1\/stores\/.+\/objects|\/v1\/me\/objects|Upload new photo|localStorage|data:image/,
+    );
     expect(source).toMatch(/Mulai perubahan email/);
     expect(source).toMatch(/disabled/);
     expect(source).toMatch(/AUT-120/);

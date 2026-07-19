@@ -40,11 +40,11 @@ const (
 
 // System role codes (immutable; is_system=true in DB).
 const (
-	RoleSuperAdmin    = "SUPER_ADMIN"
-	RoleAdminSupport  = "ADMIN_SUPPORT"
-	RoleAdminFinance  = "ADMIN_FINANCE"
-	RoleSellerOwner   = "SELLER_OWNER"
-	RoleBuyer         = "BUYER"
+	RoleSuperAdmin   = "SUPER_ADMIN"
+	RoleAdminSupport = "ADMIN_SUPPORT"
+	RoleAdminFinance = "ADMIN_FINANCE"
+	RoleSellerOwner  = "SELLER_OWNER"
+	RoleBuyer        = "BUYER"
 )
 
 // SystemRoleIDs are stable primary keys used by migration seed.

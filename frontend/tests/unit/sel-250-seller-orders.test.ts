@@ -27,9 +27,9 @@ import { DEMO_STORE_ID } from "@/shared/config/demo";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -272,9 +272,8 @@ describe("SEL-250 api adapters", () => {
 
   it("mock path returns fixtures without network", async () => {
     installMockSeller();
-    const { listSellerOrders, getSellerOrder } = await import(
-      "@/features/orders/api"
-    );
+    const { listSellerOrders, getSellerOrder } =
+      await import("@/features/orders/api");
     const page = await listSellerOrders(DEMO_STORE_ID, {
       statusTab: "Paid",
       page: 1,

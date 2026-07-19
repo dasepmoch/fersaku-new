@@ -13,9 +13,7 @@ import {
   mapNotificationListDto,
   sanitizeNotificationHref,
 } from "@/shared/notifications/mappers";
-import {
-  clearDomainSourceSnapshot,
-} from "@/shared/data/domain-source";
+import { clearDomainSourceSnapshot } from "@/shared/data/domain-source";
 import { queryKeys } from "@/shared/query/query-keys";
 import { isPrivateQueryKey } from "@/shared/auth/private-cache";
 
@@ -221,17 +219,23 @@ describe("BUY-140 list + mark-read adapters", () => {
   });
 
   it("api mark-read posts surface path", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/v1/seller/notifications/ntf_seller_1/read")) {
-        expect(init?.method).toBe("POST");
-        return jsonResponse({
-          data: { ...sellerDto, unread: false, readAt: "2026-07-17T10:01:00Z" },
-          meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
-        });
-      }
-      throw new Error(`unexpected ${url}`);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/v1/seller/notifications/ntf_seller_1/read")) {
+          expect(init?.method).toBe("POST");
+          return jsonResponse({
+            data: {
+              ...sellerDto,
+              unread: false,
+              readAt: "2026-07-17T10:01:00Z",
+            },
+            meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
+          });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode("api");
     const row = await api.markNotificationRead("seller", "ntf_seller_1");
@@ -242,34 +246,36 @@ describe("BUY-140 list + mark-read adapters", () => {
   });
 
   it("api unread-count and read-all", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/unread-count")) {
-        return jsonResponse({
-          data: { count: 4 },
-          meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
-        });
-      }
-      if (url.includes("/read-all")) {
-        expect(init?.method).toBe("POST");
-        return jsonResponse({
-          data: { updated: 4 },
-          meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
-        });
-      }
-      throw new Error(`unexpected ${url}`);
-    });
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/unread-count")) {
+          return jsonResponse({
+            data: { count: 4 },
+            meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
+          });
+        }
+        if (url.includes("/read-all")) {
+          expect(init?.method).toBe("POST");
+          return jsonResponse({
+            data: { updated: 4 },
+            meta: { requestId: "r", timestamp: "2026-07-17T10:00:00Z" },
+          });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
     const api = await loadApiMode("api");
     expect(await api.getUnreadNotificationCount("admin")).toBe(4);
     expect((await api.markAllNotificationsRead("admin")).updated).toBe(4);
     const urls = fetchMock.mock.calls.map((c) => String(c[0]));
-    expect(urls.some((u) => u.includes("/v1/admin/notifications/unread-count"))).toBe(
-      true,
-    );
-    expect(urls.some((u) => u.includes("/v1/admin/notifications/read-all"))).toBe(
-      true,
-    );
+    expect(
+      urls.some((u) => u.includes("/v1/admin/notifications/unread-count")),
+    ).toBe(true);
+    expect(
+      urls.some((u) => u.includes("/v1/admin/notifications/read-all")),
+    ).toBe(true);
   });
 
   it("surface domain gates differ for buyer vs seller", async () => {

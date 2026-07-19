@@ -383,10 +383,7 @@ export type AdminStockItemSecret = {
 
 /** ADM-320 — delivery grant row for /admin/fulfillment (no secrets). */
 export type AdminFulfillmentStatus =
-  | "Fulfilled"
-  | "Failed"
-  | "Pending"
-  | "Revoked";
+  "Fulfilled" | "Failed" | "Pending" | "Revoked";
 
 export type AdminFulfillment = {
   id: string;

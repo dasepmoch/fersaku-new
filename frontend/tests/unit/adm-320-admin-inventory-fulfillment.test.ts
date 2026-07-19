@@ -34,9 +34,9 @@ import {
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -184,12 +184,17 @@ describe("ADM-320 admin inventory redaction/reveal + fulfillment", () => {
     expect(claimsHavePermission(["inventory.read"], "inventory.reveal")).toBe(
       false,
     );
-    expect(claimsHavePermission(["fulfillment.read"], "fulfillment.force")).toBe(
-      false,
-    );
+    expect(
+      claimsHavePermission(["fulfillment.read"], "fulfillment.force"),
+    ).toBe(false);
     expect(
       claimsHavePermission(
-        ["inventory.read", "inventory.reveal", "fulfillment.read", "fulfillment.force"],
+        [
+          "inventory.read",
+          "inventory.reveal",
+          "fulfillment.read",
+          "fulfillment.force",
+        ],
         "inventory.reveal",
       ),
     ).toBe(true);

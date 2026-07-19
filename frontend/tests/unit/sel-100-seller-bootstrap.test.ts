@@ -182,10 +182,12 @@ describe("SEL-100 cache + API path no DEMO authority", () => {
     client.setQueryData(queryKeys.seller.products("store_old"), [{ id: 1 }]);
     client.setQueryData(queryKeys.seller.products("store_new"), [{ id: 2 }]);
     clearSellerStoreCache(client, "store_old");
-    expect(client.getQueryData(queryKeys.seller.products("store_old"))).toBeUndefined();
-    expect(client.getQueryData(queryKeys.seller.products("store_new"))).toEqual([
-      { id: 2 },
-    ]);
+    expect(
+      client.getQueryData(queryKeys.seller.products("store_old")),
+    ).toBeUndefined();
+    expect(client.getQueryData(queryKeys.seller.products("store_new"))).toEqual(
+      [{ id: 2 }],
+    );
     expect(isSellerStoreKey(["seller", "store_old", "x"], "store_old")).toBe(
       true,
     );

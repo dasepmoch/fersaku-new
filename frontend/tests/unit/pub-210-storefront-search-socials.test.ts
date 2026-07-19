@@ -16,7 +16,8 @@ import {
 import { getDemoStorefront } from "@/features/catalog/mock";
 
 function product(
-  overrides: Partial<CatalogProduct> & Pick<CatalogProduct, "id" | "slug" | "title">,
+  overrides: Partial<CatalogProduct> &
+    Pick<CatalogProduct, "id" | "slug" | "title">,
 ): CatalogProduct {
   return {
     short: overrides.short ?? "Short",
@@ -34,16 +35,29 @@ function product(
 describe("PUB-210 storefront product search", () => {
   it("normalizes and filters within fixed product list (empty query keeps all)", () => {
     const items = [
-      product({ id: "a", slug: "ai-prompt", title: "AI Prompt Pack", short: "prompts" }),
-      product({ id: "b", slug: "design-kit", title: "Design Kit", short: "assets" }),
-      product({ id: "c", slug: "shared-pack", title: "Shared Pack", short: "shared" }),
+      product({
+        id: "a",
+        slug: "ai-prompt",
+        title: "AI Prompt Pack",
+        short: "prompts",
+      }),
+      product({
+        id: "b",
+        slug: "design-kit",
+        title: "Design Kit",
+        short: "assets",
+      }),
+      product({
+        id: "c",
+        slug: "shared-pack",
+        title: "Shared Pack",
+        short: "shared",
+      }),
     ];
     expect(normalizeProductSearch("  AI  ")).toBe("ai");
-    expect(filterStorefrontProducts(items, undefined).map((p) => p.id)).toEqual([
-      "a",
-      "b",
-      "c",
-    ]);
+    expect(filterStorefrontProducts(items, undefined).map((p) => p.id)).toEqual(
+      ["a", "b", "c"],
+    );
     expect(filterStorefrontProducts(items, "   ").map((p) => p.id)).toEqual([
       "a",
       "b",

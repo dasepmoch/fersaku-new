@@ -138,7 +138,9 @@ export function assertNumberedProfile(
     typeof meta.totalCount !== "number" ||
     typeof meta.pageCount !== "number"
   ) {
-    throw new Error("NumberedPageListMeta requires page/pageSize/totalCount/pageCount");
+    throw new Error(
+      "NumberedPageListMeta requires page/pageSize/totalCount/pageCount",
+    );
   }
 }
 

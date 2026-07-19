@@ -66,11 +66,7 @@ export function useSellerLedger(
     queryFn: (signal) =>
       listSellerLedger(storeId, filters.cursor, signal, {
         source: filters.source as
-          | "STOREFRONT"
-          | "QRIS_API"
-          | "MIXED"
-          | "SYSTEM"
-          | undefined,
+          "STOREFRONT" | "QRIS_API" | "MIXED" | "SYSTEM" | undefined,
       }),
     enabled: Boolean(storeId),
     surface: "finance",

@@ -11,7 +11,8 @@ export default async function InventoryDetailPage({
 }) {
   const { productId } = await params;
   if (getDomainSource("sellerCatalog") === "mock") {
-    if (!(await getSellerInventoryProduct(DEMO_STORE_ID, productId))) notFound();
+    if (!(await getSellerInventoryProduct(DEMO_STORE_ID, productId)))
+      notFound();
   }
   return <SellerInventoryDetailScreen id={productId} />;
 }

@@ -29,9 +29,9 @@ import { queryKeys } from "@/shared/query/query-keys";
 const apiRequestMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/http-client", async () => {
-  const actual = await vi.importActual<typeof import("@/shared/api/http-client")>(
-    "@/shared/api/http-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/shared/api/http-client")
+  >("@/shared/api/http-client");
   return {
     ...actual,
     apiRequest: apiRequestMock,
@@ -132,7 +132,11 @@ describe("SEL-200 seller overview analytics", () => {
   });
 
   it("empty helpers stay zeroed for new store", () => {
-    const range = buildAnalyticsDateRange(7, "UTC", new Date("2026-07-17T00:00:00Z"));
+    const range = buildAnalyticsDateRange(
+      7,
+      "UTC",
+      new Date("2026-07-17T00:00:00Z"),
+    );
     const emptyOv = emptyAnalyticsOverview("store_new", range, AS_OF);
     const emptyTr = emptyTrafficAnalytics("store_new", range, "all", AS_OF);
     expect(emptyOv.orders).toBe(0);
@@ -252,7 +256,11 @@ describe("SEL-200 seller overview analytics", () => {
       meta: { requestId: "req_1", timestamp: AS_OF },
     });
 
-    const range = buildAnalyticsDateRange(7, "Asia/Jakarta", new Date("2026-07-17T00:00:00+07:00"));
+    const range = buildAnalyticsDateRange(
+      7,
+      "Asia/Jakarta",
+      new Date("2026-07-17T00:00:00+07:00"),
+    );
     const result = await getSellerAnalyticsOverview({
       storeId: "store_live",
       range,

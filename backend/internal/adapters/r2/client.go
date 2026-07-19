@@ -33,7 +33,7 @@ type Config struct {
 
 // Client implements ports.ObjectStore against S3 API.
 type Client struct {
-	s3     *s3.Client
+	s3      *s3.Client
 	presign *s3.PresignClient
 }
 

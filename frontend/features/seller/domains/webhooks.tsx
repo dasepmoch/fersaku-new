@@ -54,8 +54,14 @@ export function WebhookLab() {
   const deliveriesQuery = useSellerWebhookDeliveries(storeId);
   const testMutation = useTestSellerWebhook(storeId);
 
-  const endpoints = endpointsQuery.data ?? [];
-  const deliveries = deliveriesQuery.data ?? [];
+  const endpoints = useMemo(
+    () => endpointsQuery.data ?? [],
+    [endpointsQuery.data],
+  );
+  const deliveries = useMemo(
+    () => deliveriesQuery.data ?? [],
+    [deliveriesQuery.data],
+  );
 
   const primary = endpoints[0];
   const [open, setOpen] = useState(false);
@@ -84,8 +90,7 @@ export function WebhookLab() {
     [endpoints],
   );
 
-  const displayUrl =
-    primary?.url ?? "https://asep.ai/api/webhooks/fersaku";
+  const displayUrl = primary?.url ?? "https://asep.ai/api/webhooks/fersaku";
   const statusLabel = primary?.statusLabel ?? "Active";
   const isActive =
     !primary ||
@@ -129,15 +134,17 @@ export function WebhookLab() {
 
   const testResult = testMutation.data
     ? {
-        ok: (testMutation.data.lastHttpStatus ?? 0) >= 200 &&
+        ok:
+          (testMutation.data.lastHttpStatus ?? 0) >= 200 &&
           (testMutation.data.lastHttpStatus ?? 0) < 300,
         latency: testMutation.data.lastLatencyMs ?? 0,
         statusLabel: testMutation.data.responseLabel,
-        body: testMutation.data.status === "DELIVERED" ||
-        ((testMutation.data.lastHttpStatus ?? 0) >= 200 &&
-          (testMutation.data.lastHttpStatus ?? 0) < 300)
-          ? '{ "received": true, "delivery": "accepted" }'
-          : '{ "error": "test endpoint rejected payload" }',
+        body:
+          testMutation.data.status === "DELIVERED" ||
+          ((testMutation.data.lastHttpStatus ?? 0) >= 200 &&
+            (testMutation.data.lastHttpStatus ?? 0) < 300)
+            ? '{ "received": true, "delivery": "accepted" }'
+            : '{ "error": "test endpoint rejected payload" }',
       }
     : null;
 
@@ -194,11 +201,7 @@ export function WebhookLab() {
               className="hairline grid grid-cols-[1fr_auto_auto] gap-4 border-t px-5 py-4 text-[10px]"
             >
               <code className="font-bold">{row.event}</code>
-              <b
-                className={
-                  row.ok ? "text-[#2e714f]" : "text-[#b2573c]"
-                }
-              >
+              <b className={row.ok ? "text-[#2e714f]" : "text-[#b2573c]"}>
                 {row.response}
               </b>
               <span className="w-12 text-right text-[#718078]">
@@ -273,8 +276,7 @@ export function WebhookLab() {
                     HTTP{" "}
                     {testResult.ok
                       ? "200 OK"
-                      : testResult.statusLabel ||
-                        "500 Internal Server Error"}
+                      : testResult.statusLabel || "500 Internal Server Error"}
                   </b>
                   <span className="ml-auto text-[9px]">
                     {testResult.latency} ms

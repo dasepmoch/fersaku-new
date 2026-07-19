@@ -576,11 +576,11 @@ func (s *KYCService) scanKYCPlaintext(ctx context.Context, plain []byte) (scanSt
 	scanCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	res, scanErr := sc.Scan(scanCtx, ports.ScanInput{
-		Reader:   bytes.NewReader(plain),
+		Reader:    bytes.NewReader(plain),
 		SizeBytes: int64(len(plain)),
-		MaxBytes: kyc.MaxDocumentBytes,
-		Timeout:  60 * time.Second,
-		Purpose:  "kyc",
+		MaxBytes:  kyc.MaxDocumentBytes,
+		Timeout:   60 * time.Second,
+		Purpose:   "kyc",
 	})
 	if res.Verdict == ports.ScanVerdictClean {
 		if strings.TrimSpace(res.Engine) == "" || strings.TrimSpace(res.Version) == "" {

@@ -2,6 +2,8 @@ package application
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -9,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/xendit"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/ledger"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/platform"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/withdrawals"
@@ -516,7 +517,7 @@ func (m *memLedgerStore) LockBalance(ctx context.Context, merchantID, paymentMod
 	return m.GetBalance(ctx, merchantID, paymentMode)
 }
 func (m *memLedgerStore) EnsureBalance(context.Context, string, string, time.Time) error { return nil }
-func (m *memLedgerStore) SettlementDelaySeconds(context.Context) (int64, error)         { return 0, nil }
+func (m *memLedgerStore) SettlementDelaySeconds(context.Context) (int64, error)          { return 0, nil }
 func (m *memLedgerStore) LinkPaymentSettlement(context.Context, string, string, int64, int64, string, time.Time) error {
 	return nil
 }
@@ -526,6 +527,169 @@ func (m *memLedgerStore) GetStoreMerchant(_ context.Context, storeID string) (st
 func (m *memLedgerStore) RevenueByDay(context.Context, string, string, time.Time, time.Time) ([]ledger.RevenuePoint, error) {
 	return nil, nil
 }
+
+// ---------- fake disbursement provider (port double; no adapter import) ----------
+
+type fakeDisbursement struct {
+	Ref               string
+	ExternalID        string
+	NetAmountIDR      int64
+	Currency          string
+	Status            string
+	ProviderFeeIDR    int64
+	BankCode          string
+	AccountNumberMask string
+	AccountHolder     string
+	CreatedAt         time.Time
+	CompletedAt       *time.Time
+	FailureCode       string
+}
+
+// fakeDisburse is an in-package ports.DisbursementProvider double.
+// Architecture boundary: application tests must not import internal/adapters.
+type fakeDisburse struct {
+	mu                    sync.Mutex
+	byRef                 map[string]*fakeDisbursement
+	byExternal            map[string]string
+	DefaultProviderFeeIDR int64
+	AutoCompleteDisburse  bool
+}
+
+func newFakeDisburse() *fakeDisburse {
+	return &fakeDisburse{
+		byRef:                 make(map[string]*fakeDisbursement),
+		byExternal:            make(map[string]string),
+		DefaultProviderFeeIDR: 2500,
+		AutoCompleteDisburse:  false,
+	}
+}
+
+func (f *fakeDisburse) QuoteDisbursement(_ context.Context, in ports.DisbursementQuoteInput) (ports.DisbursementQuote, error) {
+	fee := f.DefaultProviderFeeIDR
+	return ports.DisbursementQuote{
+		ProviderFeeIDR:    fee,
+		ProviderReference: "quote_" + in.IdempotencyKey,
+		Evidence:          "fake-quote",
+		QuotedAt:          time.Date(2026, 7, 19, 12, 0, 0, 0, time.UTC),
+	}, nil
+}
+
+func (f *fakeDisburse) CreateDisbursement(_ context.Context, in ports.CreateDisbursementInput) (ports.CreateDisbursementResult, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if ref, ok := f.byExternal[in.ExternalID]; ok {
+		d := f.byRef[ref]
+		fee := d.ProviderFeeIDR
+		return ports.CreateDisbursementResult{
+			ProviderReference: d.Ref,
+			ExternalID:        d.ExternalID,
+			Status:            d.Status,
+			NetAmountIDR:      d.NetAmountIDR,
+			ProviderFeeIDR:    &fee,
+			CreatedAt:         d.CreatedAt,
+		}, nil
+	}
+	h := sha256.Sum256([]byte("fake-disb|" + in.ExternalID))
+	ref := "fake_disb_" + hex.EncodeToString(h[:12])
+	fee := f.DefaultProviderFeeIDR
+	d := &fakeDisbursement{
+		Ref:               ref,
+		ExternalID:        in.ExternalID,
+		NetAmountIDR:      in.NetAmountIDR,
+		Currency:          "IDR",
+		Status:            "PENDING",
+		ProviderFeeIDR:    fee,
+		BankCode:          in.BankCode,
+		AccountNumberMask: in.AccountNumberMask,
+		AccountHolder:     in.AccountHolderName,
+		CreatedAt:         time.Date(2026, 7, 19, 12, 0, 0, 0, time.UTC),
+	}
+	f.byRef[ref] = d
+	f.byExternal[in.ExternalID] = ref
+	feeCopy := fee
+	return ports.CreateDisbursementResult{
+		ProviderReference: d.Ref,
+		ExternalID:        d.ExternalID,
+		Status:            d.Status,
+		NetAmountIDR:      d.NetAmountIDR,
+		ProviderFeeIDR:    &feeCopy,
+		CreatedAt:         d.CreatedAt,
+	}, nil
+}
+
+func (f *fakeDisburse) GetDisbursement(_ context.Context, providerRef string) (ports.ProviderDisbursement, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	d, ok := f.byRef[providerRef]
+	if !ok {
+		return ports.ProviderDisbursement{}, &ports.ProviderError{
+			Class: ports.ProviderRejected, Message: "not found",
+		}
+	}
+	if f.AutoCompleteDisburse && d.Status == "PENDING" {
+		now := time.Date(2026, 7, 19, 12, 0, 0, 0, time.UTC)
+		d.Status = "COMPLETED"
+		d.CompletedAt = &now
+	}
+	fee := d.ProviderFeeIDR
+	return ports.ProviderDisbursement{
+		ProviderReference: d.Ref,
+		ExternalID:        d.ExternalID,
+		Status:            d.Status,
+		NetAmountIDR:      d.NetAmountIDR,
+		Currency:          d.Currency,
+		ProviderFeeIDR:    &fee,
+		FailureCode:       d.FailureCode,
+		CompletedAt:       d.CompletedAt,
+		BankCode:          d.BankCode,
+		AccountNumberMask: d.AccountNumberMask,
+	}, nil
+}
+
+func (f *fakeDisburse) GetDisbursementByExternal(externalID string) (ports.ProviderDisbursement, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	ref, ok := f.byExternal[externalID]
+	if !ok {
+		return ports.ProviderDisbursement{}, false
+	}
+	d := f.byRef[ref]
+	fee := d.ProviderFeeIDR
+	return ports.ProviderDisbursement{
+		ProviderReference: d.Ref,
+		ExternalID:        d.ExternalID,
+		Status:            d.Status,
+		NetAmountIDR:      d.NetAmountIDR,
+		Currency:          d.Currency,
+		ProviderFeeIDR:    &fee,
+		FailureCode:       d.FailureCode,
+		CompletedAt:       d.CompletedAt,
+		BankCode:          d.BankCode,
+		AccountNumberMask: d.AccountNumberMask,
+	}, true
+}
+
+func (f *fakeDisburse) SimulateDisburseComplete(providerRef string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	d, ok := f.byRef[providerRef]
+	if !ok {
+		return fmt.Errorf("not found")
+	}
+	now := time.Date(2026, 7, 19, 12, 0, 0, 0, time.UTC)
+	d.Status = "COMPLETED"
+	d.CompletedAt = &now
+	return nil
+}
+
+func (f *fakeDisburse) DisbursementCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.byRef)
+}
+
+// Ensure ports compile against fake (architecture boundary: no adapter import).
+var _ ports.DisbursementProvider = (*fakeDisburse)(nil)
 
 // ---------- test helpers ----------
 
@@ -561,7 +725,7 @@ func newWDTestStack(t *testing.T, available int64, now time.Time) (
 	*WithdrawalService,
 	*memWDStore,
 	*memLedgerStore,
-	*xendit.Fake,
+	*fakeDisburse,
 ) {
 	t.Helper()
 	const storeID = "store_1"
@@ -569,7 +733,7 @@ func newWDTestStack(t *testing.T, available int64, now time.Time) (
 	wdStore := newMemWDStore(storeID, merchantID)
 	_ = seedVerifiedBank(t, wdStore, merchantID)
 	ledStore := newMemLedger(merchantID, available)
-	xd := xendit.NewFake()
+	xd := newFakeDisburse()
 	xd.DefaultProviderFeeIDR = 2500
 	xd.AutoCompleteDisburse = false
 	auto := true
@@ -850,6 +1014,3 @@ func stringContains(s, sub string) bool {
 			return false
 		})())
 }
-
-// Ensure ports compile against fake.
-var _ ports.DisbursementProvider = (*xendit.Fake)(nil)

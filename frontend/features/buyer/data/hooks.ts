@@ -98,8 +98,7 @@ export function useBuyerPurchase(orderId: string) {
     queryKey: queryKeys.buyer.purchase(subject, orderId),
     queryFn: (signal) => getBuyerPurchase(orderId, signal),
     surface: "private",
-    enabled:
-      Boolean(orderId) && buyerQueryEnabled(Boolean(claims?.subjectId)),
+    enabled: Boolean(orderId) && buyerQueryEnabled(Boolean(claims?.subjectId)),
     placeholderData: mockPlaceholderData(
       "buyer",
       demoPurchases().find((p) => p.orderId === orderId) || null,
@@ -190,10 +189,7 @@ export function useRevokeBuyerSessionMutation() {
   const subject = buyerSubjectKey(claims);
   return useAppMutation({
     mutationKey: ["buyer", subject, "sessions", "revoke"],
-    mutationFn: (
-      input: RevokeBuyerSessionInput,
-      signal,
-    ) =>
+    mutationFn: (input: RevokeBuyerSessionInput, signal) =>
       revokeBuyerSession(
         {
           ...input,

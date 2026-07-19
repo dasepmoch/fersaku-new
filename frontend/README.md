@@ -17,9 +17,9 @@ Root monorepo scripts (`npm run dev|build|start`) proxy here via `npm --prefix f
 
 Copy `.env.example` → `.env.local`.
 
-| Mode | Key vars (no secrets) |
-| ---- | --------------------- |
-| Mock | `NEXT_PUBLIC_DATA_SOURCE=mock`, `NEXT_PUBLIC_APP_STAGE=prototype` |
+| Mode     | Key vars (no secrets)                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| Mock     | `NEXT_PUBLIC_DATA_SOURCE=mock`, `NEXT_PUBLIC_APP_STAGE=prototype`                                      |
 | API-live | `NEXT_PUBLIC_DATA_SOURCE=api`, `NEXT_PUBLIC_APP_STAGE=live`, `API_INTERNAL_URL=http://127.0.0.1:18080` |
 
 Browser: same-origin `/v1` (leave `NEXT_PUBLIC_API_URL` empty). `API_INTERNAL_URL` is server-only.

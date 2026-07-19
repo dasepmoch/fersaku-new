@@ -14,7 +14,11 @@ import {
   getDomainSource,
   shouldUseMockFixtures,
 } from "@/shared/data/domain-source";
-import type { AdminBoundedList, AdminListFilters, AdminReview } from "./contracts";
+import type {
+  AdminBoundedList,
+  AdminListFilters,
+  AdminReview,
+} from "./contracts";
 import {
   adminListQueryParams,
   mapAdminListPage,
@@ -73,7 +77,8 @@ export async function listAdminReviewsPage(
     schema: adminReviewListEnvelopeSchema,
     query: {
       ...adminListQueryParams(filters),
-      limit: (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
+      limit:
+        (normalized.limit as number | undefined) ?? ADMIN_LIST_DEFAULT_LIMIT,
     },
     signal,
   });

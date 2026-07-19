@@ -111,17 +111,13 @@ export async function createSellerProduct(
       slug,
       title: String(body.title),
       short: typeof body.short === "string" ? body.short : "",
-      description:
-        typeof body.description === "string" ? body.description : "",
+      description: typeof body.description === "string" ? body.description : "",
       price: Number(body.price) || 0,
       type: body.type as CatalogProduct["type"],
       sales: 0,
-      palette:
-        typeof body.palette === "string" ? body.palette : "#e9ff9b",
+      palette: typeof body.palette === "string" ? body.palette : "#e9ff9b",
       glyph: typeof body.glyph === "string" ? body.glyph : "PR",
-      includes: Array.isArray(body.includes)
-        ? (body.includes as string[])
-        : [],
+      includes: Array.isArray(body.includes) ? (body.includes as string[]) : [],
       status: "draft",
       storeId: input.storeId,
     };
@@ -149,8 +145,7 @@ export async function patchSellerProduct(
   signal?: AbortSignal,
 ): Promise<CatalogProduct> {
   if (shouldUseMockFixtures("sellerCatalog")) {
-    const existing =
-      demoProducts.find((p) => p.id === input.productId) ?? null;
+    const existing = demoProducts.find((p) => p.id === input.productId) ?? null;
     const body = toPatchProductRequestBody(input);
     const base: CatalogProduct = existing ?? {
       id: input.productId,
@@ -244,8 +239,7 @@ export async function archiveSellerProduct(
   signal?: AbortSignal,
 ): Promise<CatalogProduct> {
   if (shouldUseMockFixtures("sellerCatalog")) {
-    const existing =
-      demoProducts.find((p) => p.id === input.productId) ?? null;
+    const existing = demoProducts.find((p) => p.id === input.productId) ?? null;
     const base: CatalogProduct = existing ?? {
       id: input.productId,
       slug: "product",
@@ -426,7 +420,10 @@ export async function findPublicProduct(
     ? await getPublicStorefront(match.storeSlug, signal)
     : null;
   if (!store) {
-    return { product: match.product, store: null as unknown as PublicStorefront };
+    return {
+      product: match.product,
+      store: null as unknown as PublicStorefront,
+    };
   }
   return { product: match.product, store };
 }

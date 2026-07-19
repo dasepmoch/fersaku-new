@@ -181,7 +181,12 @@ describe("ADM-340 admin KYC review", () => {
   it("query keys never include document content or secrets", () => {
     const listKey = queryKeys.admin.kyc({ age: "30m", limit: 50 });
     const caseKey = queryKeys.admin.kycCase("kyc_case_1");
-    expect(listKey).toEqual(["admin", "kyc", "bounded", { age: "30m", limit: 50 }]);
+    expect(listKey).toEqual([
+      "admin",
+      "kyc",
+      "bounded",
+      { age: "30m", limit: 50 },
+    ]);
     expect(caseKey).toEqual(["admin", "kyc", "case", "kyc_case_1"]);
     const flat = JSON.stringify([listKey, caseKey]);
     expect(flat).not.toMatch(/blob|objectUrl|plaintext|storageKey|apiKey/i);

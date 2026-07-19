@@ -57,15 +57,15 @@ type CredentialStore interface {
 
 // UpdateIssuanceClaimParams sets claim token hash on an issuance request.
 type UpdateIssuanceClaimParams struct {
-	ID                  string
-	ClaimTokenHash      string
-	ClaimExpiresAt      time.Time
+	ID                   string
+	ClaimTokenHash       string
+	ClaimExpiresAt       time.Time
 	ClaimRecipientUserID string
-	MFABindingSessionID *string
-	Status              string // optional override (e.g. AUTHORIZED)
-	AuthorizerUserID    *string
-	AuthorizedAt        *time.Time
-	ExpiresAt           *time.Time
-	Reason              string
-	UpdatedAt           time.Time
+	MFABindingSessionID  *string
+	Status               string // optional override (e.g. AUTHORIZED)
+	AuthorizerUserID     *string
+	AuthorizedAt         *time.Time
+	ExpiresAt            *time.Time
+	Reason               string
+	UpdatedAt            time.Time
 }

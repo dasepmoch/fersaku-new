@@ -63,21 +63,21 @@ const (
 
 // Lot statuses.
 const (
-	LotPending            = "PENDING"
-	LotAvailable          = "AVAILABLE"
-	LotPartiallyConsumed  = "PARTIALLY_CONSUMED"
-	LotConsumed           = "CONSUMED"
-	LotHeld               = "HELD"
+	LotPending           = "PENDING"
+	LotAvailable         = "AVAILABLE"
+	LotPartiallyConsumed = "PARTIALLY_CONSUMED"
+	LotConsumed          = "CONSUMED"
+	LotHeld              = "HELD"
 )
 
 // Ledger list item types for seller finance UI.
 const (
-	ItemTypeSale         = "SALE"
-	ItemTypePlatformFee  = "PLATFORM_FEE"
-	ItemTypeProviderFee  = "PROVIDER_FEE"
-	ItemTypeWithdrawal   = "WITHDRAWAL"
-	ItemTypeAdjustment   = "ADJUSTMENT"
-	ItemTypeRelease      = "SETTLEMENT_RELEASE"
+	ItemTypeSale        = "SALE"
+	ItemTypePlatformFee = "PLATFORM_FEE"
+	ItemTypeProviderFee = "PROVIDER_FEE"
+	ItemTypeWithdrawal  = "WITHDRAWAL"
+	ItemTypeAdjustment  = "ADJUSTMENT"
+	ItemTypeRelease     = "SETTLEMENT_RELEASE"
 )
 
 // Direction for list DTO.
@@ -201,21 +201,21 @@ type SourceBalance struct {
 
 // FinanceSummary is the seller finance summary DTO shape.
 type FinanceSummary struct {
-	StoreID                 string
-	MerchantID              string
-	PaymentMode             string
-	AvailableAmount         int64
-	PendingAmount           int64
-	HeldAmount              int64
-	LifetimeGrossAmount     int64
-	MonthGrossAmount        int64
-	MonthPlatformFeeAmount  int64 // merchant 3% component
-	MonthProviderFeeAmount  int64 // merchant-charged Rp700 processing
-	MonthNetAmount          int64
-	Sources                 map[string]SourceAmounts
-	Currency                string
-	AsOf                    time.Time
-	FeePolicy               FeePolicyView
+	StoreID                    string
+	MerchantID                 string
+	PaymentMode                string
+	AvailableAmount            int64
+	PendingAmount              int64
+	HeldAmount                 int64
+	LifetimeGrossAmount        int64
+	MonthGrossAmount           int64
+	MonthPlatformFeeAmount     int64 // merchant 3% component
+	MonthProviderFeeAmount     int64 // merchant-charged Rp700 processing
+	MonthNetAmount             int64
+	Sources                    map[string]SourceAmounts
+	Currency                   string
+	AsOf                       time.Time
+	FeePolicy                  FeePolicyView
 	WithdrawalAllocationPolicy string
 }
 

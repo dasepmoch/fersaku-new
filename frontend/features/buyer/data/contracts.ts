@@ -1,8 +1,5 @@
 export type BuyerPurchaseDeliveryType =
-  | "download"
-  | "link"
-  | "credentials"
-  | "code";
+  "download" | "link" | "credentials" | "code";
 
 /** Buyer review view model (create/update response → UI). */
 export type BuyerReview = {

@@ -14,13 +14,7 @@ export type StoreDomainStatus =
   | string;
 
 export type StoreDomainTlsStatus =
-  | "NONE"
-  | "PENDING"
-  | "ACTIVE"
-  | "FAILED"
-  | "REMOVING"
-  | "REMOVED"
-  | string;
+  "NONE" | "PENDING" | "ACTIVE" | "FAILED" | "REMOVING" | "REMOVED" | string;
 
 /** Existing custom-domain card row. */
 export type StoreDomain = {

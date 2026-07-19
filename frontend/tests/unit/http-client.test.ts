@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   ApiError,
@@ -52,12 +52,16 @@ afterEach(() => {
 
 describe("ApiError", () => {
   it("exposes structured problem details and helpers", () => {
-    const error = new ApiError(422, {
-      code: "VALIDATION_ERROR",
-      message: "Invalid payload",
-      requestId: "req_123",
-      details: { fields: [{ field: "email", code: "INVALID" }] },
-    }, 30);
+    const error = new ApiError(
+      422,
+      {
+        code: "VALIDATION_ERROR",
+        message: "Invalid payload",
+        requestId: "req_123",
+        details: { fields: [{ field: "email", code: "INVALID" }] },
+      },
+      30,
+    );
     expect(error.status).toBe(422);
     expect(error.problem.code).toBe("VALIDATION_ERROR");
     expect(error.message).toBe("Invalid payload");
@@ -181,7 +185,9 @@ describe("apiRequest", () => {
 
     await apiRequest("/v1/auth/session", { schema: okSchema });
 
-    expect(fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF)).toBeNull();
+    expect(
+      fetchMock.mock.calls[0][1].headers.get(HTTP_HEADERS.CSRF),
+    ).toBeNull();
   });
 
   it("generates a deterministic fallback request ID when UUID is unavailable", async () => {
@@ -204,18 +210,18 @@ describe("apiRequest", () => {
       vi.fn().mockResolvedValue(jsonResponse(envelope({ ok: true }))),
     );
 
-    await expect(
-      apiRequest("/health", { schema: okSchema }),
-    ).resolves.toEqual(envelope({ ok: true }));
+    await expect(apiRequest("/health", { schema: okSchema })).resolves.toEqual(
+      envelope({ ok: true }),
+    );
   });
 
   it("returns list envelope data for success/list", async () => {
     const body = envelope([{ id: "a" }, { id: "b" }]);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body)));
 
-    await expect(
-      apiRequest("/items", { schema: listSchema }),
-    ).resolves.toEqual(body);
+    await expect(apiRequest("/items", { schema: listSchema })).resolves.toEqual(
+      body,
+    );
   });
 
   it("returns undefined for a successful 204 response without schema", async () => {
