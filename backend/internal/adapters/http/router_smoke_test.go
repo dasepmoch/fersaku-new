@@ -30,6 +30,7 @@ func testRouter(t *testing.T, opts ...func(*httpadapter.RouterDeps)) http.Handle
 		CSRFSoftDisable: true,
 		RateLimiter:     nil, // disable by default for smoke tests
 		RequestTimeout:  5 * time.Second,
+		MetricsAccess:   middleware.MetricsAccessConfig{Open: true},
 	}
 	for _, o := range opts {
 		o(&d)

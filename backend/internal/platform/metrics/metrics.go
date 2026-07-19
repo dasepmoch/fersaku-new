@@ -24,6 +24,18 @@ type Metrics struct {
 	malwareScans      map[string]*atomic.Uint64
 	malwareQuarantine atomic.Uint64 // backlog gauge source (set, not add)
 
+	// RED / SLO extras (GAP-07) — low-cardinality labels only.
+	providerOps       map[string]*atomic.Uint64 // provider|operation|result
+	jobRuns           map[string]*atomic.Uint64 // job|result
+	redisFailures     atomic.Uint64
+	deliveryDLQ       atomic.Uint64
+	payoutMismatch    atomic.Uint64
+	dbPoolAcquired    atomic.Uint64
+	dbPoolEmpty       atomic.Uint64
+	telemetryDropped  atomic.Uint64
+	telemetryExported atomic.Uint64
+	telemetryErrors   atomic.Uint64
+
 	httpLatencySum     map[string]*atomic.Uint64
 	httpLatencyCount   map[string]*atomic.Uint64
 	httpLatencyBuckets map[string]*latencyBuckets
@@ -48,6 +60,8 @@ func NewMetrics() *Metrics {
 		webhookDelivered:   make(map[string]*atomic.Uint64),
 		auditChainChecks:   make(map[string]*atomic.Uint64),
 		malwareScans:       make(map[string]*atomic.Uint64),
+		providerOps:        make(map[string]*atomic.Uint64),
+		jobRuns:            make(map[string]*atomic.Uint64),
 		httpLatencySum:     make(map[string]*atomic.Uint64),
 		httpLatencyCount:   make(map[string]*atomic.Uint64),
 		httpLatencyBuckets: make(map[string]*latencyBuckets),
@@ -155,6 +169,60 @@ func (m *Metrics) SetMalwareQuarantineBacklog(n float64) {
 	m.malwareQuarantine.Store(uint64(n))
 }
 
+// boundLabel keeps metric labels low-cardinality (no free-form IDs).
+func boundLabel(v, fallback string, max int) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return fallback
+	}
+	if max > 0 && len(v) > max {
+		return v[:max]
+	}
+	// Reject values that look like emails or UUIDs with @.
+	if strings.Contains(v, "@") {
+		return fallback
+	}
+	return v
+}
+
+// IncProvider records a provider call: provider (duitku|xendit|…), operation (create|status|disburse|…), result (ok|auth_error|timeout|error|unknown).
+func (m *Metrics) IncProvider(provider, operation, result string) {
+	provider = boundLabel(provider, "unknown", 32)
+	operation = boundLabel(operation, "unknown", 32)
+	result = boundLabel(result, "unknown", 32)
+	key := provider + "|" + operation + "|" + result
+	m.counterGet(m.providerOps, key).Add(1)
+}
+
+// IncJob records a worker job run result: ok|error|timeout.
+func (m *Metrics) IncJob(job, result string) {
+	job = boundLabel(job, "unknown", 64)
+	result = boundLabel(result, "unknown", 32)
+	m.counterGet(m.jobRuns, job+"|"+result).Add(1)
+}
+
+// IncRedisFailure increments Redis client/limiter failure counter.
+func (m *Metrics) IncRedisFailure() { m.redisFailures.Add(1) }
+
+// IncDeliveryDLQ increments delivery dead-letter counter.
+func (m *Metrics) IncDeliveryDLQ() { m.deliveryDLQ.Add(1) }
+
+// IncPayoutMismatch increments provider-paid/local-pending or payout invariant mismatch.
+func (m *Metrics) IncPayoutMismatch() { m.payoutMismatch.Add(1) }
+
+// IncDBPoolEmpty increments when a DB acquire waits/fails due to pool saturation signal.
+func (m *Metrics) IncDBPoolEmpty() { m.dbPoolEmpty.Add(1) }
+
+// IncDBPoolAcquired increments successful pool acquires (optional sampling).
+func (m *Metrics) IncDBPoolAcquired() { m.dbPoolAcquired.Add(1) }
+
+// SetTelemetryStats sets telemetry export counters from the process tracer.
+func (m *Metrics) SetTelemetryStats(exported, dropped, errors uint64) {
+	m.telemetryExported.Store(exported)
+	m.telemetryDropped.Store(dropped)
+	m.telemetryErrors.Store(errors)
+}
+
 // WritePrometheus writes Prometheus text exposition format 0.0.4.
 func (m *Metrics) WritePrometheus(b *strings.Builder) {
 	m.mu.Lock()
@@ -163,6 +231,8 @@ func (m *Metrics) WritePrometheus(b *strings.Builder) {
 	whKeys := sortedKeys(m.webhookDelivered)
 	audKeys := sortedKeys(m.auditChainChecks)
 	mwKeys := sortedKeys(m.malwareScans)
+	provKeys := sortedKeys(m.providerOps)
+	jobKeys := sortedKeys(m.jobRuns)
 	latKeys := sortedKeys(m.httpLatencySum)
 	scrape := m.scrapeGauges
 	m.mu.Unlock()
@@ -242,6 +312,57 @@ func (m *Metrics) WritePrometheus(b *strings.Builder) {
 	b.WriteString("# HELP fersaku_malware_quarantine_backlog Objects in SCANNING quarantine.\n")
 	b.WriteString("# TYPE fersaku_malware_quarantine_backlog gauge\n")
 	fmt.Fprintf(b, "fersaku_malware_quarantine_backlog %d\n", m.malwareQuarantine.Load())
+
+	b.WriteString("# HELP fersaku_provider_ops_total Provider calls by provider, operation, and result (low-cardinality).\n")
+	b.WriteString("# TYPE fersaku_provider_ops_total counter\n")
+	for _, k := range provKeys {
+		parts := strings.SplitN(k, "|", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		v := m.counterGet(m.providerOps, k).Load()
+		fmt.Fprintf(b, `fersaku_provider_ops_total{provider=%q,operation=%q,result=%q} %d`+"\n",
+			parts[0], parts[1], parts[2], v)
+	}
+
+	b.WriteString("# HELP fersaku_job_runs_total Worker job runs by job label and result.\n")
+	b.WriteString("# TYPE fersaku_job_runs_total counter\n")
+	for _, k := range jobKeys {
+		parts := strings.SplitN(k, "|", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		v := m.counterGet(m.jobRuns, k).Load()
+		fmt.Fprintf(b, `fersaku_job_runs_total{job=%q,result=%q} %d`+"\n", parts[0], parts[1], v)
+	}
+
+	b.WriteString("# HELP fersaku_redis_failures_total Redis client or rate-limiter backend failures.\n")
+	b.WriteString("# TYPE fersaku_redis_failures_total counter\n")
+	fmt.Fprintf(b, "fersaku_redis_failures_total %d\n", m.redisFailures.Load())
+
+	b.WriteString("# HELP fersaku_delivery_dlq_total Delivery dead-letter terminal failures.\n")
+	b.WriteString("# TYPE fersaku_delivery_dlq_total counter\n")
+	fmt.Fprintf(b, "fersaku_delivery_dlq_total %d\n", m.deliveryDLQ.Load())
+
+	b.WriteString("# HELP fersaku_payout_mismatch_total Provider/local payout or payment mismatch signals.\n")
+	b.WriteString("# TYPE fersaku_payout_mismatch_total counter\n")
+	fmt.Fprintf(b, "fersaku_payout_mismatch_total %d\n", m.payoutMismatch.Load())
+
+	b.WriteString("# HELP fersaku_db_pool_empty_total DB pool saturation / acquire empty signals.\n")
+	b.WriteString("# TYPE fersaku_db_pool_empty_total counter\n")
+	fmt.Fprintf(b, "fersaku_db_pool_empty_total %d\n", m.dbPoolEmpty.Load())
+
+	b.WriteString("# HELP fersaku_telemetry_spans_exported_total Spans successfully handed to exporters.\n")
+	b.WriteString("# TYPE fersaku_telemetry_spans_exported_total counter\n")
+	fmt.Fprintf(b, "fersaku_telemetry_spans_exported_total %d\n", m.telemetryExported.Load())
+
+	b.WriteString("# HELP fersaku_telemetry_spans_dropped_total Spans dropped due to full export queue.\n")
+	b.WriteString("# TYPE fersaku_telemetry_spans_dropped_total counter\n")
+	fmt.Fprintf(b, "fersaku_telemetry_spans_dropped_total %d\n", m.telemetryDropped.Load())
+
+	b.WriteString("# HELP fersaku_telemetry_export_errors_total Telemetry exporter failures.\n")
+	b.WriteString("# TYPE fersaku_telemetry_export_errors_total counter\n")
+	fmt.Fprintf(b, "fersaku_telemetry_export_errors_total %d\n", m.telemetryErrors.Load())
 
 	b.WriteString("# HELP fersaku_outbox_pending Gauge of pending/failed outbox rows available for work.\n")
 	b.WriteString("# TYPE fersaku_outbox_pending gauge\n")

@@ -38,6 +38,8 @@ See `backend/docs/dashboards/` for Grafana-compatible panel definitions (markdow
 
 ## Related
 
-- Metrics endpoint: `GET /metrics` (Prometheus text)
+- Metrics endpoint: `GET /metrics` (Prometheus text; token/CIDR protected on live — GAP-07)
+- Alert catalog: `backend/docs/alerts.md` (owner, threshold, window, severity, runbook, recovery test)
 - Component health: `GET /v1/admin/system` (permissioned; no secrets)
 - Topology: ADR-0007
+- Telemetry: `OTEL_EXPORTER_OTLP_ENDPOINT` optional; process sink always; bounded flush

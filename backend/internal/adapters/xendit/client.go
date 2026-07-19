@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/metrics"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/telemetry"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
@@ -279,18 +281,34 @@ type disburseResponse struct {
 }
 
 func (r *Real) doJSON(ctx context.Context, method, path, idempotencyKey string, body any, out any) error {
+	op := xenditOpFromPath(path)
+	ctx, endSpan := telemetry.StartSpanGlobal(ctx, "provider.xendit", telemetry.SpanKindClient, map[string]string{
+		"provider":           "xendit",
+		"provider.operation": op,
+		"rpc.system":         "http",
+	})
+	record := func(result string, err error) error {
+		metrics.Global.IncProvider("xendit", op, result)
+		st := telemetry.StatusOK
+		if result != "ok" {
+			st = telemetry.StatusError
+		}
+		endSpan(st, result, map[string]string{"provider.result": result})
+		return err
+	}
+
 	var reader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return &ports.ProviderError{Class: ports.ProviderInvalidResp, Message: "marshal request"}
+			return record("error", &ports.ProviderError{Class: ports.ProviderInvalidResp, Message: "marshal request"})
 		}
 		// Redact account_number from any future log path by never logging body.
 		reader = bytes.NewReader(b)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, r.BaseURL+path, reader)
 	if err != nil {
-		return &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "build request"}
+		return record("error", &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "build request"})
 	}
 	req.SetBasicAuth(r.SecretKey, "")
 	req.Header.Set("Content-Type", "application/json")
@@ -308,42 +326,56 @@ func (r *Real) doJSON(ctx context.Context, method, path, idempotencyKey string, 
 	if err != nil {
 		r.logSafe("xendit request failed", method, path, 0, time.Since(start), err)
 		if ctx.Err() != nil || isTimeout(err) {
-			return &ports.ProviderError{
+			return record("timeout", &ports.ProviderError{
 				Class:       ports.ProviderTimeout,
 				Message:     "provider timeout",
 				RequestSent: true,
-			}
+			})
 		}
-		return &ports.ProviderError{
+		return record("error", &ports.ProviderError{
 			Class:       ports.ProviderUnavailable,
 			Message:     "provider transport error",
 			RequestSent: true,
-		}
+		})
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	r.logSafe("xendit response", method, path, resp.StatusCode, time.Since(start), nil)
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return &ports.ProviderError{Class: ports.ProviderRateLimited, Message: "rate limited", RequestSent: true}
+		return record("error", &ports.ProviderError{Class: ports.ProviderRateLimited, Message: "rate limited", RequestSent: true})
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return &ports.ProviderError{Class: ports.ProviderAuthFailure, Message: "auth failure", RequestSent: true}
+		return record("auth_error", &ports.ProviderError{Class: ports.ProviderAuthFailure, Message: "auth failure", RequestSent: true})
 	}
 	if resp.StatusCode >= 500 {
-		return &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "provider 5xx", RequestSent: true}
+		return record("error", &ports.ProviderError{Class: ports.ProviderUnavailable, Message: "provider 5xx", RequestSent: true})
 	}
 	if resp.StatusCode >= 400 {
 		// 4xx with body — classify as rejected; do not include body (may contain PII).
-		return &ports.ProviderError{Class: ports.ProviderRejected, Message: fmt.Sprintf("provider status %d", resp.StatusCode), RequestSent: true}
+		return record("error", &ports.ProviderError{Class: ports.ProviderRejected, Message: fmt.Sprintf("provider status %d", resp.StatusCode), RequestSent: true})
 	}
 	if out == nil || len(raw) == 0 {
-		return nil
+		return record("ok", nil)
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return &ports.ProviderError{Class: ports.ProviderInvalidResp, Message: "invalid json response", RequestSent: true}
+		return record("error", &ports.ProviderError{Class: ports.ProviderInvalidResp, Message: "invalid json response", RequestSent: true})
 	}
-	return nil
+	return record("ok", nil)
+}
+
+func xenditOpFromPath(path string) string {
+	p := strings.ToLower(path)
+	switch {
+	case strings.Contains(p, "disbursement") || strings.Contains(p, "payout"):
+		return "disburse"
+	case strings.Contains(p, "expire"):
+		return "expire"
+	case strings.Contains(p, "qr_codes") || strings.Contains(p, "qr-codes"):
+		return "qris"
+	default:
+		return "http"
+	}
 }
 
 func (r *Real) timeout() time.Duration {

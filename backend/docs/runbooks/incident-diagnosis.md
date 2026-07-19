@@ -20,10 +20,12 @@ Unknown until scoped: checkout, gateway, webhook, or admin-only.
  # example log fields
  msg=http_request request_id=... trace_id=... method=... path=... status=... latency_ms=...
  ```
-3. Metrics: `GET /metrics` or Prometheus
+3. Metrics: `GET /metrics` or Prometheus (live: Bearer token and/or allow-CIDR — see `docs/alerts.md`)
  - `fersaku_http_requests_total{status=~"5.."}`
  - `fersaku_callback_processed_total`
  - `fersaku_outbox_oldest_age_seconds`
+ - `fersaku_provider_ops_total{result="auth_error|timeout"}`
+ - `fersaku_job_runs_total`
 4. Health:
  - `GET /health/live` — process up
  - `GET /health/ready` — accept traffic

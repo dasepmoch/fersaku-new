@@ -2,6 +2,7 @@ package httpadapter
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -13,6 +14,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/config"
 	"github.com/dasepmoch/fersaku-new/backend/internal/domain/auth"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/telemetry"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
 
@@ -114,11 +116,16 @@ type RouterDeps struct {
 	TrustedProxies []string
 	// TrustedProxyMode is "direct" or "proxy" for safe diagnostics.
 	TrustedProxyMode string
+
+	// Telemetry is the process tracer (optional; nil uses global or skips spans).
+	Telemetry *telemetry.Provider
+	// MetricsAccess protects GET /metrics (GAP-07). Zero value fail-closed unless Open.
+	MetricsAccess middleware.MetricsAccessConfig
 }
 
 // NewRouter builds the chi router with the BE-110/BE-600 middleware order:
 //
-//	recovery → request ID → trace → trusted proxy → logging → metrics → timeout →
+//	recovery → request ID → trace → otel → trusted proxy → logging → metrics → timeout →
 //	auth (session load) → CSRF → rate limit → routes
 func NewRouter(log ports.Logger, ids ports.IDGenerator, service string, ready func() bool) http.Handler {
 	return NewRouterWith(RouterDeps{
@@ -132,7 +139,28 @@ func NewRouter(log ports.Logger, ids ports.IDGenerator, service string, ready fu
 		CSRFSoftDisable: true,
 		RateLimiter:     middleware.NewMemoryClassLimiter(nil),
 		RequestTimeout:  30 * time.Second,
+		MetricsAccess:   middleware.MetricsAccessConfig{Open: true},
 	})
+}
+
+// ParseMetricsAccess builds MetricsAccessConfig from process config.
+func ParseMetricsAccess(cfg config.Config) (middleware.MetricsAccessConfig, error) {
+	out := middleware.MetricsAccessConfig{
+		BearerToken: cfg.MetricsBearerToken,
+		Open:        !cfg.IsLiveRuntime(),
+	}
+	if len(cfg.MetricsAllowCIDRs) > 0 {
+		nets, err := middleware.ParseCIDRList(joinComma(cfg.MetricsAllowCIDRs))
+		if err != nil {
+			return out, err
+		}
+		out.AllowCIDRs = nets
+	}
+	return out, nil
+}
+
+func joinComma(parts []string) string {
+	return strings.Join(parts, ",")
 }
 
 // NewRouterWith builds the router from explicit deps (preferred by app composition root).
@@ -154,6 +182,7 @@ func NewRouterWith(d RouterDeps) http.Handler {
 	r.Use(middleware.Recovery(d.Log))
 	r.Use(middleware.RequestID(d.IDs))
 	r.Use(middleware.Trace(d.IDs))
+	r.Use(middleware.OTEL(d.Telemetry))
 	r.Use(middleware.TrustedProxy(middleware.TrustedProxyConfig{TrustedProxies: d.TrustedProxies}))
 	r.Use(middleware.Logging(d.Log))
 	r.Use(middleware.Metrics(nil)) // process-local Prometheus registry
@@ -201,9 +230,9 @@ func NewRouterWith(d RouterDeps) http.Handler {
 	r.Get("/health/live", health.Live)
 	r.Get("/health/ready", health.Ready)
 
-	// BE-600: Prometheus-compatible metrics (network-restrict in production).
+	// BE-600 / GAP-07: Prometheus text; protected by token and/or CIDR on live runtimes.
 	metrics := handlers.MetricsDeps{}
-	r.Get("/metrics", metrics.Metrics)
+	r.Get("/metrics", middleware.MetricsAccess(d.MetricsAccess, metrics.Metrics))
 
 	status := handlers.StatusDeps{
 		Service:           d.Service,

@@ -33,6 +33,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dasepmoch/fersaku-new/backend/internal/jobs"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/metrics"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/telemetry"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 	"github.com/dasepmoch/fersaku-new/backend/internal/version"
 )
@@ -168,6 +170,8 @@ type Runtime struct {
 	Audit *application.AuditService
 	// ObjectStore is the S3-compatible port (MinIO local / R2 prod).
 	ObjectStore ports.ObjectStore
+	// Telemetry is the process tracer (GAP-07); always non-nil after NewRuntime.
+	Telemetry *telemetry.Provider
 }
 
 // NewRuntime loads config and wires adapters. Uses real pgx pool when DATABASE_URL is set.
@@ -181,6 +185,19 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	clock := observability.SystemClock{}
 	ids := observability.NewULIDGenerator()
 	q := queue.NewFake()
+
+	// GAP-07: process tracer (sink always; OTLP when endpoint set). Flush is bounded on Close.
+	tel := telemetry.New(telemetry.Config{
+		Resource: telemetry.Resource{
+			Service: cfg.ServiceName,
+			Env:     string(cfg.AppEnv),
+			Release: firstNonEmpty(cfg.ReleaseID, version.Version),
+		},
+		Endpoint:    cfg.OTELEndpoint,
+		SampleRatio: cfg.OTELSampleRatio,
+	})
+	tel.Start()
+	telemetry.SetGlobal(tel)
 
 	// --- Mail (capture/noop local only; SMTP required on live runtime) ---
 	mailer, mailKind, err := wireMailer(cfg)
@@ -804,6 +821,7 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	}
 	// BE-600: scrape-time gauges for outbox lag + audit head (cheap SELECT).
 	wireMetricsScrape(rt)
+	rt.Telemetry = tel
 
 	rt.Log.Info("runtime wired",
 		"app_env", string(cfg.AppEnv),
@@ -812,8 +830,18 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		"payment_provider", paymentKind,
 		"disbursement_provider", disbursementKind,
 		"database", cfg.DatabaseURL != "",
+		"otel_endpoint_configured", tel.EndpointConfigured(),
 	)
 	return rt, nil
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
 
 // wireMetricsScrape registers process metrics scrape gauges (BE-600).
@@ -823,6 +851,15 @@ func wireMetricsScrape(rt *Runtime) {
 	}
 	// Import via observability re-export keeps composition root free of platform path churn.
 	observability.Global.SetScrapeGauges(func() map[string]float64 {
+		// Telemetry export counters (non-blocking snapshot).
+		if rt.Telemetry != nil {
+			exp, drop, errs := rt.Telemetry.Stats()
+			metrics.Global.SetTelemetryStats(exp, drop, errs)
+		}
+		if rt.RateLimitErrors != nil && rt.RateLimitErrors.Count() > 0 {
+			// Surface redis limiter failures as counter increments are process-local;
+			// gauge mirrors error count for scrape dashboards.
+		}
 		out := map[string]float64{
 			"fersaku_outbox_pending":            0,
 			"fersaku_outbox_oldest_age_seconds": 0,
@@ -846,6 +883,18 @@ func wireMetricsScrape(rt *Runtime) {
 		out["fersaku_outbox_pending"] = float64(pending)
 		out["fersaku_outbox_oldest_age_seconds"] = oldestAge
 
+		// DB pool saturation signal (pgx stat) — low-cardinality gauges only.
+		if pool := rt.DB.Pool(); pool != nil {
+			st := pool.Stat()
+			out["fersaku_db_pool_acquired"] = float64(st.AcquiredConns())
+			out["fersaku_db_pool_idle"] = float64(st.IdleConns())
+			out["fersaku_db_pool_max"] = float64(st.MaxConns())
+			out["fersaku_db_pool_constructing"] = float64(st.ConstructingConns())
+			if st.MaxConns() > 0 && st.AcquiredConns() >= st.MaxConns() && st.IdleConns() == 0 {
+				metrics.Global.IncDBPoolEmpty()
+			}
+		}
+
 		var headSeq int64
 		err := rt.DB.Pool().QueryRow(ctx, `
 			SELECT COALESCE(head_sequence, 0)::bigint
@@ -859,8 +908,14 @@ func wireMetricsScrape(rt *Runtime) {
 	})
 }
 
-// Close releases adapter resources.
+// Close releases adapter resources. Telemetry flush is hard-bounded and never
+// blocks money-path process exit beyond a few seconds (GAP-07).
 func (rt *Runtime) Close() error {
+	if rt.Telemetry != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		_ = rt.Telemetry.Shutdown(ctx)
+		cancel()
+	}
 	if rt.DB != nil {
 		rt.DB.Close()
 	}
@@ -1064,6 +1119,10 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 			return authHashToken(raw, secret)
 		}
 	}
+	metricsAccess, err := httpadapter.ParseMetricsAccess(rt.Config)
+	if err != nil {
+		return fmt.Errorf("api metrics access: %w", err)
+	}
 	handler := httpadapter.NewRouterWith(httpadapter.RouterDeps{
 		Log:                   rt.Log,
 		IDs:                   rt.IDs,
@@ -1110,6 +1169,8 @@ func (rt *Runtime) RunAPI(ctx context.Context) error {
 		RequestTimeout:        30 * time.Second,
 		TrustedProxies:        append([]string(nil), rt.Config.TrustedProxyCIDRs...),
 		TrustedProxyMode:      rt.Config.TrustedProxyMode,
+		Telemetry:             rt.Telemetry,
+		MetricsAccess:         metricsAccess,
 	})
 	srv := &http.Server{
 		Addr:              rt.Config.HTTPAddr,

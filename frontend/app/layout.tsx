@@ -11,6 +11,7 @@ import {
 } from "@/shared/data/domain-source";
 import { DomainSourceProvider } from "@/shared/data/domain-source-provider";
 import { SessionProvider } from "@/shared/auth/session-provider";
+import { ObservabilityBootstrap } from "@/shared/observability/observability-bootstrap";
 
 assertSafePublicEnvironment();
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         <ThemeProvider>
           <DomainSourceProvider snapshot={domainSourceSnapshot}>
             <AppQueryProvider>
+              <ObservabilityBootstrap />
               <SessionProvider>{children}</SessionProvider>
               <ThemeDock />
             </AppQueryProvider>

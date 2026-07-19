@@ -13,6 +13,7 @@ import (
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/presenters"
 	"github.com/dasepmoch/fersaku-new/backend/internal/adapters/http/reqctx"
 	apperr "github.com/dasepmoch/fersaku-new/backend/internal/platform/errors"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/metrics"
 )
 
 // ClassBudget defines capacity/window for one route class.
@@ -160,6 +161,7 @@ func RateLimitByClass(lim ClassLimiter, errors *ClassLimiterErrors) func(http.Ha
 				if errors != nil {
 					errors.Inc()
 				}
+				metrics.Global.IncRedisFailure()
 			}
 			if !ok {
 				if retry > 0 {

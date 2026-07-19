@@ -278,6 +278,9 @@ func setMinimalProduction(t *testing.T) {
 	// GAP-03: explicit direct mode when no LB CIDRs in unit tests.
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 	t.Setenv("TRUSTED_PROXY_CIDRS", "")
+	// GAP-07: protect /metrics on live runtimes.
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
+	t.Setenv("METRICS_ALLOW_CIDRS", "")
 }
 
 func setMinimalStaging(t *testing.T) {
@@ -303,6 +306,9 @@ func setMinimalStaging(t *testing.T) {
 	// GAP-03: explicit direct mode when no LB CIDRs in unit tests.
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
 	t.Setenv("TRUSTED_PROXY_CIDRS", "")
+	// GAP-07: protect /metrics on live runtimes.
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
+	t.Setenv("METRICS_ALLOW_CIDRS", "")
 }
 
 func TestStagingRejectsFakeXendit(t *testing.T) {
@@ -321,10 +327,34 @@ func TestStagingRejectsFakeXendit(t *testing.T) {
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "fake") {
 		t.Fatalf("expected staging fake xendit forbidden, got %v", err)
+	}
+}
+
+func TestLiveRequiresMetricsProtection(t *testing.T) {
+	setMinimalStaging(t)
+	t.Setenv("METRICS_BEARER_TOKEN", "")
+	t.Setenv("METRICS_ALLOW_CIDRS", "")
+	_, err := config.Load("fersaku-api")
+	if err == nil || !strings.Contains(err.Error(), "METRICS_") {
+		t.Fatalf("expected metrics protection required, got %v", err)
+	}
+}
+
+func TestStagingAllowsMetricsCIDROnly(t *testing.T) {
+	setMinimalStaging(t)
+	t.Setenv("METRICS_BEARER_TOKEN", "")
+	t.Setenv("METRICS_ALLOW_CIDRS", "10.0.0.0/8")
+	cfg, err := config.Load("fersaku-api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.MetricsAllowCIDRs) != 1 {
+		t.Fatalf("cidrs=%v", cfg.MetricsAllowCIDRs)
 	}
 }
 
@@ -403,6 +433,7 @@ func TestStagingRejectsCaptureMail(t *testing.T) {
 	t.Setenv("MAIL_SMTP_HOST", "smtp.example.com")
 	t.Setenv("MAIL_FROM", "noreply@example.com")
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "capture") {
@@ -554,6 +585,7 @@ func TestProductionDuitkuRejectsSandboxBaseURL(t *testing.T) {
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
 
 	_, err := config.Load("fersaku-api")
 	if err == nil || !strings.Contains(err.Error(), "sandbox") {
@@ -589,6 +621,7 @@ func TestProductionDuitkuAllowsPassport(t *testing.T) {
 	t.Setenv("MALWARE_SCANNER", "clamav")
 	t.Setenv("MALWARE_SCANNER_ADDRESS", "unix:///var/run/clamav/clamd.ctl")
 	t.Setenv("TRUSTED_PROXY_MODE", "direct")
+	t.Setenv("METRICS_BEARER_TOKEN", "test-metrics-scrape-token")
 
 	cfg, err := config.Load("fersaku-api")
 	if err != nil {

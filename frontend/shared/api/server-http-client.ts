@@ -302,6 +302,14 @@ export async function serverApiRequest<TResponse, TBody = never>(
   if (!headersOut.has(HTTP_HEADERS.REQUEST_ID)) {
     headersOut.set(HTTP_HEADERS.REQUEST_ID, requestId);
   }
+  if (!headersOut.has(HTTP_HEADERS.TRACEPARENT)) {
+    const hex = requestId
+      .toLowerCase()
+      .replace(/[^0-9a-f]/g, "")
+      .padEnd(32, "0")
+      .slice(0, 32);
+    headersOut.set(HTTP_HEADERS.TRACEPARENT, `00-${hex}-0000000000000001-01`);
+  }
 
   // Cookie allowlist — explicit header, not credentials jar
   if (!skipCookies && !headersOut.has("Cookie")) {

@@ -45,8 +45,23 @@ Use opaque internal IDs only when operationally needed:
 ## Correlation
 
 1. Client/ingress may send `X-Request-ID` and optional W3C `traceparent`.
-2. Response always includes `X-Request-ID`; when trace is active also `traceparent` and `X-Trace-ID`.
-3. Success/problem envelopes include `meta.requestId` / `problem.requestId`.
-4. Jobs should carry `request_id`/`trace_id` in outbox payload when enqueued from HTTP.
+2. Frontend HTTP clients attach both `X-Request-ID` and derived `traceparent` (no payment/KYC payload).
+3. Response always includes `X-Request-ID`; when trace is active also `traceparent` and `X-Trace-ID`.
+4. Success/problem envelopes include `meta.requestId` / `problem.requestId`.
+5. Jobs emit `job.<label>` spans + `fersaku_job_runs_total` with the same process `service`/`env`/`release`.
+6. Provider adapters emit `provider.<name>` client spans and `fersaku_provider_ops_total{provider,operation,result}`.
 
-See runbook: `docs/runbooks/incident-diagnosis.md`.
+## Telemetry process fields
+
+| Field | Notes |
+| ----- | ----- |
+| `service` | `fersaku-api` / `fersaku-worker` |
+| `env` | deployment env only |
+| `release` | `RELEASE_ID` / build version |
+| `http.route` | chi route template |
+| `http.status_code` | status class for spans |
+| `error.class` | bounded (`http_5xx`, `http_4xx`, …) |
+| `job.name` / `job.result` | worker |
+| `provider` / `provider.operation` / `provider.result` | duitku\|xendit + create\|status\|… + ok\|auth_error\|timeout\|error |
+
+See runbook: `docs/runbooks/incident-diagnosis.md` and alert catalog: `docs/alerts.md`.

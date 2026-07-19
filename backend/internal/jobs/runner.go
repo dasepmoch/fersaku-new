@@ -7,8 +7,28 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/metrics"
+	"github.com/dasepmoch/fersaku-new/backend/internal/platform/telemetry"
 	"github.com/dasepmoch/fersaku-new/backend/internal/ports"
 )
+
+func startJobSpan(ctx context.Context, jobLabel string) (context.Context, func(result, statusMsg string)) {
+	ctx, end := telemetry.StartSpanGlobal(ctx, "job."+jobLabel, telemetry.SpanKindInternal, map[string]string{
+		"job.name":  jobLabel,
+		"component": "worker",
+	})
+	return ctx, func(result, statusMsg string) {
+		st := telemetry.StatusOK
+		if result != "ok" {
+			st = telemetry.StatusError
+		}
+		end(st, statusMsg, map[string]string{"job.result": result})
+	}
+}
+
+func recordJobMetrics(jobLabel, result string) {
+	metrics.Global.IncJob(jobLabel, result)
+}
 
 // Runner drives the HA job registry: lease → run → release, with graceful drain.
 type Runner struct {
@@ -209,7 +229,12 @@ func (r *Runner) executeJob(ctx context.Context, j RegisteredJob) {
 	if batch <= 0 {
 		batch = 50
 	}
-	n, runErr := j.Run(runCtx, batch)
+	label := j.Meta.MetricsLabel
+	if label == "" {
+		label = string(j.Meta.Name)
+	}
+	spanCtx, endSpan := startJobSpan(runCtx, label)
+	n, runErr := j.Run(spanCtx, batch)
 	elapsed := r.now().Sub(start)
 
 	if r.Leases != nil && r.Leases.Pool != nil {
@@ -219,6 +244,19 @@ func (r *Runner) executeJob(ctx context.Context, j RegisteredJob) {
 			_ = r.Leases.MarkSuccess(ctx, j.Meta.Name, r.Owner)
 		}
 	}
+
+	result := "ok"
+	statusMsg := ""
+	if runErr != nil {
+		result = "error"
+		statusMsg = "job_error"
+		if errors.Is(runErr, context.DeadlineExceeded) || errors.Is(runErr, context.Canceled) {
+			result = "timeout"
+			statusMsg = "job_timeout"
+		}
+	}
+	recordJobMetrics(label, result)
+	endSpan(result, statusMsg)
 
 	if r.Log != nil {
 		if runErr != nil {

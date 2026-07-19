@@ -133,7 +133,16 @@ type Config struct {
 	MailMode string
 
 	// Observability
+	// OTELEndpoint is OTEL_EXPORTER_OTLP_ENDPOINT (host:port or http(s) URL). Empty = sink-only.
 	OTELEndpoint string
+	// OTELSampleRatio is OTEL_TRACES_SAMPLER_ARG in [0,1]. 0 = default (1.0 sink-only, 0.1 with endpoint).
+	OTELSampleRatio float64
+	// MetricsBearerToken protects GET /metrics when set (METRICS_BEARER_TOKEN). Never log.
+	MetricsBearerToken string
+	// MetricsAllowCIDRs restricts scrape source IPs (METRICS_ALLOW_CIDRS, comma-separated).
+	MetricsAllowCIDRs []string
+	// ReleaseID is public non-secret release/build id (RELEASE_ID or VERSION).
+	ReleaseID string
 
 	// BootstrapAdminEmail when set attaches SUPER_ADMIN on seed (BE-130).
 	// User must already exist (register/verify first). Does not create accounts.
@@ -206,8 +215,26 @@ func Load(serviceName string) (Config, error) {
 		MailSMTPPassword:        strings.TrimSpace(os.Getenv("MAIL_SMTP_PASSWORD")),
 		MailMode:                strings.ToLower(strings.TrimSpace(os.Getenv("MAIL_MODE"))),
 		OTELEndpoint:            strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
+		MetricsBearerToken:      strings.TrimSpace(os.Getenv("METRICS_BEARER_TOKEN")),
+		ReleaseID:               strings.TrimSpace(firstNonEmpty(os.Getenv("RELEASE_ID"), os.Getenv("VERSION"))),
 		BootstrapAdminEmail:     strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
 		TrustedProxyMode:        strings.ToLower(strings.TrimSpace(os.Getenv("TRUSTED_PROXY_MODE"))),
+	}
+
+	if raw := strings.TrimSpace(os.Getenv("METRICS_ALLOW_CIDRS")); raw != "" {
+		for _, p := range strings.Split(raw, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				cfg.MetricsAllowCIDRs = append(cfg.MetricsAllowCIDRs, p)
+			}
+		}
+	}
+	if v := strings.TrimSpace(os.Getenv("OTEL_TRACES_SAMPLER_ARG")); v != "" {
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil || f < 0 || f > 1 {
+			return Config{}, fmt.Errorf("config: OTEL_TRACES_SAMPLER_ARG must be float 0..1, got %q", v)
+		}
+		cfg.OTELSampleRatio = f
 	}
 
 	if raw := strings.TrimSpace(os.Getenv("TRUSTED_PROXY_CIDRS")); raw != "" {
@@ -439,7 +466,40 @@ func (c Config) Validate() error {
 		return err
 	}
 
+	if err := c.validateMetricsAccess(); err != nil {
+		return err
+	}
+
+	if c.OTELSampleRatio < 0 || c.OTELSampleRatio > 1 {
+		return fmt.Errorf("config: OTEL_TRACES_SAMPLER_ARG out of range")
+	}
+
 	return nil
+}
+
+// validateMetricsAccess enforces scrape protection on live runtimes (GAP-07).
+// Staging/production require METRICS_BEARER_TOKEN and/or METRICS_ALLOW_CIDRS.
+// Local/test may leave both empty (open scrape for compose/dev).
+func (c Config) validateMetricsAccess() error {
+	if !c.IsLiveRuntime() {
+		return nil
+	}
+	if strings.TrimSpace(c.MetricsBearerToken) != "" {
+		return nil
+	}
+	if len(c.MetricsAllowCIDRs) > 0 {
+		return nil
+	}
+	return fmt.Errorf("config: staging/production require METRICS_BEARER_TOKEN and/or METRICS_ALLOW_CIDRS to protect /metrics (GAP-07)")
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
 
 // validateTrustedProxies parses CIDRs and enforces production/staging policy.

@@ -14,6 +14,9 @@ func TestPrometheusTextContainsFamilies(t *testing.T) {
 	m.IncCallback("accepted")
 	m.IncWebhook("success")
 	m.IncAuditChain("ok")
+	m.IncProvider("duitku", "create", "ok")
+	m.IncJob("object_malware_scan", "ok")
+	m.IncRedisFailure()
 	body := m.PrometheusText()
 	for _, want := range []string{
 		"fersaku_http_requests_total",
@@ -22,6 +25,9 @@ func TestPrometheusTextContainsFamilies(t *testing.T) {
 		"fersaku_webhook_delivery_total",
 		"fersaku_audit_chain_status_total",
 		"fersaku_outbox_pending",
+		"fersaku_provider_ops_total",
+		"fersaku_job_runs_total",
+		"fersaku_redis_failures_total",
 		"text/plain", // not in body — skip
 	} {
 		if want == "text/plain" {

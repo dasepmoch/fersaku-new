@@ -17,6 +17,8 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 /** Header names aligned with OpenAPI / backend (INT-100). */
 export const HTTP_HEADERS = {
   REQUEST_ID: "X-Request-ID",
+  TRACEPARENT: "traceparent",
+  TRACE_ID: "X-Trace-ID",
   CSRF: "X-CSRF-Token",
   IDEMPOTENCY: "Idempotency-Key",
   AUDIT_REASON: "X-Audit-Reason",
@@ -137,6 +139,29 @@ function createRequestId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   fallbackRequestSequence += 1;
   return `web_req_${fallbackRequestSequence.toString(36)}`;
+}
+
+/** W3C traceparent from request id (32-hex trace-id); no payment/KYC payload. */
+function traceparentFromRequestId(requestId: string): string {
+  const hex = requestId
+    .toLowerCase()
+    .replace(/[^0-9a-f]/g, "")
+    .padEnd(32, "0")
+    .slice(0, 32);
+  const span = "0000000000000001";
+  return `00-${hex}-${span}-01`;
+}
+
+function ensureCorrelationHeaders(headers: Headers, requestId: string) {
+  if (!headers.has(HTTP_HEADERS.REQUEST_ID)) {
+    headers.set(HTTP_HEADERS.REQUEST_ID, requestId);
+  }
+  if (!headers.has(HTTP_HEADERS.TRACEPARENT)) {
+    headers.set(
+      HTTP_HEADERS.TRACEPARENT,
+      traceparentFromRequestId(headers.get(HTTP_HEADERS.REQUEST_ID) || requestId),
+    );
+  }
 }
 
 function combineAbortSignals(signals: AbortSignal[]) {
@@ -390,9 +415,7 @@ export async function apiBinaryRequest(
   if (body !== undefined && !headers.has(HTTP_HEADERS.CONTENT_TYPE)) {
     headers.set(HTTP_HEADERS.CONTENT_TYPE, "application/json");
   }
-  if (!headers.has(HTTP_HEADERS.REQUEST_ID)) {
-    headers.set(HTTP_HEADERS.REQUEST_ID, requestId);
-  }
+  ensureCorrelationHeaders(headers, requestId);
   if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);
   if (auditReason) headers.set(HTTP_HEADERS.AUDIT_REASON, auditReason);
   let recentMfaProof = explicitRecentMfa;
@@ -576,9 +599,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
   if (body !== undefined && !headers.has(HTTP_HEADERS.CONTENT_TYPE)) {
     headers.set(HTTP_HEADERS.CONTENT_TYPE, "application/json");
   }
-  if (!headers.has(HTTP_HEADERS.REQUEST_ID)) {
-    headers.set(HTTP_HEADERS.REQUEST_ID, requestId);
-  }
+  ensureCorrelationHeaders(headers, requestId);
 
   // Sensitive context only when caller opts in (per-operation)
   if (idempotencyKey) headers.set(HTTP_HEADERS.IDEMPOTENCY, idempotencyKey);

@@ -60,8 +60,21 @@ if [[ "$APP_ENV" == "production" ]]; then
   fi
 fi
 
+# Destructive commands require explicit break-glass on staging/production.
+# ALLOW_DESTRUCTIVE_MIGRATE is never set in CI (non-interactive) — it must be
+# an operator-set env var with a reason, and the schema strategy is forward-compatible
+# (no auto-down-migrate; rollback uses previous image, not schema revert).
 case "$CMD" in
-  up|version|down|drop|force|goto) ;;
+  up|version) ;;
+  down|drop|force|goto)
+    if [[ "$APP_ENV" == "production" || "$APP_ENV" == "staging" ]]; then
+      if [[ "${ALLOW_DESTRUCTIVE_MIGRATE:-0}" != "1" ]]; then
+        log "REFUSED: '$CMD' is destructive on APP_ENV=$APP_ENV. Set ALLOW_DESTRUCTIVE_MIGRATE=1 with operator break-glass (forward-compatible, no auto-down-migrate)."
+        exit 2
+      fi
+      log "WARN: destructive '$CMD' allowed via ALLOW_DESTRUCTIVE_MIGRATE=1 (operator break-glass)"
+    fi
+    ;;
   *)
     log "usage: migrate-job.sh [up|version|down|drop|force|goto]  (destructive blocked on staging/production without break-glass)"
     exit 2

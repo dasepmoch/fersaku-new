@@ -5,6 +5,12 @@ import {
   reportMetric,
   setObservabilityReporter,
 } from "@/shared/observability/reporter";
+import { resolveObservabilityMode } from "@/shared/observability/mode";
+import {
+  createMemorySink,
+  createHttpSink,
+} from "@/shared/observability/sink";
+import { installObservabilityReporter } from "@/shared/observability/install";
 
 let resetReporter: (() => void) | undefined;
 
@@ -65,5 +71,63 @@ describe("observability redaction", () => {
       requestId: "req_1",
       authorization: "Bearer secret",
     });
+  });
+});
+
+describe("observability mode + sink install (GAP-07)", () => {
+  it("resolves live stage to sink and explicit disabled", () => {
+    expect(
+      resolveObservabilityMode({ appStage: "live", nodeEnv: "production" }),
+    ).toBe("sink");
+    expect(
+      resolveObservabilityMode({
+        appStage: "live",
+        reporter: "disabled",
+      }),
+    ).toBe("disabled");
+    expect(
+      resolveObservabilityMode({ appStage: "prototype", nodeEnv: "development" }),
+    ).toBe("noop");
+  });
+
+  it("memory sink receives redacted error boundary style events", () => {
+    const mem = createMemorySink();
+    resetReporter = setObservabilityReporter(mem.reporter);
+    reportError(new Error("boundary"), {
+      source: "app-error-boundary",
+      digest: "d1",
+      token: "secret",
+    });
+    const events = mem.events();
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe("error");
+    expect(events[0]?.context).toEqual(
+      expect.objectContaining({
+        source: "app-error-boundary",
+        token: "[REDACTED]",
+      }),
+    );
+  });
+
+  it("installObservabilityReporter noop is explicit non-active", () => {
+    const result = installObservabilityReporter({ mode: "noop" });
+    resetReporter = result.uninstall;
+    expect(result.active).toBe(false);
+    expect(result.mode).toBe("noop");
+  });
+
+  it("http sink does not throw when fetch fails", async () => {
+    const prev = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("down")) as typeof fetch;
+    const sink = createHttpSink({ endpoint: "/api/observability/events" });
+    expect(() =>
+      sink.captureError({
+        error: new Error("x"),
+        redactedError: { name: "Error" },
+        context: { requestId: "r" },
+      }),
+    ).not.toThrow();
+    await new Promise((r) => setTimeout(r, 50));
+    globalThis.fetch = prev;
   });
 });
