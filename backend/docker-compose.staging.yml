@@ -20,6 +20,12 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-staging-dev-session-secret-min-16}
       CSRF_SECRET: ${CSRF_SECRET:-staging-dev-csrf-secret-min-16xx}
       XENDIT_MODE: ${XENDIT_MODE:-fake}
+      # GAP-06 pool budget (must match scale api=2 worker=2)
+      PG_API_REPLICAS: ${PG_API_REPLICAS:-2}
+      PG_WORKER_REPLICAS: ${PG_WORKER_REPLICAS:-2}
+      PG_API_MAX_CONNS: ${PG_API_MAX_CONNS:-20}
+      PG_WORKER_MAX_CONNS: ${PG_WORKER_MAX_CONNS:-10}
+      PG_MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-100}
     deploy:
       # Compose deploy keys are advisory for swarm; --scale is the portable local lever.
       replicas: 2
@@ -32,7 +38,13 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-staging-dev-session-secret-min-16}
       CSRF_SECRET: ${CSRF_SECRET:-staging-dev-csrf-secret-min-16xx}
       XENDIT_MODE: ${XENDIT_MODE:-fake}
+      PG_API_REPLICAS: ${PG_API_REPLICAS:-2}
+      PG_WORKER_REPLICAS: ${PG_WORKER_REPLICAS:-2}
+      PG_API_MAX_CONNS: ${PG_API_MAX_CONNS:-20}
+      PG_WORKER_MAX_CONNS: ${PG_WORKER_MAX_CONNS:-10}
+      PG_MAX_CONNECTIONS: ${PG_MAX_CONNECTIONS:-100}
     deploy:
       replicas: 2
 
 # Production topology, pool budgets, drain policy: docs/launch/topology.md
+# Capacity: 2×20 + 2×10 = 60 ≤ 80 (0.8×100). Source: internal/config/pool_budget.go

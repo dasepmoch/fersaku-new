@@ -289,7 +289,17 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 	if cfg.DatabaseURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		pool, err = postgres.Open(ctx, cfg.DatabaseURL, postgres.DefaultPoolConfig())
+		poolCfg := postgres.PoolConfig{
+			MaxConns:          cfg.Pool.MaxConns,
+			MinConns:          cfg.Pool.MinConns,
+			MaxConnLifetime:   cfg.Pool.MaxConnLifetime,
+			MaxConnIdleTime:   cfg.Pool.MaxConnIdleTime,
+			HealthCheckPeriod: cfg.Pool.HealthCheckPeriod,
+			ConnectTimeout:    cfg.Pool.ConnectTimeout,
+			StatementTimeout:  cfg.Pool.StatementTimeout,
+			ApplicationName:   cfg.Pool.ApplicationName,
+		}
+		pool, err = postgres.Open(ctx, cfg.DatabaseURL, poolCfg)
 		if err != nil {
 			return nil, fmt.Errorf("app: open database: %w", err)
 		}
@@ -298,6 +308,14 @@ func NewRuntime(serviceName string) (*Runtime, error) {
 		if objStore.Configured() {
 			adapters += "+r2"
 		}
+		log.Info("postgres_pool_ready",
+			"role", cfg.ProcessRole,
+			"max_conns", cfg.Pool.MaxConns,
+			"min_conns", cfg.Pool.MinConns,
+			"statement_timeout_ms", cfg.Pool.StatementTimeout.Milliseconds(),
+			"application_name", cfg.Pool.ApplicationName,
+			"capacity", cfg.CapacityWorksheet.Summary(),
+		)
 	} else if cfg.IsLiveRuntime() {
 		return nil, fmt.Errorf("app: DATABASE_URL required on staging/production")
 	}

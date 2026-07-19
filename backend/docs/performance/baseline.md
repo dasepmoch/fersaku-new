@@ -29,7 +29,7 @@ Agreed **staging** load targets aligned with launch SLOs in `backend/docs/slo.md
 | API | 20 | 2 | 30m | 5m | 5s |
 | Worker | 10 | 1 | 30m | 5m | 5s |
 
-Code defaults today: `postgres.DefaultPoolConfig()` → MaxConns **20**, MinConns **0**, lifetime **30m**, idle **5m**, health **30s**, connect **5s** (`internal/adapters/postgres/pool.go`). Staging/production should set worker MaxConns lower via deploy config when split budgets are enforced (document in BE-630 secrets/topology).
+Runtime (GAP-06): `config.Load` applies role defaults — API MaxConns **20**, worker MaxConns **10** — and fails closed on staging/production when `PG_API_REPLICAS × PG_API_MAX_CONNS + PG_WORKER_REPLICAS × PG_WORKER_MAX_CONNS` exceeds 80% of `PG_MAX_CONNECTIONS` (default 100). Source: `internal/config/pool_budget.go`.
 
 Per-request HTTP timeout: router middleware (default 60s integration stacks). Prefer short DB statements; long work is outbox/worker.
 

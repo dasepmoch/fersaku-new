@@ -14,10 +14,33 @@ Local compose currently uses a single `fersaku` superuser for convenience. Stagi
 ```bash
 # From backend/, with compose postgres up:
 export DATABASE_URL='postgres://fersaku:fersaku_local@localhost:5433/fersaku?sslmode=disable'
+export APP_ENV=local
 make migrate          # scripts/migrate.sh → golang-migrate up
-make migrate-down     # one step down
+make migrate-down     # one step down (local/test only)
 make migrate-version  # print version
 ```
+
+### Production safety (GAP-06)
+
+| Command | local/test | staging/production |
+| ------- | ---------- | ------------------ |
+| `up` / `version` | allowed | allowed (forward-only default) |
+| `down` / `drop` / `force` / `goto` | allowed | **refused** unless break-glass tokens (blocked in CI) |
+
+Break-glass (emergency only, never in CI):
+
+```bash
+# Outside CI: both tokens must match and not be trivial ("1"/"true").
+export MIGRATE_BREAK_GLASS_EXPECTED='long-random-ops-token'
+export MIGRATE_BREAK_GLASS_TOKEN='long-random-ops-token'
+APP_ENV=production ./scripts/migrate.sh force 12   # still requires explicit intent
+```
+
+- No local `DATABASE_URL` fallback when `APP_ENV=production|staging`.
+- Production rejects compose URLs (`fersaku_local`, `localhost:5433`).
+- Audit line on stderr / `MIGRATE_AUDIT_LOG`: version, actor, job, duration, result.
+- Release path: `scripts/release/migrate-job.sh` (optional `EXPECTED_HEAD`, `MIGRATE_REQUIRE_BACKUP_CHECKPOINT=1`).
+- API/worker **must not** auto-migrate on boot.
 
 Migrations live in this directory as `NNNNNN_name.up.sql` / `.down.sql`.  
 Version table: `schema_migrations` (golang-migrate default).

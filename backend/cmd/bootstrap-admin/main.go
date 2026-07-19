@@ -52,7 +52,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	pool, err := postgres.Open(ctx, dbURL, postgres.DefaultPoolConfig())
+	poolCfg := postgres.DefaultPoolConfig()
+	poolCfg.MaxConns = 4
+	poolCfg.MinConns = 0
+	poolCfg.ApplicationName = "fersaku-bootstrap-admin"
+	pool, err := postgres.Open(ctx, dbURL, poolCfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bootstrap-admin: open db: %v\n", err)
 		os.Exit(1)

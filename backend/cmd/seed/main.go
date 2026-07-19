@@ -33,7 +33,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	pool, err := postgres.Open(ctx, dbURL, postgres.DefaultPoolConfig())
+	// Admin-sized pool (not API default 20); seed is single-shot.
+	poolCfg := postgres.DefaultPoolConfig()
+	poolCfg.MaxConns = 4
+	poolCfg.MinConns = 0
+	poolCfg.ApplicationName = "fersaku-seed"
+	pool, err := postgres.Open(ctx, dbURL, poolCfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "seed: open db: %v\n", err)
 		os.Exit(1)

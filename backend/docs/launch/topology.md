@@ -89,12 +89,18 @@ Reserve ~20% for migrate, admin, HA health, PITR tooling.
 
 ### Launch defaults (example DB max_connections=100)
 
-| Role | Replicas | MaxConns each | Subtotal |
-| ---- | -------- | ------------- | -------- |
-| API | 2 | 20 | 40 |
-| Worker | 2 | 10 | 20 |
-| Migrate job | 1 (pre-rollout only) | 4 | 4 |
-| **Total** | | | **64 ≤ 80** |
+**Single source of truth (code):** `internal/config/pool_budget.go` → `DefaultCapacityWorksheet()`  
+Env knobs: `PG_MAX_CONNECTIONS`, `PG_API_REPLICAS`, `PG_WORKER_REPLICAS`, `PG_API_MAX_CONNS`, `PG_WORKER_MAX_CONNS`, `PG_MIGRATE_MAX_CONNS`, `PG_ADMIN_MAX_CONNS`, `PG_BUDGET_HEADROOM_RATIO`, per-process `PG_POOL_MAX_CONNS` / `PG_STATEMENT_TIMEOUT_MS`.  
+Staging/production **fail closed** when app pool total exceeds usable (default 80%).
+
+| Role | Replicas | MaxConns each | Subtotal | Runtime default |
+| ---- | -------- | ------------- | -------- | --------------- |
+| API | 2 | 20 | 40 | `fersaku-api` → MaxConns=20 |
+| Worker | 2 | 10 | 20 | `fersaku-worker` → MaxConns=**10** (not 20) |
+| Migrate job | 1 (pre-rollout only) | 4 | 4 (headroom) | migrate identity only |
+| Admin/ops | ad-hoc | 4 | 4 (headroom) | bootstrap/seed |
+| **App total** | | | **60 ≤ 80** | |
+| **With migrate+admin** | | | **68 ≤ 100** | fits in 20% headroom band |
 
 ### Process resources (staging-measured; adjust)
 

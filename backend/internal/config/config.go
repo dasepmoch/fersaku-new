@@ -147,6 +147,14 @@ type Config struct {
 	// Env: TRUSTED_PROXY_MODE; empty defaults to direct when CIDRs empty, proxy when set.
 	// Production/staging with empty CIDRs must be explicit direct or fail validation.
 	TrustedProxyMode string
+
+	// CapacityWorksheet is the single source for connection budget (API/worker replicas × MaxConns).
+	// Staging/production fail closed when AppPoolTotal > usable (80% of PG_MAX_CONNECTIONS by default).
+	CapacityWorksheet CapacityWorksheet
+	// Pool is per-process pgx sizing derived from role + env knobs (PG_API_MAX_CONNS, PG_POOL_*, …).
+	Pool PoolTuning
+	// ProcessRole is api|worker|migrate|admin|seed (derived from ServiceName).
+	ProcessRole string
 }
 
 // Load reads configuration from environment variables and validates.
@@ -271,6 +279,24 @@ func Load(serviceName string) (Config, error) {
 
 	if err := cfg.resolveProviders(); err != nil {
 		return Config{}, err
+	}
+
+	// Connection budget + per-role pool (GAP-06 / ADR-0007).
+	cfg.ProcessRole = ProcessRole(serviceName)
+	sheet, err := loadCapacityWorksheet()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.CapacityWorksheet = sheet
+	pool, err := loadPoolTuning(cfg.ProcessRole, sheet)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.Pool = pool
+	if budgetEnforceEnabled(cfg.AppEnv) {
+		if err := sheet.Validate(); err != nil {
+			return Config{}, err
+		}
 	}
 
 	// Normalize trusted proxy policy before Validate (mutates cfg).

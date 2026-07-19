@@ -6,18 +6,20 @@ Postgres is authoritative. Redis is non-authoritative (wake-up / cache only). Fi
 
 Implementation: `internal/adapters/postgres/pool.go`.
 
-### Defaults (`DefaultPoolConfig`)
+### Role defaults (GAP-06 / `config.CapacityWorksheet`)
 
-| Setting | Default | Rationale |
-| ------- | ------- | --------- |
-| MaxConns | 20 | Safe single-process default for local/small staging |
-| MinConns | 0 | Avoid idle connection waste on idle workers |
-| MaxConnLifetime | 30m | Recycle before managed LB/NAT idle kills |
-| MaxConnIdleTime | 5m | Drop idle under low traffic |
-| HealthCheckPeriod | 30s | Detect dead connections |
-| ConnectTimeout | 5s | Fail fast on network partition |
+| Role | MaxConns | MinConns | application_name | Env |
+| ---- | -------- | -------- | ---------------- | --- |
+| API (`fersaku-api`) | **20** | 2 | `fersaku-api` | `PG_API_MAX_CONNS` |
+| Worker (`fersaku-worker`) | **10** | 1 | `fersaku-worker` | `PG_WORKER_MAX_CONNS` |
+| Migrate | 4 | 0 | `fersaku-migrate` | `PG_MIGRATE_MAX_CONNS` |
+| Admin/seed | 4 | 0 | `fersaku-admin` | `PG_ADMIN_MAX_CONNS` |
 
-Opened from composition root when `DATABASE_URL` is set (`internal/app/app.go` → `postgres.Open(..., DefaultPoolConfig())`).
+Shared timeouts: MaxConnLifetime 30m, MaxConnIdleTime 5m, HealthCheckPeriod 30s, ConnectTimeout 5s, StatementTimeout 30s (`PG_STATEMENT_TIMEOUT_MS`).  
+Per-process override: `PG_POOL_MAX_CONNS` (takes precedence).  
+
+Opened from composition root when `DATABASE_URL` is set (`internal/app/app.go` → `postgres.Open(..., cfg.Pool)`).  
+Budget validated at config load on staging/production (`PG_BUDGET_ENFORCE` force-on for local).
 
 ### ADR-0007 budget rule
 

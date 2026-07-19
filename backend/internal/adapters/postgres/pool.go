@@ -11,7 +11,7 @@ import (
 
 // PoolConfig controls pgx pool sizing and timeouts.
 type PoolConfig struct {
-	// MaxConns is the maximum number of connections (default 20).
+	// MaxConns is the maximum number of connections (role-specific; see config.CapacityWorksheet).
 	MaxConns int32
 	// MinConns is the minimum idle connections (default 0).
 	MinConns int32
@@ -23,9 +23,14 @@ type PoolConfig struct {
 	HealthCheckPeriod time.Duration
 	// ConnectTimeout bounds dial+auth (default 5s).
 	ConnectTimeout time.Duration
+	// StatementTimeout is applied as runtime parameter statement_timeout (0 = omit).
+	StatementTimeout time.Duration
+	// ApplicationName is set as runtime parameter application_name for pg_stat_activity.
+	ApplicationName string
 }
 
-// DefaultPoolConfig returns production-sane defaults for local and small deploys.
+// DefaultPoolConfig returns local/single-process defaults.
+// Prefer Role-based sizing via config.PostgresPoolConfig for api/worker.
 func DefaultPoolConfig() PoolConfig {
 	return PoolConfig{
 		MaxConns:          20,
@@ -34,6 +39,8 @@ func DefaultPoolConfig() PoolConfig {
 		MaxConnIdleTime:   5 * time.Minute,
 		HealthCheckPeriod: 30 * time.Second,
 		ConnectTimeout:    5 * time.Second,
+		StatementTimeout:  30 * time.Second,
+		ApplicationName:   "fersaku",
 	}
 }
 
@@ -41,6 +48,7 @@ func DefaultPoolConfig() PoolConfig {
 // Domain packages must never import this package or pgx.
 type Pool struct {
 	pool *pgxpool.Pool
+	cfg  PoolConfig
 }
 
 // Open creates a pool from DATABASE_URL. Caller must Close.
@@ -65,6 +73,24 @@ func Open(ctx context.Context, databaseURL string, cfg PoolConfig) (*Pool, error
 		pcfg.ConnConfig.ConnectTimeout = cfg.ConnectTimeout
 	}
 
+	// Session GUC: application_name + statement_timeout for every acquired conn.
+	runtimeParams := map[string]string{}
+	if cfg.ApplicationName != "" {
+		runtimeParams["application_name"] = cfg.ApplicationName
+	}
+	if cfg.StatementTimeout > 0 {
+		// Postgres accepts "30s" / milliseconds integer; use ms for precision.
+		runtimeParams["statement_timeout"] = fmt.Sprintf("%d", cfg.StatementTimeout.Milliseconds())
+	}
+	if len(runtimeParams) > 0 {
+		if pcfg.ConnConfig.RuntimeParams == nil {
+			pcfg.ConnConfig.RuntimeParams = map[string]string{}
+		}
+		for k, v := range runtimeParams {
+			pcfg.ConnConfig.RuntimeParams[k] = v
+		}
+	}
+
 	pool, err := pgxpool.NewWithConfig(ctx, pcfg)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: open pool: %w", err)
@@ -73,7 +99,7 @@ func Open(ctx context.Context, databaseURL string, cfg PoolConfig) (*Pool, error
 		pool.Close()
 		return nil, fmt.Errorf("postgres: ping: %w", err)
 	}
-	return &Pool{pool: pool}, nil
+	return &Pool{pool: pool, cfg: cfg}, nil
 }
 
 // Close releases the pool.
@@ -98,6 +124,22 @@ func (p *Pool) Pool() *pgxpool.Pool {
 		return nil
 	}
 	return p.pool
+}
+
+// Config returns the pool sizing used at Open (for metrics/diagnostics).
+func (p *Pool) Config() PoolConfig {
+	if p == nil {
+		return PoolConfig{}
+	}
+	return p.cfg
+}
+
+// Stats returns pgx pool stats (acquired/idle/max) for metrics exporters.
+func (p *Pool) Stats() *pgxpool.Stat {
+	if p == nil || p.pool == nil {
+		return nil
+	}
+	return p.pool.Stat()
 }
 
 // WithTx runs fn inside a transaction. Commits on nil error; rolls back otherwise.
