@@ -37,11 +37,11 @@ Dokumen ini adalah snapshot kode aktual, bukan klaim bahwa implementasi sudah se
 ```text
 Public browser -----------------------+
 Authenticated browser ---------------+--> same-origin edge `/v1`
-Next Server Component --server client+             |
-                                                   v
-                                            Go API/worker
-                                              |    |    |
-                                         Postgres R2 provider
+Next Server Component --server client+ |
+ v
+ Go API/worker
+ | | |
+ Postgres R2 provider
 ```
 
 Next hanya bertindak sebagai presentation/server rendering dan optional transparent reverse proxy. Auth, authorization, tenant ownership, pricing, payment, ledger, delivery, KYC, credential, webhook, dan audit tetap backend-authoritative.
@@ -64,7 +64,7 @@ Next hanya bertindak sebagai presentation/server rendering dan optional transpar
 | Storefront draft/publish | Kuning | Route ada; FE hanya publish, revision/error handling salah. |
 | Seller webhooks/API key | Kuning/Merah | Backend lifecycle ada; UI seluruhnya mock dan secret policy belum wired. |
 | Admin read models | Kuning/Hijau | Banyak DTO sengaja FE-aligned; filter/pagination/schema belum wired. |
-| Admin mutations/RBAC | Kuning/Merah | Route banyak tersedia; FE banyak local/generic action, MFA/idempotency belum benar. |
+| Admin mutations/RBAC | Kuning/Merah | Route banyak tersedia; FE banyak local/generic action, idempotency belum benar. |
 | Campaign | Merah | UI aktif; backend route/domain campaign tidak ditemukan. |
 | Notifications/profile shell | Merah | Backend notifications ada; shell FE hardcoded/local. |
 | Contract/CI | Merah | OpenAPI invalid/drift, contract test kosong, workflow path/toolchain salah. |
@@ -78,12 +78,12 @@ Backend mengirim:
 
 ```json
 {
-  "problem": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "Resource not found",
-    "details": {},
-    "requestId": "req_..."
-  }
+ "problem": {
+ "code": "RESOURCE_NOT_FOUND",
+ "message": "Resource not found",
+ "details": {},
+ "requestId": "req_..."
+ }
 }
 ```
 
@@ -117,20 +117,20 @@ Login mengembalikan raw CSRF token dan session cookie HttpOnly. Middleware hanya
 
 ### P0-04A — Session dan seller bootstrap tidak membawa claims yang dibutuhkan
 
-- `/v1/auth/session` snapshot hanya membawa identity/status/MFA dasar; belum ada permissions, role codes, memberships, current session ID lengkap, atau impersonation metadata yang dibutuhkan navigation/boundary.
+- `/v1/auth/session` snapshot hanya membawa identity/status/auth dasar; belum ada permissions, role codes, memberships, current session ID lengkap, atau impersonation metadata yang dibutuhkan navigation/boundary.
 - `/v1/seller/me/merchant` hanya memilih first active membership dan mengembalikan satu merchant/role; belum ada daftar store, scoped capabilities, canonical/current store, atau deterministic multi-store selection.
 - Schema membership hanya `OWNER|STAFF`, sementara role/permission global; persona tenant read/write terpisah belum dapat dienforce seperti yang dibutuhkan UI/test.
 
 **Resolution:** extend satu canonical session/bootstrap contract di `INT-120`, freeze seller bootstrap dan tenant capability model/migration di `INT-150`/`SEL-100` sebelum menghapus demo store.
 
-### P0-05 — MFA/step-up belum authoritative
+### P0-05 — auth/step-up belum authoritative
 
-- FE mengirim `X-Recent-MFA`; backend/doc mengharapkan `X-Recent-MFA-Proof`.
-- Screen memakai string seperti `mock-recent-mfa` atau checkbox/password placeholder.
-- Login snapshot membuat full session sebelum MFA, session resolver tetap menempelkan role/permission saat `mfa_verified_at` kosong, dan `RequireAuth` hanya memeriksa principal. Field config `RequireAdminMFA` dideklarasikan tetapi belum menjadi gate yang terpasang; direct HTTP dapat melewati UI MFA.
+- FE mengirim `X-Recent-auth`; backend/doc mengharapkan `session authentication`.
+- Screen memakai string seperti `mock-recent-auth` atau checkbox/password placeholder.
+- Login snapshot membuat full session , session resolver tetap menempelkan role/permission saat session verification timestamp kosong, dan `RequireAuth` hanya memeriksa principal. Field config admin auth gate (retired) dideklarasikan tetapi belum menjadi gate yang terpasang; direct HTTP dapat melewati UI login.
 - Inventory reveal menerima boolean/body claim `mfaVerified` dan tidak membuktikan freshness server-side.
 
-**Resolution owner:** `INT-140` harus membuat pre-MFA ticket atau global `MFA_PENDING` allowlist gate, lalu `INT-150` dan task secret/admin terkait. UI guard saja tidak cukup.
+**Resolution owner:** `INT-140` harus membuat login ticket atau global `authenticated session` allowlist gate, lalu `INT-150` dan task secret/admin terkait. UI guard saja tidak cukup.
 
 ### P0-06 — Cross-tenant authorization lemah
 
@@ -188,13 +188,13 @@ Route callback disbursement publik memproses body tanpa mandatory constant-time 
 
 `POST /v1/admin/actions` snapshot hanya dijaga `merchants.write`, tetapi dispatcher dapat memilih action buyer session/magic/email, review moderation, credential rotation, delivery resend, provider lookup, atau withdrawal review. Service belum membuktikan permission per action secara konsisten. Selain itu seluruh route credential admin memakai `kyc.review`, sehingga reviewer KYC berpotensi mendapat kemampuan mengelola API credential.
 
-**Resolution:** ganti generic dispatcher dengan typed operation atau server-side action-to-permission allowlist yang memverifikasi permission, target scope, reason, recent MFA, idempotency, dan audit untuk setiap action. Pisahkan permission `credentials.read/authorize/rotate/suspend/revoke` dari `kyc.review`; tambahkan direct-HTTP matrix anti-confusion. Lihat `ADM-110`, `ADM-200`, `ADM-340`, `INT-000`.
+**Resolution:** ganti generic dispatcher dengan typed operation atau server-side action-to-permission allowlist yang memverifikasi permission, target scope, reason, recent authentication, idempotency, dan audit untuk setiap action. Pisahkan permission `credentials.read/authorize/rotate/suspend/revoke` dari `kyc.review`; tambahkan direct-HTTP matrix anti-confusion. Lihat `ADM-110`, `ADM-200`, `ADM-340`, `INT-000`.
 
-### P0-12 — Auth stale-cookie recovery dan admin MFA enrollment dead-end
+### P0-12 — Auth stale-cookie recovery dan admin security settings dead-end
 
-Global CSRF middleware saat ini dapat menolak login, magic-link, reset, invite accept, dan logout ketika browser masih mengirim HttpOnly session cookie yang expired/revoked tetapi belum dibersihkan. Di sisi lain admin login mewajibkan MFA sementara enroll/confirm hanya ada di authenticated group, sehingga admin baru/invited admin tidak memiliki ceremony enrollment yang sah setelah surface isolation diperketat.
+Global CSRF middleware saat ini dapat menolak login, magic-link, reset, invite accept, dan logout ketika browser masih mengirim HttpOnly session cookie yang expired/revoked tetapi belum dibersihkan. Di sisi lain admin login mewajibkan auth sementara enroll/confirm hanya ada di authenticated group, sehingga admin baru/invited admin tidak memiliki ceremony enrollment yang sah setelah surface isolation diperketat.
 
-**Resolution:** `INT-130` harus menetapkan stale-cookie recovery yang tetap memeriksa Origin/Fetch Metadata/rate limit dan tidak mematikan CSRF untuk valid session; `INT-140`/`ADM-100` harus menetapkan pre-enrollment ticket/invite-bound MFA ceremony dengan purpose/expiry/replay tests.
+**Resolution:** `INT-130` harus menetapkan stale-cookie recovery yang tetap memeriksa Origin/Fetch Metadata/rate limit dan tidak mematikan CSRF untuk valid session; `INT-140`/`ADM-100` harus menetapkan login/invite-bound auth ceremony dengan purpose/expiry/replay tests.
 
 ## 5. Gap endpoint backend yang nyata
 
@@ -280,7 +280,7 @@ Endpoint tidak boleh “dipalsukan” dengan mock fallback pada API mode. Implem
 - Customer metrics/history/notes local.
 - Coupon CRUD local.
 - Storefront draft/audit localStorage; hanya publish memiliki seam.
-- Webhook/API key/settings/bank/MFA banyak mock.
+- Webhook/API key/settings/bank/auth banyak mock.
 - Withdrawal memakai bank/proof/key berbasis demo/time.
 
 ### Buyer/public
@@ -328,7 +328,7 @@ Lihat `07-TESTING-ROLLOUT-DOD.md` untuk perbaikan.
 | Pagination | Opaque cursor on wire, adapter mempertahankan existing table UI. |
 | Error | Stable ProblemEnvelope, typed mapping, no mock fallback. |
 | Secret | One-time/short TTL, component memory, no cache/storage/log. |
-| Sensitive mutation | Actual recent MFA + reason + idempotency + audit. |
+| Sensitive mutation | Actual recent authentication + reason + idempotency + audit. |
 | Rollout | Per-domain capability flag, no global cutover awal. |
 
 Jika agent perlu mengubah salah satu keputusan, buat ADR singkat dan minta review tech lead/security/product sesuai dampaknya sebelum implementasi.
@@ -337,7 +337,7 @@ Jika agent perlu mengubah salah satu keputusan, buat ADR singkat dan minta revie
 
 ### P0
 
-Kontrak/OpenAPI, topology, HTTP client, runtime schema, server client, session/CSRF/MFA, tenant guard, real provider/runtime, checkout, callback security, secret handling.
+Kontrak/OpenAPI, topology, HTTP client, runtime schema, server client, session/CSRF, tenant guard, real provider/runtime, checkout, callback security, secret handling.
 
 ### P1
 

@@ -1,90 +1,90 @@
 {
-  "title": "Fersaku Launch Overview (BE-600)",
-  "timezone": "browser",
-  "schemaVersion": 39,
-  "version": 1,
-  "tags": ["fersaku", "be-600", "launch"],
-  "refresh": "30s",
-  "panels": [
-    {
-      "id": 1,
-      "type": "timeseries",
-      "title": "HTTP requests by status",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum(rate(fersaku_http_requests_total[5m])) by (status)",
-          "legendFormat": "{{status}}"
-        }
-      ],
-      "description": "Runbook: docs/runbooks/incident-diagnosis.md"
-    },
-    {
-      "id": 2,
-      "type": "timeseries",
-      "title": "Payment paid rate",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "targets": [
-        {
-          "expr": "rate(fersaku_payment_paid_total[5m])",
-          "legendFormat": "paid"
-        }
-      ],
-      "description": "Runbook: docs/runbooks/callback-failure.md"
-    },
-    {
-      "id": 3,
-      "type": "timeseries",
-      "title": "Callback results",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "targets": [
-        {
-          "expr": "sum(rate(fersaku_callback_processed_total[5m])) by (result)",
-          "legendFormat": "{{result}}"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "type": "timeseries",
-      "title": "Seller webhook delivery",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "targets": [
-        {
-          "expr": "sum(rate(fersaku_webhook_delivery_total[5m])) by (result)",
-          "legendFormat": "{{result}}"
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "type": "stat",
-      "title": "Outbox pending",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
-      "targets": [{ "expr": "fersaku_outbox_pending" }],
-      "description": "Runbook: docs/runbooks/queue-outbox.md"
-    },
-    {
-      "id": 6,
-      "type": "stat",
-      "title": "Outbox oldest age (s)",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
-      "targets": [{ "expr": "fersaku_outbox_oldest_age_seconds" }]
-    },
-    {
-      "id": 7,
-      "type": "stat",
-      "title": "Audit chain OK",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
-      "targets": [{ "expr": "fersaku_audit_chain_ok" }],
-      "description": "Runbook: docs/runbooks/backup-restore-integrity.md"
-    },
-    {
-      "id": 8,
-      "type": "stat",
-      "title": "Audit head sequence",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
-      "targets": [{ "expr": "fersaku_audit_chain_head_sequence" }]
-    }
-  ]
+ "title": "Fersaku Launch Overview (BE-600)",
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 1,
+ "tags": ["fersaku", "be-600", "launch"],
+ "refresh": "30s",
+ "panels": [
+ {
+ "id": 1,
+ "type": "timeseries",
+ "title": "HTTP requests by status",
+ "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+ "targets": [
+ {
+ "expr": "sum(rate(fersaku_http_requests_total[5m])) by (status)",
+ "legendFormat": "{{status}}"
+ }
+ ],
+ "description": "Runbook: docs/runbooks/incident-diagnosis.md"
+ },
+ {
+ "id": 2,
+ "type": "timeseries",
+ "title": "Payment paid rate",
+ "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+ "targets": [
+ {
+ "expr": "rate(fersaku_payment_paid_total[5m])",
+ "legendFormat": "paid"
+ }
+ ],
+ "description": "Runbook: docs/runbooks/callback-failure.md"
+ },
+ {
+ "id": 3,
+ "type": "timeseries",
+ "title": "Callback results",
+ "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+ "targets": [
+ {
+ "expr": "sum(rate(fersaku_callback_processed_total[5m])) by (result)",
+ "legendFormat": "{{result}}"
+ }
+ ]
+ },
+ {
+ "id": 4,
+ "type": "timeseries",
+ "title": "Seller webhook delivery",
+ "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+ "targets": [
+ {
+ "expr": "sum(rate(fersaku_webhook_delivery_total[5m])) by (result)",
+ "legendFormat": "{{result}}"
+ }
+ ]
+ },
+ {
+ "id": 5,
+ "type": "stat",
+ "title": "Outbox pending",
+ "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+ "targets": [{ "expr": "fersaku_outbox_pending" }],
+ "description": "Runbook: docs/runbooks/queue-outbox.md"
+ },
+ {
+ "id": 6,
+ "type": "stat",
+ "title": "Outbox oldest age (s)",
+ "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+ "targets": [{ "expr": "fersaku_outbox_oldest_age_seconds" }]
+ },
+ {
+ "id": 7,
+ "type": "stat",
+ "title": "Audit chain OK",
+ "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+ "targets": [{ "expr": "fersaku_audit_chain_ok" }],
+ "description": "Runbook: docs/runbooks/backup-restore-integrity.md"
+ },
+ {
+ "id": 8,
+ "type": "stat",
+ "title": "Audit head sequence",
+ "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+ "targets": [{ "expr": "fersaku_audit_chain_head_sequence" }]
+ }
+ ]
 }

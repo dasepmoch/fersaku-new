@@ -19,13 +19,13 @@ When a domain task adds or changes a live API surface, **in the same slice**:
 2. **Runtime Zod** — `shared/api/schemas.ts` (or feature schema module) for the response envelope.
 3. **Pure mapper** — `features/<domain>/mappers.ts` DTO → existing view model; fail closed `INVALID_API_CONTRACT`.
 4. **FE consumer contract** — extend `tests/contract/` (or domain unit tests using the harness) for:
-   - valid response → exact view model;
-   - empty list/cursor;
-   - malformed envelope / invalid schema → `INVALID_API_CONTRACT`;
-   - problem code/details/requestId preserved;
-   - unknown enum fail-safe;
-   - money/timestamp boundaries;
-   - request body has no view-only fields.
+ - valid response → exact view model;
+ - empty list/cursor;
+ - malformed envelope / invalid schema → `INVALID_API_CONTRACT`;
+ - problem code/details/requestId preserved;
+ - unknown enum fail-safe;
+ - money/timestamp boundaries;
+ - request body has no view-only fields.
 5. **BE provider contract** — presenter/handler DTO validates against OpenAPI required shape (extend `backend/test/contract/` sample pattern).
 6. **Generated types** — `npm run api:check` dirty-diff (not line coverage).
 7. **Coverage** — live `api.ts` / `mappers.ts` / policies already in Vitest include; do not shrink denominator to fake green.

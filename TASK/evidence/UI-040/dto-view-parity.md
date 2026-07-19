@@ -1,16 +1,16 @@
 # UI-040 — DTO-to-view parity rule
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-040  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-040 
 **Architecture:** `TASK/README.md` §7
 
 ## 1. Layering (mandatory)
 
 ```text
 Backend transport DTO (wire truth)
-  -> runtime schema validation (Zod / generated)
-  -> explicit pure mapper
-  -> existing frontend view model (features/**/contracts.ts)
-  -> existing component props / JSX
+ -> runtime schema validation (Zod / generated)
+ -> explicit pure mapper
+ -> existing frontend view model (features/**/contracts.ts)
+ -> existing component props / JSX
 ```
 
 | Layer | Owns | Must not |
@@ -48,17 +48,17 @@ return isLiveApi() ? <NewLiveWithdrawalTable /> : <ExistingTable />;
 
 ## 4. Example A — Public catalog (PUB)
 
-**View model (existing):** `features/catalog/contracts.ts`  
+**View model (existing):** `features/catalog/contracts.ts` 
 `CatalogProduct`, `PublicStorefront` (slugs, palette, glyph, includes, preset/layout tokens).
 
 **Target layering for API mode (INT/PUB tasks implement; not done in UI-040):**
 
 ```text
 GET public store/product DTO
-  -> storefrontEnvelopeSchema / productDtoSchema
-  -> mapPublicStorefrontDto(dto): PublicStorefront
-  -> mapCatalogProductDto(dto): CatalogProduct
-  -> existing store/product screens & ProductArt props
+ -> storefrontEnvelopeSchema / productDtoSchema
+ -> mapPublicStorefrontDto(dto): PublicStorefront
+ -> mapCatalogProductDto(dto): CatalogProduct
+ -> existing store/product screens & ProductArt props
 ```
 
 **Parity rules for this domain:**
@@ -71,25 +71,25 @@ GET public store/product DTO
 | Extra SEO fields | Drop or keep off-view-model | No new SEO card without UI-080 |
 | Accent/theme tokens | Map to existing `preset`/`layout`/`font` unions | Storefront geometry unchanged |
 
-**Mock characterization source today:** `features/catalog/mock.ts` → same `PublicStorefront` / `CatalogProduct`.  
+**Mock characterization source today:** `features/catalog/mock.ts` → same `PublicStorefront` / `CatalogProduct`. 
 API mappers must target those types, not invent parallel live types.
 
 ## 5. Example B — Seller finance / withdrawals (SEL)
 
-**View model (existing):** `features/finance/contracts.ts`  
+**View model (existing):** `features/finance/contracts.ts` 
 `SellerWithdrawal`, `SellerWithdrawalStatus`, `SellerFinanceSummary`, `SellerWithdrawalQuote`.
 
-**Status union (frozen for presentation):**  
+**Status union (frozen for presentation):** 
 `"Pending" | "Completed" | "Processing" | "Failed"` — mapper must produce these strings (or exact existing screen expectations), not raw `PENDING_REVIEW`.
 
 **Target layering:**
 
 ```text
 Withdrawal list/detail DTO + finance summary DTO
-  -> withdrawalDtoSchema / financeSummarySchema
-  -> mapSellerWithdrawalDto / mapSellerFinanceSummaryDto
-  -> SellerWithdrawal / SellerFinanceSummary
-  -> features/seller/screens/finance/* existing props
+ -> withdrawalDtoSchema / financeSummarySchema
+ -> mapSellerWithdrawalDto / mapSellerFinanceSummaryDto
+ -> SellerWithdrawal / SellerFinanceSummary
+ -> features/seller/screens/finance/* existing props
 ```
 
 **Parity rules:**
@@ -103,7 +103,7 @@ Withdrawal list/detail DTO + finance summary DTO
 | Quote/provider | `provider: "Xendit"` only if contract matches existing view | Withdrawal form geometry unchanged |
 | Incomplete payload | `INVALID_API_CONTRACT` | Existing error/retry, not partial fake row |
 
-**Current gap (documented, not fixed here):**  
+**Current gap (documented, not fixed here):** 
 `features/orders/api.ts` still casts envelope data as view types without a mapper layer. Future domain tasks must introduce `mappers.ts` + schemas per this rule rather than changing JSX.
 
 ## 6. Test expectation (for later domain tasks)
@@ -117,5 +117,5 @@ expect(mapSellerWithdrawalDto(apiFixture)).toEqual(expectedSellerWithdrawalView)
 
 ## 7. Natural doc anchor (no redesign)
 
-Canonical rule remains in `TASK/00-UI-FREEZE-CONTRACT.md` §UI-040 and this evidence file.  
+Canonical rule remains in `TASK/00-UI-FREEZE-CONTRACT.md` §UI-040 and this evidence file. 
 Domain `mappers.ts` files (when created under INT/domain tasks) should reference this path in their module header only if a file is being created for wiring — **not** as a UI-040 product change.

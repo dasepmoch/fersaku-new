@@ -1,10 +1,10 @@
 # UI-080 — Controlled UI exception register (process + open set)
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-080  
-**Aligned with:** `TASK/10-ROUTE-AND-CONTROL-DISPOSITION.md` §6 (UXE rows)  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-080 
+**Aligned with:** `TASK/10-ROUTE-AND-CONTROL-DISPOSITION.md` §6 (UXE rows) 
 **Reuse registry:** `TASK/evidence/UI-030/component-reuse-registry.md`
 
-This register tracks **process** and the current open exception **candidates**.  
+This register tracks **process** and the current open exception **candidates**. 
 **UXE rows are not product-owner approvals to redesign.** They record gaps where API truth needs a state not fully represented by an existing surface.
 
 ## 1. Protocol (mandatory)
@@ -22,8 +22,8 @@ If backend requirements cannot be expressed with existing components:
 
 | Ceremony | Ownership route | Compose with |
 | --- | --- | --- |
-| Seller verify / reset / merchant invite / seller MFA | `/login` | `AuthShell`, `AuthForm`, existing controls |
-| Admin invite / admin MFA | `/admin/login` | `AdminLogin` geometry / approved composition |
+| Seller verify / reset / merchant invite / seller auth | `/login` | `AuthShell`, `AuthForm`, existing controls |
+| Admin invite / admin login | `/admin/login` | `AdminLogin` geometry / approved composition |
 | Buyer magic-link consume | `/account/verify` | Existing verify page / safe `NotFound` |
 
 New auth routes require a filled exception row + approval.
@@ -50,12 +50,12 @@ New auth routes require a filled exception row + approval.
 
 ## 3. Open register (zero **approved** UI exceptions)
 
-As of **2026-07-17**, there are **zero product-approved UI redesign exceptions**.  
+As of **2026-07-17**, there are **zero product-approved UI redesign exceptions**. 
 The following are **pre-catalogued gaps** from disposition matrix §6 — resolution is composition/invariant/disable, not automatic UI work:
 
 | ID | Situation (summary) | Default under freeze | Status |
 | --- | --- | --- | --- |
-| `UXE-001` | Challenge routes verify/reset/invite/MFA | Compose on existing auth routes only | Constraint (pre-authorized composition) — not a redesign approval |
+| `UXE-001` | Challenge routes verify/reset/invite/auth | Compose on existing auth routes only | Constraint (pre-authorized composition) — not a redesign approval |
 | `UXE-002` | Buyer lacks route-level loading/error/empty | BuyerShell/cards; keep previous data | **open** — BUY tasks; UI change needs approval |
 | `UXE-003` | Checkout conflict/expired/unavailable gaps | Reuse checkout pieces; never map to paid | **open** — CHK tasks |
 | `UXE-004` | Domain `disabled` user-visible behavior | Existing error/disabled control only | **open** — INT-025/QLT-400 |
@@ -65,7 +65,7 @@ The following are **pre-catalogued gaps** from disposition matrix §6 — resolu
 | `UXE-008` | Onboarding outside workspace boundaries | Form state / root error; no maintenance banner | **closed** — SEL-110 (form fieldError only; no maintenance panel) |
 | `UXE-009` | Public home/store empty arrays | Non-empty launch invariant or approved composition | **open** — product/UX decision |
 | `UXE-010` | Contact form missing error/pending regions | Disable submit or approved composition | **open** — PUB-200 chose launch DISABLED; UI-080 still required before IMPLEMENT |
-| `UXE-011` | Auth negative/MFA/rate/unavailable gaps; AdminLogin mock | Block canary or approved composition | **open** — AUT/ADM |
+| `UXE-011` | Auth negative/rate/unavailable gaps; AdminLogin mock | Block canary or approved composition | **open** — AUT/ADM |
 | `UXE-012` | Seller product/review/inventory empty | Launch invariant or approved composition | **open** — SEL-210/240/270 |
 
 ### Approved implementation queue

@@ -1,10 +1,10 @@
 # ADR-0001: Modular monolith (api + worker), PostgreSQL authority, Redis non-authoritative, R2 private-by-default
 
-| Field  | Value      |
+| Field | Value |
 | ------ | ---------- |
-| Status | Accepted   |
-| Date   | 2026-07-16 |
-| Task   | BE-000     |
+| Status | Accepted |
+| Date | 2026-07-16 |
+| Task | BE-000 |
 
 ## Context
 
@@ -15,8 +15,8 @@ References: `docs/BACKEND_PRODUCTION_TASKS.md` §0, §2.1–2.3, §9.1, §10.1, 
 ## Decision
 
 1. **Shape:** Modular monolith with two binaries sharing domain/application/ports:
-   - `fersaku-api` — HTTP API, auth, seller/buyer/admin, checkout, gateway, Xendit callback ingress.
-   - `fersaku-worker` — queue jobs (webhook delivery/retry, email, KYC processing, cleanup, alerts).
+ - `fersaku-api` — HTTP API, auth, seller/buyer/admin, checkout, gateway, Xendit callback ingress.
+ - `fersaku-worker` — queue jobs (webhook delivery/retry, email, KYC processing, cleanup, alerts).
 2. **Dependency direction:** `cmd/*` → `internal/app` → `application` → `domain` → `ports` ← `adapters`. Domain must not import chi, pgx, Redis, Xendit, R2, or HTTP DTOs.
 3. **PostgreSQL** is the sole source of truth for money, auth sessions, ledger, payments, KYC, credentials, audit, and authorization decisions.
 4. **Redis** is non-authoritative: cache, rate limit, coordination, and queue acceleration only. Flush/restart must not corrupt financial truth; durable work recovers from Postgres transactional outbox.

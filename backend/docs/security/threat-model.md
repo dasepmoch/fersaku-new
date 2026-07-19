@@ -1,8 +1,8 @@
 # Fersaku backend threat model (BE-610)
 
-**Scope:** production Go API + worker (modular monolith).  
-**Method:** STRIDE-lite (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege).  
-**Date:** 2026-07-17  
+**Scope:** production Go API + worker (modular monolith). 
+**Method:** STRIDE-lite (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege). 
+**Date:** 2026-07-17 
 **Status:** In-repo security verification evidence for BE-610.
 
 ## Trust boundaries
@@ -14,17 +14,17 @@
 | Xendit inbound webhook | Shared callback token / signature verification | Payload, IP, replay |
 | Seller outbound webhook | HMAC signing secret (server) | Endpoint URL, merchant receiver |
 | R2 / object store | Server-generated keys, private buckets | Browser presign (non-KYC only) |
-| Admin surface | RBAC permissions + MFA policy | Admin session, impersonation derived session |
+| Admin surface | RBAC permissions + auth policy | Admin session, impersonation derived session |
 | Postgres | Authoritative financial/auth truth | Redis (non-authoritative), client input |
 
 ## Asset classes
 
-- Session tokens, CSRF tokens, MFA secrets/recovery codes  
-- Merchant API keys and webhook signing secrets  
-- Payment intents, ledger journals, withdrawal state  
-- KYC document ciphertext and case metadata  
-- Inventory CODE credentials (AEAD at rest)  
-- Admin impersonation linkage (actor ↔ target)  
+- Session tokens, CSRF tokens, auth secrets/security codes (unused) 
+- Merchant API keys and webhook signing secrets 
+- Payment intents, ledger journals, withdrawal state 
+- KYC document ciphertext and case metadata 
+- Inventory CODE credentials (AEAD at rest) 
+- Admin impersonation linkage (actor ↔ target) 
 - Provider callback evidence (encrypted/raw retention policy)
 
 ---
@@ -96,7 +96,7 @@
 | Support write beyond allowlist | E | Exact two commands; default-deny registry | Low |
 | Tampered derived cookie | S | Opaque hashed session; end/expiry revokes | Low |
 | Nested / admin-to-admin | E | Explicit target user; no admin targets | Low |
-| Missing MFA on start | S/E | Fresh MFA required for start | Low |
+| Missing auth on start | S/E | Authenticated admin session required for start | Low |
 
 **Negative tests:** PRIVILEGED rejected; SUPPORT_WRITE default-deny mutations; tampered cookie; end blocks; allowlist unit tests.
 
@@ -131,9 +131,9 @@
 
 ## Out of scope for this model (documented non-goals)
 
-- Refund/dispute workflows, multi-PSP failover, reconciliation console  
-- Paid feature entitlements / subscription paywalls  
-- Full browser XSS/CSP hardening (frontend ownership)  
+- Refund/dispute workflows, multi-PSP failover, reconciliation console 
+- Paid feature entitlements / subscription paywalls 
+- Full browser XSS/CSP hardening (frontend ownership) 
 - External pentest findings (see residual-risks.md if unavailable)
 
 ## Verification mapping (BE-610)

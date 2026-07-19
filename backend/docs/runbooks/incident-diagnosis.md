@@ -12,22 +12,22 @@ Unknown until scoped: checkout, gateway, webhook, or admin-only.
 ## Safe diagnosis (no secrets/PII)
 
 1. Collect identifiers from the reporter:
-   - `request_id` (`X-Request-ID` / envelope `meta.requestId`)
-   - `trace_id` (`X-Trace-ID` / `traceparent` 32-hex)
-   - business-safe: `merchant_id`, `store_id`, `payment_intent_id`, `order_id`, `callback_id`
+ - `request_id` (`X-Request-ID` / envelope `meta.requestId`)
+ - `trace_id` (`X-Trace-ID` / `traceparent` 32-hex)
+ - business-safe: `merchant_id`, `store_id`, `payment_intent_id`, `order_id`, `callback_id`
 2. Logs (JSON): filter `request_id` then `trace_id`.
-   ```text
-   # example log fields
-   msg=http_request request_id=... trace_id=... method=... path=... status=... latency_ms=...
-   ```
+ ```text
+ # example log fields
+ msg=http_request request_id=... trace_id=... method=... path=... status=... latency_ms=...
+ ```
 3. Metrics: `GET /metrics` or Prometheus
-   - `fersaku_http_requests_total{status=~"5.."}`
-   - `fersaku_callback_processed_total`
-   - `fersaku_outbox_oldest_age_seconds`
+ - `fersaku_http_requests_total{status=~"5.."}`
+ - `fersaku_callback_processed_total`
+ - `fersaku_outbox_oldest_age_seconds`
 4. Health:
-   - `GET /health/live` — process up
-   - `GET /health/ready` — accept traffic
-   - Admin: `GET /v1/admin/system` componentHealth (Xendit/R2/Redis/mail) — no secrets
+ - `GET /health/live` — process up
+ - `GET /health/ready` — accept traffic
+ - Admin: `GET /v1/admin/system` componentHealth (Xendit/R2/Redis/mail) — no secrets
 5. If payment-related, open `callback-failure.md` / `queue-outbox.md` with safe IDs only.
 
 ## Action permissions

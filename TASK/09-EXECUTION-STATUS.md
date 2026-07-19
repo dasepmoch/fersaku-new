@@ -28,7 +28,7 @@ Aturan claim:
 | Lane | Ownership canonical | Tidak boleh dikerjakan diam-diam |
 | --- | --- | --- |
 | `UX` | baseline, characterization, parity review, exception register | redesign, snapshot update untuk menutupi diff |
-| `FND` | OpenAPI, generated transport, HTTP clients, source registry, session/CSRF/MFA/tenant/cache | screen/domain business mapping tanpa handoff |
+| `FND` | OpenAPI, generated transport, HTTP clients, source registry, session/CSRF/tenant/cache | screen/domain business mapping tanpa handoff |
 | `RTM` | provider, callback, queue, scanner, scheduler, readiness | UI success simulation atau domain DTO |
 | `PUB` | public/auth/checkout/buyer feature adapters dan existing screens | shared session/proof/media/notification primitive tanpa owner terkait |
 | `SEL` | seller feature adapters, backend store operations, existing seller screens | shared foundation/generated files |
@@ -39,7 +39,7 @@ Shared hotspot mempunyai single-writer rule:
 
 - `backend/api/openapi.yaml` dan generated DTO/schema: owner aktif `INT-000/INT-010` saja; domain memberi operation patch melalui owner tersebut.
 - `shared/api/**`, proxy/env, source registry: owner aktif foundation terkait.
-- session/CSRF/MFA/tenant primitives: `INT-120..INT-150`; profile domain hanya menjadi consumer.
+- session/CSRF/tenant primitives: `INT-120..INT-150`; profile domain hanya menjadi consumer.
 - reusable auth ceremony: `AUT-120`; personal media: `INT-175`; notification center: `BUY-140`.
 - runtime adapter/scheduler: `INT-180/INT-185`; deterministic persona/seed: `QLT-110`; API Playwright orchestration: `QLT-215`.
 - Jika dua task perlu file yang sama, satu menjadi writer dan task lain mencatat dependency/handoff. Jangan menyelesaikan konflik dengan duplicate helper/component.
@@ -74,7 +74,7 @@ Shared hotspot mempunyai single-writer rule:
 | `[x]` | `INT-110` | P0 | INT-030, INT-100 | FND | completed @nikki/opencode · 2026-07-17 12:25 WIB · claim released | Cookie-forwarding private SSR client | TASK/evidence/INT-110/20260717-1225-nikki.md · shared/api/server-http-client.ts · server-cookie-forward.ts · SERVER-SSR-POLICY.md · tests/unit/server-*.test.ts |
 | `[x]` | `INT-130` | P0 | INT-000, INT-030 | FND | completed @nikki/opencode · 2026-07-17 12:30 WIB · claim released | Recoverable session-bound CSRF | TASK/evidence/INT-130/20260717-1230-nikki.md · shared/api/csrf.ts · middleware/csrf.go · auth RotateSessionCSRF · tests/unit/csrf.test.ts |
 | `[x]` | `INT-120` | P0 | INT-025, INT-100, INT-110, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:33 WIB · claim released | Session/bootstrap/claims/guards | TASK/evidence/INT-120/20260717-1233-nikki.md |
-| `[x]` | `INT-140` | P0 | INT-120, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:39 WIB · claim released | Pre-MFA global gate + recent proof | TASK/evidence/INT-140/20260717-1239-nikki.md |
+| `[x]` | `INT-140` | P0 | INT-120, INT-130 | FND | completed @nikki/opencode · 2026-07-17 12:39 WIB · claim released | Pre-auth global gate + recent proof | TASK/evidence/INT-140/20260717-1239-nikki.md |
 | `[x]` | `INT-150` | P0 | INT-120 | FND | completed @nikki/opencode · 2026-07-17 12:45 WIB · claim released | Membership capabilities/current store/tenant guards | TASK/evidence/INT-150/20260717-1245-nikki.md |
 | `[x]` | `INT-160` | P1 | INT-100, INT-120, INT-150 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Safe query/cache/mutation/idempotency policy | TASK/evidence/INT-160/20260717-1300-nikki.md · shared/query/* · tests/unit/int-160-query-mutation.test.ts |
 | `[x]` | `INT-170` | P1 | INT-100, INT-120, UI-050 | FND | completed @nikki/opencode · 2026-07-17 · claim released | Error/redaction/mock reachability boundary | TASK/evidence/INT-170/20260717-1300-nikki.md · shared/observability/* · shared/data/mock-interaction.ts · shared/api/error-presentation.ts · tests/unit/int-170-error-mock-observability.test.ts · architecture-boundaries.test.ts |
@@ -89,7 +89,7 @@ Shared hotspot mempunyai single-writer rule:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `[x]` | `AUT-100` | P0 | INT-010, INT-020, INT-025, INT-100, INT-110, INT-120, INT-130, INT-140; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:19 WIB · claim released | Seller register/login/session/logout | TASK/evidence/AUT-100/20260717-1319-nikki.md · features/auth · components/auth-form.tsx · tests/unit/aut-100-seller-auth.test.ts |
 | `[x]` | `AUT-110` | P0 | INT-010, INT-020, INT-025, INT-100, INT-120, INT-130; INT-180 **if live mail** | PUB | completed @nikki/opencode · main · 2026-07-17 13:36 WIB · claim released | Buyer magic-link session | TASK/evidence/AUT-110/20260717-1336-nikki.md · features/auth · components/buyer-login.tsx · components/buyer-verify.tsx · tests/unit/aut-110-buyer-magic-link.test.ts |
-| `[x]` | `AUT-120` | P1 | AUT-100, AUT-110, INT-140 | PUB/FND | completed @nikki/opencode · main · 2026-07-17 16:42 WIB · claim released | Shared reset/email/MFA/recovery ceremony | TASK/evidence/AUT-120/20260717-1642-nikki.md · features/auth · components/auth-form.tsx · tests/unit/aut-120-auth-ceremony.test.ts |
+| `[x]` | `AUT-120` | P1 | AUT-100, AUT-110, INT-140 | PUB/FND | completed @nikki/opencode · main · 2026-07-17 16:42 WIB · claim released | Shared reset/email/auth/recovery ceremony | TASK/evidence/AUT-120/20260717-1642-nikki.md · features/auth · components/auth-form.tsx · tests/unit/aut-120-auth-ceremony.test.ts |
 | `[x]` | `AUT-130` | P1 decision | INT-025, INT-120, INT-130 | PUB | completed @nikki/opencode · main · 2026-07-17 14:16 WIB · claim released | Seller Google OAuth launch DISABLED/OUT-OF-SCOPE + API mode-gate | TASK/evidence/AUT-130/20260717-1416-nikki.md · components/auth-shell.tsx · tests/unit/architecture-boundaries.test.ts |
 | `[x]` | `PUB-100` | P0 pilot | INT-010, INT-020, INT-025, INT-100, INT-110; co-evolve INT-190 | PUB | completed @nikki/opencode · main · 2026-07-17 13:28 WIB · claim released | Featured/store/product/review reads | TASK/evidence/PUB-100/20260717-1328-nikki.md · features/catalog · features/seller/reviews · tests/unit/pub-100-public-catalog.test.ts |
 | `[x]` | `PUB-110` | P1 | INT-000, INT-010, INT-100 | PUB | completed @nikki/opencode · main · 2026-07-17 · claim released | Authoritative public fee copy | TASK/evidence/PUB-110/20260717-1416-nikki.md · features/platform-fees · app/page.tsx · app/pricing/page.tsx · tests/unit/pub-110-public-fees.test.ts |
@@ -137,7 +137,7 @@ Shared hotspot mempunyai single-writer rule:
 
 | Status | ID | Priority | Depends on | Lane | Active claim | Unlocks/output | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `[x]` | `ADM-100` | P0 | INT-120, INT-130, INT-140, INT-170 | ADM | completed @nikki/opencode · main · 2026-07-17 15:57 WIB · claim released | Admin login/MFA/session/guards | TASK/evidence/ADM-100/20260717-1557-nikki.md · features/auth · features/admin/components/admin-shell.tsx · app/admin/login/page.tsx · tests/unit/adm-100-admin-auth.test.ts |
+| `[x]` | `ADM-100` | P0 | INT-120, INT-130, INT-140, INT-170 | ADM | completed @nikki/opencode · main · 2026-07-17 15:57 WIB · claim released | Admin login/session/guards | TASK/evidence/ADM-100/20260717-1557-nikki.md · features/auth · features/admin/components/admin-shell.tsx · app/admin/login/page.tsx · tests/unit/adm-100-admin-auth.test.ts |
 | `[x]` | `ADM-110` | P0 | ADM-100, INT-150 | ADM | completed @nikki/opencode · main · 2026-07-17 16:16 WIB · claim released | Least-privilege route/action boundary | TASK/evidence/ADM-110/20260717-1616-nikki.md · features/admin/config · admin-shell · admin-permission-boundary · tests/unit/adm-110-admin-permissions.test.ts |
 | `[x]` | `ADM-120` | P1 | ADM-110, INT-160, INT-190 | ADM | completed @nikki/opencode · main · 2026-07-17 · claim released | Admin read/query foundation | TASK/evidence/ADM-120/20260717-adm120-nikki.md · features/admin/data · shared/api/schemas.ts · tests/unit/adm-120-admin-overview-reads.test.ts |
 | `[x]` | `ADM-200` | P1 | ADM-110, ADM-120, SEL-100 | ADM | completed @nikki/opencode · main · 2026-07-17 · claim released | Merchant support/status/capability | TASK/evidence/ADM-200/20260717-adm200-nikki.md · features/admin/data/merchant-commands.ts · merchants screens · tests/unit/adm-200-admin-merchants.test.ts |
@@ -226,7 +226,7 @@ Global `G0..G8` pada `README.md` adalah full-cutover gate. Rollout per-domain ti
 | Public read canary | INT-190, PUB-100, relevant `public-catalog` instance cells (including QLT-105/200/220/230/320/400) | `publicCatalog=api` untuk allowlist/canary. |
 | Authenticated read canary | domain bootstrap/read task + `seller-auth`/`buyer-auth-account`/domain instance cells + tenant/security negative tests | Read-domain API per selected actor/tenant. |
 | Non-money mutation canary | INT-160, domain mutation task + that capability's QLT-105/200/210/220/300/320/400/410 cells | Hanya mutation domain tersebut. |
-| Payment/secret/PII/privileged canary | INT-180/185, recent-MFA/permission/tenant gates + `checkout-order`, `seller-finance`, or `admin-money-secret-pii` cells | Allowlist internal, lalu tenant canary; highest-risk last. |
+| Payment/secret/PII/privileged canary | INT-180/185, recent-auth/permission/tenant gates + `checkout-order`, `seller-finance`, or `admin-money-secret-pii` cells | Allowlist internal, lalu tenant canary; highest-risk last. |
 | Global API default | `full-cutover` cells, QLT-105 aggregate, QLT-420, G0..G8 | Default API; mock tetap hanya explicit nonproduction prototype. |
 
 Jika satu task mencakup read dan mutation berisiko berbeda, evidence dan flag harus dipisah per capability. Satu row `[x]` tidak otomatis mengaktifkan semua operation; activation decision dicatat di evidence dan route/control disposition.
@@ -237,7 +237,7 @@ Isi kolom `Evidence` dengan tautan ke `evidence/README.md` dan handoff berformat
 
 - source paths/commit serta OpenAPI operation ID untuk endpoint;
 - test command + jumlah pass/fail/skip + CI run;
-- negative authorization/tenant/CSRF/MFA/idempotency/concurrency sesuai risiko;
+- negative authorization/tenant/CSRF/idempotency/concurrency sesuai risiko;
 - sanitized request/response/problem contract;
 - visual/a11y desktop-mobile untuk route tersentuh, tanpa baseline update;
 - config/migration/provider/observability/rollout/rollback evidence bila relevan;

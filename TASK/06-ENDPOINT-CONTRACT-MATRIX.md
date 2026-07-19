@@ -25,7 +25,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | JSON | Strict `application/json`, max ~1 MiB, unknown/trailing rejected | Banyak adapter mengirim input/view model mentah | Request DTO mapper per operation. |
 | Session | HttpOnly cookie | `credentials: include`, no provider/guard | `INT-120`. |
 | CSRF | Unsafe cookie mutation requires header/hash | Token hilang setelah refresh; caller optional | `INT-130`. |
-| Recent MFA | `X-Recent-MFA-Proof` intended | `X-Recent-MFA`, fake values | `INT-140`. |
+| Recent authentication | `session authentication` intended | `X-Recent-auth`, fake values | `INT-140`. |
 | Request ID | Middleware/envelope | Generated client ID available | Forward/correlate/redact. |
 | Idempotency | Endpoint-dependent | Inconsistent; withdrawal uses time | UUID per logical intent; replay same key. |
 | Pagination | Mostly cursor/meta, some `{items}` | Numbered `TablePagination` but some nested CursorPage | Freeze per-operation `CursorList` or `NumberedPageList`; numbered UI requires authoritative total/pageCount/jump, not cursor history fiction. |
@@ -39,7 +39,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | --- | --- | --- | --- | --- | --- |
 | Seller register | `components/auth-form.tsx` | `POST /v1/auth/register` | U | Exact DTO, anti-enumeration, mail verify, field errors. | AUT-100 |
 | Verify email | auth verify flow | `POST /v1/auth/verify-email` | U | Fragment token exchange, one-time, scrub URL. | AUT-100/AUT-120 |
-| Seller/admin login | auth/admin login | `POST /v1/auth/login` | M | Surface, session cookie, CSRF, and pre-MFA global gate are incomplete. | AUT-100/ADM-100/INT-140 |
+| Seller/admin login | auth/admin login | `POST /v1/auth/login` | M | Surface, session cookie, CSRF, and login global gate are incomplete. | AUT-100/ADM-100/INT-140 |
 | Session bootstrap/stale-cookie recovery | new session provider | `GET /v1/auth/session` plus narrowly scoped auth-cookie recovery behavior | M | CSRF recovery broken after reload; stale expired/revoked cookie can currently block anonymous auth/logout before handler. Freeze safe recovery/origin/rate-limit contract. | INT-120/130 |
 | Logout | profile menus | `POST /v1/auth/logout` | U | CSRF/cookie clear/cache clear. | INT-120 |
 | Magic request | `buyer-login.tsx` | `POST /v1/auth/magic-link/request` | U | Generic response, real mail. | AUT-110 |
@@ -47,11 +47,11 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Forgot/reset password | auth/security | `POST /v1/auth/password/forgot`, `POST /v1/auth/password/reset` | U | Generic request + fragment one-time reset. | AUT-120 |
 | Sessions | buyer/admin/seller security | `GET /v1/auth/sessions` | U | Shared canonical security endpoint and current session mapping. | AUT-120/BUY-130 |
 | Revoke session(s) | security screens | `POST /v1/auth/sessions/{sessionId}/revoke`, `POST /v1/auth/sessions/revoke-others`, `POST /v1/auth/sessions/revoke-all` | U | Typed result, current/all behavior, CSRF. | AUT-120/BUY-130/ADM-230 |
-| Invitation accept (generic) | seller/admin invite ceremony | `POST /v1/auth/invitations/accept` | U | Purpose/surface-bound fragment token, anti-escalation, one-time consume, stale-cookie/CSRF recovery, and pre-MFA enrollment handoff; do not treat as staff/merchant alias interchangeably. | AUT-120/ADM-100/ADM-220/INT-140 |
+| Invitation accept (generic) | seller/admin invite ceremony | `POST /v1/auth/invitations/accept` | U | Purpose/surface-bound fragment token, anti-escalation, one-time consume, stale-cookie/CSRF recovery, and login enrollment handoff; do not treat as staff/merchant alias interchangeably. | AUT-120/ADM-100/ADM-220/INT-140 |
 | Password/email security | settings/security | `POST /v1/auth/password/change`, `POST /v1/auth/email-change/request`, `POST /v1/auth/email-change/confirm-current`, `POST /v1/auth/email-change/confirm-new` | U | Actual recent auth, rotation, dual confirmation. | AUT-120 |
-| MFA lifecycle | settings/security | `POST /v1/auth/mfa/enroll`, `POST /v1/auth/mfa/confirm`, `POST /v1/auth/mfa/verify`, `POST /v1/auth/mfa/disable`, `POST /v1/auth/mfa/recovery-codes/regenerate` | M | Add pre-MFA global gate, pre-enrollment ticket for invited/admin users, and actual proof/rotation/recovery behavior. | AUT-120/ADM-100/INT-140 |
-| Recent MFA proof mint/exchange | shared step-up adapter | exact operation to be frozen: extend `POST /v1/auth/mfa/verify` or add dedicated `/v1/auth/mfa/step-up` | D | Purpose/resource scope, factor, TTL/single-use, response metadata, `X-Recent-MFA-Proof`, replay/error contract must be decided before reveal/credential/bank/withdrawal/admin commands. | INT-140 |
-| Invited/admin MFA pre-enrollment | `/admin/login` or invite flow | no pre-enrollment ticket route mounted | D | Add invite/purpose-bound short-lived enrollment ticket or explicitly block admin onboarding; full admin business session must not be used to bootstrap its own MFA. | ADM-100/INT-140 |
+| auth lifecycle | settings/security | `POST /v1/auth/auth/enroll`, `POST /v1/auth/auth/confirm`, `POST /v1/auth/auth/verify`, `POST /v1/auth/auth/disable`, `POST /v1/auth/auth/recovery-codes/regenerate` | M | Add login global gate, login for invited/admin users, and actual proof/rotation/recovery behavior. | AUT-120/ADM-100/INT-140 |
+| Recent authentication proof mint/exchange | shared step-up adapter | exact operation to be frozen: extend `POST /v1/auth/auth/verify` or add dedicated `/v1/auth/auth/step-up` | D | Purpose/resource scope, factor, TTL/single-use, response metadata, `session authentication`, replay/error contract must be decided before reveal/credential/bank/withdrawal/admin commands. | INT-140 |
+| Invited/admin auth pre-enrollment | `/admin/login` or invite flow | no login route mounted | D | Add invite/purpose-bound short-lived enrollment ticket or explicitly block admin onboarding; full admin business session must not be used to bootstrap its own auth. | ADM-100/INT-140 |
 | Me profile | profile/settings | `GET /v1/me/profile`, `PATCH /v1/me/profile` | U | Revision, PII mapping, conflict. | BUY-120/SEL-340/ADM-230 |
 | Notification prefs | settings/profile | `GET /v1/me/notification-preferences`, `PATCH /v1/me/notification-preferences` | U | Schema/revision/CSRF. | BUY-120/SEL-340 |
 | Notifications | shared shell | `GET /v1/notifications/`, `GET /v1/notifications/unread-count`, `POST /v1/notifications/read-all`, `POST /v1/notifications/{notificationId}/read` | M | Use shared canonical recipient-scoped routes; freeze slash policy and pagination. | BUY-140/SEL-420/ADM-230/INT-000 |
@@ -130,7 +130,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Inventory product detail | seller inventory API | `GET /v1/stores/{storeId}/inventory/products/{productId}` | M | Backend `{summary,items}` vs product view; detail `StockItemsTab` requires authoritative `NumberedPageList`. | SEL-240/INT-020 |
 | Inventory schema | detail tabs | `GET /v1/stores/{storeId}/inventory/products/{productId}/schema`, `PUT /v1/stores/{storeId}/inventory/products/{productId}/schema` | U | Version, exact definitions, mapper. | SEL-240 |
 | Import items | detail/import | `POST /v1/stores/{storeId}/inventory/products/{productId}/items`, `POST /v1/stores/{storeId}/inventory/items/import` | U | Atomic/partial policy, row errors/idempotency. | SEL-240 |
-| Reveal item | detail | `POST /v1/stores/{storeId}/inventory/items/{itemId}/reveal` | M | Must verify server recent MFA, not body boolean; no-store. | SEL-240 |
+| Reveal item | detail | `POST /v1/stores/{storeId}/inventory/items/{itemId}/reveal` | M | Must verify server recent authentication, not body boolean; no-store. | SEL-240 |
 | Revoke item | detail | `POST /v1/stores/{storeId}/inventory/items/{itemId}/revoke` | U | Transition/audit/idempotency. | SEL-240 |
 
 ## 7. Seller orders, customers, reviews, coupons
@@ -163,7 +163,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Delivery history/test | webhooks screen | `GET /v1/stores/{storeId}/webhooks/deliveries`, `POST /v1/stores/{storeId}/webhooks/{id}/test` | M | Router/handler use `{id}`; bounded list; test idempotency. FE wired SEL-320. | SEL-320/INT-000 |
 | Secret rotate/claim | webhooks screen | `POST /v1/stores/{storeId}/webhooks/{id}/secret-rotation-requests`, `POST /v1/stores/{storeId}/webhooks/{id}/secret-claims/{claimId}/exchange` | M | Router/handler use `{id}`; one-time component memory; never query cache. FE wired SEL-320. | SEL-320/INT-000 |
 | Credential list | API key screen | `GET /v1/stores/{storeId}/api-credentials/` | M | Store-scoped route is canonical for this UI; masked-only list; freeze slash policy. FE wired SEL-330. | SEL-330/INT-000 |
-| Credential request/claim/revoke | API key screen | `POST /v1/stores/{storeId}/api-credential-requests`, `POST /v1/stores/{storeId}/api-credential-claims/{claimId}/exchange`, `POST /v1/stores/{storeId}/api-credentials/{keyId}/revoke` | M | Owner/recent MFA/one-time raw. FE wired SEL-330. | SEL-330 |
+| Credential request/claim/revoke | API key screen | `POST /v1/stores/{storeId}/api-credential-requests`, `POST /v1/stores/{storeId}/api-credential-claims/{claimId}/exchange`, `POST /v1/stores/{storeId}/api-credentials/{keyId}/revoke` | M | Owner/recent authentication/one-time raw. FE wired SEL-330. | SEL-330 |
 | Seller KYC | KYC/API key/settings | `GET /v1/me/kyc/`, `POST /v1/me/kyc/cases`, `GET /v1/me/kyc/cases/{caseId}`, `POST /v1/me/kyc/cases/{caseId}/submit`, `POST /v1/me/kyc/cases/{caseId}/resubmit`, `POST /v1/me/kyc/cases/{caseId}/documents` | M | Use `/v1/me/kyc` as seller canonical; freeze slash policy, server multipart/encrypted real scan, API capability only. FE status wired SEL-330. | SEL-330/ADM-340/INT-000 |
 
 ## 9. Seller finance, bank, withdrawal
@@ -173,7 +173,7 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Finance summary | finance API | `GET /v1/stores/{storeId}/finance/summary` | M | Tenant guard; map exact fields. | SEL-400 |
 | Revenue | finance API | `GET /v1/stores/{storeId}/finance/revenue` | M | Tenant guard/range/schema. | SEL-400 |
 | Ledger | finance API | `GET /v1/stores/{storeId}/finance/ledger` | M | Pagination shape + enum `SETTLEMENT_RELEASE`; tenant guard. | SEL-400 |
-| Bank accounts | settings/withdrawal | `GET /v1/stores/{storeId}/bank-accounts/`, `POST /v1/stores/{storeId}/bank-accounts/`, `PATCH /v1/stores/{storeId}/bank-accounts/{id}`, `DELETE /v1/stores/{storeId}/bank-accounts/{id}`, `POST /v1/stores/{storeId}/bank-accounts/{id}/verify`, `POST /v1/stores/{storeId}/bank-accounts/{id}/make-primary` | M | Router/handler use `{id}`; freeze slash policy; masking/recent MFA/withdrawal lock. | SEL-340/SEL-410/INT-000 |
+| Bank accounts | settings/withdrawal | `GET /v1/stores/{storeId}/bank-accounts/`, `POST /v1/stores/{storeId}/bank-accounts/`, `PATCH /v1/stores/{storeId}/bank-accounts/{id}`, `DELETE /v1/stores/{storeId}/bank-accounts/{id}`, `POST /v1/stores/{storeId}/bank-accounts/{id}/verify`, `POST /v1/stores/{storeId}/bank-accounts/{id}/make-primary` | M | Router/handler use `{id}`; freeze slash policy; masking/recent authentication/withdrawal lock. | SEL-340/SEL-410/INT-000 |
 | Withdrawal quote | finance API | `POST /v1/stores/{storeId}/withdrawal-quotes` | M | Quote field mapping, recent auth contract, idempotency. | SEL-410 |
 | Withdrawal list/detail | finance API | `GET /v1/stores/{storeId}/withdrawals/`, `GET /v1/stores/{storeId}/withdrawals/{withdrawalId}` | M | Freeze slash policy; backend `{items}` + differing fields/status; tenant guard. | SEL-410/INT-000 |
 | Withdrawal lock | finance API | `GET /v1/stores/{storeId}/withdrawals/lock` | M | Field/reason/time mapping. | SEL-410 |
@@ -201,12 +201,12 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 
 | Operation/UI | FE seam | Backend route | Status | Required mapping/gap | Task/evidence |
 | --- | --- | --- | --- | --- | --- |
-| Admin auth/permissions | admin login/boundary | `POST /v1/auth/login`, `GET /v1/auth/session`, authz middleware | M | Real pre-MFA gate/session claims/route permission. | ADM-100/ADM-110/INT-120/INT-140 |
-| Merchant status/API access | typed action/detail | `POST /v1/admin/merchants/{merchantId}/status`, `POST /v1/admin/merchants/{merchantId}/api-access/status` | M | Enforce operation-specific permission/MFA/reason/idempotency/audit. | ADM-200 |
+| Admin auth/permissions | admin login/boundary | `POST /v1/auth/login`, `GET /v1/auth/session`, authz middleware | M | Real login gate/session claims/route permission. | ADM-100/ADM-110/INT-120/INT-140 |
+| Merchant status/API access | typed action/detail | `POST /v1/admin/merchants/{merchantId}/status`, `POST /v1/admin/merchants/{merchantId}/api-access/status` | M | Enforce operation-specific permission/reason/idempotency/audit. | ADM-200 |
 | Generic admin action dispatcher | admin operations | `POST /v1/admin/actions` | M | Snapshot route only requires `merchants.write` while dispatcher accepts unrelated buyer/review/credential/delivery/provider/withdrawal actions; replace with typed routes or strict action-to-permission allowlist tested direct HTTP. | ADM-110/ADM-200/INT-000 |
 | Credentials support | merchant detail | `GET /v1/admin/merchants/{merchantId}/api-credentials/`, `POST /v1/admin/merchants/{merchantId}/api-credentials/authorize`, `POST /v1/admin/merchants/{merchantId}/api-credentials/rotate`, `POST /v1/admin/merchants/{merchantId}/api-credentials/{keyId}/suspend`, `POST /v1/admin/merchants/{merchantId}/api-credentials/{keyId}/revoke`, `POST /v1/admin/merchants/{merchantId}/api-credentials/revoke` | M | Admin authorizes only, never raw claim; router snapshot incorrectly reuses `kyc.review` for all operations—split credential permissions and audit. Freeze slash/param policy. | ADM-200/ADM-340/INT-000 |
 | Roles/permissions reads | access API | `GET /v1/admin/roles`, `GET /v1/admin/permissions` | M | `{items}`, field/group mapper. | ADM-220 |
-| Role read + CRUD/archive/permissions | role builder | `GET /v1/admin/roles/{id}`, `GET /v1/admin/roles/{id}/permissions`, `POST /v1/admin/roles`, `PATCH /v1/admin/roles/{id}`, `POST /v1/admin/roles/{id}/archive`, `PUT /v1/admin/roles/{id}/permissions` | U | Wire reads and saves; revision/anti-escalation/MFA. | ADM-220 |
+| Role read + CRUD/archive/permissions | role builder | `GET /v1/admin/roles/{id}`, `GET /v1/admin/roles/{id}/permissions`, `POST /v1/admin/roles`, `PATCH /v1/admin/roles/{id}`, `POST /v1/admin/roles/{id}/archive`, `PUT /v1/admin/roles/{id}/permissions` | U | Wire reads and saves; revision/anti-escalation/auth. | ADM-220 |
 | User role assign/remove | users/role detail | `GET /v1/admin/users/{id}/roles`, `POST /v1/admin/users/{id}/roles`, `DELETE /v1/admin/users/{id}/roles/{roleId}` | U | Permission/SoD/audit. | ADM-220 |
 | Staff invitations | users/actions | `GET /v1/admin/invitations/staff`, `POST /v1/admin/invitations/staff`, `POST /v1/admin/invitations/staff/{invitationId}/revoke`, `POST /v1/invitations/staff/accept` | U | Fragment token and anti-escalation. | ADM-220 |
 | Merchant invitations | users/actions | `GET /v1/admin/invitations/merchant`, `POST /v1/admin/invitations/merchant`, `POST /v1/admin/invitations/merchant/{invitationId}/revoke`, `POST /v1/invitations/merchant/accept` | U | Fragment token and merchant role/scope. | ADM-220 |
@@ -215,18 +215,18 @@ Status bukan tanda task selesai. Route `A` tetap belum siap sampai runtime adapt
 | Provider lookup | payments | `POST /v1/admin/payments/{paymentIntentId}/provider-lookup` | U | Full reference, evidence/audit. | ADM-300 |
 | Payment mismatches | payments | `GET /v1/admin/payment-mismatches` | U | Replace fixture, read-only evidence. | ADM-300 |
 | Delivery resend | order | `POST /v1/admin/orders/{orderId}/delivery/resend` | U | Idempotency/reason/permission. | ADM-300 |
-| Force fulfill/revoke | fulfillment composition (not admin order-detail control) | `POST /v1/admin/orders/{orderId}/delivery/force-fulfill`, `POST /v1/admin/orders/{orderId}/delivery/revoke` | U | Bind only to existing fulfillment controls; order screen keeps them disabled. Verified evidence/MFA/reason/idempotency. | ADM-300/ADM-320/ADM-350 |
-| Withdrawal review | detail | `POST /v1/admin/withdrawals/{withdrawalId}/review` | M | Transition/MFA/reason/idempotency/unknown outcome. | ADM-310 |
-| Admin inventory reveal | inventory API | expected `POST /v1/admin/inventory/items/{itemId}/reveal`; no route mounted | G | Add admin facade; server MFA; no-store. | ADM-320 |
+| Force fulfill/revoke | fulfillment composition (not admin order-detail control) | `POST /v1/admin/orders/{orderId}/delivery/force-fulfill`, `POST /v1/admin/orders/{orderId}/delivery/revoke` | U | Bind only to existing fulfillment controls; order screen keeps them disabled. Verified evidence/reason/idempotency. | ADM-300/ADM-320/ADM-350 |
+| Withdrawal review | detail | `POST /v1/admin/withdrawals/{withdrawalId}/review` | M | Transition/reason/idempotency/unknown outcome. | ADM-310 |
+| Admin inventory reveal | inventory API | expected `POST /v1/admin/inventory/items/{itemId}/reveal`; no route mounted | G | Add admin facade; server auth; no-store. | ADM-320 |
 | Review moderation | generic action/review UI | `POST /v1/admin/reviews/{reviewId}/transition` | M | Typed status+reason; reviews.moderate; replaces generic review.moderate action on screen. | ADM-330 |
-| Admin KYC | KYC UI | `GET /v1/admin/kyc/`, `GET /v1/admin/kyc/{caseId}`, `POST /v1/admin/kyc/{caseId}/transition` | M | Freeze slash policy; FE wired ADM-340; document security/MFA. | ADM-340/INT-000 |
-| Admin KYC document content | KYC viewer | `GET /v1/admin/kyc/{caseId}/documents/{documentId}/content` | M | Server-auth/decrypt/stream/no-store; kyc.review + recent MFA `kyc.document.view`; never private R2 URL. | ADM-340 |
+| Admin KYC | KYC UI | `GET /v1/admin/kyc/`, `GET /v1/admin/kyc/{caseId}`, `POST /v1/admin/kyc/{caseId}/transition` | M | Freeze slash policy; FE wired ADM-340; document security/auth. | ADM-340/INT-000 |
+| Admin KYC document content | KYC viewer | `GET /v1/admin/kyc/{caseId}/documents/{documentId}/content` | M | Server-auth/decrypt/stream/no-store; kyc.review + recent authentication `kyc.document.view`; never private R2 URL. | ADM-340 |
 | Provider callbacks | webhooks UI | `GET /v1/admin/provider-callbacks/`, `GET /v1/admin/provider-callbacks/{callbackId}`, `POST /v1/admin/provider-callbacks/{callbackId}/replay` | M | Separate resource/replay permission; freeze slash policy. FE wired ADM-350. | ADM-350/INT-000 |
 | Seller deliveries | webhooks UI | `GET /v1/admin/seller-webhook-deliveries/`, `GET /v1/admin/seller-webhook-deliveries/{deliveryId}`, `POST /v1/admin/seller-webhook-deliveries/{deliveryId}/retry` | M | Separate resource/retry permission; freeze slash policy. FE wired ADM-350. | ADM-350/INT-000 |
 | Audit list/detail/integrity | audit UI | `GET /v1/admin/audit-logs`, `GET /v1/admin/audit-logs/{eventId}`, `GET /v1/admin/audit-integrity` | M | Mapper; server chain only. | ADM-360 |
 | Audit export | audit UI | `POST /v1/admin/audit-exports`, `GET /v1/admin/audit-exports/{exportId}` | U | Async/redacted/signed/audited. | ADM-360 |
 | Providers/system | provider/system UI | `GET /v1/admin/providers`, `GET /v1/admin/system` | M | Truthful real-adapter health. | ADM-370 |
-| Emergency controls | system UI | `GET /v1/admin/system/emergency-controls`, `POST /v1/admin/system/emergency-controls` | M | Version/MFA/reason/ticket/idempotency. FE wired ADM-370. | ADM-370 |
+| Emergency controls | system UI | `GET /v1/admin/system/emergency-controls`, `POST /v1/admin/system/emergency-controls` | M | Version/auth/reason/ticket/idempotency. FE wired ADM-370. | ADM-370 |
 | Fee read/preview | fee UI | `GET /v1/admin/system/fees`, `POST /v1/admin/system/fees/preview` | M | Read-only active + pure preview; no publish. | ADM-370 |
 | Campaigns | campaign UI | no canonical method/path assigned or mounted | D | **Launch DISABLED / OUT-OF-SCOPE (ADM-380):** route `decision_pending` + domain-source command gate; no transport. Re-open only as IMPLEMENT with OpenAPI ops. | ADM-380 |
 
@@ -272,7 +272,7 @@ Setiap row baru boleh berubah menjadi “done” jika seluruh item berikut ada:
 - [ ] Operation ID unik; request/response/problem schema valid.
 - [ ] Auth surface, permission, tenant/ownership/capability dipaksa backend.
 - [ ] CSRF untuk unsafe cookie auth.
-- [ ] Recent MFA/reason/idempotency/If-Match untuk operation yang memerlukannya.
+- [ ] Recent authentication/reason/idempotency/If-Match untuk operation yang memerlukannya.
 - [ ] Strict body/query validation dan bounded limit.
 - [ ] Mapper menghasilkan exact existing view model; screen tidak melihat DTO.
 - [ ] Loading/empty/error/400 validation/401/403/404/409/429/5xx/abort behavior diuji.

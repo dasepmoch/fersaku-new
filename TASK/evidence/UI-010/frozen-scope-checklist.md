@@ -1,7 +1,7 @@
 # UI-010 — Frozen visual scope (enforceable checklist)
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-010  
-**Machine-readable path globs:** [`frozen-scope.json`](./frozen-scope.json)  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-010 
+**Machine-readable path globs:** [`frozen-scope.json`](./frozen-scope.json) 
 **Baseline evidence:** `TASK/evidence/UI-000/`
 
 Use this checklist on every wiring PR. Any intentional violation requires `UI-080` (separate slice).

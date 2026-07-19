@@ -1,6 +1,6 @@
 # BE-630 E2E acceptance ↔ global matrix (§16)
 
-Maps every row of `docs/BACKEND_PRODUCTION_TASKS.md` §16 to concrete proof.  
+Maps every row of `docs/BACKEND_PRODUCTION_TASKS.md` §16 to concrete proof. 
 Evidence run timestamps: `backend/tmp/launch-evidence/`.
 
 | Requirement | Proof (tests / scripts / docs) | Evidence file |

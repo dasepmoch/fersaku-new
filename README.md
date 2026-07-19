@@ -5,11 +5,11 @@ Monorepo for the Fersaku digital-product commerce platform.
 ## Monorepo layout
 
 ```text
-frontend/   Next.js App Router (seller, buyer, admin UI)
-backend/    Go modular monolith (API + worker)
-docs/       Cross-cutting product/architecture docs
-scripts/    CI and local stack helpers
-TASK/       Execution evidence and task trackers
+frontend/ Next.js App Router (seller, buyer, admin UI)
+backend/ Go modular monolith (API + worker)
+docs/ Cross-cutting product/architecture docs
+scripts/ CI and local stack helpers
+TASK/ Execution evidence and task trackers
 ```
 
 ### Frontend
@@ -23,7 +23,7 @@ npm run dev
 Or from the monorepo root:
 
 ```bash
-npm run dev    # → frontend
+npm run dev # → frontend
 npm run build
 ```
 
@@ -89,7 +89,7 @@ Open `http://localhost:3000`.
 - `/dashboard/withdrawals/new` - withdrawal request flow with enforced bank-change security-lock state
 - `/dashboard/storefront` - eight complete templates, full brand/layout/section/SEO controls, undo/redo, and real-time desktop/mobile preview
 - `/dashboard/webhooks` - interactive webhook test console
-- `/dashboard/settings` - bank account modal, MFA enrollment, and notifications
+- `/dashboard/settings` - bank account modal and notifications
 
 ### Administration
 
@@ -99,7 +99,7 @@ Open `http://localhost:3000`.
 - `/admin/merchants/str_01H8A2` - merchant detail, independent access controls, and bounded impersonation actions
 - `/admin/buyers`, `/admin/buyers/byr_91K2` - buyer identity, purchase ownership, and session controls
 - `/admin/users` - seller accounts and role-based administrator access
-- `/admin/profile` - administrator profile, MFA, sessions, and notification preferences
+- `/admin/profile` - administrator profile, sessions, and notification preferences
 - `/admin/roles` - role directory and staff assignments
 - `/admin/roles/new` - custom role creation and permission matrix
 - `/admin/roles/role_finance` - edit an existing role
@@ -123,7 +123,7 @@ All privileged admin actions use confirmation dialogs, mandatory reason fields, 
 
 Admin in-app campaigns persist in the mock browser and render as priority-aware seller-dashboard banners. Optional notices can be dismissed, while mandatory compliance notices require explicit acknowledgement.
 
-Super Administrators can create custom staff roles, grant granular permissions, assign staff members, require MFA, and audit permission changes. Common non-critical controls provide visible mock-operation feedback, so buttons do not fail silently.
+Super Administrators can create custom staff roles, grant granular permissions, assign staff members, and audit permission changes. Common non-critical controls provide visible mock-operation feedback, so buttons do not fail silently.
 
 KYC is not required to create or operate a store. Hosted storefront, Fersaku checkout, products, inventory, balances, and seller withdrawals remain fully accessible. KYC applies only before a production/live QRIS API credential is activated; sandbox API credentials remain available without KYC.
 

@@ -17,12 +17,12 @@ When a domain task adds or changes schema, transactional invariants, or HTTP han
 
 1. **Migration** — `backend/migrations/NNNNNN_*.up.sql` + matching `.down.sql` (migrate role only; see `migrations/README.md`).
 2. **Integration test** — extend or add `backend/test/integration/<domain>_test.go` under `//go:build integration`:
-   - happy path against real DB (not sequential mocks alone);
-   - constraint/unique/FK failures that must stay fail-closed;
-   - cross-tenant / foreign membership → safe `404` (or documented `403`);
-   - idempotency same/different body where the operation is idempotent;
-   - **real concurrent** goroutines/`WaitGroup` for last-slot, first-writer-wins, or overspend races — not only serial retries;
-   - rollback: domain + idempotency + outbox + audit fail together when required.
+ - happy path against real DB (not sequential mocks alone);
+ - constraint/unique/FK failures that must stay fail-closed;
+ - cross-tenant / foreign membership → safe `404` (or documented `403`);
+ - idempotency same/different body where the operation is idempotent;
+ - **real concurrent** goroutines/`WaitGroup` for last-slot, first-writer-wins, or overspend races — not only serial retries;
+ - rollback: domain + idempotency + outbox + audit fail together when required.
 3. **CI** — suite stays non-empty (`scripts/ci-assert-suite.mjs backend-integration` / `qlt-210-integration`); do not skip under `CI`/`QLT_REQUIRE_INTEGRATION`.
 4. **Secrets** — ephemeral local/compose credentials only; never invent production secrets in tests or evidence.
 5. **Mark capability cell** in `09` §3.7 when domain depth is proven — leave parent alone.
@@ -53,8 +53,8 @@ export DATABASE_URL='postgres://fersaku:fersaku_local@localhost:5433/fersaku?ssl
 export APP_ENV=test
 export QLT_REQUIRE_INTEGRATION=1
 make migrate
-make test-integration-foundation   # parent smoke
-make test-integration              # full tagged suite
+make test-integration-foundation # parent smoke
+make test-integration # full tagged suite
 ```
 
 CI: Postgres service + `sh scripts/migrate.sh up` + `go test -tags=integration` via `ci-assert-go-tests.sh` (fails if zero packages / skip-pass).

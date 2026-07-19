@@ -1,6 +1,6 @@
 # UI-030 — Exact component reuse registry
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-030  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-030 
 **Rule:** Import and reuse. Never copy-paste markup/class into a “live” twin. Never create a new component when one below exists.
 
 Inventory method: contract list + `find`/`rg` of `shared/ui`, `components`, `features/*/components`, `features/*/ui`, plus checkout/onboarding presentation used by routes.
@@ -47,7 +47,7 @@ Inventory method: contract list + `find`/`rg` of `shared/ui`, `components`, `fea
 | `components/api-playground.tsx` | API playground UI | Docs/API surfaces |
 | `components/theme-provider.tsx` | Theme context | Root |
 
-**Also visual-risk auth (contract):**  
+**Also visual-risk auth (contract):** 
 `features/admin/components/admin-shell.tsx` (`AdminLogin`), `app/account/verify/page.tsx` — static/mock at snapshot; no new form/error panel in wiring.
 
 ---

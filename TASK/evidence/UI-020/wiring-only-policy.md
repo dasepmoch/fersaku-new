@@ -1,7 +1,7 @@
 # UI-020 — Wiring-only change policy
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-020  
-**Freeze scope:** `TASK/evidence/UI-010/`  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-020 
+**Freeze scope:** `TASK/evidence/UI-010/` 
 **PR continuous checklist:** `TASK/evidence/UI-090/pr-no-ui-change-checklist.md`
 
 ## 1. Allowed non-visual change classes

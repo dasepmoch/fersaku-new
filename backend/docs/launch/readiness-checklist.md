@@ -1,8 +1,8 @@
 # BE-630 Launch readiness checklist
 
-**Task:** BE-630 Staging-to-production launch  
-**Prepared:** 2026-07-17  
-**Authority:** `docs/BACKEND_PRODUCTION_TASKS.md` §15 BE-630, §16, ADR-0007  
+**Task:** BE-630 Staging-to-production launch 
+**Prepared:** 2026-07-17 
+**Authority:** `docs/BACKEND_PRODUCTION_TASKS.md` §15 BE-630, §16, ADR-0007 
 **Evidence root:** `backend/tmp/launch-evidence/`
 
 This checklist is executable. Each row must have real proof (script output, test name, or owner-sign residual). Do **not** mark production live until **Owner-sign** rows are signed.
@@ -86,11 +86,11 @@ This checklist is executable. Each row must have real proof (script output, test
 2. Register user via `POST /v1/auth/register` (or approved invite flow); verify email.
 3. Set `BOOTSTRAP_ADMIN_EMAIL=<that email>` and run:
 
-   ```bash
-   export DATABASE_URL='postgres://…'   # migrate/app role as documented
-   ./scripts/seed.sh
-   # or: make seed
-   ```
+ ```bash
+ export DATABASE_URL='postgres://…' # migrate/app role as documented
+ ./scripts/seed.sh
+ # or: make seed
+ ```
 
 4. Seed attaches **SUPER_ADMIN** only if the user row exists (`cmd/seed`). System roles are **not** re-created by seed (migration owns them).
 5. Confirm: login → session has admin permissions; audit append for role assignment if applicable.

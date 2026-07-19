@@ -1,5 +1,8 @@
 # Master Plan Integrasi Frontend–Backend Fersaku
 
+> **Auth policy (2026-07-19):** MFA/TOTP is **out of scope**. Admin, seller, and buyer use password or magic-link sessions only. Sensitive actions use permission + reason + idempotency (not authenticator apps). Historical task text that mentions MFA is superseded by this policy.
+
+
 > Snapshot audit: 17 Juli 2026, commit awal `48d659e` (`feat(backend): complete production backend BE-000..BE-630`).
 >
 > Tujuan folder ini: menjadi instruksi eksekusi utama bagi agent berikutnya untuk menghubungkan frontend Next.js yang masih mock-first ke backend Go, **tanpa mengubah UI yang sudah ada**.
@@ -12,7 +15,7 @@ Integrasi dianggap selesai hanya jika seluruh kondisi berikut benar:
 2. Mode mock tetap bekerja sebagai mode prototype yang deterministic.
 3. Tidak ada perubahan desain visual, route ownership, copy, layout, class styling, atau perilaku responsive.
 4. Semua response backend divalidasi saat runtime dan dipetakan ke view model frontend pada feature boundary.
-5. Session cookie, CSRF, MFA/step-up, tenant authorization, idempotency, dan audit reason bekerja end-to-end.
+5. Session cookie, CSRF, auth/step-up, tenant authorization, idempotency, dan audit reason bekerja end-to-end.
 6. Checkout production memakai intent/provider state dari backend; browser tidak boleh mensimulasikan atau menetapkan status paid.
 7. Secret tidak masuk URL, browser storage, query cache jangka panjang, log, telemetry, screenshot, atau fixture production.
 8. Kontrak OpenAPI, route Go, DTO mapper, dan test integration tidak drift.
@@ -36,36 +39,36 @@ Ringkasnya:
 
 ```text
 Phase 0 — Freeze, characterization, contract/CI skeleton
-  UI-000..UI-090
-  INT-000..INT-030
-  QLT-100 + baseline portion QLT-230
-          |
+ UI-000..UI-090
+ INT-000..INT-030
+ QLT-100 + baseline portion QLT-230
+ |
 Phase 1 — Transport, runtime, identity, tenant, test harness
-  Core entry: INT-100/110/120/130/140/150 + QLT-110/215
-  INT-160/170 dan INT-175/180/185 berjalan parallel sesuai capability
-  QLT-105/200/210/300/320 instances diaktifkan per capability
-          |
+ Core entry: INT-100/110/120/130/140/150 + QLT-110/215
+ INT-160/170 dan INT-175/180/185 berjalan parallel sesuai capability
+ QLT-105/200/210/300/320 instances diaktifkan per capability
+ |
 Phase 2 — First safe vertical slice (co-evolve)
-  PUB-100 public catalog
-  AUT-100 session/login
-  SEL-100 merchant context
-  INT-190 + first QLT-105/200/210/220/230/300/320/400 instances
-          |
+ PUB-100 public catalog
+ AUT-100 session/login
+ SEL-100 merchant context
+ INT-190 + first QLT-105/200/210/220/230/300/320/400 instances
+ |
 Phase 3 — Commerce/domain slices + their tests, not after them
-  CHK-100..CHK-150
-  BUY-100..BUY-140
-  SEL-110..SEL-420
-  QLT-200/210/220/230/300/310/320/400/410 per slice
-          |
+ CHK-100..CHK-150
+ BUY-100..BUY-140
+ SEL-110..SEL-420
+ QLT-200/210/220/230/300/310/320/400/410 per slice
+ |
 Phase 4 — Privileged operations, highest-risk last
-  ADM-100..ADM-390
-  same per-slice quality/security/rollout gates
-          |
+ ADM-100..ADM-390
+ same per-slice quality/security/rollout gates
+ |
 Phase 5 — Full-cutover proof and cleanup
-  QLT-105 aggregate + QLT-420 + QLT-490
+ QLT-105 aggregate + QLT-420 + QLT-490
 ```
 
-Testing, security, observability, visual parity, dan rollout evidence dibuat bersama setiap slice; Phase 5 hanya mengagregasi full-program proof. `QLT-105` adalah required-check activation incremental per capability, bukan task yang baru boleh dimulai pada Phase 5. Runtime live-only (`INT-180/185`) dan quality cells yang tidak dipakai pilot dapat menunggu capability masing-masing. Jangan paralelkan task yang memiliki dependency data/kontrak belum final. Task read-only antar-domain boleh paralel setelah `INT-190` lulus. Mutasi uang, secret, atau privileged operation baru boleh dimulai setelah auth/CSRF/MFA/idempotency selesai.
+Testing, security, observability, visual parity, dan rollout evidence dibuat bersama setiap slice; Phase 5 hanya mengagregasi full-program proof. `QLT-105` adalah required-check activation incremental per capability, bukan task yang baru boleh dimulai pada Phase 5. Runtime live-only (`INT-180/185`) dan quality cells yang tidak dipakai pilot dapat menunggu capability masing-masing. Jangan paralelkan task yang memiliki dependency data/kontrak belum final. Task read-only antar-domain boleh paralel setelah `INT-190` lulus. Mutasi uang, secret, atau privileged operation baru boleh dimulai setelah auth/CSRF/idempotency selesai.
 
 ## 4. Dokumen kerja
 
@@ -73,7 +76,7 @@ Testing, security, observability, visual parity, dan rollout evidence dibuat ber
 | --- | --- | --- |
 | [`00-UI-FREEZE-CONTRACT.md`](00-UI-FREEZE-CONTRACT.md) | Kontrak no-visual-change, registry komponen, review gate | Semua agent/reviewer |
 | [`01-CURRENT-STATE-GAP-AUDIT.md`](01-CURRENT-STATE-GAP-AUDIT.md) | Arsitektur aktual, gap, blocker P0/P1, keputusan yang belum terkunci | Tech lead, agent foundation |
-| [`02-FOUNDATION-TRANSPORT-AUTH.md`](02-FOUNDATION-TRANSPORT-AUTH.md) | OpenAPI, network topology, client, schema, SSR, session, CSRF, MFA, tenant, cache | FE/BE foundation |
+| [`02-FOUNDATION-TRANSPORT-AUTH.md`](02-FOUNDATION-TRANSPORT-AUTH.md) | OpenAPI, network topology, client, schema, SSR, session, CSRF, auth, tenant, cache | FE/BE foundation |
 | [`03-PUBLIC-AUTH-CHECKOUT-BUYER.md`](03-PUBLIC-AUTH-CHECKOUT-BUYER.md) | Login/register, public catalog, checkout, order/invoice, buyer account | Agent commerce/buyer |
 | [`04-SELLER-WORKSPACE.md`](04-SELLER-WORKSPACE.md) | Onboarding, catalog, inventory, order, customer, review, finance, settings | Agent seller |
 | [`05-ADMIN-CONSOLE.md`](05-ADMIN-CONSOLE.md) | RBAC, read models, privileged mutations, audit, system operations | Agent admin |
@@ -123,13 +126,13 @@ Satu task tidak boleh diberi `[x]` hanya karena kode sudah ditulis. Minimal evid
 
 ```text
 App Router page/layout
-  -> feature screen (presentation saja)
-  -> TanStack Query hook
-  -> feature API function
-  -> transport DTO schema + mapper
-  -> shared browser/server HTTP client
-  -> same-origin /v1 reverse proxy
-  -> Go handler -> application service -> Postgres/provider
+ -> feature screen (presentation saja)
+ -> TanStack Query hook
+ -> feature API function
+ -> transport DTO schema + mapper
+ -> shared browser/server HTTP client
+ -> same-origin /v1 reverse proxy
+ -> Go handler -> application service -> Postgres/provider
 ```
 
 Rules:
@@ -166,7 +169,7 @@ Semua ini wajib hijau:
 - `G0` — UI freeze baseline dan route characterization disimpan; tidak ada baseline update. Status/evidence di registry `09`.
 - `G1` — OpenAPI valid, endpoint matrix disepakati, dan drift CI aktif. Status/evidence di registry `09`.
 - `G2` — same-origin/internal URL, error envelope, runtime schema, timeout, abort, request ID lolos test. Status/evidence di registry `09`.
-- `G3` — session restore, CSRF refresh, logout, MFA/step-up, route guard, tenant authorization lolos negative tests. Status/evidence di registry `09`.
+- `G3` — session restore, CSRF refresh, logout, auth/step-up, route guard, tenant authorization lolos negative tests. Status/evidence di registry `09`.
 - `G4` — adapter production Xendit/mail/queue/Redis/storage/scanner dan health/readiness jujur; tidak ada fake/noop di live. Status/evidence di registry `09`.
 - `G5` — checkout E2E membuktikan browser tidak pernah menandai paid; callback/provider transition authoritative. Status/evidence di registry `09`.
 - `G6` — seller/buyer/admin route kritis terhubung tanpa cross-tenant leak atau secret leak. Status/evidence di registry `09`.
@@ -178,7 +181,7 @@ Semua ini wajib hijau:
 - Mengaktifkan live/API untuk “mencoba” sebelum gate keamanan selesai.
 - Menggunakan `/v1/checkout/simulate-payment` di production.
 - Menambah fallback dari API error ke mock data di live; ini menyembunyikan kegagalan dan dapat menampilkan data palsu.
-- Menaruh token/session/MFA proof/raw credential/secret inventory di URL, `localStorage`, `sessionStorage`, telemetry, atau persistent query cache.
+- Menaruh token/session proof/raw credential/secret inventory di URL, `localStorage`, `sessionStorage`, telemetry, atau persistent query cache.
 - Mempercayai `storeId`, `merchantId`, permission, price, fee, total, paid status, atau `mfaVerified` dari browser.
 - Menggunakan `Date.now()` sebagai idempotency key setiap retry.
 - Mengubah screenshot baseline, copy, atau styling untuk menyesuaikan response backend.

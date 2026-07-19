@@ -13,11 +13,11 @@
 
 ```text
 Browser (fersaku FE origin)
-  |  fetch("/v1/...", { credentials: "include" })
-  v
-Next.js (:3000)  ──rewrite──>  Go API (API_INTERNAL_URL)
-  | SSR only: getApiInternalUrl() + cookie allowlist (INT-110)
-  v
+ | fetch("/v1/...", { credentials: "include" })
+ v
+Next.js (:3000) ──rewrite──> Go API (API_INTERNAL_URL)
+ | SSR only: getApiInternalUrl() + cookie allowlist (INT-110)
+ v
 Go handlers / Postgres / Redis
 ```
 

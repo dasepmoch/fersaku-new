@@ -1,10 +1,10 @@
 # ADR-0007: Production runtime/topology, payment_mode, canonical store, fee bounds
 
-| Field  | Value      |
+| Field | Value |
 | ------ | ---------- |
-| Status | Accepted   |
-| Date   | 2026-07-16 |
-| Task   | BE-000     |
+| Status | Accepted |
+| Date | 2026-07-16 |
+| Task | BE-000 |
 
 ## Context
 

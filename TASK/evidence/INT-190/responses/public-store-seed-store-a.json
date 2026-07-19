@@ -1,52 +1,52 @@
 {
-  "data": {
-    "accent": "#2563eb",
-    "bio": "Seed bio for seed-store-a",
-    "canvas": "",
-    "cards": "soft",
-    "featuredProductIds": [],
-    "font": "editorial",
-    "headerAlign": "left",
-    "hero": "statement",
-    "ink": "",
-    "layout": "grid",
-    "monogram": "SS",
-    "name": "Seed Merchant A Store",
-    "preset": "atelier",
-    "products": [
-      {
-        "currentVersion": "1.0.0",
-        "description": "Seed description",
-        "glyph": "",
-        "id": "01HQ0SEED00000000000000042",
-        "includes": [],
-        "palette": "",
-        "price": 50000,
-        "sales": 0,
-        "short": "Seed Published Product",
-        "slug": "seed-published-product",
-        "storeSlug": "seed-store-a",
-        "title": "Seed Published Product",
-        "type": "code",
-        "updatesEnabled": true
-      }
-    ],
-    "radius": "soft",
-    "rating": 0,
-    "reviewCount": 0,
-    "sections": [
-      "products",
-      "about"
-    ],
-    "slug": "seed-store-a",
-    "socials": {},
-    "tagline": "",
-    "texture": "noise",
-    "trustBadges": [],
-    "verified": false
-  },
-  "meta": {
-    "requestId": "01KXQEME9G6P7QKMBBMP1HSYB4",
-    "timestamp": "2026-07-17T07:11:11Z"
-  }
+ "data": {
+ "accent": "#2563eb",
+ "bio": "Seed bio for seed-store-a",
+ "canvas": "",
+ "cards": "soft",
+ "featuredProductIds": [],
+ "font": "editorial",
+ "headerAlign": "left",
+ "hero": "statement",
+ "ink": "",
+ "layout": "grid",
+ "monogram": "SS",
+ "name": "Seed Merchant A Store",
+ "preset": "atelier",
+ "products": [
+ {
+ "currentVersion": "1.0.0",
+ "description": "Seed description",
+ "glyph": "",
+ "id": "01HQ0SEED00000000000000042",
+ "includes": [],
+ "palette": "",
+ "price": 50000,
+ "sales": 0,
+ "short": "Seed Published Product",
+ "slug": "seed-published-product",
+ "storeSlug": "seed-store-a",
+ "title": "Seed Published Product",
+ "type": "code",
+ "updatesEnabled": true
+ }
+ ],
+ "radius": "soft",
+ "rating": 0,
+ "reviewCount": 0,
+ "sections": [
+ "products",
+ "about"
+ ],
+ "slug": "seed-store-a",
+ "socials": {},
+ "tagline": "",
+ "texture": "noise",
+ "trustBadges": [],
+ "verified": false
+ },
+ "meta": {
+ "requestId": "01KXQEME9G6P7QKMBBMP1HSYB4",
+ "timestamp": "2026-07-17T07:11:11Z"
+ }
 }

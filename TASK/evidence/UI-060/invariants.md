@@ -1,7 +1,7 @@
 # UI-060 — Responsive / a11y / motion invariants
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-060  
-**Suites:** `tests/e2e/accessibility.spec.ts`, `tests/e2e/visual.spec.ts`, `tests/e2e/smoke.spec.ts`  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-060 
+**Suites:** `tests/e2e/accessibility.spec.ts`, `tests/e2e/visual.spec.ts`, `tests/e2e/smoke.spec.ts` 
 **Baseline:** `TASK/evidence/UI-000/`
 
 Wiring must preserve these invariants. Do not “fix” a11y/visual by redesign or snapshot update.

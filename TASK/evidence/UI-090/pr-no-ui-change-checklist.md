@@ -1,6 +1,6 @@
 # UI-090 — Per-PR no-UI-change review checklist
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-090  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-090 
 **Use:** Every wiring PR and agent handoff. Paste into PR body or link this path.
 
 Related evidence:

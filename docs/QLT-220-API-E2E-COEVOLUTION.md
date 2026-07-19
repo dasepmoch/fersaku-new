@@ -30,7 +30,7 @@ When a domain task ships or changes a live user-visible FE↔BE path:
 2. **Auth** — use `tests/e2e/api/helpers/auth.ts` real login/session helpers; **no** hardcoded production cookies; storage state only under gitignored `test-results/api/.auth/` (ephemeral).
 3. **Seed** — QLT-110 personas/IDs only (`helpers/seed.ts` / `seed-ids.json`); do not invent a second seed command.
 4. **No mock network** — API mode must not call mock simulator / fixture HTTP endpoints; assert backend status + user-visible state.
-5. **Secrets** — never write recovery codes, raw magic tokens, webhook tokens, or session secrets into traces/annotations; use `maskToken` / sanitized summaries.
+5. **Secrets** — never write security codes (unused), raw magic tokens, webhook tokens, or session secrets into traces/annotations; use `maskToken` / sanitized summaries.
 6. **Negatives** — prefer first-class 401/403/CSRF/foreign-tenant cases alongside happy path.
 7. **CI** — suite stays non-empty (`scripts/ci-assert-suite.mjs cross-stack-api-e2e` / `qlt-220-api-e2e`); job remains required.
 8. **Mark capability cell** in `09` §3.7 when domain depth is proven — leave parent alone.
@@ -60,7 +60,7 @@ npm run test:e2e:api
 
 # Backend-only probes (no Next edge)
 E2E_API_SKIP_WEBSERVER=1 E2E_API_HAS_NEXT=0 \
-  PLAYWRIGHT_API_BASE_URL=http://127.0.0.1:18080 npm run test:e2e:api
+ PLAYWRIGHT_API_BASE_URL=http://127.0.0.1:18080 npm run test:e2e:api
 
 # Parent suite guards (no stack required)
 node scripts/ci-assert-suite.mjs cross-stack-api-e2e

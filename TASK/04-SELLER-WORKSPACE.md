@@ -169,12 +169,12 @@ Sebagian query ada, tetapi metrics/traffic/chart filters masih hardcoded dan sel
 
 ```text
 select existing dropzone/button
-  -> validate UX bounds
-  -> POST upload intent
-  -> PUT bytes directly to signed URL
-  -> POST complete with checksum
-  -> poll/refetch scan READY
-  -> attach objectId to product/draft
+ -> validate UX bounds
+ -> POST upload intent
+ -> PUT bytes directly to signed URL
+ -> POST complete with checksum
+ -> poll/refetch scan READY
+ -> attach objectId to product/draft
 ```
 
 ### Checklist FE
@@ -224,7 +224,7 @@ FE inventory contract berasal dari mock shape; backend summary/detail memiliki s
 - [x] Split list profiles by actual JSX: inventory product list is bounded/no-paging; only detail `StockItemsTab` uses authoritative `NumberedPageList`. Secrets always redacted.
 - [x] Schema GET/PUT with version/If-Match; validate field definitions/limits.
 - [x] Import atomic policy documented: all-or-nothing or partial with exact row errors; idempotency and dedupe.
-- [x] Reveal verifies tenant + permission + actual recent MFA server-side; remove client boolean authority.
+- [x] Reveal verifies tenant + permission + actual recent authentication server-side; remove client boolean authority.
 - [x] Revoke/invalid transitions explicit, audited, concurrency-safe.
 
 ### Checklist FE
@@ -468,17 +468,17 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 ### Checklist FE
 
 - [x] List masked credential metadata/status only; remove fixed fake raw key on API path.
-- [x] Request issuance requires eligibility/KYC/recent MFA according to backend policy.
+- [x] Request issuance requires eligibility/KYC/recent authentication according to backend policy.
 - [x] Claim endpoint one-time; raw key component-local with TTL and explicit copy/download using existing `SecretRow`.
 - [x] Revoke/rotate confirmation existing, actual step-up, stable idempotency, no optimistic success.
 - [x] Separate API auth key from outbound webhook signing secret in mapper/lifecycle.
 - [x] KYC status for live QRIS API only; storefront functionality not incorrectly gated.
-- [x] Never put key/claim/MFA token in URL/query/storage/query cache/log/telemetry.
+- [x] Never put key/claim/auth token in URL/query/storage/query cache/log/telemetry.
 
 ### Checklist BE
 
 - [ ] Admin may authorize but never receives raw seller key.
-- [ ] Claim purpose/owner/session/MFA bound, hashed one-time expiry.
+- [ ] Claim purpose/owner/session bound, hashed one-time expiry.
 - [ ] Key lookup hash/encryption, status/capability/mode isolation, rotation grace policy explicit.
 - [ ] KYC document via server-mediated upload (`SEL-330`/`ADM-340`), not presign.
 
@@ -499,7 +499,7 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 - [x] Map personal/business profile to existing forms; revision/conflict behavior.
 - [x] Notification preferences server-persisted; theme remains safe local preference.
-- [x] Password/email/MFA/session flows reuse `AUT-120`/security adapters.
+- [x] Password/email/session flows reuse `AUT-120`/security adapters.
 - [x] Bank CRUD/verify/make-primary/delete uses server validation/lookup; never trust typed bank label/account owner.
 - [x] Mask account number; raw values not log/query key; sensitive changes require recent proof and trigger withdrawal lock according to backend policy.
 - [x] Remove fake audit append/local saved truth on API path.
@@ -508,7 +508,7 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 ### Tests/AC
 
-- [x] profile conflict, bank invalid/duplicate/verification mismatch/primary/delete, MFA/session change, withdrawal lock consequence.
+- [x] profile conflict, bank invalid/duplicate/verification mismatch/primary/delete, session change, withdrawal lock consequence.
 - [x] Existing settings tabs/forms/dialogs unchanged.
 
 ---
@@ -570,7 +570,7 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 
 - [x] Actor/store guard, balance/minimum/lock/bank ownership/quote validity/consumed checks transactionally.
 - [x] Same key/body replay; different body conflict; concurrent overspend prevented.
-- [ ] Recent proof verified server-side. *(FE sends `X-Recent-MFA-Proof` + purpose `withdrawal.create`; BE middleware attach remains progressive — inventory reveal is wired; withdrawal create header is accepted for forward-compat.)*
+- [ ] Recent proof verified server-side. *(FE sends `session authentication` + purpose `withdrawal.create`; BE middleware attach remains progressive — inventory reveal is wired; withdrawal create header is accepted for forward-compat.)*
 - [x] Provider fee variance/unknown outcome/reserve/ledger rules explicit.
 - [x] Signed/authenticated disbursement callback with dedupe/full reference.
 
@@ -610,7 +610,7 @@ Draft/undo/audit disimpan localStorage; only publish API seam exists dan request
 - [ ] Missing seller order/customer/review dependencies implemented and contract-tested; admin inventory reveal tetap gate independen `ADM-320`.
 - [ ] StoreAccessGuard covers every store-scoped service.
 - [ ] Product/object/inventory/storefront revisions and idempotency tested.
-- [ ] Finance/withdrawal exact money, recent MFA, callback security tested.
+- [ ] Finance/withdrawal exact money, recent authentication, callback security tested.
 - [ ] Raw inventory/API/webhook/delivery secret never enters cache/storage/log.
 - [ ] All seller routes smoke/a11y; selected routes pixel-identical desktop/mobile.
 - [ ] Full API-mode seller E2E: login -> onboarding/store -> product/upload/inventory/publish -> order/delivery -> customer/review -> balance/withdrawal -> settings/webhook/key.

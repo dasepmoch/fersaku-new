@@ -30,7 +30,7 @@ Parent must never wait on descendant cells. Domain tasks wire adapters through `
 ## Precedence (required)
 
 ```text
-emergency kill (active)  >  canary/allowlist  >  DOMAIN_SOURCE_OVERRIDES  >  bootstrap (NEXT_PUBLIC_DATA_SOURCE)
+emergency kill (active) > canary/allowlist > DOMAIN_SOURCE_OVERRIDES > bootstrap (NEXT_PUBLIC_DATA_SOURCE)
 ```
 
 Then live `rejectMock`: any residual `mock` → `disabled` (never fixtures for production users).
@@ -75,10 +75,10 @@ node scripts/ci-assert-suite.mjs qlt-400-flags
 
 # FE unit samples (flags-related)
 ./node_modules/.bin/vitest run \
-  tests/unit/qlt-400-parent-framework.test.ts \
-  tests/unit/domain-source.test.ts \
-  tests/unit/domain-flags.test.ts \
-  tests/unit/architecture-boundaries.test.ts
+ tests/unit/qlt-400-parent-framework.test.ts \
+ tests/unit/domain-source.test.ts \
+ tests/unit/domain-flags.test.ts \
+ tests/unit/architecture-boundaries.test.ts
 ```
 
 ## Acceptance (parent only)

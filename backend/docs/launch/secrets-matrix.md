@@ -1,9 +1,9 @@
 # BE-630 Secrets / configuration matrix
 
-**Rule:** Never commit real secrets. Production/staging values live in a secret manager.  
+**Rule:** Never commit real secrets. Production/staging values live in a secret manager. 
 **Source:** `backend/.env.example`, `internal/config/config.go`, ADR-0007.
 
-`APP_ENV` is deployment only (`local|staging|production|test`).  
+`APP_ENV` is deployment only (`local|staging|production|test`). 
 `payment_mode` is financial identity (`SANDBOX|LIVE`) and is **not** set by env alone.
 
 ---
@@ -113,10 +113,10 @@ No Duitku / multi-provider failover variables exist by design.
 
 ## What must never appear in git
 
-- Live `XENDIT_*` keys/tokens  
-- Production `SESSION_SECRET` / `CSRF_SECRET` / encryption keys  
-- Production `DATABASE_URL` passwords  
-- R2 production access keys  
+- Live `XENDIT_*` keys/tokens 
+- Production `SESSION_SECRET` / `CSRF_SECRET` / encryption keys 
+- Production `DATABASE_URL` passwords 
+- R2 production access keys 
 - Any `.env` with real values (`.env` is gitignored; only `.env.example` is tracked)
 
 ---

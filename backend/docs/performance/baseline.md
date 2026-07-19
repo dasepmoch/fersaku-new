@@ -39,8 +39,8 @@ Evidence captured on local compose Postgres (2026-07-17) with production migrati
 
 ### 1. `payment_intents` by `provider_reference`
 
-**Index:** `payment_intents_provider_ref_uidx`  
-`UNIQUE (provider, account_scope, payment_mode, provider_reference) WHERE provider_reference IS NOT NULL`  
+**Index:** `payment_intents_provider_ref_uidx` 
+`UNIQUE (provider, account_scope, payment_mode, provider_reference) WHERE provider_reference IS NOT NULL` 
 (migration `000015_checkout.up.sql`)
 
 **Hot path:** callback normalize → resolve intent by provider ref; create path writes unique ref.
@@ -72,7 +72,7 @@ Evidence captured on local compose Postgres (2026-07-17) with production migrati
 
 **Hot path:** append under head lock; integrity scan / metrics head select.
 
-**Plan note (local):**  
+**Plan note (local):** 
 `ORDER BY sequence_no DESC LIMIT 1` for a scope → **Index Scan Backward** on `audit_events_chain_seq_uidx`.
 
 **Invariant:** gap-free unique sequence per chain_scope under concurrent appends.
@@ -83,22 +83,22 @@ Evidence captured on local compose Postgres (2026-07-17) with production migrati
 
 **Hot path:** payment capture, settlement release, withdrawal reserve; finance summary reads.
 
-**Plan note (local):**  
+**Plan note (local):** 
 `WHERE merchant_id = $1 AND payment_mode = $2` → **Index Scan** on `merchant_balances_pkey`.
 
 **Invariant:** non-negative available/pending/held; rebuild equals projection (BE-340 tests).
 
 ### 5. `payment_provider_events` canonical key
 
-**Index:** `payment_provider_events_canonical_uidx`  
-`UNIQUE (provider, account_scope, payment_mode, provider_event_id)`  
+**Index:** `payment_provider_events_canonical_uidx` 
+`UNIQUE (provider, account_scope, payment_mode, provider_event_id)` 
 (migration `000015_checkout.up.sql`)
 
 Also: `payment_provider_events_provider_ref_idx` on provider_reference (partial); processing/replay indexes for workers.
 
 **Hot path:** inbound callback first-writer-wins insert; concurrent duplicates share one row.
 
-**Plan note (local):**  
+**Plan note (local):** 
 four-part equality → **Index Scan** on `payment_provider_events_canonical_uidx`.
 
 **Invariant:** SANDBOX vs LIVE same `provider_event_id` do not collide; 80 concurrent paid → 1 event / 1 settlement / 1 grant (BE-330).

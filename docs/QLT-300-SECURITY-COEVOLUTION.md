@@ -17,7 +17,7 @@ These five categories are the durable taxonomy. Parent harness only requires **a
 
 | Category | Scope (examples; cells expand) | Parent FE sample anchors | Parent BE sample anchors |
 | --- | --- | --- | --- |
-| **Identity/session** | Session fixation/rotation/logout/revoke; cookie flags; surface confusion; CSRF missing/invalid/cross-session; stale cookie recovery; MFA missing/expired/replay; returnTo; magic/reset/invite scrub | `tests/unit/csrf.test.ts`, `tests/unit/session-int-120.test.ts`, `tests/unit/int-140-mfa.test.ts` | `security_verification_test.go` (`TestSecurity_CSRF*`, `TestSecurity_StaleCookie*`, `TestSecurity_SessionExpiry`), `mfa_pending_int140_test.go` |
+| **Identity/session** | Session fixation/rotation/logout/revoke; cookie flags; surface confusion; CSRF missing/invalid/cross-session; stale cookie recovery; session missing/expired/replay; returnTo; magic/reset/invite scrub | `tests/unit/csrf.test.ts`, `tests/unit/session-int-120.test.ts`, `tests/unit/int-140.test.ts` | `security_verification_test.go` (`TestSecurity_CSRF*`, `TestSecurity_StaleCookie*`, `TestSecurity_SessionExpiry`), `authenticated_session_int140_test.go` |
 | **Authorization** | Owner/member/foreign store; buyer owner/non-owner; admin route/action permission; stale permission; impersonation scope/TTL; object enumeration | `tests/unit/architecture-boundaries.test.ts` (tenant/surface guards) | `security_verification_test.go` (`TestSecurity_CrossTenant404`, `TestSecurity_ImpersonationDefaultDeny`), `rbac_test.go` |
 | **Money/state** | Tampered price/fee/amount; integer boundaries; idempotency same/different body; concurrent stock/coupon/withdrawal; callback forge/replay/order | `tests/unit/int-160-query-mutation.test.ts`, `tests/unit/chk-110-checkout-intent.test.ts` | Domain integration suites (checkout/withdrawals/coupons/inventory); parent requires suite non-empty via integration guards |
 | **Secret/data** | Secrets never in URL/storage/cache/logs/traces; one-time reveal/claim; SSR/CDN bleed; PII redaction; upload MIME/SSRF | `tests/unit/int-170-error-mock-observability.test.ts`, `tests/unit/architecture-boundaries.test.ts` | `security_verification_test.go` (`TestSecurity_RawCredentialNeverInList`, `TestSecurity_KYCNoPresign`, `TestSecurity_SSRF*`, `TestSecurity_WebhookPrivateNetwork`) |
@@ -34,7 +34,7 @@ When a domain task adds or changes auth, tenant, money, secret, callback, or pri
 3. **FE unit** — prefer pure helpers/adapters (`tests/unit/*`); no production secrets; mock network only for unit isolation.
 4. **BE integration** — prefer `//go:build integration` under `backend/test/integration/` (extend `security_verification_test.go` or domain suite); fail-closed assertions (404/403/problem codes).
 5. **No invented pentest** — do not claim manual penetration results, production findings, or cloud secret scans that were not run; automated negatives only for parent/cells unless separate approved evidence exists.
-6. **Secrets hygiene** — ephemeral local/compose credentials only; never commit recovery codes, raw API keys, webhook secrets, or session material into tests, evidence, traces, or screenshots.
+6. **Secrets hygiene** — ephemeral local/compose credentials only; never commit security codes (unused), raw API keys, webhook secrets, or session material into tests, evidence, traces, or screenshots.
 7. **CI** — keep `scripts/ci-assert-suite.mjs qlt-300-security` (and existing `security-negative` / `backend-integration`) green; do not skip security jobs under CI.
 8. **Mark capability cell** in `09` §3.7 when domain security depth is proven — leave parent alone.
 
@@ -45,12 +45,12 @@ When a domain task adds or changes auth, tenant, money, secret, callback, or pri
 | Co-evolution rule (this doc) | `docs/QLT-300-SECURITY-COEVOLUTION.md` |
 | Parent framework assert (unit/fs) | `tests/unit/qlt-300-parent-framework.test.ts` |
 | FE CSRF sample | `tests/unit/csrf.test.ts` |
-| FE MFA sample | `tests/unit/int-140-mfa.test.ts` |
+| FE auth sample | `tests/unit/int-140.test.ts` |
 | FE session sample | `tests/unit/session-int-120.test.ts` |
 | FE redaction/boundaries | `tests/unit/int-170-error-mock-observability.test.ts`, `tests/unit/architecture-boundaries.test.ts` |
 | FE QLT-105 security-negative list | `scripts/ci-assert-suite.mjs` → `security-negative` |
 | BE consolidated security matrix | `backend/test/integration/security_verification_test.go` |
-| BE MFA gate sample | `backend/test/integration/mfa_pending_int140_test.go` |
+| BE auth gate sample | `backend/test/integration/authenticated_session_int140_test.go` |
 | Threat / authz docs (reference) | `backend/docs/security/` |
 | Parent CI suite id | `scripts/ci-assert-suite.mjs` → `qlt-300-security` |
 | npm assert | `package.json` → `ci:assert:security` |
@@ -66,10 +66,10 @@ node scripts/ci-assert-suite.mjs qlt-300-security
 
 # FE unit samples (security-related)
 ./node_modules/.bin/vitest run \
-  tests/unit/qlt-300-parent-framework.test.ts \
-  tests/unit/csrf.test.ts \
-  tests/unit/int-140-mfa.test.ts \
-  tests/unit/session-int-120.test.ts
+ tests/unit/qlt-300-parent-framework.test.ts \
+ tests/unit/csrf.test.ts \
+ tests/unit/int-140.test.ts \
+ tests/unit/session-int-120.test.ts
 
 # BE security integration (disposable Postgres; ephemeral local creds only)
 cd backend && make compose-deps
@@ -78,7 +78,7 @@ export APP_ENV=test
 export QLT_REQUIRE_INTEGRATION=1
 make migrate
 go test -tags=integration -count=1 -timeout 10m \
-  -run 'TestSecurity_|TestINT140_MFA' ./test/integration/ -v
+ -run 'TestSecurity_|TestINT140_MFA' ./test/integration/ -v
 ```
 
 ## Acceptance (parent only)

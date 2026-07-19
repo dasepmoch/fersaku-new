@@ -32,37 +32,37 @@ Jangan mengekstrapolasi hasil unit backend menjadi bukti FE-BE integration.
 Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memerlukan OpenAPI codegen, deterministic seed, atau API Playwright harness baru diaktifkan sebagai required gate oleh `QLT-105`; jangan memalsukan green dengan empty/no-op test.
 
 1. **frontend-static**
-   - install exact Node/npm from `package.json` engines/package manager;
-   - `npm ci`;
-   - `npm run format:check`;
-   - lint with zero warnings;
-   - typecheck;
-   - unit/coverage;
-   - build + bundle budget.
+ - install exact Node/npm from `package.json` engines/package manager;
+ - `npm ci`;
+ - `npm run format:check`;
+ - lint with zero warnings;
+ - typecheck;
+ - unit/coverage;
+ - build + bundle budget.
 2. **openapi-contract**
-   - parse/lint/bundle OpenAPI;
-   - generate TS/schema;
-   - fail on dirty diff;
-   - operation/router coverage tests.
+ - parse/lint/bundle OpenAPI;
+ - generate TS/schema;
+ - fail on dirty diff;
+ - operation/router coverage tests.
 3. **backend-unit**
-   - exact Go version from `go.mod`;
-   - format/vet/unit/race/check-generated/build.
+ - exact Go version from `go.mod`;
+ - format/vet/unit/race/check-generated/build.
 4. **backend-integration**
-   - disposable Postgres/Redis/MinIO/Mailpit as needed;
-   - migrations;
-   - `go test -tags=integration ...`;
-   - migration integrity/down-up policy tests.
+ - disposable Postgres/Redis/MinIO/Mailpit as needed;
+ - migrations;
+ - `go test -tags=integration ...`;
+ - migration integrity/down-up policy tests.
 5. **frontend-mock-e2e**
-   - smoke, critical, a11y, visual desktop/mobile.
+ - smoke, critical, a11y, visual desktop/mobile.
 6. **cross-stack-api-e2e**
-   - compose dependencies/API/worker;
-   - migrate + deterministic nonprod seed;
-   - Next API-mode;
-   - public/buyer/seller/admin/security flows.
+ - compose dependencies/API/worker;
+ - migrate + deterministic nonprod seed;
+ - Next API-mode;
+ - public/buyer/seller/admin/security flows.
 7. **security/artifact**
-   - dependency vulnerability/license/secret scan according project policy;
-   - container/SBOM scan;
-   - artefact provenance and immutable image digest.
+ - dependency vulnerability/license/secret scan according project policy;
+ - container/SBOM scan;
+ - artefact provenance and immutable image digest.
 
 ### CI rules
 
@@ -117,7 +117,7 @@ Task ini membuat workflow/path/toolchain/job skeleton yang benar. Job yang memer
 | Seller owner A | completed onboarding, canonical store, product/inventory/order/customer/review/finance |
 | Seller member read | same store, read-only permission |
 | Seller B | another merchant/store for isolation tests |
-| Admin super | MFA, all test permissions |
+| Admin super | all test permissions (no auth) (no auth) |
 | Admin support | bounded read/support permissions |
 | Admin finance | withdrawal/payment permissions only |
 | Admin no-access | authenticated but lacks target permission |
@@ -187,7 +187,7 @@ For every feature API function:
 - [ ] Strict decode/body/query/content type/limit.
 - [ ] Happy path and domain problem mapping.
 - [ ] Auth, permission, tenant/ownership/capability.
-- [ ] CSRF/recent MFA/reason/idempotency/version where required.
+- [ ] CSRF/recent authentication/reason/idempotency/version where required.
 - [ ] State transition/concurrency/duplicate/replay.
 - [ ] Audit/outbox/transaction rollback.
 - [ ] Redaction/no secret logging.
@@ -314,7 +314,7 @@ Parent framework (harness registration/CI/co-evolution) completed 2026-07-17 â€”
 
 ### Seller flow (capability cells)
 
-- register/verify/login/MFA; *(INT-190 seller login/session/logout sample)*
+- register/verify/login; *(INT-190 seller login/session/logout sample)*
 - onboarding/current store;
 - product create/upload/inventory/publish;
 - order/customer/review;
@@ -325,7 +325,7 @@ Parent framework (harness registration/CI/co-evolution) completed 2026-07-17 â€”
 
 ### Admin flow (capability cells)
 
-- login/MFA/route permission;
+- login/route permission;
 - merchant/status/API capability;
 - buyer support/session;
 - roles anti-escalation;
@@ -406,8 +406,8 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 ### Parent framework (done)
 
 - [x] Five matrix categories registered: Identity/session, Authorization, Money/state, Secret/data, Abuse/resilience.
-- [x] Required non-empty FE unit samples (CSRF, MFA, session, boundaries, redaction, idempotency/checkout).
-- [x] Required non-empty BE integration sample (`security_verification_test.go` + MFA/RBAC anchors).
+- [x] Required non-empty FE unit samples (CSRF, auth, session, boundaries, redaction, idempotency/checkout).
+- [x] Required non-empty BE integration sample (`security_verification_test.go` + auth/RBAC anchors).
 - [x] Parent assert suite `tests/unit/qlt-300-parent-framework.test.ts`.
 - [x] CI suite guard `ci-assert-suite.mjs` `qlt-300-security` (+ existing `security-negative`); wired in `frontend-static` / `ci:assert:security`.
 - [x] Continuous co-evolution rule documented â€” domain slices expand negatives in same PR as security-sensitive changes.
@@ -419,8 +419,8 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 - surface confusion buyer/seller/admin;
 - CSRF missing/invalid/cross-session/cross-origin/refetch; *(parent sample: FE csrf + BE TestSecurity_CSRF*)*
 - stale/expired/revoked HttpOnly cookie must not permanently block login, magic/reset/invite consume, or logout; verify narrowly scoped recovery still rejects cross-site unsafe requests; *(parent sample: TestSecurity_StaleCookie*)*
-- MFA missing/expired/replay/wrong purpose; *(parent sample: int-140-mfa + mfa_pending_int140)*
-- pre-enrollment ticket for invited/admin user and recent-proof mint/exchange purpose/TTL/replay;
+- session missing/expired/replay/wrong purpose; *(parent sample: int-140 + authenticated_session_int140)*
+- login for invited/admin user and recent-proof mint/exchange purpose/TTL/replay;
 - safe returnTo/open redirect; *(parent sample: session-int-120)*
 - magic/reset/invite fragment scrub/replay/scanner.
 
@@ -444,7 +444,7 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 
 ### Secret/data (capability cells / domain co-evolution â€” not claimed by parent alone)
 
-- API/webhook/inventory/delivery/MFA/KYC/signed URL never in URL, browser persistent storage, query cache, logs, traces, analytics, screenshots; *(parent samples: int-170, architecture-boundaries, TestSecurity_RawCredential*)*
+- API/webhook/inventory/delivery/auth/KYC/signed URL never in URL, browser persistent storage, query cache, logs, traces, analytics, screenshots; *(parent samples: int-170, architecture-boundaries, TestSecurity_RawCredential*)*
 - explicit reveal/claim one-time/TTL/wrong user;
 - SSR/CDN/private cache bleed;
 - PII redaction/export scope/notification target;
@@ -452,7 +452,7 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 
 ### Abuse/resilience (capability cells / domain co-evolution â€” not claimed by parent alone)
 
-- distributed rate limits login/MFA/checkout/reveal/admin/callback/upload/export;
+- distributed rate limits login/checkout/reveal/admin/callback/upload/export;
 - request/body/upload bounds;
 - timeouts/cancellation/backpressure/retry storm;
 - provider/dependency outage/readiness honesty;
@@ -537,7 +537,7 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 - actor/tenant identifiers only in approved pseudonymous form; never high-cardinality/raw PII; *(parent sample: redact)*
 - payment/provider mode/account scope/reference hashed/bounded where useful;
 - queue lag/retry/DLQ; callback rejection/dedupe; checkout conversion/state age; *(parent sample: BE metrics series)*
-- ledger/withdrawal invariant failures; auth/CSRF/MFA/permission denials;
+- ledger/withdrawal invariant failures; auth/CSRF/permission denials;
 - contract-invalid rate; cache/SSR errors; frontend API errors by operation;
 - dependency health/readiness from real adapters.
 
@@ -548,7 +548,7 @@ Parent framework (category registration/CI/co-evolution) completed 2026-07-17 â€
 - provider unknown outcomes/latency;
 - ledger imbalance/withdrawal reserve anomaly;
 - delivery/notification/webhook queue lag/DLQ;
-- login/MFA/CSRF anomaly;
+- login/CSRF anomaly;
 - cross-tenant/permission denial anomaly;
 - contract invalid after deploy;
 - error budget burn/readiness failure.
@@ -730,7 +730,7 @@ Semua item wajib:
 
 ### Security/authority
 
-- [ ] Session/CSRF/MFA hard refresh and route guards work.
+- [ ] Session/CSRF hard refresh and route guards work.
 - [ ] Store/buyer/admin/impersonation authorization negative tests complete.
 - [ ] Browser never controls paid/price/fee/ledger/withdrawal/permission/secret eligibility.
 - [ ] Secret/PII policies verified across cache/storage/log/URL/telemetry/artefacts.

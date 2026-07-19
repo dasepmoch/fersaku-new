@@ -1,10 +1,10 @@
 # UI-000 baseline results summary
 
-Date: 2026-07-17 ~11:43–11:48 WIB  
-Base commit: `76e0456fee72a60946f7802859a44a9dd91b739c`  
-Mode: mock (`NEXT_PUBLIC_DATA_SOURCE=mock`)  
-Server: Fersaku on `http://127.0.0.1:3110` (not Canbot `:3100`)  
-Config: `TASK/evidence/UI-000/playwright.baseline.config.ts`  
+Date: 2026-07-17 ~11:43–11:48 WIB 
+Base commit: `76e0456fee72a60946f7802859a44a9dd91b739c` 
+Mode: mock (`NEXT_PUBLIC_DATA_SOURCE=mock`) 
+Server: Fersaku on `http://127.0.0.1:3110` (not Canbot `:3100`) 
+Config: `TASK/evidence/UI-000/playwright.baseline.config.ts` 
 Snapshots: **not updated**
 
 | Suite | Command | Passed | Failed | Skipped | Log |
@@ -23,8 +23,8 @@ Typical diffs: ~0.01–0.03 of pixels (thousands of pixels, not full-page blank/
 
 **Action taken:** none; snapshots left unchanged per UI freeze.
 
-Raw JSON report (text): `playwright-report.json`  
-Pixel samples: `visual-summary.json`  
+Raw JSON report (text): `playwright-report.json` 
+Pixel samples: `visual-summary.json` 
 Large binary test-results (traces/videos/png) discarded after characterization to avoid multi-MB blobs.
 
 ## Smoke coverage

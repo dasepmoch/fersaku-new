@@ -1,6 +1,6 @@
 # QLT-230 — Visual, responsive, accessibility, interaction parity (continuous co-evolution)
 
-**Authority:** `TASK/07-TESTING-ROLLOUT-DOD.md` §QLT-230 · `TASK/09-EXECUTION-STATUS.md` §3.6–3.7  
+**Authority:** `TASK/07-TESTING-ROLLOUT-DOD.md` §QLT-230 · `TASK/09-EXECUTION-STATUS.md` §3.6–3.7 
 **UI freeze:** `TASK/00-UI-FREEZE-CONTRACT.md` · UI-000/050/060 evidence
 
 ## Parent vs capability cells
@@ -38,10 +38,10 @@ Visual baselines are **characterization contracts**, not free-form screenshots.
 1. **Never** update `__screenshots__` inside a domain wiring PR to "make green."
 2. Unexpected pixel diff → investigate wiring/CSS/font/env; fix product or isolate env drift.
 3. Intentional baseline change requires a **separate reviewed PR** (or explicit UX/QA approval label) that:
-   - lists every changed PNG and route;
-   - states why geometry/content changed (approved UI-080 exception or intentional freeze delta);
-   - includes before/after review notes;
-   - does not mix unrelated route rewrites.
+ - lists every changed PNG and route;
+ - states why geometry/content changed (approved UI-080 exception or intentional freeze delta);
+ - includes before/after review notes;
+ - does not mix unrelated route rewrites.
 4. Env/font/renderer drift (~1–3%) is **not** fixed by silent bulk `--update-snapshots` in product PRs; re-characterize only under UX/QA ownership.
 5. CI rule (QLT-100/105): visual baseline update needs separate review; integration PR cannot silently change it.
 

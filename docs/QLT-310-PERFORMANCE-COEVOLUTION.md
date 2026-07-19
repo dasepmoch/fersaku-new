@@ -60,10 +60,10 @@ node scripts/ci-assert-suite.mjs qlt-310-performance
 
 # FE unit samples (performance/smoothness-related)
 ./node_modules/.bin/vitest run \
-  tests/unit/qlt-310-parent-framework.test.ts \
-  tests/unit/int-160-query-mutation.test.ts \
-  tests/unit/chk-120-checkout-poll.test.ts \
-  tests/unit/http-client.test.ts
+ tests/unit/qlt-310-parent-framework.test.ts \
+ tests/unit/int-160-query-mutation.test.ts \
+ tests/unit/chk-120-checkout-poll.test.ts \
+ tests/unit/http-client.test.ts
 
 # Bundle budget (after production build)
 npm run build

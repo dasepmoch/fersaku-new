@@ -1,6 +1,6 @@
 # Residual risks — acceptance register (BE-610)
 
-**Purpose:** Document accepted residual risks where critical/high findings are mitigated in-repo or cannot be fully eliminated without out-of-band controls.  
+**Purpose:** Document accepted residual risks where critical/high findings are mitigated in-repo or cannot be fully eliminated without out-of-band controls. 
 **Acceptance rule:** No unresolved critical/high without an owner-signed residual entry below.
 
 ## Sign-off
@@ -24,7 +24,7 @@ By signing, owners accept the residual risks listed as **Accepted** and confirm 
 | -- | ---- | ----------------------- | -------------------- | ----------------- | ------ | ----- |
 | RR-001 | External penetration test not run before live money | Critical (unknown) | Full automated negative matrix (SSRF/CSRF/session/tenant/webhook/KYC/credential/impersonation); threat model; scan SLA; security_scan exit 0 | High until pentest | **Accepted** pending external schedule | Security owner |
 | RR-002 | Session theft via XSS outside API surface | High | HttpOnly Secure cookies, CSRF double-submit, idle+absolute TTL, rotate on privilege change | Medium | Accepted | Security + FE |
-| RR-003 | Insider admin abuse (emergency switches, impersonation) | High | RBAC least privilege, MFA on admin, impersonation allowlist, audit chain, reason-required ops | Medium | Accepted | Security owner |
+| RR-003 | Insider admin abuse (emergency switches, impersonation) | High | RBAC least privilege, impersonation allowlist, audit chain, reason-required ops | Medium | Accepted | Security owner |
 | RR-004 | DNS rebinding race between resolve and dial | Medium | Re-resolve at dial + redirect revalidation in SSRF package | Low | Accepted | Engineering |
 | RR-005 | Dependency zero-day after last `govulncheck` | High | BE-610 upgraded AWS SDK, pgx, x/net, x/crypto, chi; go1.25 toolchain via GOTOOLCHAIN; `govulncheck` symbol results clean (exit 0); 7-day critical SLA | Medium | Accepted | Engineering |
 | RR-006 | Image base OS CVE in alpine runtime | Medium | Builder `golang:1.25-alpine`; runtime alpine:3.21 non-root; scan note; rebuild on CVE | Low–Medium | Accepted | Engineering |
@@ -55,14 +55,14 @@ By signing, owners accept the residual risks listed as **Accepted** and confirm 
 
 If external review is unavailable before go-live:
 
-1. Keep **RR-001** Accepted with security owner signature.  
-2. Schedule pentest before raising live payment volume / marketing launch.  
+1. Keep **RR-001** Accepted with security owner signature. 
+2. Schedule pentest before raising live payment volume / marketing launch. 
 3. Track findings under scan SLA (`scan-sla.md`); re-open residual entries for any critical/high not fixed.
 
 ## Evidence checklist (fill at sign-off)
 
-- [x] `backend/scripts/security_scan.sh` exit 0 (2026-07-17; report under `backend/tmp/security-scan/`)  
-- [x] `go test ./...` PASS (GOTOOLCHAIN=auto / go1.25.12)  
-- [x] `go test -tags=integration ./test/integration/ -run TestSecurity_` PASS  
-- [x] No open critical/high in called-symbol govulncheck results; external pentest = RR-001  
+- [x] `backend/scripts/security_scan.sh` exit 0 (2026-07-17; report under `backend/tmp/security-scan/`) 
+- [x] `go test ./...` PASS (GOTOOLCHAIN=auto / go1.25.12) 
+- [x] `go test -tags=integration ./test/integration/ -run TestSecurity_` PASS 
+- [x] No open critical/high in called-symbol govulncheck results; external pentest = RR-001 
 

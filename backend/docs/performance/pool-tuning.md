@@ -23,7 +23,7 @@ Opened from composition root when `DATABASE_URL` is set (`internal/app/app.go` �
 
 ```text
 sum(API_replicas × API_MaxConns + Worker_replicas × Worker_MaxConns)
-  ≤ 0.8 × postgres_max_connections
+ ≤ 0.8 × postgres_max_connections
 ```
 
 Reserve headroom for: migrate job, ad-hoc admin/psql, managed HA replica lag/check connections.
@@ -74,7 +74,7 @@ Example (DB max_connections=100):
 Worker poll loops (notifications, callbacks, seller webhooks, settlement release) must size concurrent handlers so:
 
 ```text
-concurrent_handlers ≤ Worker_MaxConns - 2  (reserve for metrics/health/admin)
+concurrent_handlers ≤ Worker_MaxConns - 2 (reserve for metrics/health/admin)
 ```
 
 Leases in `outbox_events` / provider event rows prevent double-processing across replicas.

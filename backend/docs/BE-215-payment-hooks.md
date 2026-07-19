@@ -9,7 +9,7 @@ these application APIs inside the same DB transaction as order/payment updates.
 1. `SELECT … FOR UPDATE` on `coupons` row (`LockCouponForReserve`)
 2. Check window/state/scope/minimum/global + per-buyer limits
 3. Insert `coupon_reservations` (unique on `(coupon_id, order_id)` and
-   `(coupon_id, idempotency_key)`)
+ `(coupon_id, idempotency_key)`)
 4. Adjust `reserved_count` (+1)
 5. (BE-310) create order + payment intent + fee snapshot + idempotency record
 

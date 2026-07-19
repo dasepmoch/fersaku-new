@@ -31,7 +31,7 @@ private-products/{merchant_id}/{store_id}/{object_id}
 private-profile-assets/{merchant_id}/{store_id}/{object_id}
 private-invoices/{merchant_id}/{store_id}/{object_id}
 public-assets/{store_id}/{object_id}
-private-kyc/...          # BE-400 only — never browser-presigned
+private-kyc/... # BE-400 only — never browser-presigned
 private-provider-events/...
 private-audit-exports/...
 ```
@@ -41,18 +41,18 @@ private-audit-exports/...
 **Intent (post-owner approval):**
 
 1. Apply Cloudflare R2 Bucket Lock rules to retention-locked prefixes only:
-   - `private-audit-exports/`
-   - provider raw evidence prefixes used by BE-530
-   - any future audit checkpoint objects
+ - `private-audit-exports/`
+ - provider raw evidence prefixes used by BE-530
+ - any future audit checkpoint objects
 2. Retention period: align with ledger/audit online retention (target **7 years**
-   for financial/audit evidence; see §10.4 table). Exact duration is not
-   self-service via admin API.
+ for financial/audit evidence; see §10.4 table). Exact duration is not
+ self-service via admin API.
 3. Application credentials used by the API/worker must be least-privilege and
-   **must not** be able to:
-   - shorten retention
-   - delete or replace a locked object during the retention window
+ **must not** be able to:
+ - shorten retention
+ - delete or replace a locked object during the retention window
 4. Verify in staging: attempt `DeleteObject` / overwrite of a locked object with
-   app credentials → provider rejects; alert if unexpected success.
+ app credentials → provider rejects; alert if unexpected success.
 
 Bucket Lock is **retention**, not:
 

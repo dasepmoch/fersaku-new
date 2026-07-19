@@ -1,8 +1,8 @@
 # Authorization matrix (BE-610)
 
-**Source of truth:** `internal/domain/authz/permissions.go` + migration seeds  
-(`000004_rbac`, `000005_roles_invites`, `000025_admin_reads`, `000026_admin_ops`).  
-**Policy:** missing permission → `FORBIDDEN` (403); cross-tenant ID → `RESOURCE_NOT_FOUND` (404).  
+**Source of truth:** `internal/domain/authz/permissions.go` + migration seeds 
+(`000004_rbac`, `000005_roles_invites`, `000025_admin_reads`, `000026_admin_ops`). 
+**Policy:** missing permission → `FORBIDDEN` (403); cross-tenant ID → `RESOURCE_NOT_FOUND` (404). 
 **Impersonation:** effective permissions = target role/tenant ∩ scope; admin perms never unioned.
 
 ## Roles (system)
@@ -58,9 +58,9 @@ Legend: **Y** = granted by seed; **—** = not granted; **\*** = SUPER_ADMIN has
 | `invitations.staff` | Y | — | — | — | — |
 | `invitations.merchant` | Y | — | — | Y¶ | — |
 
-† Finance read grants follow `000025_admin_reads` (finance-oriented subset).  
-‡ `impersonation.support_write` is SUPER_ADMIN (and custom roles with explicit grant) only by default seed.  
-§ `reviews.moderate` seeded for SUPER_ADMIN; support may gain via custom role.  
+† Finance read grants follow `000025_admin_reads` (finance-oriented subset). 
+‡ `impersonation.support_write` is SUPER_ADMIN (and custom roles with explicit grant) only by default seed. 
+§ `reviews.moderate` seeded for SUPER_ADMIN; support may gain via custom role. 
 ¶ Merchant invites are seller-owned flows where product grants apply.
 
 ## Resource access patterns
@@ -73,12 +73,12 @@ Legend: **Y** = granted by seed; **—** = not granted; **\*** = SUPER_ADMIN has
 | Hosted checkout create | Public / buyer | Optional session | Published catalog only | N/A |
 | QRIS gateway payments | Merchant | API key | Key active + mode capability | Opaque 401/404 |
 | KYC cases | Seller owner/member | Cookie | Merchant resolve | 404 |
-| KYC admin review | Admin | Cookie + MFA policy | `kyc.review` | N/A (admin) |
+| KYC admin review | Admin | Cookie session | `kyc.review` | N/A (admin) |
 | Credential list/claim | Seller | Cookie | Merchant resolve; raw never in list | 404 |
 | Seller webhooks | Seller | Cookie | Store scope + SSRF URL policy | 404 |
 | Admin reads | Admin | Cookie | Specific `*.read` perms | Unscoped list needs `merchants.read` |
 | Admin mutations (8 ops) | Admin | Cookie | Permission + reason + audit | N/A |
-| Impersonation start | Admin | Cookie + MFA | `impersonation.start` (+ support_write for scope) | Target user required |
+| Impersonation start | Admin | Cookie session | `impersonation.start` (+ support_write for scope) | Target user required |
 | Impersonation mutations | Derived session | Cookie | Target ∩ SUPPORT_WRITE allowlist (2 routes) | Default deny |
 | Inbound Xendit webhook | Provider | Shared secret | Signature/token; no session | N/A |
 | Public storefront / invoice verify | Public | None / token | Safe fields only | N/A |
@@ -100,5 +100,5 @@ Legend: **Y** = granted by seed; **—** = not granted; **\*** = SUPER_ADMIN has
 
 ## Verification
 
-- Integration: `rbac_test`, `admin_reads_test`, `admin_ops_test`, `impersonation_test`, `security_verification_test`  
+- Integration: `rbac_test`, `admin_reads_test`, `admin_ops_test`, `impersonation_test`, `security_verification_test` 
 - Unit: `domain/admin/impersonation_allowlist_test`, `domain/authz/*_test`

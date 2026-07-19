@@ -20,7 +20,7 @@ These four categories are the durable taxonomy. Parent harness only requires **a
 | Category | Scope (examples; cells expand) | Parent sample anchors |
 | --- | --- | --- |
 | **Structured signals** | request ID, trace ID, release ID, route template/operation ID, surface, status/problem code, latency; actor/tenant only pseudonymous; payment/provider refs hashed/bounded; queue lag/retry/DLQ; callback rejection/dedupe; ledger/auth/permission denials; contract-invalid; dependency health from real adapters | `shared/observability/reporter.ts`, `shared/observability/redact.ts`, `shared/api/http-client.ts`, `shared/api/server-http-client.ts`, `backend/docs/observability-log-fields.md`, `backend/internal/platform/metrics/metrics.go`, `tests/unit/observability.test.ts`, `tests/unit/int-170-error-mock-observability.test.ts` |
-| **Alerts** | paid callback not transitioning order; callback signature rejection / duplicate storm; provider unknown outcomes/latency; ledger/withdrawal anomaly; delivery/notification/webhook queue lag/DLQ; login/MFA/CSRF anomaly; cross-tenant/permission denial; contract invalid after deploy; error budget burn / readiness failure | Parent registers category + SLO alert taxonomy in `backend/docs/slo.md`. **Do not invent** alert firings. Domain cells own measured firings / canary proof when claimed. |
+| **Alerts** | paid callback not transitioning order; callback signature rejection / duplicate storm; provider unknown outcomes/latency; ledger/withdrawal anomaly; delivery/notification/webhook queue lag/DLQ; login/CSRF anomaly; cross-tenant/permission denial; contract invalid after deploy; error budget burn / readiness failure | Parent registers category + SLO alert taxonomy in `backend/docs/slo.md`. **Do not invent** alert firings. Domain cells own measured firings / canary proof when claimed. |
 | **Dashboards** | HTTP rate/latency; payment paid; callback results; webhook delivery; outbox lag; audit chain — low-cardinality labels only | `backend/docs/dashboards/launch-overview.md`, `backend/docs/dashboards/launch-overview.json` |
 | **Runbooks** | Xendit outage/unknown create/disbursement; callback backlog/replay; delivery/webhook DLQ; object scanner/storage; CSRF/session incident; credential/secret exposure; ledger/withdrawal containment; emergency switches; rollout rollback / migration | `backend/docs/runbooks/` index samples: `incident-diagnosis.md`, `callback-failure.md`, `queue-outbox.md`, `r2-email-health.md`, `backup-restore-integrity.md`, `sandbox-qris-synthetic.md` |
 
@@ -28,7 +28,7 @@ These four categories are the durable taxonomy. Parent harness only requires **a
 
 ## Continuous co-evolution rule (domain tasks)
 
-When a domain task adds or changes HTTP/API surfaces, payments/callbacks, queues/outbox/webhooks, auth/CSRF/MFA, ledger/withdrawal, readiness/adapters, or FE transport error paths:
+When a domain task adds or changes HTTP/API surfaces, payments/callbacks, queues/outbox/webhooks, auth/CSRF, ledger/withdrawal, readiness/adapters, or FE transport error paths:
 
 1. **Signals in the same PR** — emit structured fields with requestId/trace correlation; redact secrets/PII; prefer route templates and bounded labels over raw IDs/paths.
 2. **Pick the category** — map the change to structured signals / alerts / dashboards / runbooks and document in evidence if non-obvious.
@@ -65,9 +65,9 @@ node scripts/ci-assert-suite.mjs qlt-320-observability
 
 # FE unit samples (observability-related)
 ./node_modules/.bin/vitest run \
-  tests/unit/qlt-320-parent-framework.test.ts \
-  tests/unit/observability.test.ts \
-  tests/unit/int-170-error-mock-observability.test.ts
+ tests/unit/qlt-320-parent-framework.test.ts \
+ tests/unit/observability.test.ts \
+ tests/unit/int-170-error-mock-observability.test.ts
 ```
 
 ## Acceptance (parent only)

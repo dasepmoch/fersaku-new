@@ -44,14 +44,14 @@ If SLA cannot be met: open/update entry in `residual-risks.md` with owner signat
 
 ## Release gate (BE-610 / BE-630)
 
-1. `security_scan.sh` exit 0 **or** all non-zero findings documented as Accepted residuals.  
-2. No **unresolved** critical/high without residual-risks signature.  
-3. Negative security tests green.  
+1. `security_scan.sh` exit 0 **or** all non-zero findings documented as Accepted residuals. 
+2. No **unresolved** critical/high without residual-risks signature. 
+3. Negative security tests green. 
 4. Image rebuild if scan reports critical base CVE on published tag.
 
 ## Image scan note
 
-Runtime images: multi-stage `backend/Dockerfile` (`api` / `worker` targets), non-root UID **65532**, no secrets baked.  
+Runtime images: multi-stage `backend/Dockerfile` (`api` / `worker` targets), non-root UID **65532**, no secrets baked. 
 When Trivy/Docker Scout is available in CI:
 
 ```text

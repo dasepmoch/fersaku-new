@@ -13,7 +13,7 @@ Setiap task di bawah harus mempertahankan screen/component/copy/style existing. 
 
 **Priority:** P0
 **Routes UI:** `/register`, `/login`
-**Backend:** `/v1/auth/register`, `/verify-email`, `/login`, `/session`, `/logout`, MFA endpoints
+**Backend:** `/v1/auth/register`, `/verify-email`, `/login`, `/session`, `/logout`, auth endpoints
 
 ### Current state
 
@@ -26,13 +26,13 @@ Setiap task di bawah harus mempertahankan screen/component/copy/style existing. 
 - [x] Map backend `400 VALIDATION_FAILED` field violations ke controls existing dan pertahankan input non-secret.
 - [x] Generic response untuk duplicate/unverified email sesuai anti-enumeration policy.
 - [x] Setelah login, bootstrap session + CSRF + merchant/onboarding state sebelum redirect. *(session+CSRF via INT-120/130; merchant bootstrap remains INT-150 consumer on dashboard)*
-- [x] Bila `mfaRequired`, masuk actual MFA ceremony existing tanpa membuat login sukses penuh. *(stay on login; no full success; MFA UI ceremony = AUT-120)*
-- [x] Session `MFA_PENDING` tidak boleh menjalankan business request walau role/permission sudah ada di response/cache; backend global gate `INT-140` wajib lulus direct-HTTP test. *(FE: status mfa_pending + guard; BE: INT-140 evidence)*
+- [x] Bila `login succeeded`, masuk actual login ceremony existing tanpa membuat login sukses penuh. *(stay on login; no full success; login UI ceremony = AUT-120)*
+- [x] Session `authenticated session` tidak boleh menjalankan business request walau role/permission sudah ada di response/cache; backend global gate `INT-140` wajib lulus direct-HTTP test. *(FE: status authenticated_session + guard; BE: INT-140 evidence)*
 - [x] Password hanya berada di component/form memory dan tidak masuk query cache/reporter.
 - [x] Safe `returnTo` relative path allowlist; default sesuai onboarding/dashboard state.
 - [x] Logout pada profile menu memanggil backend, clear private cache, lalu existing logged-out state/redirect. *(INT-120 ProfileMenu)*
 - [x] Forgot password action existing memanggil backend dan selalu menampilkan generic response.
-- [x] Characterization snapshot: `AuthForm` hanya memiliki per-field error dan submit loading. `400` serta generic invalid credentials boleh memakai field region yang sama tanpa DOM/class baru; unverified, MFA, `429`, dan unavailable tidak boleh diasumsikan punya surface—block canary atau selesaikan `UXE-011/UI-080`, never redirect/fake-success.
+- [x] Characterization snapshot: `AuthForm` hanya memiliki per-field error dan submit loading. `400` serta generic invalid credentials boleh memakai field region yang sama tanpa DOM/class baru; unverified, auth, `429`, dan unavailable tidak boleh diasumsikan punya surface—block canary atau selesaikan `UXE-011/UI-080`, never redirect/fake-success.
 
 ### Checklist BE
 
@@ -52,14 +52,14 @@ Setiap task di bawah harus mempertahankan screen/component/copy/style existing. 
 | Invalid field | Existing inline validation; focus first invalid. |
 | Invalid credentials | Generic auth error; no email existence leak. |
 | Email unverified | Existing surface/copy mapping; resend rate-limited. |
-| MFA required | No dashboard access until verified. |
+| login required | No dashboard access until verified. |
 | Session created but bootstrap fails | Do not replay login; retry session/bootstrap safely. |
 | Emergency registration off | Gunakan hanya feedback/unavailable component yang sudah ada; bila tidak ada, capability harus disabled atau masuk `UI-080`, bukan instant fake success atau maintenance UI baru. |
 
 ### Tests/AC
 
 - Register -> mail verify fragment -> login -> hard refresh -> mutation -> logout.
-- Invalid credential/user enumeration/rate-limit/MFA/CSRF/session rotation tests.
+- Invalid credential/user enumeration/rate-limit/CSRF/session rotation tests.
 - Password/token redaction tests.
 - Mock critical-flow and visual baseline unchanged.
 
@@ -101,29 +101,29 @@ https://app.example/account/verify#token=<opaque>
 
 ---
 
-## AUT-120 — Password reset, email change, MFA, recovery codes
+## AUT-120 — Password reset, email change, auth, security codes (unused)
 
 **Priority:** P1
 **Routes UI:** auth forgot flow, `/account/profile`, `/account/security`, seller/admin settings/profile
-**Backend:** auth password/email/MFA endpoints
+**Backend:** auth password/email/auth endpoints
 
 ### Checklist
 
-- [x] Gunakan route ownership default UI freeze: seller verify/reset/merchant invite/seller MFA di `/login`; admin invite/MFA di `/admin/login`; buyer magic di `/account/verify`. Token purpose berasal fragment dan langsung di-scrub. Route baru memerlukan `UI-080` exception.
+- [x] Gunakan route ownership default UI freeze: seller verify/reset/merchant invite/seller auth di `/login`; admin invite/login di `/admin/login`; buyer magic di `/account/verify`. Token purpose berasal fragment dan langsung di-scrub. Route baru memerlukan `UI-080` exception.
 - [x] Password reset/verify/invite token menggunakan fragment -> immediate scrub -> typed POST exchange seperti `AUT-110`.
 - [x] Password change membutuhkan current password/recent auth sesuai policy; rotates/revokes sessions appropriately. *(shared adapter; seller settings form bind remains SEL-340)*
 - [x] Dual-confirm email change menjaga generic mail response dan account recovery safety. Visible buyer button “Mulai perubahan email” belum memiliki handler/modal/form; keep it `DISABLED/OUT-OF-SCOPE` sampai dapat memakai exact approved auth composition atau `UI-080`—jangan menambah modal di wiring. *(adapters complete; buyer button stays disabled)*
-- [x] MFA enroll QR/secret hanya muncul dari backend once, component-memory, `no-store`; fake QR dilarang API mode.
-- [ ] First-time seller/admin enrollment uses an invite/pre-enrollment ticket allowed before full MFA session. It is purpose-bound, short-lived, replay-safe, and cannot call business routes; do not create a second unrestricted auth session. *(deferred ADM-100/INT-140 pre-enrollment ticket)*
-- [x] MFA confirm required sebelum enabled; recovery codes one-time view/download/print existing behavior, tidak cache/storage/log.
-- [x] Regenerate/disable MFA memerlukan recent proof; invalidates old codes/proofs. *(adapters + seller disable wired; admin regen bind ADM-230)*
-- [x] Session/security UI menggunakan actual server state tetapi exact existing controls/dialogs. *(seller MFA from session claims when auth=api)*
+- [x] login QR/secret hanya muncul dari backend once, component-memory, `no-store`; fake QR dilarang API mode.
+- [ ] First-time seller/admin enrollment uses an invite/login allowed before full auth session. It is purpose-bound, short-lived, replay-safe, and cannot call business routes; do not create a second unrestricted auth session. *(deferred ADM-100/INT-140 login)*
+- [x] login confirm required sebelum enabled; security codes (unused) one-time view/download/print existing behavior, tidak cache/storage/log.
+- [x] Regenerate/disable auth memerlukan recent proof; invalidates old codes/proofs. *(adapters + seller disable wired; admin regen bind ADM-230)*
+- [x] Session/security UI menggunakan actual server state tetapi exact existing controls/dialogs. *(seller auth from session claims when auth=api)*
 
 ### Tests/AC
 
-- [x] Token purpose/replay/expiry; password rotation; email dual-confirm edge cases. *(unit: reset/MFA/anti-enumeration; dual-confirm adapter + disposition)*
-- [x] MFA enroll/confirm/login/recovery/regenerate/disable. *(unit + seller settings API wire)*
-- [x] Raw seed/recovery codes tidak muncul setelah unmount/refresh dan tidak masuk telemetry.
+- [x] Token purpose/replay/expiry; password rotation; email dual-confirm edge cases. *(unit: reset/auth/anti-enumeration; dual-confirm adapter + disposition)*
+- [x] login/confirm/login/recovery/regenerate/disable. *(unit + seller settings API wire)*
+- [x] Raw seed/security codes (unused) tidak muncul setelah unmount/refresh dan tidak masuk telemetry.
 
 ### Ownership boundary
 
@@ -399,9 +399,9 @@ Harga, upsell, tip, total, produk, dan order ID sebagian hardcoded/client-calcul
 
 ```text
 CREATING -> PENDING_PAYMENT -> PAID -> DELIVERY_READY
-                      |
-                      +-> EXPIRED/CANCELLED/FAILED
-                      +-> UNKNOWN (recover by status lookup; never success)
+ |
+ +-> EXPIRED/CANCELLED/FAILED
+ +-> UNKNOWN (recover by status lookup; never success)
 ```
 
 Backend enum exact may differ; mapper must be exhaustive.
@@ -605,7 +605,7 @@ Page mempercayai `status` dari URL dan menampilkan hardcoded order/product data.
 
 **Priority:** P1
 **Routes UI:** `/account/security`
-**Backend:** sessions list/revoke/revoke-others/revoke-all, password/MFA
+**Backend:** sessions list/revoke/revoke-others/revoke-all, password
 
 ### Current bug
 
@@ -619,7 +619,7 @@ Screen menginisialisasi local sessions sebelum async query selesai dan tidak syn
 - [x] Single revoke, bulk revoke others, revoke all menggunakan endpoint khusus.
 - [x] Revoking current/all clears session/private cache dan redirects safely.
 - [x] Mutation no optimistic removal untuk security; update after success, exact invalidate.
-- [x] Wire password/MFA dari `AUT-120` using existing panels. *(passwordless buyer: static passwordless copy retained; MFA/password panels remain AUT-120 — no password/MFA UI on buyer security snapshot)*
+- [x] Wire password dari `AUT-120` using existing panels. *(passwordless buyer: static passwordless copy retained; password panels remain AUT-120 — no password UI on buyer security snapshot)*
 - [x] Session location/device text treated untrusted and escaped; no full raw IP if UI/privacy contract masks it.
 
 ### Tests/AC
@@ -663,7 +663,7 @@ Screen menginisialisasi local sessions sebelum async query selesai dan tidak syn
 
 - [ ] No production call to `simulate-payment`.
 - [ ] Browser never sets paid/price/fee/ownership.
-- [ ] Auth/session/CSRF/MFA hard-refresh flow works.
+- [ ] Auth/session/CSRF hard-refresh flow works.
 - [ ] All bootstrap tokens use fragment scrub + one-time POST exchange.
 - [ ] Base purchase/order/invoice reads do not contain delivery secret.
 - [ ] Public/auth/buyer screens use runtime schemas/mappers.

@@ -1,10 +1,10 @@
 # ADR-0003: Launch fee policy LAUNCH_FEE_POLICY_V1 (immutable via admin)
 
-| Field  | Value      |
+| Field | Value |
 | ------ | ---------- |
-| Status | Accepted   |
-| Date   | 2026-07-16 |
-| Task   | BE-000     |
+| Status | Accepted |
+| Date | 2026-07-16 |
+| Task | BE-000 |
 
 ## Context
 
@@ -16,24 +16,24 @@ References: `docs/BACKEND_PRODUCTION_TASKS.md` §0.3, §4.7, §15 BE-000, §16; 
 
 1. **Policy id:** `LAUNCH_FEE_POLICY_V1`, scope `GLOBAL` only at launch (no merchant override, no buyer surcharge).
 2. **Transaction fee (storefront and QRIS API identical):**
-   ```text
-   transaction_percent = round_half_up(gross_amount * 300 / 10_000)
-   transaction_fee = transaction_percent + 700
-   merchant_net_credit = gross_amount - transaction_fee
-   ```
-   - `transaction_percent_bps = 300` (3%)
-   - `transaction_fixed_idr = 700`
-   - For non-negative IDR integers: checked arithmetic `(gross * 300 + 5_000) / 10_000`; reject overflow before multiplication.
+ ```text
+ transaction_percent = round_half_up(gross_amount * 300 / 10_000)
+ transaction_fee = transaction_percent + 700
+ merchant_net_credit = gross_amount - transaction_fee
+ ```
+ - `transaction_percent_bps = 300` (3%)
+ - `transaction_fixed_idr = 700`
+ - For non-negative IDR integers: checked arithmetic `(gross * 300 + 5_000) / 10_000`; reject overflow before multiplication.
 3. **Withdrawal fee:**
-   ```text
-   withdrawal_percent = round_half_up(withdrawal_amount * 300 / 10_000)
-   withdrawal_fee = withdrawal_percent + xendit_processing_fee
-   net_disbursement = withdrawal_amount - withdrawal_fee
-   ```
-   - `withdrawal_percent_bps = 300`
-   - `minimum_withdrawal_idr = 50_000`
-   - `xendit_processing_fee` from verified Xendit quote/response; versioned schedule fallback only via release artifact, not admin free fields.
-   - `amount` is merchant wallet debit, not target net; reject below minimum and non-positive net.
+ ```text
+ withdrawal_percent = round_half_up(withdrawal_amount * 300 / 10_000)
+ withdrawal_fee = withdrawal_percent + xendit_processing_fee
+ net_disbursement = withdrawal_amount - withdrawal_fee
+ ```
+ - `withdrawal_percent_bps = 300`
+ - `minimum_withdrawal_idr = 50_000`
+ - `xendit_processing_fee` from verified Xendit quote/response; versioned schedule fallback only via release artifact, not admin free fields.
+ - `amount` is merchant wallet debit, not target net; reject below minimum and non-positive net.
 4. **Money representation:** all API/domain/DB/journal amounts are `int64` whole rupiah (IDR has zero fractional digits). Reject float/decimal JSON, fractional input, amount `<= 0`, negative fee components, or net `<= 0` before provider call or ledger post.
 5. **Fee basis:** `gross_amount` is the payment-intent amount after price/discount validation, before platform fee. Seller-funded discount reduces gross before fee; platform-funded discount is a separate component and must not make merchant net negative.
 6. **Immutability:** app/admin DB roles cannot insert/update/delete `fee_schedules`. Launch values are checksum-verified migration/release seed. Admin may preview with the production calculator and read the active policy version only.

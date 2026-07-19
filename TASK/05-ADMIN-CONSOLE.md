@@ -1,6 +1,6 @@
 # Domain Tasks — Admin Console
 
-Admin adalah surface privileged. UI hiding hanya UX; Go backend wajib memverifikasi permission, tenant/target scope, MFA freshness, reason, idempotency, transition, dan audit pada setiap command.
+Admin adalah surface privileged. UI hiding hanya UX; Go backend wajib memverifikasi permission, tenant/target scope, auth freshness, reason, idempotency, transition, dan audit pada setiap command.
 
 **Dependency rule:** gunakan dependency per-row pada `09-EXECUTION-STATUS.md`; UI freeze dan security foundation tetap entry gate.
 **Live dependency:** real runtime/health/callback adapters dan scheduler `INT-180/INT-185` sesuai operation.
@@ -11,39 +11,39 @@ Pertahankan `AdminShell`, `AdminPermissionBoundary`, `ControlDialog`, status/tab
 
 ---
 
-## ADM-100 — Admin login, MFA, session, route guard, logout
+## ADM-100 — Admin login, session, route guard, logout
 
 **Priority:** P0
 **Routes UI:** `/admin/login`, `/admin/**` (filesystem group `(console)` tidak muncul pada URL)
-**Backend:** auth login/session/MFA/logout
+**Backend:** auth login/session/logout
 
 ### Current state
 
-Admin login hanya link/default value; permission boundary selalu mock session. Router auth config belum menjamin admin MFA pada seluruh console/sensitive route.
+Admin login hanya link/default value; permission boundary selalu mock session. Router auth config belum menjamin admin auth pada seluruh console/sensitive route.
 
 ### Checklist FE
 
 - [x] Wire existing admin login form to auth API with `surface=ADMIN`; no default/mock credential on API path.
-- [x] Do not treat session as console-ready until admin surface + email/status + MFA verification pass.
-- [ ] Admin/invited staff without an enrolled factor enters the explicit pre-enrollment ticket ceremony from `INT-140`; login must not dead-end because `/mfa/enroll` is only available after full authentication. The ticket cannot access console/business routes. *(deferred: BE 403 “Admin MFA enrollment required”; no pre-enrollment ticket UI until AUT-120/UI-080)*
-- [x] Do not rely on UI/layout guard: backend snapshot issues a usable session/roles before MFA. `INT-140` must install pre-MFA ticket or global `MFA_PENDING` allowlist gate so direct HTTP business/admin routes fail before verification.
+- [x] Do not treat session as console-ready until admin surface + email/status + auth verification pass.
+- [ ] Admin/invited staff without an enrolled factor enters the explicit login ceremony from `INT-140`; login must not dead-end because `/auth/enroll` is only available after full authentication. The ticket cannot access console/business routes. *(deferred: BE 403 “Admin security settings required”; no login UI until AUT-120/UI-080)*
+- [x] Do not rely on UI/layout guard: backend snapshot issues a usable session/roles before auth. `INT-140` must install login ticket or global `authenticated session` allowlist gate so direct HTTP business/admin routes fail before verification.
 - [x] Server guard every console route/layout; safe relative `returnTo` only.
-- [x] Session provider supplies actor, permission codes, roles, MFA, session ID, impersonation metadata.
+- [x] Session provider supplies actor, permission codes, roles, auth, session ID, impersonation metadata.
 - [x] Logout backend-side, clear all admin/private/secret/impersonation caches and redirect.
-- [x] `401` opens/reaches existing login, `403` existing permission panel, `MFA_REQUIRED` actual MFA flow. *(MFA verify UI still AUT-120; gate stays on login)*
+- [x] `401` opens/reaches existing login, `403` existing permission panel, `AUTH_REQUIRED` actual auth flow. *(login verify UI still AUT-120; gate stays on login)*
 - [x] Multi-tab revoke/logout and session rotation handled without token storage.
-- [x] Snapshot `AdminLogin` is not a working form: it has default credentials, a plain link to `/admin`, and “Mock access”, with no pending/error/MFA region. Remove its mock authority on API path, but do not invent form/error markup in wiring. API/live admin auth remains blocked/disabled until `UXE-011/UI-080` resolves real submit and all negative/pre-MFA states using the exact approved composition. *(wired submit; API defaults empty; mock keeps snapshot defaults; negative regions still UXE-011)*
+- [x] Snapshot `AdminLogin` is not a working form: it has default credentials, a plain link to `/admin`, and “Mock access”, with no pending/error region. Remove its mock authority on API path, but do not invent form/error markup in wiring. API/live admin auth remains blocked/disabled until `UXE-011/UI-080` resolves real submit and all negative/login states using the exact approved composition. *(wired submit; API defaults empty; mock keeps snapshot defaults; negative regions still UXE-011)*
 
 ### Checklist BE
 
-- [ ] Admin login rate limit, surface isolation, mandatory MFA policy.
+- [ ] Admin login rate limit, surface isolation, password session policy.
 - [ ] Suspended/disabled staff denied; role/permission changes invalidate or refresh sessions promptly.
 - [ ] Cookie/CSRF/session rotation and audit login/security events.
 - [ ] No SUPER_ADMIN bootstrap logic exposed through HTTP.
 
 ### Tests/AC
 
-- Non-admin/wrong surface/no MFA/disabled/revoked/expired session denied.
+- Non-admin/wrong surface/no auth/disabled/revoked/expired session denied.
 - Hard refresh retains valid session/CSRF and console access.
 - Existing admin login/console visual unchanged.
 
@@ -129,7 +129,7 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 - [x] Wire list/detail/filter through DTO mapper and the route's declared pagination profile; replace hardcoded detail metrics/orders with server read/query composition. *(list/detail/finance/orders composition; TablePagination client-page until BE numbered meta; filter chrome still prototype SearchInput)*
 - [x] Merchant status and QRIS API capability remain independent axes.
 - [x] Use typed status/API access endpoint where available, not generic action if it weakens transition contract. *(POST `/status` + `/api-access/status`; not generic actions for these)*
-- [x] Existing confirmation dialog collects reason/acknowledgement; actual recent MFA proof supplied by auth layer. *(requireRecentMfa on typed commands)*
+- [x] Existing confirmation dialog collects reason/acknowledgement; actual recent authentication proof supplied by auth layer. *(requireRecentMfa on typed commands)*
 - [x] Stable idempotency key across retry; no optimistic label/button flip before response. *(idempotency held for dialog; labels from refetch after success)*
 - [x] Credential authorize/rotate/suspend/revoke never returns raw key to admin. *(schema + runtime reject `fsk_live_`/`fsk_test_`; rotate via authorize metadata only)*
 - [ ] Credential list/authorize/rotate/suspend/revoke routes must not reuse `kyc.review` as a blanket middleware; server operation and UI permission registry stay aligned. *(FE rotate gated `merchants.write`; BE still mounts credential routes under `kyc.review` — registry split remains BE/INT-000)*
@@ -138,14 +138,14 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 
 ### Checklist BE
 
-- [ ] Enforce permission per action, transition allowlist, MFA, reason, idempotency, atomic append-only audit.
+- [ ] Enforce permission per action, transition allowlist, auth, reason, idempotency, atomic append-only audit.
 - [ ] Status update does not silently mutate API capability; API suspension does not close storefront merchant.
 - [ ] Credential admin command authorizes request only; owner claim remains one-time.
 - [ ] Return audit event/request ID.
 
 ### Tests/AC
 
-- Missing permission/MFA/reason, invalid/no-op/concurrent transition, duplicate request.
+- Missing permission/auth/reason, invalid/no-op/concurrent transition, duplicate request.
 - Generic action permission confusion and KYC-reviewer-to-credential escalation are direct-HTTP negative tests.
 - Admin cannot receive raw seller key.
 - Existing merchant detail dialog/cards unchanged.
@@ -165,7 +165,7 @@ Acceptance: `features/admin/config/routes.ts`, `features/admin/data/access.ts`, 
 - [x] Purchase read never exposes delivery secret/raw credential.
 - [x] Session revoke uses exact session/owner scope; bulk endpoint where applicable. *(single-session revoke via action + sessionId; bulk “all” still optimistic invalidate of query — BE bulk revoke-all not typed on FE beyond dialog title path when no sessionId)*
 - [x] Magic-link/email-change support action produces server-bound, rate-limited workflow; admin never sees login token.
-- [x] Existing support dialog reason + permission + recent MFA where policy requires.
+- [x] Existing support dialog reason + permission + recent authentication where policy requires.
 - [x] Audit all actions; no browser mock audit. *(ControlDialog auditHandledExternally; mock write uses appendMockAuditEvent only on mock path)*
 - [x] Mask PII based on permission; no PII query keys/log/export names. *(keys are buyerId only; email stays in response body under buyers.read)*
 
@@ -196,7 +196,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 - [x] Wire staff lookup/detail, role assignment/removal, invite list/create/revoke/accept. *(accept adapter + fragment helpers; public accept page deferred to auth shell)*
 - [x] Resend is a backend gap: if existing UI control remains active, add one exact resend operation in `INT-000` that atomically revokes/rotates the prior token, rate-limits delivery, uses stable idempotency, and preserves anti-enumeration. Otherwise mode-gate it to existing disabled state; do not call create twice silently. *(no resend control; create not reused as resend)*
 - [x] Token invitation uses fragment scrub + one-time POST; admin never gets reusable plaintext invite token except approved delivery boundary.
-- [x] Exact permission boundary for read/write/assign; sensitive privilege changes recent MFA + reason + idempotency.
+- [x] Exact permission boundary for read/write/assign; sensitive privilege changes recent authentication + reason + idempotency.
 - [x] Invalidate roles/users/session permission caches narrowly.
 
 ### Checklist BE/security
@@ -223,16 +223,16 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 ### Checklist
 
 - [x] Replace localStorage/timers with profile/preference/session hooks.
-- [x] Profile PATCH with revision; dual-confirm email; password/MFA/session flows. *(email dual-confirm remains disabled chrome; password form not on this screen; MFA recovery + sessions wired)*
+- [x] Profile PATCH with revision; dual-confirm email; password/session flows. *(email dual-confirm remains disabled chrome; password form not on this screen; auth recovery + sessions wired)*
 - [x] Photo launch disposition: `DISABLED`/`OUT-OF-SCOPE` (`INT-175` deferred). Store-scoped object endpoint remains invalid for admin profile; keep exact existing control disabled.
 - [x] Admin notification alias wired to shared notification center.
 - [x] Reuse shared notification adapter owned by `BUY-140` and shared security adapters owned by `AUT-120`; this task only binds admin surface/context.
 - [x] Revoke current/all sessions triggers correct logout/cache clear.
-- [x] No raw MFA/recovery/photo signed URL in cache/storage/log.
+- [x] No raw auth/recovery/photo signed URL in cache/storage/log.
 
 ### Tests/AC
 
-- Profile conflict, session revoke, MFA changes, notification isolation.
+- Profile conflict, session revoke, s, notification isolation.
 - Existing profile/menu visual unchanged.
 
 ---
@@ -247,7 +247,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 - [x] Wire server filters/source/date/status with authoritative `NumberedPageList` for orders/payments (`TablePagination` exists). *(bounded list + client TablePagination until BE numbered meta; source filter server-side on payments API path)*
 - [x] Detail read model supplies immutable item/customer/amount/fee/net/payment/timeline/delivery evidence; remove hardcoded/derived guesses. *(API path uses server fields only; mock keeps prototype chrome)*
-- [x] Provider lookup explicit typed command/read with permission, rate limit, recent MFA/reason if required.
+- [x] Provider lookup explicit typed command/read with permission, rate limit, recent authentication/reason if required.
 - [x] Payment mismatch data from backend; UI cannot set paid or reconcile arbitrarily.
 - [x] Snapshot admin order detail exposes resend and payment verification/provider lookup, not force-fulfill/revoke buttons. Wire only existing controls here; force/revoke remain unavailable on this screen and may bind only to the already-characterized fulfillment composition. Do not add an order action button/menu.
 - [x] `UNKNOWN_OUTCOME`/provider unavailable shown as non-success existing status; no optimistic transition.
@@ -257,7 +257,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 
 - [ ] Payment state provider-event-driven; admin action cannot arbitrary-write status.
 - [ ] Provider lookup binds full provider/account/mode reference and records evidence/audit.
-- [ ] Force fulfill only on allowed verified evidence state, permission + MFA + reason + idempotency.
+- [ ] Force fulfill only on allowed verified evidence state, permission + auth + reason + idempotency.
 - [ ] Callback replay reprocesses canonical stored valid event; invalid rejection not promoted blindly.
 
 ### Tests/AC
@@ -279,7 +279,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 - [x] Freeze the list slash contract: router snapshot mounts `GET /v1/admin/withdrawals/` while FE calls the no-slash path. Align router/OpenAPI/FE or install a tested canonical redirect before wiring; do not rely on framework guesswork. *(canonical FE path `/v1/admin/withdrawals` matches OpenAPI + dual mounts: AdminRead `/withdrawals` and WithdrawalService route `/`; unit test locks path)*
 - [x] Map list/detail response exactly; fee/net/provider/bank/lock/source from server. *(FE AdminWithdrawal projection; API fee chrome uses server provider fee only — no client % recompute)*
 - [x] Server filters plus declared pagination profile; no client all-row metrics authority. *(bounded list + API mini-metrics from page rows only; mock chrome preserved)*
-- [x] Existing review dialog supplies allowed target, reason, actual recent MFA, stable idempotency. *(typed `POST .../review` approve|hold|reject; ControlDialog + UUID idempotency + requireRecentMfa)*
+- [x] Existing review dialog supplies allowed target, reason, actual recent authentication, stable idempotency. *(typed `POST .../review` approve|hold|reject; ControlDialog + UUID idempotency + requireRecentMfa)*
 - [x] No client fee recalculation or optimistic status. *(status only from server map after success; invalidate queries)*
 - [x] `UNKNOWN_OUTCOME`, on hold, processing, rejected, completed mappings exhaustive and safe.
 - [x] After command, refetch exact withdrawal/detail/ledger/audit/system health.
@@ -287,7 +287,7 @@ User/invite data banyak hardcoded/localStorage. Role read shape differs (`{items
 ### Checklist BE
 
 - [ ] Allowed transition per current state; approve/hold/reject semantics explicit.
-- [ ] Permission separation (`review` vs `approve` if policy), recent MFA, reason, idempotency.
+- [ ] Permission separation (`review` vs `approve` if policy), recent authentication, reason, idempotency.
 - [ ] Reserve/ledger/withdrawal/audit/outbox atomic.
 - [ ] Provider disbursement and signed callback full-reference dedupe.
 - [ ] Unknown outcome keeps reserve; no resend/release until authoritative resolution.
@@ -311,15 +311,15 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 ### Checklist BE
 
 - [ ] Admin inventory list/read model is redacted, filtered, bounded by declared pagination profile, and scoped by permission.
-- [ ] Add admin reveal facade that resolves item/store internally, checks `inventory.reveal`, actual recent MFA, reason, rate limit, audit.
+- [ ] Add admin reveal facade that resolves item/store internally, checks `inventory.reveal`, actual recent authentication, reason, rate limit, audit.
 - [ ] Return one item secret only, `no-store`; no secret in audit/log.
 - [ ] Fulfillment list/detail fields from authoritative delivery attempts.
-- [ ] Typed retry/revoke/force-fulfill transitions with evidence, permission, MFA, reason, idempotency.
+- [ ] Typed retry/revoke/force-fulfill transitions with evidence, permission, auth, reason, idempotency.
 - [ ] Avoid generic action that bypasses domain invariants.
 
 ### Checklist FE
 
-- [x] Remove `mock-recent-mfa` and body-claimed verification.
+- [x] Remove `mock-recent-auth` and body-claimed verification.
 - [x] Secret component-local TTL; clear on unmount/visibility/logout; no query cache/export.
 - [x] Split control ownership by actual JSX: `/admin/inventory` wires only its existing reveal action (disabled invalidate/delete remain disabled); `/admin/fulfillment` owns its existing retry/force/revoke composition. Do not add delivery controls to inventory or order screens.
 - [x] Wire fulfillment rows/actions through hooks; remove initial local seed in API mode.
@@ -344,7 +344,7 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 
 - [x] Server filter/detail mapper with declared pagination profile; no fixture source in API mode.
 - [x] Replace generic arbitrary action with backend allowed moderation transition.
-- [x] Existing `ControlDialog` reason/evidence checkbox preserved; server permission/reason/idempotency, MFA where policy requires.
+- [x] Existing `ControlDialog` reason/evidence checkbox preserved; server permission/reason/idempotency, auth where policy requires.
 - [x] Transition request includes expected version/current state; conflict preserves dialog input. *(BE ModerateReview is status+reason allowlist without expectedVersion; ControlDialog keeps reason on failure; FE sends wire status only)*
 - [x] Public/seller/admin review caches invalidated after authoritative success.
 - [x] Audit event linked to review/action/request. *(BE audit on moderate; FE mock audit + auditHandledExternally)*
@@ -371,13 +371,13 @@ FE calls `POST /v1/admin/inventory/items/{itemId}/reveal`; only store-scoped rev
 - [x] Document access explicit, short-lived, `no-store`; no persistent cache/log/screenshot/telemetry URL. Snapshot backend has metadata routes only and R2 bytes are AEAD ciphertext, sehingga direct presigned URL bukan viewer.
 - [ ] KYC upload seller side uses server-mediated multipart; do not use presigned general object endpoint. *(seller upload UI remains SEL-330; BE path already server-mediated)*
 - [ ] Browser `FormData` does not set multipart Content-Type manually; progress/cancel safe. *(seller upload UI deferred SEL-330)*
-- [x] Approve/reject/resubmit uses allowed transition + reviewer note + permission + recent MFA + idempotency + audit.
+- [x] Approve/reject/resubmit uses allowed transition + reviewer note + permission + recent authentication + idempotency + audit.
 - [x] KYC gates live QRIS API only, not storefront/withdrawal by hidden risk rule.
 
 ### Checklist BE/runtime
 
 - [x] Validate size/MIME/magic bytes, real malware scan, envelope encryption private storage. *(upload path already; LocalScanPass local/test; production scanner still INT-185)*
-- [x] Add exact authenticated admin document-content operation via `INT-000` (for example case/document-scoped content route): permission + tenant/case scope + actual recent MFA, server-side decrypt stream, bounded bytes, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`, restrictive CSP/sandbox and safe `Content-Disposition`.
+- [x] Add exact authenticated admin document-content operation via `INT-000` (for example case/document-scoped content route): permission + tenant/case scope + actual recent authentication, server-side decrypt stream, bounded bytes, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`, restrictive CSP/sandbox and safe `Content-Disposition`.
 - [x] Decrypt/serve only authorized reviewer; access audit contains identifiers/reason/result but never raw document/PII payload. Do not expose private R2 URL because it yields ciphertext and bypasses view policy.
 - [x] Transition allowlist/version and dual control if policy specifies. *(allowlist + reason; dual control not required by current policy)*
 - [ ] Retention/deletion/legal policy documented.
@@ -401,8 +401,8 @@ UI mengomposisikan dua resource berbeda:
 
 ```ts
 type AdminWebhookRow =
-  | { kind: "PROVIDER_CALLBACK"; /* provider fields */ }
-  | { kind: "SELLER_DELIVERY"; /* outbound fields */ };
+ | { kind: "PROVIDER_CALLBACK"; /* provider fields */ }
+ | { kind: "SELLER_DELIVERY"; /* outbound fields */ };
 ```
 
 Backend tidak boleh mencampur ownership/signature/retry semantics kedua resource.
@@ -414,7 +414,7 @@ Backend tidak boleh mencampur ownership/signature/retry semantics kedua resource
 - [x] Provider replay hanya pada valid stored callback dan permission.
 - [x] Seller delivery retry hanya outbound delivery endpoint.
 - [x] Force-fulfill uses order delivery command + verified evidence, not a fake local row update.
-- [x] Existing detail/guarded dialogs preserved; actual reason/MFA/idempotency.
+- [x] Existing detail/guarded dialogs preserved; actual reason/idempotency.
 - [x] Response/evidence redacted; never render signature/token/full secret body.
 - [x] Partial source failure shown via existing error pattern, not silently omitted.
 
@@ -427,7 +427,7 @@ Backend tidak boleh mencampur ownership/signature/retry semantics kedua resource
 
 ### Tests/AC
 
-- ID collision across kinds, partial failure, invalid callback replay, seller retry, force-fulfill evidence, permission/MFA/reason.
+- ID collision across kinds, partial failure, invalid callback replay, seller retry, force-fulfill evidence, permission/auth/reason.
 - Existing admin webhook critical flow unchanged.
 
 ---
@@ -447,7 +447,7 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 - [x] Schema/mapper canonical audit fields to existing display contract; no fabricated IP/result/hash.
 - [x] Server filter/date/actor/action/resource/request/merchant with the declared `NumberedPageList` profile where the existing table has pagination; no PII query key.
 - [x] Detail and integrity verification endpoint authoritative.
-- [x] Export creates async job with reason/permission/MFA if required; poll bounded; short signed download; no local CSV of full data.
+- [x] Export creates async job with reason/permission/auth if required; poll bounded; short signed download; no local CSV of full data.
 - [x] Remove `appendMockAuditEvent` and local chain from API path.
 - [x] Display request/audit IDs through existing UI only, with copy safe.
 
@@ -478,7 +478,7 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 - [x] Active launch fee fields stay read-only; preview is pure and never persists configuration.
 - [x] Health reflects actual adapter, mode/account scope, last check, degraded/unavailable—never fake OK.
 - [x] Exactly approved emergency switches (`SELLER_REGISTRATION`, `QRIS_CHECKOUT`, `WITHDRAWALS`) with version/If-Match.
-- [x] Emergency mutation existing guarded dialog + permission + actual MFA + reason + incident ticket + idempotency; no optimistic success.
+- [x] Emergency mutation existing guarded dialog + permission + actual auth + reason + incident ticket + idempotency; no optimistic success.
 - [x] Conflict refreshes version without losing reason.
 - [x] Health polling bounded and visibility-aware.
 
@@ -512,7 +512,7 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 - [ ] Define announcement/campaign aggregate: draft, audience/surface, schedule, status, content constraints, acknowledgement/read model.
 - [ ] Endpoints list/detail/create/update/test/publish/pause/archive and recipient acknowledgement.
 - [ ] Recipient selection bounded and privacy-safe; no arbitrary query/code execution.
-- [ ] Test send rate-limited; publish permission + recent MFA + reason + idempotency + audit.
+- [ ] Test send rate-limited; publish permission + recent authentication + reason + idempotency + audit.
 - [ ] Worker/mail/in-app delivery reliable through outbox.
 - [ ] Version/concurrency and schedule timezone semantics.
 
@@ -530,7 +530,7 @@ FE membuat mock hash chain/export di browser. Live audit must come only from app
 ### Tests/AC
 
 - [x] Disposition unit + architecture gate: disabled on api path without BE; mock path ok; route decision_pending.
-- Invalid audience/schedule, duplicate publish, pause race, permission/MFA, test rate limit, delivery dedupe/ack (IMPLEMENT).
+- Invalid audience/schedule, duplicate publish, pause race, permission/auth, test rate limit, delivery dedupe/ack (IMPLEMENT).
 - [x] No mock campaign visible in live if backend is disabled.
 
 ---
@@ -547,7 +547,7 @@ FE stores session in `sessionStorage` and exposes target/session identifiers in 
 
 ### Checklist FE
 
-- [x] Start through backend with target type/ID, allowed scope (`READ_ONLY` default or bounded support-write), TTL, reason, actual recent MFA, idempotency.
+- [x] Start through backend with target type/ID, allowed scope (`READ_ONLY` default or bounded support-write), TTL, reason, actual recent authentication, idempotency.
 - [x] Backend rotates/sets scoped server session; frontend stores no raw session token/ID in URL/storage.
 - [x] Redirect target through safe internal route; banner reads session impersonation metadata.
 - [x] Read-only/support-write controls continue using existing boundary, but backend gate enforces every mutation.
@@ -557,7 +557,7 @@ FE stores session in `sessionStorage` and exposes target/session identifiers in 
 
 ### Checklist BE
 
-- [ ] Actor permission, target, reason, MFA, TTL, scope, original session binding, audit.
+- [ ] Actor permission, target, reason, auth, TTL, scope, original session binding, audit.
 - [ ] Strict support-write command allowlist; all unspecified mutations denied.
 - [ ] Cannot chain impersonation or impersonate more privileged admin unexpectedly.
 - [ ] Termination/expiry/revocation immediate; audit actor+effective subject without leaking token.
@@ -574,7 +574,7 @@ FE stores session in `sessionStorage` and exposes target/session identifiers in 
 
 - [ ] No mock admin session/permission/audit/impersonation on API path.
 - [ ] Every route/action maps to backend permission and negative test.
-- [ ] Sensitive action has actual recent MFA, reason, stable idempotency, allowed transition, atomic audit.
+- [ ] Sensitive action has actual recent authentication, reason, stable idempotency, allowed transition, atomic audit.
 - [ ] No raw merchant key/inventory secret/KYC doc/delivery secret/token in list/cache/storage/log/export.
 - [ ] All list screens use server filters behind the profile inventory in `10`: NumberedPageList for existing TablePagination, CursorList only for an existing prev/next surface, and BoundedNoPaging/UI-080 for boards without paging controls.
 - [ ] Provider/system health is truthful; fake/noop cannot appear green in live.

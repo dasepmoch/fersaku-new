@@ -36,7 +36,7 @@ Membuat `backend/api/openapi.yaml` valid, lengkap, konsisten dengan router/handl
 - [ ] Pastikan setiap production router operation memiliki `operationId` unik dan spec entry.
 - [ ] Coverage includes canonical `/v1/gateway/*`, legacy `/v1/qris/*` aliases, inbound `/v1/webhooks/xendit`, `/sandbox`, `/live`, disbursement callback, and explicit rejection/non-production routes. Each gets auth/mode/deprecation/security disposition in matrix `06`; omission is a contract failure.
 - [ ] Pastikan setiap spec operation benar-benar dipasang router atau ditandai future/non-production dan tidak digenerate sebagai available client.
-- [ ] Dokumentasikan method/path, auth, permission, tenant/ownership, recent MFA, CSRF, audit reason, idempotency, conditional header, content type, request body, query, success status, envelope, error codes.
+- [ ] Dokumentasikan method/path, auth, permission, tenant/ownership, recent authentication, CSRF, audit reason, idempotency, conditional header, content type, request body, query, success status, envelope, error codes.
 - [ ] Pisahkan route `_scaffold`, `_test`, dan `simulate-payment` dari production bundle/spec, atau beri extension/environment guard yang diverifikasi.
 - [ ] Dokumentasikan integer IDR (`int64`, no fractional input) dan timestamp RFC3339 UTC.
 - [ ] Tetapkan dua profile list yang eksplisit: `CursorList` untuk infinite/prev-next surface dan `NumberedPageList` untuk table yang sekarang menampilkan total, page number, last-page jump, serta “Showing X-Y of N”. Jangan mengklaim cursor history dapat memenuhi numbered jump.
@@ -44,7 +44,7 @@ Membuat `backend/api/openapi.yaml` valid, lengkap, konsisten dengan router/handl
 - [ ] Untuk `CursorList`, gunakan `data: []` + opaque `nextCursor`/optional `previousCursor` + `hasMore`; jangan tampilkan total/page jump yang tidak diketahui.
 - [ ] Endpoint harus mendeklarasikan tepat satu pagination profile. Jika existing endpoint membungkus `{items}`, migrasikan atau dokumentasikan compatibility mapper secara versioned.
 - [ ] Tambahkan schemas untuk `SuccessEnvelope`, kedua pagination meta, `ProblemEnvelope`, field violations, rate-limit response, concurrency conflict.
-- [ ] Dokumentasikan `X-Request-ID`, `X-CSRF-Token`, `Idempotency-Key`, `X-Audit-Reason`, `X-Recent-MFA-Proof`, `If-Match`, `Retry-After`.
+- [ ] Dokumentasikan `X-Request-ID`, `X-CSRF-Token`, `Idempotency-Key`, `X-Audit-Reason`, `session authentication`, `If-Match`, `Retry-After`.
 - [ ] Tambahkan missing endpoint yang sudah disetujui atau tandai explicit backend dependency; jangan menulis endpoint fiktif sebagai implemented.
 - [ ] Periksa strict JSON: body spec tidak boleh mendorong FE mengirim view model/unknown fields.
 
@@ -52,24 +52,24 @@ Membuat `backend/api/openapi.yaml` valid, lengkap, konsisten dengan router/handl
 
 ```json
 {
-  "data": {},
-  "meta": {
-    "requestId": "req_01...",
-    "timestamp": "2026-07-17T10:00:00Z"
-  }
+ "data": {},
+ "meta": {
+ "requestId": "req_01...",
+ "timestamp": "2026-07-17T10:00:00Z"
+ }
 }
 ```
 
 ```json
 {
-  "problem": {
-    "code": "VALIDATION_FAILED",
-    "message": "Request validation failed",
-    "details": {
-      "fields": [{ "field": "email", "code": "INVALID" }]
-    },
-    "requestId": "req_01..."
-  }
+ "problem": {
+ "code": "VALIDATION_FAILED",
+ "message": "Request validation failed",
+ "details": {
+ "fields": [{ "field": "email", "code": "INVALID" }]
+ },
+ "requestId": "req_01..."
+ }
 }
 ```
 
@@ -77,13 +77,13 @@ Cursor list:
 
 ```json
 {
-  "data": [],
-  "meta": {
-    "requestId": "req_01...",
-    "timestamp": "2026-07-17T10:00:00Z",
-    "nextCursor": "opaque-or-absent",
-    "hasMore": false
-  }
+ "data": [],
+ "meta": {
+ "requestId": "req_01...",
+ "timestamp": "2026-07-17T10:00:00Z",
+ "nextCursor": "opaque-or-absent",
+ "hasMore": false
+ }
 }
 ```
 
@@ -91,15 +91,15 @@ Numbered table list:
 
 ```json
 {
-  "data": [],
-  "meta": {
-    "requestId": "req_01...",
-    "timestamp": "2026-07-17T10:00:00Z",
-    "page": 1,
-    "pageSize": 20,
-    "totalCount": 74,
-    "pageCount": 4
-  }
+ "data": [],
+ "meta": {
+ "requestId": "req_01...",
+ "timestamp": "2026-07-17T10:00:00Z",
+ "page": 1,
+ "pageSize": 20,
+ "totalCount": 74,
+ "pageCount": 4
+ }
 }
 ```
 
@@ -133,9 +133,9 @@ Memisahkan wire DTO dari view model dan memvalidasi setiap response API pada run
 
 ```text
 generated OpenAPI types
-  -> generated/handwritten Zod response schema
-  -> feature mapper
-  -> existing feature contract/view model
+ -> generated/handwritten Zod response schema
+ -> feature mapper
+ -> existing feature contract/view model
 ```
 
 Generated files tidak boleh diedit manual. Mapper tetap handwritten karena tugasnya menjaga UI contract.
@@ -199,7 +199,7 @@ Untuk setiap endpoint adapter minimum:
 ### Checklist
 
 - [x] Definisikan status success per operation (`200`, `201`, `202`, `204`) dan jangan menganggap semua mutation synchronous. *(shared/api/http-semantics.ts)*
-- [x] Definisikan stable problem codes untuk auth, CSRF, MFA, tenant/permission, not found, validation, conflict, idempotency, rate limit, provider unavailable, unknown outcome. *(shared/api/problem-codes.ts)*
+- [x] Definisikan stable problem codes untuk auth, CSRF, auth, tenant/permission, not found, validation, conflict, idempotency, rate limit, provider unavailable, unknown outcome. *(shared/api/problem-codes.ts)*
 - [x] Bedakan resource `404` dari unauthorized/forbidden/network. *(shared/api/error-policy.ts)*
 - [x] Untuk cursor profile, gunakan opaque cursor dengan stable ordering/tie-breaker; filter/sort menjadi bagian cursor atau invalidates cursor. *(shared/api/pagination.ts)*
 - [x] Untuk route yang memakai existing `TablePagination`, gunakan numbered-page profile dengan authoritative total/pageCount dan arbitrary visible page jump. Jangan fetch seluruh dataset atau berpura-pura mengetahui total dari cursor history. *(numberedMetaToTablePagination)*
@@ -246,15 +246,15 @@ Mengganti keputusan global `isLiveApi()` dengan source selection per domain yang
 ```ts
 type DomainSource = "mock" | "api" | "disabled";
 type DataDomain =
-  | "publicCatalog"
-  | "auth"
-  | "checkout"
-  | "buyer"
-  | "sellerCatalog"
-  | "sellerOperations"
-  | "sellerFinance"
-  | "adminRead"
-  | "adminWrite";
+ | "publicCatalog"
+ | "auth"
+ | "checkout"
+ | "buyer"
+ | "sellerCatalog"
+ | "sellerOperations"
+ | "sellerFinance"
+ | "adminRead"
+ | "adminWrite";
 ```
 
 Exact grouping dapat disesuaikan, tetapi money/secret/privileged domains harus dapat dihentikan terpisah dari public reads.
@@ -333,13 +333,13 @@ Menyediakan satu transport browser yang benar untuk envelope, abort, timeout, he
 
 - [x] Parse `{problem:{...}}`, bukan top-level problem.
 - [x] Pertahankan status, stable code, details/field violations, request ID, `Retry-After`.
-- [x] Standardisasi header menjadi `X-Recent-MFA-Proof`.
+- [x] Standardisasi header menjadi `session authentication`.
 - [x] Gunakan relative `/v1` pada browser topology same-origin.
 - [x] Validasi content type dan JSON; bedakan empty `204`, invalid JSON, invalid schema.
 - [x] Kombinasikan caller abort + timeout tanpa listener leak.
 - [x] Request ID dibuat cryptographically random bila tersedia dan disalin ke reporter yang redacted.
 - [x] Unsafe cookie-auth request mengambil CSRF dari session layer secara otomatis; caller tidak copy-paste token. *(hooks: `setHttpClientSessionHooks`; INT-120/130 wire store)*
-- [x] Sensitive context (MFA/audit/idempotency) hanya dipasang pada operation yang membutuhkan.
+- [x] Sensitive context (audit/idempotency) hanya dipasang pada operation yang membutuhkan.
 - [x] Jangan log body/header secret/full response.
 - [x] Jangan auto-retry mutation di client.
 - [x] Safe GET retry dikelola query policy, hanya network/408/429/5xx, exponential backoff + jitter + `Retry-After`. *(client single-shot; query policy INT-160)*
@@ -354,7 +354,7 @@ Extend `tests/unit/http-client.test.ts`:
 - [x] request ID forward/response precedence;
 - [x] timeout vs caller abort;
 - [x] invalid JSON/schema;
-- [x] CSRF/MFA/idempotency/audit headers;
+- [x] CSRF/idempotency/audit headers;
 - [x] 401 dedupe;
 - [x] Retry-After parsing;
 - [x] no payload secret in reporter.
@@ -411,21 +411,21 @@ Protected detail pages memanggil browser client dari Server Component. Node fetc
 
 ### Objective
 
-Mengganti session/mock identity dengan single session authority yang mendukung buyer, seller, admin, MFA state, permissions, membership, dan impersonation metadata.
+Mengganti session/mock identity dengan single session authority yang mendukung buyer, seller, admin, permissions, membership, dan impersonation metadata.
 
 ### Checklist BE
 
 - [x] Kunci response `/v1/auth/login`, `/session`, `/logout` dan surface isolation. *(existing BE-120 + GetSession claims INT-120)*
-- [x] Extend `/v1/auth/session` atau sediakan satu bootstrap endpoint canonical yang mengembalikan view claims yang dibutuhkan UI: subject, surface, account status, current session ID, MFA state, role codes, permission codes, memberships/store references, dan impersonation metadata. Response snapshot saat audit belum memuat claims tersebut. *(permissions, roles, impersonation on GetSession; store membership remains INT-150)*
+- [x] Extend `/v1/auth/session` atau sediakan satu bootstrap endpoint canonical yang mengembalikan view claims yang dibutuhkan UI: subject, surface, account status, current session ID, role codes, permission codes, memberships/store references, dan impersonation metadata. Response snapshot saat audit belum memuat claims tersebut. *(permissions, roles, impersonation on GetSession; store membership remains INT-150)*
 - [x] Claims untuk UI hanya navigation/UX hint; setiap endpoint tetap authorize server-side dan session/role changes harus revalidate/invalidate promptly.
-- [x] Session rotation pada login/MFA/password/privilege change. *(existing AuthService; out of FE scope)*
+- [x] Session rotation pada login/password/privilege change. *(existing AuthService; out of FE scope)*
 - [x] Revoke/logout invalidates session server-side dan cookie dengan exact attributes. *(POST /v1/auth/logout + FE clear)*
 - [x] Admin session tidak dapat dipakai sebagai gateway API key atau bocor ke seller/buyer context tanpa impersonation resmi. *(surface guard wrong_surface → admin login only)*
 
 ### Checklist FE
 
 - [x] Buat session bootstrap/provider source-neutral; mock provider hanya untuk mock mode.
-- [x] Session model memuat subject, surface, status, MFA, permissions/roles, memberships, current session ID, impersonation metadata—tanpa raw token. *(memberships deferred INT-150; impersonation meta present)*
+- [x] Session model memuat subject, surface, status, auth, permissions/roles, memberships, current session ID, impersonation metadata—tanpa raw token. *(memberships deferred INT-150; impersonation meta present)*
 - [x] Dedupe initial `/session`; private queries menunggu bootstrap selesai.
 - [x] Guard buyer `/account/**`, seller `/dashboard/**`, admin `/admin/**` pada server/layout/middleware strategy yang aman; `(console)` adalah filesystem route group, bukan URL.
 - [x] Public auth route mengalihkan authenticated user sesuai surface tanpa open redirect.
@@ -437,11 +437,11 @@ Mengganti session/mock identity dengan single session authority yang mendukung b
 
 ### Route behavior
 
-| Route | Missing session | Wrong surface | MFA pending |
+| Route | Missing session | Wrong surface | auth pending |
 | --- | --- | --- | --- |
 | Buyer | `/account/login?returnTo=...` | Safe login/surface handoff | Verification flow sesuai contract |
-| Seller | `/login?returnTo=...` | Safe login | MFA screen/state existing |
-| Admin | `/admin/login?returnTo=...` | Admin login only | Mandatory MFA verify before console |
+| Seller | `/login?returnTo=...` | Safe login | login screen existing |
+| Admin | `/admin/login?returnTo=...` | Admin login only | Password session before console |
 
 ### Tests
 
@@ -500,7 +500,7 @@ Jangan menyimpan token di `localStorage`/`sessionStorage`. Jangan menonaktifkan 
 
 ---
 
-## INT-140 — MFA dan recent step-up proof
+## INT-140 — auth dan recent step-up proof
 
 **Priority:** P0
 **Depends on:** INT-120, INT-130
@@ -511,32 +511,32 @@ Mengganti fake proof/checkbox dengan ceremony backend-authoritative tanpa redesi
 
 ### Checklist BE
 
-- [x] Tutup bypass snapshot saat ini: login dapat membuat session dengan roles/permissions sebelum `mfa_verified_at`, sementara auth middleware hanya memeriksa adanya principal. Pilih salah satu design fail-closed: pre-auth MFA transaction ticket tanpa full session, atau session `MFA_PENDING` yang digate global. *(MFA_PENDING + global `MFAPendingGate`)*
-- [x] Untuk session `MFA_PENDING`, allowlist hanya safe session introspection, `/v1/auth/mfa/verify`, dan logout/recovery operation yang benar-benar diperlukan; seluruh buyer/seller/admin/business route termasuk direct HTTP mengembalikan `AUTH_MFA_REQUIRED` dan tidak menerima roles/permissions sebagai usable authority.
-- [x] Admin console mewajibkan MFA verified sesuai policy; config field yang hanya dideklarasikan tetapi tidak dipasang bukan enforcement. *(global gate + FE `requireMfaVerified`)*
-- [x] Define recent-proof issuance setelah password/TOTP/recovery verification, bound ke user/session/purpose, single-use atau bounded TTL.
-- [x] Freeze proof mint/exchange contract before codegen: extend `POST /v1/auth/mfa/verify` or add a dedicated operation with exact purpose/resource scope, factor, response metadata/expiry, and stable problem codes. `X-Recent-MFA-Proof` is opaque, session-bound, single-use or narrowly TTL-bound; it is never a reusable TOTP/seed. *(`POST /v1/auth/mfa/verify` + `POST /v1/auth/mfa/step-up`)*
-- [x] Define allowed proof factors (TOTP/password/recovery), purpose values (`inventory.reveal`, `credentials.rotate`, `bank.change`, `withdrawal.create`, admin command), replay/invalidation on logout/session rotation, and consumer header semantics in matrix `06`.
-- [ ] Provide pre-enrollment ticket for invited/admin users who must enroll MFA before full admin login: invite/session/purpose-bound, short-lived, replay-safe, no broad authenticated bypass. `ADM-100` consumes this ceremony. *(deferred to ADM-100; admin without MFA still blocked at login)*
+- [x] Tutup bypass snapshot saat ini: login dapat membuat session dengan roles/permissions sebelum session verification timestamp, sementara auth middleware hanya memeriksa adanya principal. Pilih salah satu design fail-closed: pre-auth transaction ticket tanpa full session, atau session `authenticated session` yang digate global. *(authenticated session + global session gate (legacy name))*
+- [x] Untuk session `authenticated session`, allowlist hanya safe session introspection, `/v1/auth/auth/verify`, dan logout/recovery operation yang benar-benar diperlukan; seluruh buyer/seller/admin/business route termasuk direct HTTP mengembalikan `AUTH_AUTH_REQUIRED` dan tidak menerima roles/permissions sebagai usable authority.
+- [x] Admin console mewajibkan session authenticated sesuai policy; config field yang hanya dideklarasikan tetapi tidak dipasang bukan enforcement. *(global gate + FE require authenticated session)*
+- [x] Define recent-proof issuance setelah password verification, bound ke user/session/purpose, single-use atau bounded TTL.
+- [x] Freeze proof mint/exchange contract before codegen: extend `POST /v1/auth/auth/verify` or add a dedicated operation with exact purpose/resource scope, factor, response metadata/expiry, and stable problem codes. `session authentication` is opaque, session-bound, single-use or narrowly TTL-bound; it is never a reusable password/seed. *(`POST /v1/auth/auth/verify` + `POST /v1/auth/auth/step-up`)*
+- [x] Define allowed proof factors (password), purpose values (`inventory.reveal`, `credentials.rotate`, `bank.change`, `withdrawal.create`, admin command), replay/invalidation on logout/session rotation, and consumer header semantics in matrix `06`.
+- [ ] Provide login for invited/admin users who must complete login before full admin login: invite/session/purpose-bound, short-lived, replay-safe, no broad authenticated bypass. `ADM-100` consumes this ceremony. *(deferred to ADM-100; admin without auth still blocked at login)*
 - [x] Hash proof at rest; rotate/revoke pada password/session/role/security change. *(hash store; revoke on logout)*
 - [x] Middleware/service memverifikasi purpose, freshness, session, actor, target/action. *(`RequireRecentMFAProof` + `ConsumeRecentMFAProof`)*
 - [x] Sensitive operations: inventory reveal wired; credential/bank/withdrawal/admin consumers use same middleware helper when those routes land.
-- [x] Standard header `X-Recent-MFA-Proof`; jangan menerima boolean `mfaVerified` dari body. *(reveal ignores body boolean)*
+- [x] Standard header `session authentication`; jangan menerima boolean `mfaVerified` dari body. *(reveal ignores body boolean)*
 
 ### Checklist FE
 
-- [x] Gunakan existing dialog/form to collect reauth/MFA. *(no UI redesign; guards redirect to existing auth shells)*
-- [x] Proof disimpan hanya in-memory pada narrow provider/component; jangan React Query/persistent storage. *(`shared/api/recent-mfa-proof.ts`)*
+- [x] Gunakan existing dialog/form to collect reauth/auth. *(no UI redesign; guards redirect to existing auth shells)*
+- [x] Proof disimpan hanya in-memory pada narrow provider/component; jangan React Query/persistent storage. *(`shared/api/recent-auth-proof.ts`)*
 - [x] Jangan menaruh proof pada mutation variables yang masuk devtools/report bila dapat dihindari; transport attaches via protected context. *(`requireRecentMfa` + hooks)*
 - [x] Clear proof saat expiry, logout, visibility/security transition, atau setelah single-use.
-- [x] `MFA_REQUIRED`/`MFA_PROOF_EXPIRED` mapped in problem codes/error policy for step-up consumers; explicit user replay with same idempotency remains domain-level.
-- [x] Checkbox “sudah MFA” hanya acknowledgement UI bila masih dibutuhkan; tidak pernah menjadi authority.
+- [x] `AUTH_REQUIRED`/`MFA_PROOF_EXPIRED` mapped in problem codes/error policy for step-up consumers; explicit user replay with same idempotency remains domain-level.
+- [x] Checkbox “sudah auth” hanya acknowledgement UI bila masih dibutuhkan; tidak pernah menjadi authority.
 
 ### Tests
 
 - missing/invalid/expired/wrong session/wrong purpose/replayed proof;
-- login response dengan MFA required lalu direct HTTP ke seller/admin/business endpoint sebelum verify wajib ditolak;
-- hanya endpoint allowlist pre-MFA yang dapat dipanggil; roles/permissions tidak membuka akses;
+- login response dengan auth required lalu direct HTTP ke seller/admin/business endpoint sebelum verify wajib ditolak;
+- hanya endpoint allowlist login yang dapat dipanggil; roles/permissions tidak membuka akses;
 - valid proof + reason + permission;
 - no proof in URL/storage/log/query cache;
 - focus/keyboard/accessibility existing dialog;
@@ -544,7 +544,7 @@ Mengganti fake proof/checkbox dengan ceremony backend-authoritative tanpa redesi
 
 ### Acceptance criteria
 
-- Tidak ada literal `mock-recent-mfa`, `mock-password-reauth`, atau body boolean yang memberi akses pada API mode.
+- Tidak ada literal `mock-recent-auth`, `mock-password-reauth`, atau body boolean yang memberi akses pada API mode.
 - Sensitive endpoint fail closed tanpa proof server-valid.
 
 ---
@@ -612,7 +612,7 @@ Test setiap class resource: catalog, order, customer, inventory/reveal, finance/
 - [x] Public catalog punya explicit stale/revalidate policy; private/auth/finance/secret `no-store` pada SSR.
 - [x] Invalidate exact affected keys; hindari `invalidateQueries(["admin"])` jika mutation hanya satu row.
 - [x] Remove private cache pada logout/actor/tenant/impersonation change.
-- [x] Jangan masukkan one-time secret, QR raw capability, MFA proof, raw credential, inventory secret ke persistent cache.
+- [x] Jangan masukkan one-time secret, QR raw capability, auth proof, raw credential, inventory secret ke persistent cache.
 
 ### Mutation policy
 
@@ -647,7 +647,7 @@ Test setiap class resource: catalog, order, customer, inventory/reveal, finance/
 - [x] Existing loading/error/empty/permission/not-found surface terhubung ke query lifecycle.
 - [x] Map stable problem code ke existing copy. Request ID selalu masuk redacted operator telemetry; hanya tampil ke user bila exact existing component sudah mendukung atau route-state/UI exception disetujui—jangan mengubah frozen copy diam-diam.
 - [x] Reporter menyertakan release ID, surface, operation ID, request ID, status/code, route template—not raw path ID bila sensitif.
-- [x] Recursive redaction untuk cookie, token, CSRF, MFA, Authorization, API keys, QR payload, email/phone, bank, object signed URL, inventory/delivery secret.
+- [x] Recursive redaction untuk cookie, token, CSRF, auth, Authorization, API keys, QR payload, email/phone, bank, object signed URL, inventory/delivery secret.
 - [x] No response-body dumping pada schema/provider error.
 - [x] Metrics: latency/error/retry/contract-invalid/session-expired per operation; bounded cardinality.
 - [x] Trace/request ID mengalir edge -> Next -> Go -> worker/provider callback tanpa menjadi auth token.
@@ -724,7 +724,7 @@ Menutup gap “backend route ada” vs “backend benar-benar dapat beroperasi d
 
 ### Tenant and rate limits
 
-Distributed policy minimum untuk login, magic/reset, MFA, checkout create/status, callback, reveal/claim, admin action, upload, export.
+Distributed policy minimum untuk login, magic/reset, checkout create/status, callback, reveal/claim, admin action, upload, export.
 
 ### Tests/evidence
 

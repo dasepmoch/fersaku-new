@@ -18,9 +18,9 @@
 
 Isolation rules:
 
-1. Invalid `X-Callback-Token` → 401/403 + rejection row; **no** PAID, settlement, grant, or ledger journal.  
-2. Outbound seller webhook failure must **not** roll back inbound paid finalization.  
-3. SANDBOX vs LIVE share account scope but **never** collide on `(provider, account_scope, payment_mode, provider_event_id)`.  
+1. Invalid `X-Callback-Token` → 401/403 + rejection row; **no** PAID, settlement, grant, or ledger journal. 
+2. Outbound seller webhook failure must **not** roll back inbound paid finalization. 
+3. SANDBOX vs LIVE share account scope but **never** collide on `(provider, account_scope, payment_mode, provider_event_id)`. 
 4. Worker down: API still accepts valid callbacks (durable); lag metrics rise.
 
 ---
@@ -75,17 +75,17 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:18080}"
 
 # Invalid token
 curl -sS -o /tmp/cb_body -w "%{http_code}\n" -X POST \
-  -H "Content-Type: application/json" \
-  -H "X-Callback-Token: definitely-invalid-token-for-launch" \
-  -d '{"event":"payment.paid","id":"launch-fd-1"}' \
-  "$BASE_URL/v1/webhooks/xendit"
+ -H "Content-Type: application/json" \
+ -H "X-Callback-Token: definitely-invalid-token-for-launch" \
+ -d '{"event":"payment.paid","id":"launch-fd-1"}' \
+ "$BASE_URL/v1/webhooks/xendit"
 # expect 401 or 403
 
 # Missing token
 curl -sS -o /tmp/cb_body2 -w "%{http_code}\n" -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"event":"payment.paid","id":"launch-fd-2"}' \
-  "$BASE_URL/v1/webhooks/xendit"
+ -H "Content-Type: application/json" \
+ -d '{"event":"payment.paid","id":"launch-fd-2"}' \
+ "$BASE_URL/v1/webhooks/xendit"
 # expect 401 or 403
 ```
 

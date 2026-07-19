@@ -1,7 +1,7 @@
 # UI-050 — Existing lifecycle-state mapping
 
-**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-050  
-**Disposition machine:** `TASK/10-ROUTE-AND-CONTROL-DISPOSITION.md` §2–3  
+**Authority:** `TASK/00-UI-FREEZE-CONTRACT.md` §UI-050 
+**Disposition machine:** `TASK/10-ROUTE-AND-CONTROL-DISPOSITION.md` §2–3 
 **Component registry:** `TASK/evidence/UI-030/component-reuse-registry.md`
 
 Wiring binds network states to **existing** surfaces only. Missing composition → block flag or `UI-080` (see UXE rows), never invent panels.
@@ -56,7 +56,7 @@ Wiring binds network states to **existing** surfaces only. Missing composition �
 | Shell | `AuthShell` | `components/auth-shell.tsx` |
 | Field error / submit loading | `AuthForm` | `components/auth-form.tsx` |
 | Admin login snapshot | `AdminLogin` static link/defaults | `features/admin/components/admin-shell.tsx` — API blocked until UXE-011 |
-| MFA / rate-limit / unavailable | **No complete generic panel** | UXE-011 / UI-080 — do not invent |
+| auth / rate-limit / unavailable | **No complete generic panel** | UXE-011 / UI-080 — do not invent |
 
 ## 6. Checkout
 

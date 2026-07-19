@@ -59,7 +59,7 @@ Lalu baca seluruh feature API/hook/contract/screen terkait serta backend handler
 ### Security discovery
 
 - [ ] Actor/surface/permission/tenant/ownership/capability ditentukan.
-- [ ] CSRF/MFA/reason/idempotency/version requirements ditentukan.
+- [ ] CSRF/reason/idempotency/version requirements ditentukan.
 - [ ] Secret/PII/money/state authority dan cache/log policy ditentukan.
 - [ ] Negative/concurrency/unknown outcome cases didaftarkan.
 
@@ -83,14 +83,14 @@ Struktur yang dianjurkan per domain:
 
 ```text
 features/<domain>/
-  contracts.ts        # stable existing view/domain model
-  transport.ts        # aliases/generated DTO imports if needed
-  schemas.ts          # operation-specific runtime schemas
-  mappers.ts          # transport -> view model
-  api.ts              # exact endpoint/request DTO, mock/API branch
-  hooks.ts            # query keys, query/mutation lifecycle
-  mock.ts              # prototype adapter only
-  screens/**           # existing presentation; minimal binding only
+ contracts.ts # stable existing view/domain model
+ transport.ts # aliases/generated DTO imports if needed
+ schemas.ts # operation-specific runtime schemas
+ mappers.ts # transport -> view model
+ api.ts # exact endpoint/request DTO, mock/API branch
+ hooks.ts # query keys, query/mutation lifecycle
+ mock.ts # prototype adapter only
+ screens/** # existing presentation; minimal binding only
 ```
 
 Tidak perlu membuat semua file jika domain kecil; boundary harus tetap jelas.
@@ -99,33 +99,33 @@ Tidak perlu membuat semua file jika domain kecil; boundary harus tetap jelas.
 
 ```ts
 type ResourceDependencies = {
-  source: "mock" | "api" | "disabled";
-  api: ResourceApiPort;
-  mock: ResourceApiPort;
+ source: "mock" | "api" | "disabled";
+ api: ResourceApiPort;
+ mock: ResourceApiPort;
 };
 
 export async function getResource(
-  input: ResourceInput,
-  signal: AbortSignal,
-  dependencies: ResourceDependencies,
+ input: ResourceInput,
+ signal: AbortSignal,
+ dependencies: ResourceDependencies,
 ): Promise<ResourceView | null> {
-  if (dependencies.source === "disabled") {
-    throw new DomainUnavailableError("RESOURCE_DISABLED");
-  }
-  if (dependencies.source === "mock") {
-    return dependencies.mock.getResource(input, signal);
-  }
+ if (dependencies.source === "disabled") {
+ throw new DomainUnavailableError("RESOURCE_DISABLED");
+ }
+ if (dependencies.source === "mock") {
+ return dependencies.mock.getResource(input, signal);
+ }
 
-  try {
-    const envelope = await dependencies.api.request(pathFor(input), {
-      signal,
-      schema: resourceEnvelopeSchema,
-    });
-    return mapResourceDto(envelope.data);
-  } catch (error) {
-    if (isExpectedResourceNotFound(error)) return null;
-    throw error;
-  }
+ try {
+ const envelope = await dependencies.api.request(pathFor(input), {
+ signal,
+ schema: resourceEnvelopeSchema,
+ });
+ return mapResourceDto(envelope.data);
+ } catch (error) {
+ if (isExpectedResourceNotFound(error)) return null;
+ throw error;
+ }
 }
 ```
 
@@ -171,18 +171,18 @@ Rules:
 
 ```text
 HTTP handler
-  decode strict DTO + headers/query
-  require auth/permission
-  call application use case with actor/context
+ decode strict DTO + headers/query
+ require auth/permission
+ call application use case with actor/context
 
 Application use case
-  tenant/ownership/capability guard
-  validate state/transition/MFA/idempotency/version
-  transaction: domain change + audit/outbox/idempotency
-  call provider through port with timeout/recovery
+ tenant/ownership/capability guard
+ validate state/transition/idempotency/version
+ transaction: domain change + audit/outbox/idempotency
+ call provider through port with timeout/recovery
 
 Presenter
-  safe DTO/envelope/problem
+ safe DTO/envelope/problem
 ```
 
 ### Backend checklist
@@ -192,7 +192,7 @@ Presenter
 - Foreign tenant -> safe not-found when appropriate.
 - DB constraints defend invariants/concurrency.
 - Provider DTO/SDK tidak bocor ke domain/presenter.
-- No client boolean for auth/MFA/paid/permission.
+- No client boolean for auth/auth/paid/permission.
 - Strict transition allowlist; unspecified edge rejected.
 - Same idempotency key/body replay exact result; changed body conflict.
 - Audit/raw log never stores secret.
@@ -330,7 +330,7 @@ Perubahan contract breaking memerlukan provider + consumer review dan migration/
 
 ### Security/data
 
-- [ ] Auth/CSRF/MFA/tenant/permission/idempotency/version applied.
+- [ ] Auth/CSRF/tenant/permission/idempotency/version applied.
 - [ ] Secret/PII/money/state authority policy tested.
 - [ ] Negative/concurrency/unknown outcome tested.
 - [ ] Logs/cache/storage/URL/telemetry redacted.
@@ -351,7 +351,7 @@ Parallel work setelah foundation contract freeze:
 | Foundation | `shared/api`, session, env/proxy, OpenAPI/codegen | Semua domain; merge first |
 | Public/buyer | public, checkout, order, invoice, buyer | auth/session, catalog mapper |
 | Seller | current store, catalog/inventory/order/customer/review/finance | shared seller shell/query keys |
-| Admin | auth/RBAC/read/mutations/ops/audit | session/MFA, admin contracts |
+| Admin | auth/RBAC/read/mutations/ops/audit | session, admin contracts |
 | Backend runtime | providers, queue, scanner, callback, readiness | checkout/withdrawal/webhooks |
 | QA/release | CI, seed, cross-stack, visual/security/rollout | environment/config/tests |
 

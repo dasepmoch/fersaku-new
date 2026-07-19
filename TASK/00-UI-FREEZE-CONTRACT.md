@@ -136,10 +136,10 @@ Setiap domain menggunakan tiga bentuk data yang terpisah:
 
 ```text
 Backend transport DTO (wire truth)
-  -> schema validation
-  -> mapper eksplisit
-  -> existing frontend view model
-  -> existing component props/JSX
+ -> schema validation
+ -> mapper eksplisit
+ -> existing frontend view model
+ -> existing component props/JSX
 ```
 
 Mapper harus:
@@ -187,7 +187,7 @@ Untuk setiap route:
 - **mutation pending:** disable CTA existing dan cegah double-submit;
 - **mutation success:** gunakan success state existing setelah response authoritative;
 - **mutation failure/unknown:** jangan pindah ke success; pertahankan state dan berikan retry/recovery existing.
-- **auth-state gap:** jika surface auth existing tidak memiliki generic failure, MFA, rate-limit, atau unavailable region, ikuti `UXE-011` pada disposition matrix; jangan memetakan kegagalan ke success atau menyisipkan copy/layout baru.
+- **auth-state gap:** jika surface auth existing tidak memiliki generic failure, auth, rate-limit, atau unavailable region, ikuti `UXE-011` pada disposition matrix; jangan memetakan kegagalan ke success atau menyisipkan copy/layout baru.
 
 ## UI-060 — Perilaku responsive, a11y, dan motion
 
@@ -238,8 +238,8 @@ Security tidak boleh dikorbankan demi freeze. Jika action tidak aman tanpa promp
 
 Untuk menghindari route baru selama wiring, default keputusan backlog adalah:
 
-- `/login` tetap memiliki ownership seller login dan juga merender state verify-email, reset-password, merchant invite consume, serta seller MFA challenge dari fragment/flow state;
-- `/admin/login` tetap memiliki ownership admin login dan admin MFA challenge;
+- `/login` tetap memiliki ownership seller login dan juga merender state verify-email, reset-password, merchant invite consume, serta seller login challenge dari fragment/flow state;
+- `/admin/login` tetap memiliki ownership admin login;
 - `/account/verify` tetap menangani buyer magic-link consume;
 - staff invite consume masuk melalui `/admin/login`, merchant invite melalui `/login`;
 - seluruh state menyusun `AuthShell`, form controls, button, error, dan modal existing dengan class/geometry yang sama.
