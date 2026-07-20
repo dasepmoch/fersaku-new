@@ -327,7 +327,7 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
     apiRequestMock.mockResolvedValueOnce({
       data: {
         locked: true,
-        lockedUntil: "2026-07-20T00:00:00Z",
+        lockedUntil: "2099-07-20T00:00:00Z",
         reason: "BANK_ACCOUNT_CHANGED",
       },
       meta: { requestId: "req_lock", timestamp: AS_OF },
@@ -338,7 +338,7 @@ describe("SEL-410 seller withdrawal quote / create / lock", () => {
     expect(path).toBe("/v1/stores/store_live/withdrawals/lock");
     expect(opts.schema).toBe(withdrawalLockEnvelopeSchema);
     expect(lock.locked).toBe(true);
-    expect(lock.unlockedAt).toBe("2026-07-20T00:00:00Z");
+    expect(lock.unlockedAt).toBe("2099-07-20T00:00:00Z");
     expect(lock.reasonCode).toBe("BANK_ACCOUNT_CHANGED");
   });
 
